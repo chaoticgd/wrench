@@ -45,7 +45,7 @@ struct CppParserState {
 static void parse_struct_or_union(CppType& dest, CppParserState& parser);
 static CppType parse_type_name(CppParserState& parser);
 
-bool parse_cpp_types(std::vector<CppType>& types, const std::vector<CppToken>& tokens) {
+bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<CppToken>& tokens) {
 	CppParserState parser{tokens};
 	bool enabled = false;
 	bool ever_enabled_for_this_file = false;
@@ -64,13 +64,15 @@ bool parse_cpp_types(std::vector<CppType>& types, const std::vector<CppToken>& t
 		if(enabled && tokens[parser.pos].type == CPP_KEYWORD && (tokens[parser.pos].keyword == CPP_KEYWORD_struct || tokens[parser.pos].keyword == CPP_KEYWORD_union)) {
 			if(parser.pos + 1 < tokens.size() && tokens[parser.pos + 1].type == CPP_IDENTIFIER) {
 				if(parser.pos + 2 < tokens.size() && tokens[parser.pos + 2].type == CPP_OPERATOR && tokens[parser.pos + 2].op == CPP_OP_OPENING_CURLY) {
-					CppType& type = types.emplace_back(CPP_STRUCT_OR_UNION);
+					std::string name(tokens[parser.pos + 1].str_begin, tokens[parser.pos + 1].str_end);
+					CppType type(CPP_STRUCT_OR_UNION);
 					type.struct_or_union.is_union = tokens[parser.pos].keyword == CPP_KEYWORD_union;
 					type.name = std::string(tokens[parser.pos + 1].str_begin, tokens[parser.pos + 1].str_end);
 					parser.advance();
 					parser.advance();
 					parser.advance();
 					parse_struct_or_union(type, parser);
+					types.emplace(name, std::move(type));
 					continue;
 				}
 			}
@@ -150,46 +152,82 @@ static CppType parse_type_name(CppParserState& parser) {
 	const CppToken& first = parser.cur();
 	
 	if(first.type == CPP_KEYWORD) {
-		s32 sign = 0;
-		if(first.keyword == CPP_KEYWORD_signed) {
-			sign = 1;
-			parser.advance();
-		} else if(first.keyword == CPP_KEYWORD_unsigned) {
-			sign = -1;
-			parser.advance();
-		}
+		bool has_keyword[CPP_KEYWORD_COUNT];
+		bool has_double_long = false;
+		memset(has_keyword, false, CPP_KEYWORD_COUNT);
 		
-		const CppToken& type = parser.cur();
-		
-		CppType field(CPP_BUILT_IN);
-		switch(type.keyword) {
-			case CPP_KEYWORD_char: field.built_in = (sign == -1) ? CPP_UCHAR : CPP_SCHAR; break;
-			case CPP_KEYWORD_char8_t: field.built_in = CPP_S8; break;
-			case CPP_KEYWORD_char16_t: field.built_in = CPP_S16; break;
-			case CPP_KEYWORD_char32_t: field.built_in = CPP_S32; break;
-			case CPP_KEYWORD_short: field.built_in = (sign == -1) ? CPP_USHORT : CPP_SHORT; break;
-			case CPP_KEYWORD_int: field.built_in = (sign == -1) ? CPP_UINT : CPP_INT; break;
-			case CPP_KEYWORD_long: {
-				const CppToken& after_long = parser.peek();
-				if(after_long.type == CPP_KEYWORD && after_long.keyword == CPP_KEYWORD_long) {
-					field.built_in = (sign == -1) ? CPP_ULONGLONG : CPP_LONGLONG;
-					parser.advance();
-				} else {
-					field.built_in = (sign == -1) ? CPP_ULONG : CPP_LONG;
+		// Parse tokens until a token of a type that can't be part of a built-in
+		// type name is encountered.
+		while(true) {
+			const CppToken& token = parser.cur();
+			if(token.type != CPP_KEYWORD) break;
+			
+			bool good = false;
+			if(token.keyword == CPP_KEYWORD_char) good = true;
+			if(token.keyword == CPP_KEYWORD_short) good = true;
+			if(token.keyword == CPP_KEYWORD_int) good = true;
+			if(token.keyword == CPP_KEYWORD_long) good = true;
+			if(token.keyword == CPP_KEYWORD_float) good = true;
+			if(token.keyword == CPP_KEYWORD_double) good = true;
+			if(token.keyword == CPP_KEYWORD_signed) good = true;
+			if(token.keyword == CPP_KEYWORD_unsigned) good = true;
+			if(token.keyword == CPP_KEYWORD_const) good = true;
+			if(token.keyword == CPP_KEYWORD_mutable) good = true;
+			
+			if(good) {
+				if(token.keyword == CPP_KEYWORD_long && has_keyword[CPP_KEYWORD_long]) {
+					has_double_long = true;
 				}
+				has_keyword[CPP_KEYWORD_long] = true;
+				parser.advance();
+			} else {
 				break;
 			}
-			case CPP_KEYWORD_float: field.built_in = CPP_FLOAT; break;
-			case CPP_KEYWORD_double: field.built_in = CPP_DOUBLE; break;
-			default: verify_not_reached("Expected type name.");
 		}
+		
+		CppType type(CPP_BUILT_IN);
+		if(has_keyword[CPP_KEYWORD_float]) {
+			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'float'.");
+			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'float'.");
+			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'float'.");
+			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'float'.");
+			type.built_in = CPP_FLOAT;
+		} else if(has_keyword[CPP_KEYWORD_double]) {
+			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'double'.");
+			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'double'.");
+			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'double'.");
+			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'double'.");
+			type.built_in = CPP_DOUBLE;
+		} else if(has_keyword[CPP_KEYWORD_bool]) {
+			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'bool'.");
+			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'bool'.");
+			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'bool'.");
+			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'bool'.");
+			type.built_in = CPP_BOOL;
+		} else if(has_keyword[CPP_KEYWORD_char]) {
+			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'char'.");
+			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'char'.");
+			type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_UCHAR : CPP_CHAR;
+		} else if(has_keyword[CPP_KEYWORD_short]) {
+			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'short'.");
+			type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_USHORT : CPP_SHORT;
+		} else if(has_keyword[CPP_KEYWORD_long]) {
+			if(has_double_long) {
+				type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_ULONGLONG : CPP_LONGLONG;
+			} else {
+				type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_ULONG : CPP_LONG;
+			}
+		} else if(has_keyword[CPP_KEYWORD_int]) {
+			type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_UINT : CPP_INT;
+		}
+		return type;
+	} else if(first.type == CPP_IDENTIFIER) {
+		CppType type(CPP_TYPE_NAME);
+		type.type_name.string = std::string(first.str_begin, first.str_end);
 		
 		parser.advance();
 		
-		return field;
-	} else if(first.type == CPP_IDENTIFIER) {
-		std::string str(first.str_begin, first.str_end);
-		verify_not_reached("Parsing identifiers in type names no yet implemented: '%s'.", str.c_str());
+		return type;
 	}
 	verify_not_reached("Expected type name, got token of type %s.", cpp_token_type(first.type));
 }

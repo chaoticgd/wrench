@@ -167,12 +167,12 @@ TEST_CASE("c++ parser" "[instancemgr]") {
 static bool test_parser(const char* src, CppType&& expected) {
 	std::string str(src);
 	std::vector<CppToken> tokens = eat_cpp_file(&str[0]);
-	std::vector<CppType> types;
+	std::map<std::string, CppType> types;
 	parse_cpp_types(types, tokens);
 	if(types.size() != 1) {
 		return false;
 	}
-	return compare_pvar_types(types[0], expected);
+	return compare_pvar_types(types.begin()->second, expected);
 }
 
 static bool compare_pvar_types(const CppType& lhs, const CppType& rhs) {

@@ -85,7 +85,7 @@ static void run_wrench(GLFWwindow* window, const std::string& underlay_path, con
 	a.game_bank = &a.asset_forest.mount<LooseAssetBank>(game_path, false);
 	a.mod_bank = &a.asset_forest.mount<LooseAssetBank>(mod_path, true);
 	
-	a.asset_forest.load_and_parse_source_files();
+	a.asset_forest.load_and_parse_source_files(a.game_bank->game_info.game.game);
 	
 	verify(a.game_bank->game_info.type == AssetBankType::GAME,
 		"The asset bank specified for the game is not a game.");

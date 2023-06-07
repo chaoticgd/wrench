@@ -19,6 +19,7 @@
 #ifndef CPPPARSER_CPP_TYPE_H
 #define CPPPARSER_CPP_TYPE_H
 
+#include <map>
 #include <memory>
 
 #include <core/buffer.h>
@@ -134,7 +135,7 @@ struct CppABI {
 	s32 pointer_alignment;
 };
 
-void layout_cpp_type(CppType& type, const CppABI& abi);
+void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const CppABI& abi);
 void dump_cpp_type(OutBuffer& dest, const CppType& type);
 const char* cpp_built_in(CppBuiltIn built_in);
 

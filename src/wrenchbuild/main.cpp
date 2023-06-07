@@ -463,7 +463,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 		}
 	}
 	
-	forest.load_and_parse_source_files();
+	forest.load_and_parse_source_files(config.game());
 	
 	AssetLink link;
 	link.set(asset.c_str());

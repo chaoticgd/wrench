@@ -147,11 +147,11 @@ static void destroy_pvar_type(CppType& type) {
 
 // *****************************************************************************
 
-void layout_cpp_type(CppType& type, const CppABI& abi) {
+void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const CppABI& abi) {
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
 			verify_fatal(type.array.element_type.get());
-			layout_cpp_type(*type.array.element_type, abi);
+			layout_cpp_type(*type.array.element_type, types, abi);
 			type.size = type.array.element_type->size * type.array.element_count;
 			type.alignment = type.array.element_type->alignment;
 			break;
@@ -171,7 +171,7 @@ void layout_cpp_type(CppType& type, const CppABI& abi) {
 			s32 offset = 0;
 			type.alignment = 1;
 			for(CppType& field : type.struct_or_union.fields) {
-				layout_cpp_type(field, abi);
+				layout_cpp_type(field, types, abi);
 				type.alignment = std::max(field.alignment, type.alignment);
 				field.offset = align32(offset, field.alignment);
 				if(!type.struct_or_union.is_union) {
@@ -182,7 +182,13 @@ void layout_cpp_type(CppType& type, const CppABI& abi) {
 			break;
 		}
 		case CPP_TYPE_NAME: {
-			verify_not_reached_fatal("Cannot determine layout from type name.");
+			auto iter = types.find(type.type_name.string);
+			verify(iter != types.end(), "Failed to lookup type '%s'.", type.type_name.string.c_str());
+			if(iter->second.size < 0 || iter->second.alignment < 0) {
+				layout_cpp_type(iter->second, types, abi);
+			}
+			type.size = iter->second.size;
+			type.alignment = iter->second.alignment;
 			break;
 		}
 		case CPP_POINTER_OR_REFERENCE: {

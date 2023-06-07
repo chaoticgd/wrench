@@ -33,7 +33,7 @@ void Level::read(LevelAsset& asset, Game g) {
 	std::string text = _instances_asset->file().read_text_file(_instances_asset->src().path);
 	_instances = read_instances(text);
 	
-	const std::vector<CppType>& types = asset.forest().types();
+	const std::map<std::string, CppType>& types = asset.forest().types();
 	
 	const CollectionAsset& chunk_collection = level_wad().get_chunks();
 	for(s32 i = 0; i < 3; i++) {
@@ -111,8 +111,8 @@ void Level::read(LevelAsset& asset, Game g) {
 			} else {
 				pvar_type = &moby.get_pvar_type_fallback();
 			}
-			for(const CppType& type : types) {
-				if(type.name == pvar_type->name()) {
+			for(const auto& [name, type] : types) {
+				if(name == pvar_type->name()) {
 					ec.pvar_type = &type;
 				}
 			}

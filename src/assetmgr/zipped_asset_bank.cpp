@@ -94,9 +94,9 @@ std::vector<fs::path> ZippedAssetBank::enumerate_asset_files() const {
 	return asset_files;
 }
 
-std::vector<fs::path> ZippedAssetBank::enumerate_source_files() const {
+std::vector<fs::path> ZippedAssetBank::enumerate_source_files(Game game) const {
 	std::string common_source_path = get_common_source_path();
-	std::string game_source_path = get_game_source_path();
+	std::string game_source_path = get_game_source_path(game);
 	
 	std::vector<fs::path> asset_files;
 	s64 count = zip_get_num_entries(_zip, 0);
