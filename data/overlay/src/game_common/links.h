@@ -1,7 +1,7 @@
 #pragma wrench parser on
 
 struct mobylink { int __value; };
-struct mobygrouplink { int __value; };
+struct grouplink { int __value; };
 struct tielink { int __value; };
 struct tiegrouplink { int __value; };
 struct shrublink { int __value; };
@@ -17,5 +17,5 @@ struct pilllink { int __value; };
 struct cameralink { int __value; };
 struct soundlink { int __value; };
 struct pathlink { int __value; };
-struct grindpathlink { int __value; };
+struct grindlink { int __value; };
 struct arealink { int __value; };
