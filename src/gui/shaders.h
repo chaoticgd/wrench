@@ -67,6 +67,9 @@ struct Shaders {
 	Shader pickframe;
 	GLint pickframe_view_matrix;
 	GLint pickframe_projection_matrix;
+	Shader pickframe_icons;
+	GLint pickframe_icons_view_matrix;
+	GLint pickframe_icons_projection_matrix;
 };
 
 #endif

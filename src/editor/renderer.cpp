@@ -28,7 +28,7 @@ template <typename ThisInstance>
 static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstance>& insts);
 static glm::vec4 inst_colour(bool selected);
 static glm::vec4 encode_inst_id(InstanceId id);
-static void draw_instances(Level& lvl, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings);
+static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings);
 static void draw_mobies(Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_ties(Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
@@ -194,13 +194,13 @@ void draw_level(Level& lvl, const glm::mat4& view, const glm::mat4& projection, 
 		}
 	}
 	
-	draw_instances(lvl, GL_FILL, GL_LINE, settings);
+	draw_instances(lvl, GL_FILL, true, settings);
 	
 	set_shader(shaders.selection);
 	glUniformMatrix4fv(shaders.selection_view_matrix, 1, GL_FALSE, &view[0][0]);
 	glUniformMatrix4fv(shaders.selection_projection_matrix, 1, GL_FALSE, &projection[0][0]);
 	
-	draw_instances(lvl, GL_LINE, GL_LINE, settings);
+	draw_instances(lvl, GL_LINE, true, settings);
 	
 	if(settings.draw_selected_instance_normals) {
 		draw_selected_shrub_normals(lvl);
@@ -212,6 +212,7 @@ void draw_level(Level& lvl, const glm::mat4& view, const glm::mat4& projection, 
 	set_shader(shaders.icons);
 	glUniformMatrix4fv(shaders.icons_view_matrix, 1, GL_FALSE, &view[0][0]);
 	glUniformMatrix4fv(shaders.icons_projection_matrix, 1, GL_FALSE, &projection[0][0]);
+	
 	draw_icons(lvl, settings);
 }
 
@@ -222,57 +223,63 @@ void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projecti
 	set_shader(shaders.pickframe);
 	glUniformMatrix4fv(shaders.pickframe_view_matrix, 1, GL_FALSE, &view[0][0]);
 	glUniformMatrix4fv(shaders.pickframe_projection_matrix, 1, GL_FALSE, &projection[0][0]);
+
+	draw_instances(lvl, GL_FILL, false, settings);
 	
-	draw_instances(lvl, GL_FILL, GL_FILL, settings);
+	set_shader(shaders.pickframe_icons);
+	glUniformMatrix4fv(shaders.pickframe_icons_view_matrix, 1, GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(shaders.pickframe_icons_projection_matrix, 1, GL_FALSE, &projection[0][0]);
+	
+	draw_icons(lvl, settings);
 }
 
-static void draw_instances(Level& lvl, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings) {
+static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings) {
 	if(settings.draw_mobies) {
-		draw_mobies(lvl, lvl.instances().moby_instances, mesh_mode, cube_mode);
+		draw_mobies(lvl, lvl.instances().moby_instances, mesh_mode, GL_LINE);
 	}
 	
 	if(settings.draw_ties) {
-		draw_ties(lvl, lvl.instances().tie_instances, mesh_mode, cube_mode);
+		draw_ties(lvl, lvl.instances().tie_instances, mesh_mode, GL_LINE);
 	}
 	
 	if(settings.draw_shrubs) {
-		draw_shrubs(lvl, lvl.instances().shrub_instances, mesh_mode, cube_mode);
+		draw_shrubs(lvl, lvl.instances().shrub_instances, mesh_mode, GL_LINE);
 	}
 	
-	if(settings.draw_point_lights) {
-		draw_cube_instanced(cube_mode, white, point_light_inst_buffer, 0, lvl.instances().point_lights.size());
+	if(settings.draw_point_lights && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, point_light_inst_buffer, 0, lvl.instances().point_lights.size());
 	}
 	
-	if(settings.draw_env_sample_points) {
-		draw_cube_instanced(cube_mode, white, env_sample_point_inst_buffer, 0, lvl.instances().env_sample_points.size());
+	if(settings.draw_env_sample_points && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, env_sample_point_inst_buffer, 0, lvl.instances().env_sample_points.size());
 	}
 	
-	if(settings.draw_env_transitions) {
-		draw_cube_instanced(cube_mode, white, env_transition_inst_buffer, 0, lvl.instances().env_transitions.size());
+	if(settings.draw_env_transitions && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, env_transition_inst_buffer, 0, lvl.instances().env_transitions.size());
 	}
 	
-	if(settings.draw_cuboids) {
-		draw_cube_instanced(cube_mode, white, cuboid_inst_buffer, 0, lvl.instances().cuboids.size());
+	if(settings.draw_cuboids && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, cuboid_inst_buffer, 0, lvl.instances().cuboids.size());
 	}
 	
-	if(settings.draw_spheres) {
-		draw_cube_instanced(cube_mode, white, sphere_inst_buffer, 0, lvl.instances().spheres.size());
+	if(settings.draw_spheres && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, sphere_inst_buffer, 0, lvl.instances().spheres.size());
 	}
 	
-	if(settings.draw_cylinders) {
-		draw_cube_instanced(cube_mode, white, cylinder_inst_buffer, 0, lvl.instances().cylinders.size());
+	if(settings.draw_cylinders && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, cylinder_inst_buffer, 0, lvl.instances().cylinders.size());
 	}
 	
-	if(settings.draw_pills) {
-		draw_cube_instanced(cube_mode, white, pill_inst_buffer, 0, lvl.instances().pills.size());
+	if(settings.draw_pills && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, pill_inst_buffer, 0, lvl.instances().pills.size());
 	}
 	
-	if(settings.draw_cameras) {
-		draw_cube_instanced(cube_mode, white, camera_inst_buffer, 0, lvl.instances().cameras.size());
+	if(settings.draw_cameras && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, camera_inst_buffer, 0, lvl.instances().cameras.size());
 	}
 	
-	if(settings.draw_sound_instances) {
-		draw_cube_instanced(cube_mode, white, sound_inst_buffer, 0, lvl.instances().sound_instances.size());
+	if(settings.draw_sound_instances && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, sound_inst_buffer, 0, lvl.instances().sound_instances.size());
 	}
 	
 	if(settings.draw_paths) {
@@ -464,6 +471,8 @@ static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial
 }
 
 static void draw_icons(Level& lvl, const RenderSettings& settings) {
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	
 	if(settings.draw_mobies) {
 		draw_moby_icons(lvl, lvl.instances().moby_instances);
 	}
