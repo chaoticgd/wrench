@@ -151,14 +151,22 @@ public:
 	template <typename ChildType>
 	ChildType& child(const char* tag) {
 		Asset& asset = physical_child(ChildType::ASSET_TYPE, tag);
-		return asset.as<ChildType>();
+		ChildType& resolved_asset = asset.as<ChildType>();
+		verify(&resolved_asset.file() == &file(),
+			"Tried to access asset '%s' which is of the wrong type.",
+			asset.absolute_link().to_string().c_str());
+		return resolved_asset;
 	}
 	
 	template <typename ChildType>
 	ChildType& child(s32 tag) {
 		std::string str = std::to_string(tag);
 		Asset& asset = physical_child(ChildType::ASSET_TYPE, str.c_str());
-		return asset.as<ChildType>();
+		ChildType& resolved_asset = asset.as<ChildType>();
+		verify(&resolved_asset.file() == &file(),
+			"Tried to access asset '%s' which is of the wrong type.",
+			asset.absolute_link().to_string().c_str());
+		return resolved_asset;
 	}
 	
 	Asset& as(AssetType type);
