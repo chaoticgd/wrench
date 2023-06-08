@@ -134,12 +134,13 @@ static void generate_rows(const CppType& type, std::vector<u8>& pvar_data, std::
 		ImGui::Text("%x", offset);
 		ImGui::TableNextColumn();
 		if(index > -1) {
-			std::string subscript = stringf("[%d]", index);
+			std::string subscript = stringf("%*s[%d]", depth, "", index);
 			if(ImGui::Selectable(subscript.c_str(), type.expanded)) {
 				type.expanded = !type.expanded;
 			}
 		} else {
-			if(ImGui::Selectable(type.name.c_str(), type.expanded)) {
+			std::string name = stringf("%*s%s", depth, "", type.name.c_str());
+			if(ImGui::Selectable(name.c_str(), type.expanded)) {
 				type.expanded = !type.expanded;
 			}
 		}

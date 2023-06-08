@@ -1,4 +1,4 @@
-// wrench parser on
+#pragma wrench parser on
 
 struct update2871_Ocean {
 	/* 0x00 */ int overlaySpriteId;

@@ -72,10 +72,18 @@ std::vector<CppToken> eat_cpp_file(char* input) {
 		}
 		
 		if(*lexer.ptr == '#') {
-			// Skip preprocessor stuff.
+			// Preprocessor directive.
+			lexer.ptr++;
+			while(*lexer.ptr == ' ' || *lexer.ptr == '\t') lexer.ptr++; // Skip whitespace.
+			const char* str_begin = lexer.ptr;
 			while(*lexer.ptr != '\n' && *lexer.ptr != '\0') {
 				lexer.ptr++;
 			}
+			CppToken& token = lexer.tokens.emplace_back();
+			token.type = CPP_PREPROCESSOR_DIRECTIVE;
+			token.str_begin = str_begin;
+			token.str_end = lexer.ptr;
+			token.line = lexer.get_line();
 			continue;
 		}
 		

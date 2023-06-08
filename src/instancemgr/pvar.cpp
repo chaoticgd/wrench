@@ -39,7 +39,7 @@ static PvarHeaderSpec RAC_PVAR_SUB_VARS[] = {
 };
 
 static PvarHeaderSpec GC_PVAR_SUB_VARS[] = {
-	{0x00, "TargetVars", "targetVars", 0x30},
+	{0x00, "TargetVars", "targetVars", 0x40},
 	{0x04, "GcVars04"},
 	{0x08, "GcVars08"},
 	{0x0c, "GcVars0c"},
@@ -58,6 +58,10 @@ static PvarHeaderSpec UYA_PVAR_SUB_VARS[] = {
 	{0x14, "UyaVars14"},
 	{0x18, "UyaVars18", ""},
 	{0x1c, "UyaVars1c", ""},
+	{0x20, "UyaVars20", ""},
+	{0x24, "UyaVars24"},
+	{0x28, "UyaVars28", ""},
+	{0x2c, "UyaVars2c", ""},
 };
 
 static PvarHeaderSpec DL_PVAR_SUB_VARS[] = {
@@ -126,7 +130,7 @@ void recover_pvars(Instances& dest, std::map<s32, std::string>& types_dest, cons
 		case Game::UYA: {
 			sub_vars_begin = UYA_PVAR_SUB_VARS;
 			sub_vars_end = UYA_PVAR_SUB_VARS + ARRAY_SIZE(UYA_PVAR_SUB_VARS);
-			sub_vars_size = 0x20;
+			sub_vars_size = 0x30;
 			break;
 		}
 		case Game::DL: {
@@ -224,7 +228,7 @@ void recover_pvars(Instances& dest, std::map<s32, std::string>& types_dest, cons
 		
 		std::vector<u8> cpp;
 		OutBuffer buffer(cpp);
-		buffer.writelf("// wrench parser on");
+		buffer.writelf("#pragma wrench parser on");
 		buffer.writesf("\n");
 		dump_cpp_type(buffer, pvar_type);
 		types_dest[id] = std::string(cpp.begin(), cpp.end());

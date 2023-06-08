@@ -52,12 +52,12 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 	bool ever_enabled_for_this_file = false;
 	
 	while(parser.pos < tokens.size()) {
-		if(tokens[parser.pos].type == CPP_COMMENT) {
-			std::string str(tokens[parser.pos].str_begin, tokens[parser.pos].str_end);
-			if(str.find("wrench parser on") != std::string::npos) {
+		if(tokens[parser.pos].type == CPP_PREPROCESSOR_DIRECTIVE) {
+			std::string_view str(tokens[parser.pos].str_begin, tokens[parser.pos].str_end);
+			if(str.starts_with("wrench parser on")) {
 				enabled = true;
 				ever_enabled_for_this_file = true;
-			} else if(str.find("wrench parser off") != std::string::npos) {
+			} else if(str.starts_with("wrench parser off")) {
 				enabled = false;
 			}
 		}
@@ -65,10 +65,10 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 		if(enabled && tokens[parser.pos].type == CPP_KEYWORD && (tokens[parser.pos].keyword == CPP_KEYWORD_struct || tokens[parser.pos].keyword == CPP_KEYWORD_union)) {
 			if(parser.pos + 1 < tokens.size() && tokens[parser.pos + 1].type == CPP_IDENTIFIER) {
 				if(parser.pos + 2 < tokens.size() && tokens[parser.pos + 2].type == CPP_OPERATOR && tokens[parser.pos + 2].op == CPP_OP_OPENING_CURLY) {
-					std::string name(tokens[parser.pos + 1].str_begin, tokens[parser.pos + 1].str_end);
+					std::string_view name(tokens[parser.pos + 1].str_begin, tokens[parser.pos + 1].str_end);
 					CppType type(CPP_STRUCT_OR_UNION);
 					type.struct_or_union.is_union = tokens[parser.pos].keyword == CPP_KEYWORD_union;
-					type.name = std::string(tokens[parser.pos + 1].str_begin, tokens[parser.pos + 1].str_end);
+					type.name = name;
 					parser.advance();
 					parser.advance();
 					parser.advance();
@@ -128,7 +128,7 @@ static CppType parse_field(CppParserState& parser) {
 	}
 	
 	const CppToken& name_token = parser.cur();
-	std::string name = std::string(name_token.str_begin, name_token.str_end);
+	std::string_view name(name_token.str_begin, name_token.str_end);
 	parser.advance();
 	
 	// Parse array subscripts.

@@ -1,4 +1,4 @@
-// wrench parser on
+#pragma wrench parser on
 
 struct TargetVars;
 struct npcVars;

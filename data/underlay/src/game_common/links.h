@@ -1,4 +1,4 @@
-// wrench parser on
+#pragma wrench parser on
 
 struct mobylink { int __value; };
 struct mobygrouplink { int __value; };

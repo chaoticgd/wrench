@@ -1,4 +1,4 @@
-// wrench parser on
+#pragma wrench parser on
 
 struct SubVars {
 	/* 0x00 */ void* targetVars;

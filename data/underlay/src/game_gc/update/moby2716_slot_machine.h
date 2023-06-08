@@ -1,4 +1,4 @@
-// wrench parser on
+#pragma wrench parser on
 
 //enum M2716_RollResult {
 //	ROLL_LOSS=0,

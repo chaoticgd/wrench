@@ -1,18 +1,18 @@
-// wrench parser on
+#pragma wrench parser on
 
 struct vec2 {
 	float x;
 	float y;
-}
+};
 
 struct vec3 {
 	float x;
 	float y;
 	float z;
-}
+};
 
 struct vec4 {
-	long long data;
+	long long value;
 };
 
 typedef vec4 vec4f;

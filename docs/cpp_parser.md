@@ -3,13 +3,13 @@
 This parser can on be turned using the following line in a referenced header file:
 
 ```
-// wrench parser on
+#pragma wrench parser on
 ```
 
 And can be turned off with the following line:
 
 ```
-// wrench parser off
+#pragma wrench parser off
 ```
 
 All code between these two delimiters must conform to the limitations of the parser. The following language features are supported:
