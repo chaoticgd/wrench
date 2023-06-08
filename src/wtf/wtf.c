@@ -416,10 +416,24 @@ static ErrorStr parse_number(WtfReader* ctx, int32_t* i, float* f) {
 		return NULL;
 	}
 	
-	if(strncmp(ctx->input, "inf", 3) == 0) {
+	if(strncmp(ctx->input, "-nan", 4) == 0) {
 		*i = 0;
+		*f = NAN;
+		ctx->input += 4;
+		return NULL;
+	}
+	
+	if(strncmp(ctx->input, "inf", 3) == 0) {
+		*i = INT32_MAX;
 		*f = INFINITY;
 		ctx->input += 3;
+		return NULL;
+	}
+	
+	if(strncmp(ctx->input, "-inf", 4) == 0) {
+		*i = INT32_MIN;
+		*f = -INFINITY;
+		ctx->input += 4;
 		return NULL;
 	}
 	
