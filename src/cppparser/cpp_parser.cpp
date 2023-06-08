@@ -54,10 +54,10 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 	while(parser.pos < tokens.size()) {
 		if(tokens[parser.pos].type == CPP_PREPROCESSOR_DIRECTIVE) {
 			std::string_view str(tokens[parser.pos].str_begin, tokens[parser.pos].str_end);
-			if(str.starts_with("wrench parser on")) {
+			if(str.starts_with("pragma wrench parser on")) {
 				enabled = true;
 				ever_enabled_for_this_file = true;
-			} else if(str.starts_with("wrench parser off")) {
+			} else if(str.starts_with("pragma wrench parser off")) {
 				enabled = false;
 			}
 		}
