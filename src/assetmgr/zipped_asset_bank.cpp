@@ -94,21 +94,19 @@ std::vector<fs::path> ZippedAssetBank::enumerate_asset_files() const {
 	return asset_files;
 }
 
-std::vector<fs::path> ZippedAssetBank::enumerate_source_files(Game game) const {
+void ZippedAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const {
 	std::string common_source_path = get_common_source_path();
 	std::string game_source_path = get_game_source_path(game);
 	
-	std::vector<fs::path> asset_files;
 	s64 count = zip_get_num_entries(_zip, 0);
 	for(s64 i = 0; i < count; i++) {
 		if(const char* name = zip_get_name(_zip, i, 0)) {
 			fs::path path = fs::path(name).lexically_relative(_prefix);
 			if(path.string().starts_with(common_source_path) || path.string().starts_with(game_source_path)) {
-				asset_files.emplace_back(path);
+				dest[path] = this;
 			}
 		}
 	}
-	return asset_files;
 }
 
 s32 ZippedAssetBank::check_lock() const {

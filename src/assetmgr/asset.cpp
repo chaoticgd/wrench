@@ -695,15 +695,33 @@ void AssetForest::unmount_last() {
 }
 
 void AssetForest::load_and_parse_source_files(Game game) {
-	std::map<fs::path, AssetBank*> source_files = enumerate_source_files(game);
+	std::map<fs::path, const AssetBank*> source_files;
+	for(const std::unique_ptr<AssetBank>& bank : _banks) {
+		bank->enumerate_source_files(source_files, game);
+	}
+	
 	for(const auto& [path, bank] : source_files) {
 		printf("Parsing %s\n", path.string().c_str());
 		std::string cpp = bank->read_text_file(path);
 		if(!cpp.empty()) {
 			std::vector<CppToken> tokens = eat_cpp_file(&cpp[0]);
-			parse_cpp_types(_types, tokens);
+			std::map<std::string, CppType> types;
+			parse_cpp_types(types, tokens);
+			// If two types with the same name exist in different asset banks,
+			// make sure we use the type from the higher precedence bank.
+			for(auto& [name, type] : types) {
+				auto iter = _types.find(name);
+				if(iter == _types.end() || bank->index > iter->second.precedence) {
+					type.precedence = bank->index;
+					if(iter != _types.end()) {
+						_types.erase(name);
+					}
+					_types.emplace(name, std::move(type));
+				}
+			}
 		}
 	}
+	
 	for(auto& [name, type] : _types) {
 		layout_cpp_type(type, _types, CPP_PS2_ABI);
 	}
@@ -711,17 +729,6 @@ void AssetForest::load_and_parse_source_files(Game game) {
 
 const std::map<std::string, CppType>& AssetForest::types() const {
 	return _types;
-}
-
-std::map<fs::path, AssetBank*> AssetForest::enumerate_source_files(Game game) const {
-	std::map<fs::path, AssetBank*> source_files;
-	for(const std::unique_ptr<AssetBank>& bank : _banks) {
-		std::vector<fs::path> sources = bank->enumerate_source_files(game);
-		for(fs::path& path : sources) {
-			source_files[path] = bank.get();
-		}
-	}
-	return source_files;
 }
 
 // *****************************************************************************
@@ -792,18 +799,16 @@ std::vector<fs::path> LooseAssetBank::enumerate_asset_files() const {
 	return asset_files;
 }
 
-std::vector<fs::path> LooseAssetBank::enumerate_source_files(Game game) const {
+void LooseAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const {
 	std::string common_source_path = get_common_source_path();
 	std::string game_source_path = get_game_source_path(game);
 	
-	std::vector<fs::path> asset_files;
 	for(auto& entry : fs::recursive_directory_iterator(_directory)) {
 		std::string str = entry.path().lexically_relative(_directory).string();
 		if(entry.is_regular_file() && (str.starts_with(common_source_path) || str.starts_with(game_source_path))) {
-			asset_files.emplace_back(fs::path(str));
+			dest[fs::path(str)] = this;
 		}
 	}
-	return asset_files;
 }
 
 s32 LooseAssetBank::check_lock() const {
@@ -864,17 +869,16 @@ std::vector<fs::path> MemoryAssetBank::enumerate_asset_files() const {
 	return asset_files;
 }
 
-std::vector<fs::path> MemoryAssetBank::enumerate_source_files(Game game) const {
+void MemoryAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const {
 	std::string common_source_path = get_common_source_path();
 	std::string game_source_path = get_game_source_path(game);
 	
 	std::vector<fs::path> asset_files;
 	for(auto& [path, contents] : _files) {
 		if(path.string().starts_with(common_source_path) || path.string().starts_with(game_source_path)) {
-			asset_files.emplace_back(path);
+			dest[path] = this;
 		}
 	}
-	return asset_files;
 }
 
 s32 MemoryAssetBank::check_lock() const {

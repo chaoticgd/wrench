@@ -16,3 +16,15 @@ struct vec4 {
 };
 
 typedef vec4 vec4f;
+
+struct quat {
+	long long value;
+};
+
+struct mtx3 {
+	long long value[3];
+};
+
+struct mtx4 {
+	long long value[4];
+};

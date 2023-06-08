@@ -66,4 +66,5 @@ set(RELEASE_FILES
 set(RELEASE_DOCS_DIRECTORY "${CMAKE_SOURCE_DIR}/docs")
 set(RELEASE_LICENSES_DIRECTORY "${CMAKE_SOURCE_DIR}/data/licenses")
 set(RELEASE_UNDERLAY_DIRECTORY "${CMAKE_SOURCE_DIR}/data/underlay")
+set(RELEASE_OVERLAY_DIRECTORY "${CMAKE_SOURCE_DIR}/data/overlay")
 include(cmake/release_crafter.cmake)

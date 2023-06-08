@@ -53,12 +53,7 @@ static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, Build
 	dest.set_src(ref);
 	
 	AssetFile& build_file = dest.bank().asset_file("build.asset");
-	BuildAsset& build = build_file.root().child<BuildAsset>(game_to_string(config.game()).c_str());
-	CollectionAsset& moby_classes = build.child<CollectionAsset>("moby_classes");
 	for(auto& [class_id, cpp] : pvar_types) {
-		std::string class_path = generate_asset_path<MobyClassAsset>("moby_classes", "moby", class_id, moby_classes);
-		MobyClassAsset& class_asset = moby_classes.foreign_child<MobyClassAsset>(class_path, true, class_id);
-		class_asset.child<CppTypeAsset>("pvar_type_fallback").set_name(stringf("update%d", class_id));
 		std::string header_path = stringf("src/game_%s/update/moby%d.h", game_to_string(config.game()).c_str(), class_id);
 		build_file.write_text_file(fs::path(header_path), cpp.c_str());
 	}

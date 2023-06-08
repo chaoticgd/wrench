@@ -9,7 +9,7 @@
 //	ROLL_JACKPOT=5
 //};
 
-struct update2716_SlotMachine {
+struct update2716 {
 	char field0_0x0[32];
 	float unk20; /* 3.0 */
 	int unk24; /* 3 */

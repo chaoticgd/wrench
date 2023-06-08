@@ -336,6 +336,7 @@ public:
 	Asset* root();
 	
 	GameInfo game_info;
+	s32 index;
 	
 protected:
 	AssetBank(AssetForest& forest, bool is_writeable);
@@ -365,7 +366,7 @@ private:
 	virtual void write_text_file(const fs::path& path, const char* contents) = 0;
 	virtual bool file_exists(const fs::path& path) const = 0;
 	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
-	virtual std::vector<fs::path> enumerate_source_files(Game game) const = 0;
+	virtual void enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const = 0;
 	virtual s32 check_lock() const;
 	virtual void lock();
 	
@@ -394,6 +395,7 @@ public:
 	template <typename Bank, typename... ConstructorArgs>
 	AssetBank& mount(ConstructorArgs... args) {
 		AssetBank* bank = _banks.emplace_back(std::make_unique<Bank>(*this, args...)).get();
+		bank->index = (s32) (_banks.size() - 1);
 		if(bank->is_writeable()) {
 			if(s32 pid = bank->check_lock()) {
 				fprintf(stderr, "error: Another process (with PID %d) has locked this asset bank. This implies the process is still alive or has previously crashed. To bypass this error, delete the lock file in the asset bank directory.\n", pid);
@@ -417,8 +419,6 @@ public:
 	const std::map<std::string, CppType>& types() const;
 	
 private:
-	std::map<fs::path, AssetBank*> enumerate_source_files(Game game) const;
-	
 	std::vector<std::unique_ptr<AssetBank>> _banks;
 	std::map<std::string, CppType> _types;
 };
@@ -435,7 +435,7 @@ private:
 	void write_text_file(const fs::path& path, const char* contents) override;
 	bool file_exists(const fs::path& path) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
-	std::vector<fs::path> enumerate_source_files(Game game) const override;
+	void enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const override;
 	s32 check_lock() const override;
 	void lock() override;
 	public:
@@ -453,7 +453,7 @@ private:
 	void write_text_file(const fs::path& path, const char* contents) override;
 	bool file_exists(const fs::path& path) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
-	std::vector<fs::path> enumerate_source_files(Game game) const override;
+	void enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const override;
 	s32 check_lock() const override;
 	void lock() override;
 	

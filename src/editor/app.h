@@ -54,7 +54,9 @@ public:
 	std::string mod_path;
 	
 	AssetForest asset_forest;
+	AssetBank* underlay_bank = nullptr;
 	AssetBank* game_bank = nullptr;
+	AssetBank* overlay_bank = nullptr;
 	AssetBank* mod_bank = nullptr;
 	Game game = Game::UNKNOWN;
 	

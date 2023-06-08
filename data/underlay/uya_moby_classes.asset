@@ -1,12 +1,3 @@
 MobyClass uya.moby_classes.0     { category: "Hero"         name: "Ratchet" }
 MobyClass uya.moby_classes.10    { category: "Hero"         name: "Clank" }
-
-MobyClass uya.moby_classes.2871 {
-	category: "Water"
-	name: "Ocean"
-	
-	CppType pvar_type {
-		name: "update2871_Ocean"
-		strongly_deleted: false
-	}
-}
+MobyClass uya.moby_classes.2871  { category: "Water"        name: "Ocean" }

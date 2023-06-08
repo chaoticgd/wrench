@@ -25,6 +25,7 @@
 enum class AssetBankType {
 	UNDERLAY,
 	GAME,
+	OVERLAY,
 	MOD,
 	TEST
 };

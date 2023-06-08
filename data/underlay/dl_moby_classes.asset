@@ -1,2 +1,4 @@
 MobyClass dl.moby_classes.0     { category: "Hero"          name: "Ratchet" }
 MobyClass dl.moby_classes.10    { category: "Hero"          name: "Clank" }
+
+MobyClass dl.moby_classes.8248  { category: "Vehicles"      name: "Landstalker" }

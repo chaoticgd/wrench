@@ -414,16 +414,6 @@ AssetType ElfFile {
 	}
 }
 
-AssetType CppType {
-	desc: "A c++ type definition defined in a header file. Used for pvars. Asset banks will be scanned for a valid type, see [C++ Parser](cpp_parser.md)."
-	
-	StringAttribute name {
-		desc: "The name of the type in the C++ header file."
-		required: true
-		games: [1 2 3 4]
-	}
-}
-
 // *****************************************************************************
 
 Category globals {
@@ -1464,20 +1454,6 @@ AssetType MobyClass {
 	Child editor_mesh {
 		desc: "The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies."
 		allowed_types: ["Mesh"]
-		required: false
-		games: [1 2 3 4]
-	}
-	
-	Child pvar_type {
-		desc: "The C++ type definition that specifies the layout of the pvar data for moby instances of this class."
-		allowed_types: ["CppType"]
-		required: false
-		games: [1 2 3 4]
-	}
-	
-	Child pvar_type_fallback {
-		desc: "The fallback C++ type definition that specifies the layout of the pvar data for moby instances of this class. This is usually automatically generated while unpacking a gameplay file, and is only used if the regular pvar_type child isn't present."
-		allowed_types: ["CppType"]
 		required: false
 		games: [1 2 3 4]
 	}

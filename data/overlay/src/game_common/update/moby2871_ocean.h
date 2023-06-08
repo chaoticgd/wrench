@@ -1,6 +1,6 @@
 #pragma wrench parser on
 
-struct update2871_Ocean {
+struct update2871 {
 	/* 0x00 */ int overlaySpriteId;
 	/* 0x04 */ int underlaySpriteId;
 	/* 0x08 */ float waveSpeed;

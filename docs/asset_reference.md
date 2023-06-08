@@ -18,7 +18,6 @@ This file was generated from asset_schema.wtf and is for version 21 of the asset
 	- [FlatWad](#flatwad)
 	- [Subtitle](#subtitle)
 	- [ElfFile](#elffile)
-	- [CppType](#cpptype)
 - [Globals](#globals)
 	- [GlobalWad](#globalwad)
 	- [ArmorWad](#armorwad)
@@ -388,20 +387,6 @@ No children.
 | Syntax | Example | Description |
 | - | - | - |
 | `ratchetexecutable` | `ratchetexecutable` | Convert the ELF file to and from a packed Ratchet executable while packing/unpacking. |
-
-### CppType
-
-A c++ type definition defined in a header file. Used for pvars. Asset banks will be scanned for a valid type, see [C++ Parser](cpp_parser.md).
-
-*Attributes*
-
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
-| name | The name of the type in the C++ header file. | String | Yes | RAC/GC/UYA/DL |
-
-*Children*
-
-No children.
 
 ## Globals
 
@@ -969,8 +954,6 @@ No attributes.
 | core | *Not yet documented.* | MobyClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
 | materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RAC/GC/UYA/DL |
 | editor_mesh | The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies. | Mesh | No | RAC/GC/UYA/DL |
-| pvar_type | The C++ type definition that specifies the layout of the pvar data for moby instances of this class. | CppType | No | RAC/GC/UYA/DL |
-| pvar_type_fallback | The fallback C++ type definition that specifies the layout of the pvar data for moby instances of this class. This is usually automatically generated while unpacking a gameplay file, and is only used if the regular pvar_type child isn't present. | CppType | No | RAC/GC/UYA/DL |
 
 
 *Hints*

@@ -104,18 +104,9 @@ void Level::read(LevelAsset& asset, Game g) {
 				ec.materials = upload_materials(scene.materials, textures);
 			}
 		}
-		if(moby.has_pvar_type() || moby.has_pvar_type_fallback()) {
-			CppTypeAsset* pvar_type;
-			if(moby.has_pvar_type()) {
-				pvar_type = &moby.get_pvar_type();
-			} else {
-				pvar_type = &moby.get_pvar_type_fallback();
-			}
-			for(const auto& [name, type] : types) {
-				if(name == pvar_type->name()) {
-					ec.pvar_type = &type;
-				}
-			}
+		auto pvar_type = types.find(stringf("update%d", moby.id()));
+		if(pvar_type != types.end()) {
+			ec.pvar_type = &pvar_type->second;
 		}
 	});
 	

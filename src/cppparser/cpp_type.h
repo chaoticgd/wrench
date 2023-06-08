@@ -108,6 +108,7 @@ struct CppType {
 	s32 offset = -1;
 	s32 size = -1;
 	s32 alignment = -1;
+	s32 precedence = -1; // Used decide if a type should be overwritten by a new type.
 	mutable bool expanded = false; // Used by the inspector.
 	CppTypeDescriptor descriptor;
 	union {
