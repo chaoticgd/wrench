@@ -42,14 +42,14 @@ packed_struct(GlobalPvarPointer,
 // Represents a packed gameplay file.
 struct Gameplay {
 	Opt<LevelSettings> level_settings;
-	Opt<std::vector<HelpMessage>> us_english_help_messages;
-	Opt<std::vector<HelpMessage>> uk_english_help_messages;
-	Opt<std::vector<HelpMessage>> french_help_messages;
-	Opt<std::vector<HelpMessage>> german_help_messages;
-	Opt<std::vector<HelpMessage>> spanish_help_messages;
-	Opt<std::vector<HelpMessage>> italian_help_messages;
-	Opt<std::vector<HelpMessage>> japanese_help_messages;
-	Opt<std::vector<HelpMessage>> korean_help_messages;
+	Opt<std::vector<u8>> us_english_help_messages;
+	Opt<std::vector<u8>> uk_english_help_messages;
+	Opt<std::vector<u8>> french_help_messages;
+	Opt<std::vector<u8>> german_help_messages;
+	Opt<std::vector<u8>> spanish_help_messages;
+	Opt<std::vector<u8>> italian_help_messages;
+	Opt<std::vector<u8>> japanese_help_messages;
+	Opt<std::vector<u8>> korean_help_messages;
 	
 	Opt<std::vector<MobyInstance>> moby_instances;
 	Opt<s32> spawnable_moby_count;

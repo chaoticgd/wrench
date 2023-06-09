@@ -21,6 +21,7 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/level/level_core.h>
+#include <wrenchbuild/level/instances_asset.h>
 
 packed_struct(RacLevelDataHeader,
 	/* 0x00 */ ByteRange overlay;
@@ -51,7 +52,7 @@ packed_struct(DlLevelDataHeader,
 	/* 0x28 */ ByteRange hud_banks[5];
 	/* 0x50 */ ByteRange core_data;
 	/* 0x58 */ ByteRange art_instances;
-	/* 0x60 */ ByteRange gameplay;
+	/* 0x60 */ ByteRange gameplay_core;
 	/* 0x68 */ ByteRange global_nav_data;
 )
 
@@ -136,8 +137,13 @@ void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig
 	unpack_asset(dest.overlay<ElfFileAsset>(), src, header.overlay, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
-	unpack_compressed_asset(dest.art_instances<InstancesAsset>(), src, header.art_instances, config, FMT_INSTANCES_ART);
-	unpack_compressed_asset(dest.gameplay<InstancesAsset>(), src, header.gameplay, config, FMT_INSTANCES_GAMEPLAY);
+	
+	std::vector<u8> gameplay_compressed = src.read_multiple<u8>(header.gameplay_core.offset, header.gameplay_core.size);
+	std::vector<u8> art_instances_compressed = src.read_multiple<u8>(header.art_instances.offset, header.art_instances.size);
+	std::vector<u8> gameplay, art_instances;
+	verify(decompress_wad(gameplay, gameplay_compressed), "Failed to decompress gameplay core.");
+	verify(decompress_wad(art_instances, art_instances_compressed), "Failed to decompress art instances.");
+	unpack_instances(dest.gameplay<InstancesAsset>(), &dest, gameplay, &art_instances, config, FMT_INSTANCES_GAMEPLAY);
 	unpack_compressed_asset(dest.global_nav_data(), src, header.global_nav_data, config);
 }
 
@@ -165,7 +171,7 @@ void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& c
 	
 	MemoryOutputStream gameplay_dest(compressed_gameplay);
 	pack_compressed_asset<ByteRange>(gameplay_dest, src.get_gameplay(), config, 0x40, "gameplay");
-	header.gameplay = write_vector_of_bytes(dest, compressed_gameplay);
+	header.gameplay_core = write_vector_of_bytes(dest, compressed_gameplay);
 	
 	header.global_nav_data = pack_compressed_asset<ByteRange>(dest, src.get_global_nav_data(), config, 0x40, "globalnav");
 	

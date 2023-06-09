@@ -22,6 +22,8 @@
 #include <instancemgr/gameplay.h>
 #include <assetmgr/asset_types.h>
 
+void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint);
 Gameplay load_instances(const Asset& src, const BuildConfig& config, const char* hint);
+
 
 #endif

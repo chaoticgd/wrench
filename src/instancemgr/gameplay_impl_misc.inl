@@ -292,6 +292,26 @@ struct HelpMessageBlock {
 	}
 };
 
+template <bool is_korean>
+struct BinHelpMessageBlock {
+	static void read(std::vector<u8>& dest, Buffer src, Game game) {
+		auto& header = src.read<HelpMessageHeader>(0, "string block header");
+		
+		s32 size;
+		if(game == Game::UYA || game == Game::DL) {
+			size = header.size + sizeof(HelpMessageHeader);
+		} else {
+			size = header.size;
+		}
+		
+		dest = src.read_multiple<u8>(0, size, "help messages").copy();
+	}
+	
+	static void write(OutBuffer dest, const std::vector<u8>& src, Game game) {
+		dest.write_multiple(src);
+	}
+};
+
 static std::vector<std::vector<glm::vec4>> read_splines(Buffer src, s32 count, s32 data_offset) {
 	std::vector<std::vector<glm::vec4>> splines;
 	auto relative_offsets = src.read_multiple<s32>(0, count, "spline offsets");

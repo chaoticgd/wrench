@@ -821,6 +821,14 @@ No attributes.
 | sound_bank | The main 989snd sound bank for the level. | Binary | Yes | RAC/GC/UYA/DL |
 | gameplay | The gameplay file for the level. | Instances, Binary | Yes | RAC/GC/UYA/DL |
 | art_instances | Similar thing as with the gameplay file. | Instances, Binary | Yes | DL |
+| us_english_help_messages | *Not yet documented.* | Binary | No | RAC/GC/UYA/DL |
+| uk_english_help_messages | *Not yet documented.* | Binary | No | RAC/GC/UYA/DL |
+| french_help_messages | *Not yet documented.* | Binary | No | RAC/GC/UYA/DL |
+| german_help_messages | *Not yet documented.* | Binary | No | RAC/GC/UYA/DL |
+| spanish_help_messages | *Not yet documented.* | Binary | No | RAC/GC/UYA/DL |
+| italian_help_messages | *Not yet documented.* | Binary | No | RAC/GC/UYA/DL |
+| japanese_help_messages | *Not yet documented.* | Binary | No | RAC/GC/UYA/DL |
+| korean_help_messages | *Not yet documented.* | Binary | No | RAC/GC/UYA/DL |
 | chunks | The chunks (see Chunk asset). | Collection | Yes | RAC/GC/UYA/DL |
 | missions | *Not yet documented.* | Collection | *Not yet documented.* | DL |
 | moby8355_pvars | *Not yet documented.* | Binary | Yes | DL |

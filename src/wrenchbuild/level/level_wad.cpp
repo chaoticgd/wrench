@@ -109,7 +109,9 @@ static void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& h
 	
 	SubInputStream data(src, header.data.bytes());
 	unpack_rac_level_data_wad(dest, data, config);
-	unpack_compressed_asset(dest.gameplay<InstancesAsset>(), src, header.gameplay_ntsc, config, FMT_INSTANCES_GAMEPLAY);
+	ByteRange64 gameplay_range = header.gameplay_ntsc.bytes();
+	std::vector<u8> gameplay = src.read_multiple<u8>(gameplay_range.offset, gameplay_range.size);
+	unpack_instances(dest.gameplay<InstancesAsset>(), &dest, gameplay, nullptr, config, FMT_INSTANCES_GAMEPLAY);
 }
 
 static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
@@ -133,7 +135,10 @@ static void unpack_gc_68_level_wad(LevelWadAsset& dest, const GcLevelWadHeader68
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
 	SubInputStream data(src, header.data.bytes());
 	unpack_gc_uya_level_data_wad(dest, data, config);
-	unpack_compressed_asset(dest.gameplay<InstancesAsset>(), src, header.gameplay_ntsc, config, FMT_INSTANCES_GAMEPLAY);
+	
+	ByteRange64 gameplay_range = header.gameplay_ntsc.bytes();
+	std::vector<u8> gameplay = src.read_multiple<u8>(gameplay_range.offset, gameplay_range.size);
+	unpack_instances(dest.gameplay<InstancesAsset>(), &dest, gameplay, nullptr, config, FMT_INSTANCES_GAMEPLAY);
 	
 	ChunkWadHeader chunks;
 	memcpy(&chunks.chunks, header.chunks, sizeof(chunks.chunks));
@@ -154,7 +159,11 @@ static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHead
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
 	SubInputStream data(src, header.data.bytes());
 	unpack_gc_uya_level_data_wad(dest, data, config);
-	unpack_compressed_asset(dest.gameplay<InstancesAsset>(), src, header.gameplay, config, FMT_INSTANCES_GAMEPLAY);
+	
+	ByteRange64 gameplay_range = header.gameplay.bytes();
+	std::vector<u8> gameplay = src.read_multiple<u8>(gameplay_range.offset, gameplay_range.size);
+	unpack_instances(dest.gameplay<InstancesAsset>(), &dest, gameplay, nullptr, config, FMT_INSTANCES_GAMEPLAY);
+	
 	unpack_level_chunks(dest.chunks(), src, header.chunks, config);
 }
 

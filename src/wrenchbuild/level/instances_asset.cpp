@@ -23,6 +23,7 @@
 #include <wrenchbuild/tests.h>
 
 static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config, const char* hint);
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint);
 
@@ -40,22 +41,76 @@ on_load(Instances, []() {
 
 static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
-	
+	unpack_instances(dest, nullptr, buffer, nullptr, config, hint);
+}
+
+void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint) {
 	Gameplay gameplay;
-	read_gameplay(gameplay, buffer, config.game(), *get_gameplay_block_descriptions(config.game(), hint)); 
+	read_gameplay(gameplay, main, config.game(), *get_gameplay_block_descriptions(config.game(), hint));
 	
 	Instances instances;
+	HelpMessages help;
 	std::map<s32, std::string> pvar_types;
-	move_gameplay_to_instances(instances, nullptr, nullptr, pvar_types, gameplay, config.game());
+	move_gameplay_to_instances(instances, &help, nullptr, pvar_types, gameplay, config.game());
+	
+	if(art) {
+		Gameplay art_instances;
+		read_gameplay(art_instances, *art, config.game(), DL_ART_INSTANCE_BLOCKS);
+		instances.dir_lights = std::move(opt_iterator(art_instances.dir_lights));
+		instances.tie_instances = std::move(opt_iterator(art_instances.tie_instances));
+		instances.tie_groups = std::move(opt_iterator(art_instances.tie_groups));
+		instances.shrub_instances = std::move(opt_iterator(art_instances.shrub_instances));
+		instances.shrub_groups = std::move(opt_iterator(art_instances.shrub_groups));
+	}
 	
 	std::string text = write_instances(instances);
 	FileReference ref = dest.file().write_text_file(stringf("%s.instances", hint), text.c_str());
 	dest.set_src(ref);
 	
+	if(help_dest) {
+		unpack_help_messages(*help_dest, help, config, hint);
+	}
+	
+	// Write types.
 	AssetFile& build_file = dest.bank().asset_file("build.asset");
 	for(auto& [class_id, cpp] : pvar_types) {
 		std::string header_path = stringf("src/game_%s/update/moby%d.h", game_to_string(config.game()).c_str(), class_id);
 		build_file.write_text_file(fs::path(header_path), cpp.c_str());
+	}
+}
+
+static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config, const char* hint) {
+	if(src.us_english.has_value()) {
+		MemoryInputStream us_english_stream(*src.us_english);
+		unpack_asset_impl(dest.us_english_help_messages(), us_english_stream, nullptr, config, hint);
+	}
+	if(src.uk_english.has_value()) {
+		MemoryInputStream uk_english_stream(*src.uk_english);
+		unpack_asset_impl(dest.uk_english_help_messages(), uk_english_stream, nullptr, config, hint);
+	}
+	if(src.french.has_value()) {
+		MemoryInputStream french_stream(*src.french);
+		unpack_asset_impl(dest.french_help_messages(), french_stream, nullptr, config, hint);
+	}
+	if(src.german.has_value()) {
+		MemoryInputStream german_stream(*src.german);
+		unpack_asset_impl(dest.german_help_messages(), german_stream, nullptr, config, hint);
+	}
+	if(src.spanish.has_value()) {
+		MemoryInputStream spanish_stream(*src.spanish);
+		unpack_asset_impl(dest.spanish_help_messages(), spanish_stream, nullptr, config, hint);
+	}
+	if(src.italian.has_value()) {
+		MemoryInputStream italian_stream(*src.italian);
+		unpack_asset_impl(dest.italian_help_messages(), italian_stream, nullptr, config, hint);
+	}
+	if(src.japanese.has_value()) {
+		MemoryInputStream japanese_stream(*src.japanese);
+		unpack_asset_impl(dest.japanese_help_messages(), japanese_stream, nullptr, config, hint);
+	}
+	if(src.korean.has_value()) {
+		MemoryInputStream korean_stream(*src.korean);
+		unpack_asset_impl(dest.korean_help_messages(), korean_stream, nullptr, config, hint);
 	}
 }
 

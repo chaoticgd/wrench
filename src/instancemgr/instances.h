@@ -81,14 +81,14 @@ struct HelpMessage {
 };
 
 struct HelpMessages {
-	Opt<std::vector<HelpMessage>> us_english;
-	Opt<std::vector<HelpMessage>> uk_english;
-	Opt<std::vector<HelpMessage>> french;
-	Opt<std::vector<HelpMessage>> german;
-	Opt<std::vector<HelpMessage>> spanish;
-	Opt<std::vector<HelpMessage>> italian;
-	Opt<std::vector<HelpMessage>> japanese;
-	Opt<std::vector<HelpMessage>> korean;
+	Opt<std::vector<u8>> us_english;
+	Opt<std::vector<u8>> uk_english;
+	Opt<std::vector<u8>> french;
+	Opt<std::vector<u8>> german;
+	Opt<std::vector<u8>> spanish;
+	Opt<std::vector<u8>> italian;
+	Opt<std::vector<u8>> japanese;
+	Opt<std::vector<u8>> korean;
 };
 
 Instances read_instances(std::string& src);
