@@ -138,11 +138,8 @@ void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 	
-	std::vector<u8> gameplay_compressed = src.read_multiple<u8>(header.gameplay_core.offset, header.gameplay_core.size);
-	std::vector<u8> art_instances_compressed = src.read_multiple<u8>(header.art_instances.offset, header.art_instances.size);
-	std::vector<u8> gameplay, art_instances;
-	verify(decompress_wad(gameplay, gameplay_compressed), "Failed to decompress gameplay core.");
-	verify(decompress_wad(art_instances, art_instances_compressed), "Failed to decompress art instances.");
+	std::vector<u8> gameplay = src.read_multiple<u8>(header.gameplay_core.offset, header.gameplay_core.size);
+	std::vector<u8> art_instances = src.read_multiple<u8>(header.art_instances.offset, header.art_instances.size);
 	unpack_instances(dest.gameplay<InstancesAsset>(), &dest, gameplay, &art_instances, config, FMT_INSTANCES_GAMEPLAY);
 	unpack_compressed_asset(dest.global_nav_data(), src, header.global_nav_data, config);
 }

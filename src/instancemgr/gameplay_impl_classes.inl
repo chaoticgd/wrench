@@ -347,11 +347,9 @@ struct PvarTableBlock {
 	}
 	
 	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
-		if(src.pvar_table.has_value()) {
-			dest.write_multiple(*src.pvar_table);
-			return true;
-		}
-		return false;
+		verify_fatal(src.pvar_table.has_value());
+		dest.write_multiple(*src.pvar_table);
+		return true;
 	}
 };
 
@@ -366,50 +364,26 @@ struct PvarDataBlock {
 	}
 	
 	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
-		if(src.pvar_data.has_value()) {
-			dest.write_multiple(*src.pvar_data);
-			return true;
-		}
-		return false;
-	}
-};
-
-struct PvarScratchpadBlock {
-	static void read(Gameplay& dest, Buffer src, Game game) {
-		dest.pvar_scratchpad.emplace();
-		for(s64 offset = 0;; offset += sizeof(PvarPointerEntry)) {
-			auto& entry = src.read<PvarPointerEntry>(offset, "pvar scratchpad block");
-			if(entry.pvar_index < 0) {
-				break;
-			}
-			
-			dest.pvar_scratchpad->emplace_back(entry);
-		}
-	}
-	
-	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
-		verify_fatal(src.pvar_scratchpad.has_value());
-		dest.write_multiple(*src.pvar_scratchpad);
+		verify_fatal(src.pvar_data.has_value());
+		dest.write_multiple(*src.pvar_data);
 		return true;
 	}
 };
 
-struct PvarPointerRewireBlock {
-	static void read(Gameplay& dest, Buffer src, Game game) {
-		dest.pvar_relatives.emplace();
-		for(s64 offset = 0;; offset += sizeof(PvarPointerEntry)) {
-			auto& entry = src.read<PvarPointerEntry>(offset, "pvar pointer rewire block");
+struct PvarFixupBlock {
+	static void read(std::vector<PvarFixupEntry>& dest, Buffer src, Game game) {
+		for(s64 offset = 0;; offset += sizeof(PvarFixupEntry)) {
+			auto& entry = src.read<PvarFixupEntry>(offset, "pvar scratchpad block");
 			if(entry.pvar_index < 0) {
 				break;
 			}
 			
-			dest.pvar_relatives->emplace_back(entry);
+			dest.emplace_back(entry);
 		}
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
-		verify_fatal(src.pvar_relatives.has_value());
-		dest.write_multiple(*src.pvar_relatives);
+	static bool write(OutBuffer dest, const std::vector<PvarFixupEntry>& src, Game game) {
+		dest.write_multiple(src);
 		return true;
 	}
 };

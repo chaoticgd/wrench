@@ -123,8 +123,8 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x44, {RacMobyBlock::read, RacMobyBlock::write}, "moby instances"},
 	{0x54, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x58, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
-	{0x50, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
-	{0x5c, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
+	{0x50, bf<PvarFixupBlock>(&Gameplay::pvar_moby_links), "moby link fixup table"},
+	{0x5c, bf<PvarFixupBlock>(&Gameplay::pvar_sub_vars), "sub var fixup table"},
 	{0x48, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
 	{0x4c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
@@ -163,8 +163,8 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x4c, {GcUyaMobyBlock::read, GcUyaMobyBlock::write}, "moby instances"},
 	{0x5c, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x60, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
-	{0x58, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
-	{0x64, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
+	{0x58, bf<PvarFixupBlock>(&Gameplay::pvar_moby_links), "moby link fixup table"},
+	{0x64, bf<PvarFixupBlock>(&Gameplay::pvar_sub_vars), "sub var fixup table"},
 	{0x50, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
 	{0x54, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
@@ -203,8 +203,8 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x30, {DlMobyBlock::read, DlMobyBlock::write}, "moby instances"},
 	{0x40, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x44, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
-	{0x3c, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
-	{0x48, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
+	{0x3c, bf<PvarFixupBlock>(&Gameplay::pvar_moby_links), "moby link fixup table"},
+	{0x48, bf<PvarFixupBlock>(&Gameplay::pvar_sub_vars), "sub var fixup table"},
 	{0x34, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
 	{0x38, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x5c, bf<PathBlock>(&Gameplay::paths), "paths"},
@@ -243,13 +243,13 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS 
 	{0x04, {DlMobyBlock::read, DlMobyBlock::write}, "moby instances"},
 	{0x14, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x18, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
-	{0x10, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
-	{0x1c, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
+	{0x10, bf<PvarFixupBlock>(&Gameplay::pvar_moby_links), "moby link fixup table"},
+	{0x1c, bf<PvarFixupBlock>(&Gameplay::pvar_sub_vars), "sub var fixup table"},
 	{0x08, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
 	{0x0c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 };
 
-void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::map<s32, std::string>& pvar_types, Gameplay& src, Game game) {
+void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::vector<CppType>& types_dest, Gameplay& src, Game game) {
 	if(src.level_settings.has_value()) {
 		dest.level_settings = std::move(*src.level_settings);
 	}
@@ -295,7 +295,7 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 		*occl_dest = *src.occlusion;
 	}
 	
-	recover_pvars(dest, pvar_types, src, game);
+	recover_pvars(dest, types_dest, src, game);
 }
 
 void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src) {

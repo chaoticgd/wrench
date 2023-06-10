@@ -243,9 +243,11 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 			decompress_wad(instances, compressed_instances);
 			verify(instances.size() >= 4, "Bad mission instances file.");
 			if(*(s32*) instances.data() != 0x90) {
-				unpack_compressed_asset(mission.instances<InstancesAsset>(), file, header.instances, config, FMT_INSTANCES_MISSION);
+				MemoryInputStream compressed_instances_stream(compressed_instances);
+				unpack_asset_impl(mission.instances<InstancesAsset>(), compressed_instances_stream, nullptr, config, FMT_INSTANCES_MISSION);
 			} else {
-				unpack_compressed_asset(mission.instances<BinaryAsset>(), file, header.instances, config, FMT_INSTANCES_MISSION);
+				MemoryInputStream instances_stream(instances);
+				unpack_asset_impl(mission.instances<BinaryAsset>(), instances_stream, nullptr, config, FMT_INSTANCES_MISSION);
 			}
 			unpack_compressed_asset(mission.classes<CollectionAsset>(), file, header.classes, config, FMT_COLLECTION_MISSION_CLASSES);
 			unpack_asset(mission.sound_bank(), file, ranges.sound_banks[i], config);

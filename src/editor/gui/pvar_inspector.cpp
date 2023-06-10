@@ -69,6 +69,8 @@ void pvar_inspector(Level& lvl) {
 			
 			ImGui::EndTable();
 		}
+		ImGui::PopStyleVar();
+		ImGui::PopStyleVar();
 		ImGui::EndChild();
 	}
 	

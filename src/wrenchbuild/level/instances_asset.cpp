@@ -27,6 +27,7 @@ static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, B
 static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config);
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint);
+static std::string pvar_type_to_string(const CppType& type);
 
 on_load(Instances, []() {
 	InstancesAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<InstancesAsset>(unpack_instances_asset);
@@ -54,7 +55,7 @@ void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std:
 	
 	Instances instances;
 	HelpMessages help;
-	std::map<s32, std::string> pvar_types;
+	std::vector<CppType> pvar_types;
 	move_gameplay_to_instances(instances, &help, nullptr, pvar_types, gameplay, config.game());
 	
 	if(art) {
@@ -80,8 +81,14 @@ void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std:
 	
 	// Write types.
 	AssetFile& build_file = dest.bank().asset_file("build.asset");
-	for(auto& [class_id, cpp] : pvar_types) {
-		std::string header_path = stringf("src/game_%s/update/moby%d.h", game_to_string(config.game()).c_str(), class_id);
+	for(const CppType& type : pvar_types) {
+		std::string header_path;
+		if(type.name.starts_with("update")) {
+			header_path = stringf("src/game_%s/update/moby%s.h", game_to_string(config.game()).c_str(), &type.name[6]);
+		} else {
+			header_path = stringf("src/game_%s/update/%s.h", game_to_string(config.game()).c_str(), type.name.c_str());
+		}
+		std::string cpp = pvar_type_to_string(type);
 		build_file.write_text_file(fs::path(header_path), cpp.c_str());
 	}
 }
@@ -189,7 +196,7 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	Instances instances_in;
 	HelpMessages help_messages;
 	OcclusionMappings occlusion;
-	std::map<s32, std::string> pvar_types;
+	std::vector<CppType> pvar_types;
 	move_gameplay_to_instances(instances_in, &help_messages, &occlusion, pvar_types, gameplay_in, config.game());
 	
 	// Write out instances file and read it back.
@@ -202,8 +209,8 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	Gameplay gameplay_out;
 	move_instances_to_gameplay(gameplay_out, instances_out, &help_messages, &occlusion);
 	gameplay_out.pvar_table = gameplay_in.pvar_table;
-	gameplay_out.pvar_scratchpad = gameplay_in.pvar_scratchpad;
-	gameplay_out.pvar_relatives = gameplay_in.pvar_relatives;
+	gameplay_out.pvar_moby_links = gameplay_in.pvar_moby_links;
+	gameplay_out.pvar_sub_vars = gameplay_in.pvar_sub_vars;
 	gameplay_out.global_pvar = gameplay_in.global_pvar;
 	gameplay_out.global_pvar_table = gameplay_in.global_pvar_table;
 	std::vector<u8> dest = write_gameplay(gameplay_out, config.game(), *blocks);
@@ -240,4 +247,13 @@ static const std::vector<GameplayBlockDescription>* get_gameplay_block_descripti
 		default: verify_fatal(0);
 	}
 	return blocks;
+}
+
+static std::string pvar_type_to_string(const CppType& type) {
+	std::vector<u8> cpp;
+	OutBuffer buffer(cpp);
+	buffer.writelf("#pragma wrench parser on");
+	buffer.writesf("\n");
+	dump_cpp_type(buffer, type);
+	return std::string(cpp.begin(), cpp.end());
 }

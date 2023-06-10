@@ -21,6 +21,7 @@
 
 #include <functional>
 
+#include <instancemgr/pvar.h>
 #include <instancemgr/instances.h>
 
 packed_struct(PvarTableEntry,
@@ -28,9 +29,9 @@ packed_struct(PvarTableEntry,
 	s32 size;
 )
 
-packed_struct(PvarPointerEntry,
+packed_struct(PvarFixupEntry,
 	/* 0x0 */ s32 pvar_index;
-	/* 0x4 */ u32 pointer_offset;
+	/* 0x4 */ u32 offset;
 )
 
 packed_struct(GlobalPvarPointer,
@@ -81,8 +82,8 @@ struct Gameplay {
 	
 	Opt<std::vector<PvarTableEntry>> pvar_table;
 	Opt<std::vector<u8>> pvar_data;
-	Opt<std::vector<PvarPointerEntry>> pvar_scratchpad;
-	Opt<std::vector<PvarPointerEntry>> pvar_relatives;
+	Opt<std::vector<PvarFixupEntry>> pvar_moby_links;
+	Opt<std::vector<PvarFixupEntry>> pvar_sub_vars;
 	Opt<std::vector<GlobalPvarPointer>> global_pvar_table;
 };
 
@@ -112,7 +113,8 @@ void read_gameplay(Gameplay& gameplay, Buffer src, Game game, const std::vector<
 std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks);
 const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game);
 std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game);
-void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::map<s32, std::string>& pvar_types, Gameplay& src, Game game);
+
+void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::vector<CppType>& types_dest, Gameplay& src, Game game);
 void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src);
 
 #endif
