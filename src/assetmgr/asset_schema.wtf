@@ -1240,14 +1240,14 @@ AssetType LevelWad {
 		games: [4]
 	}
 	
-	Child us_english_help_messages { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
-	Child uk_english_help_messages { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
-	Child french_help_messages     { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
-	Child german_help_messages     { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
-	Child spanish_help_messages    { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
-	Child italian_help_messages    { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
-	Child japanese_help_messages   { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
-	Child korean_help_messages     { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
+	Child help_messages_us_english { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
+	Child help_messages_uk_english { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
+	Child help_messages_french     { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
+	Child help_messages_german     { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
+	Child help_messages_spanish    { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
+	Child help_messages_italian    { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
+	Child help_messages_japanese   { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
+	Child help_messages_korean     { allowed_types: ["Binary"] required: false games: [1 2 3 4] }
 	
 	Child chunks {
 		desc: "The chunks (see Chunk asset)."

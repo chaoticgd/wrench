@@ -23,7 +23,8 @@
 #include <wrenchbuild/tests.h>
 
 static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint);
-static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config, const char* hint);
+static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config);
+static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config);
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint);
 
@@ -45,8 +46,11 @@ static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, Build
 }
 
 void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint) {
+	std::vector<u8> main_decompressed;
+	verify(decompress_wad(main_decompressed, main), "Failed to decompress instances.");
+	
 	Gameplay gameplay;
-	read_gameplay(gameplay, main, config.game(), *get_gameplay_block_descriptions(config.game(), hint));
+	read_gameplay(gameplay, main_decompressed, config.game(), *get_gameplay_block_descriptions(config.game(), hint));
 	
 	Instances instances;
 	HelpMessages help;
@@ -54,8 +58,11 @@ void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std:
 	move_gameplay_to_instances(instances, &help, nullptr, pvar_types, gameplay, config.game());
 	
 	if(art) {
+		std::vector<u8> art_decompressed;
+		verify(decompress_wad(art_decompressed, *art), "Failed to decompress art instances.");
+		
 		Gameplay art_instances;
-		read_gameplay(art_instances, *art, config.game(), DL_ART_INSTANCE_BLOCKS);
+		read_gameplay(art_instances, art_decompressed, config.game(), DL_ART_INSTANCE_BLOCKS);
 		instances.dir_lights = std::move(opt_iterator(art_instances.dir_lights));
 		instances.tie_instances = std::move(opt_iterator(art_instances.tie_instances));
 		instances.tie_groups = std::move(opt_iterator(art_instances.tie_groups));
@@ -68,7 +75,7 @@ void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std:
 	dest.set_src(ref);
 	
 	if(help_dest) {
-		unpack_help_messages(*help_dest, help, config, hint);
+		unpack_help_messages(*help_dest, help, config);
 	}
 	
 	// Write types.
@@ -79,53 +86,96 @@ void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std:
 	}
 }
 
-static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config, const char* hint) {
+static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config) {
 	if(src.us_english.has_value()) {
 		MemoryInputStream us_english_stream(*src.us_english);
-		unpack_asset_impl(dest.us_english_help_messages(), us_english_stream, nullptr, config, hint);
+		unpack_asset_impl(dest.help_messages_us_english(), us_english_stream, nullptr, config);
 	}
 	if(src.uk_english.has_value()) {
 		MemoryInputStream uk_english_stream(*src.uk_english);
-		unpack_asset_impl(dest.uk_english_help_messages(), uk_english_stream, nullptr, config, hint);
+		unpack_asset_impl(dest.help_messages_uk_english(), uk_english_stream, nullptr, config);
 	}
 	if(src.french.has_value()) {
 		MemoryInputStream french_stream(*src.french);
-		unpack_asset_impl(dest.french_help_messages(), french_stream, nullptr, config, hint);
+		unpack_asset_impl(dest.help_messages_french(), french_stream, nullptr, config);
 	}
 	if(src.german.has_value()) {
 		MemoryInputStream german_stream(*src.german);
-		unpack_asset_impl(dest.german_help_messages(), german_stream, nullptr, config, hint);
+		unpack_asset_impl(dest.help_messages_german(), german_stream, nullptr, config);
 	}
 	if(src.spanish.has_value()) {
 		MemoryInputStream spanish_stream(*src.spanish);
-		unpack_asset_impl(dest.spanish_help_messages(), spanish_stream, nullptr, config, hint);
+		unpack_asset_impl(dest.help_messages_spanish(), spanish_stream, nullptr, config);
 	}
 	if(src.italian.has_value()) {
 		MemoryInputStream italian_stream(*src.italian);
-		unpack_asset_impl(dest.italian_help_messages(), italian_stream, nullptr, config, hint);
+		unpack_asset_impl(dest.help_messages_italian(), italian_stream, nullptr, config);
 	}
 	if(src.japanese.has_value()) {
 		MemoryInputStream japanese_stream(*src.japanese);
-		unpack_asset_impl(dest.japanese_help_messages(), japanese_stream, nullptr, config, hint);
+		unpack_asset_impl(dest.help_messages_japanese(), japanese_stream, nullptr, config);
 	}
 	if(src.korean.has_value()) {
 		MemoryInputStream korean_stream(*src.korean);
-		unpack_asset_impl(dest.korean_help_messages(), korean_stream, nullptr, config, hint);
+		unpack_asset_impl(dest.help_messages_korean(), korean_stream, nullptr, config);
 	}
 }
 
-Gameplay load_instances(const Asset& src, const BuildConfig& config, const char* hint) {
-	std::vector <u8> gameplay_buffer;
+Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_src, const BuildConfig& config, const char* hint) {
+	std::vector<u8> gameplay_buffer;
 	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
-		std::unique_ptr<InputStream> gameplay_stream = asset->file().open_binary_file_for_reading(asset->src());
-		gameplay_buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
+		std::string instances_wtf = asset->file().read_text_file(asset->src().path);
+		Instances instances = read_instances(instances_wtf);
+		Opt<HelpMessages> help;
+		if(help_src) {
+			pack_help_messages(help.emplace(), *help_src, config);
+		}
+		Gameplay gameplay;
+		move_instances_to_gameplay(gameplay, instances, &(*help), nullptr);
+		return gameplay;
 	} else if(const BinaryAsset* asset = src.maybe_as<BinaryAsset>()) {
 		std::unique_ptr<InputStream> gameplay_stream = asset->file().open_binary_file_for_reading(asset->src());
-		gameplay_buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
+		std::vector<u8> buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
+		Gameplay gameplay;
+		read_gameplay(gameplay, buffer, config.game(), *get_gameplay_block_descriptions(config.game(), hint));
+		return gameplay;
 	}
-	Gameplay gameplay;
-	read_gameplay(gameplay, gameplay_buffer, config.game(), *gameplay_block_descriptions_from_game(config.game()));
-	return gameplay;
+	verify_not_reached("Instances asset is of an invalid type.");
+}
+
+static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config) {
+	if(src.has_help_messages_us_english()) {
+		MemoryOutputStream stream(dest.us_english.emplace());
+		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_us_english(), config);
+	}
+	if(src.has_help_messages_uk_english()) {
+		MemoryOutputStream stream(dest.uk_english.emplace());
+		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_uk_english(), config);
+	}
+	if(src.has_help_messages_french()) {
+		MemoryOutputStream stream(dest.french.emplace());
+		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_french(), config);
+	}
+	if(src.has_help_messages_german()) {
+		MemoryOutputStream stream(dest.german.emplace());
+		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_german(), config);
+	}
+	if(src.has_help_messages_spanish()) {
+		MemoryOutputStream stream(dest.spanish.emplace());
+		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_spanish(), config);
+	}
+	if(src.has_help_messages_italian()) {
+		MemoryOutputStream stream(dest.italian.emplace());
+		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_italian(), config);
+	}
+	if(src.has_help_messages_japanese()) {
+		MemoryOutputStream stream(dest.japanese.emplace());
+		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_japanese(), config);
+	}
+	if(src.has_help_messages_korean()) {
+		MemoryOutputStream stream(dest.korean.emplace());
+		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_korean(), config);
+	}
 }
 
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {

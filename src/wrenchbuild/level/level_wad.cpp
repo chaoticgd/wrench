@@ -119,7 +119,8 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 	g_asset_packer_current_level_id = src.id();
 	
 	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
-	Gameplay gameplay = load_instances(src.get_gameplay(), config, FMT_INSTANCES_GAMEPLAY);
+	
+	Gameplay gameplay = load_gameplay(src.get_gameplay(), &src, config, FMT_INSTANCES_GAMEPLAY);
 	
 	header.data = pack_data_wad(dest, chunks, gameplay, src, config, pack_rac_level_data_wad);
 	header.gameplay_ntsc = write_gameplay_section(dest, gameplay, config);
@@ -161,6 +162,8 @@ static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHead
 	unpack_gc_uya_level_data_wad(dest, data, config);
 	
 	ByteRange64 gameplay_range = header.gameplay.bytes();
+	printf("%lx %lx %lx\n", src.size(), gameplay_range.offset ,gameplay_range.size);
+	fflush(stdout);
 	std::vector<u8> gameplay = src.read_multiple<u8>(gameplay_range.offset, gameplay_range.size);
 	unpack_instances(dest.gameplay<InstancesAsset>(), &dest, gameplay, nullptr, config, FMT_INSTANCES_GAMEPLAY);
 	
@@ -173,7 +176,7 @@ static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& heade
 	g_asset_packer_current_level_id = src.id();
 	
 	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
-	Gameplay gameplay = load_instances(src.get_gameplay(), config, FMT_INSTANCES_GAMEPLAY);
+	Gameplay gameplay = load_gameplay(src.get_gameplay(), &src, config, FMT_INSTANCES_GAMEPLAY);
 	
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
 	header.data = pack_data_wad(dest, chunks, gameplay, src, config, pack_gc_uya_level_data_wad);
@@ -200,7 +203,7 @@ static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, cons
 	g_asset_packer_current_level_id = src.id();
 	
 	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
-	Gameplay gameplay = load_instances(src.get_gameplay(), config, FMT_INSTANCES_GAMEPLAY);
+	Gameplay gameplay = load_gameplay(src.get_gameplay(), &src, config, FMT_INSTANCES_GAMEPLAY);
 	
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
 	std::vector<u8> compressed_art_instances, compressed_gameplay;
