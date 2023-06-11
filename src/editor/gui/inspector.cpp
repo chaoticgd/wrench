@@ -149,7 +149,6 @@ void inspector() {
 		{COM_NONE            , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_20))},
 		{COM_NONE            , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_24))},
 		{COM_NONE            , INST_MOBY      , "Unk 54   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_54))},
-		{COM_NONE            , INST_MOBY      , "Unk 60   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_60))},
 		{COM_NONE            , INST_MOBY      , "Unk 74   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_74))}
 	};
 	

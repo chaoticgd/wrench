@@ -72,7 +72,7 @@ packed_struct(RacMobyInstance,
 	/* 0x54 */ s32 unknown_54;
 	/* 0x58 */ s32 pvar_index;
 	/* 0x5c */ s32 occlusion; // 0 = precompute occlusion
-	/* 0x60 */ s32 unknown_60;
+	/* 0x60 */ s32 mode_bits;
 	/* 0x64 */ Rgb96 colour;
 	/* 0x70 */ s32 light;
 	/* 0x74 */ s32 unknown_74;
@@ -134,7 +134,7 @@ struct RacMobyBlock {
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		SWAP_PACKED(l.rac1_unknown_54, r.unknown_54);
 		SWAP_PACKED(l.occlusion, r.occlusion);
-		SWAP_PACKED(l.rac1_unknown_60, r.unknown_60);
+		SWAP_PACKED(l.mode_bits, r.mode_bits);
 		SWAP_COLOUR(l.colour(), r.colour);
 		SWAP_PACKED(l.light, r.light);
 		SWAP_PACKED(l.rac1_unknown_74, r.unknown_74);

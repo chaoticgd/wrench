@@ -128,7 +128,7 @@ static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, B
 	}
 }
 
-Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_src, const BuildConfig& config, const char* hint) {
+Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_src, const std::map<std::string, CppType>& types_src, const BuildConfig& config, const char* hint) {
 	std::vector<u8> gameplay_buffer;
 	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
 		std::string instances_wtf = asset->file().read_text_file(asset->src().path);
@@ -138,7 +138,7 @@ Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_src, const Bu
 			pack_help_messages(help.emplace(), *help_src, config);
 		}
 		Gameplay gameplay;
-		move_instances_to_gameplay(gameplay, instances, &(*help), nullptr);
+		move_instances_to_gameplay(gameplay, instances, &(*help), nullptr, types_src);
 		return gameplay;
 	} else if(const BinaryAsset* asset = src.maybe_as<BinaryAsset>()) {
 		std::unique_ptr<InputStream> gameplay_stream = asset->file().open_binary_file_for_reading(asset->src());
@@ -199,6 +199,12 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	std::vector<CppType> pvar_types;
 	move_gameplay_to_instances(instances_in, &help_messages, &occlusion, pvar_types, gameplay_in, config.game());
 	
+	// Build a map of the pvar types.
+	std::map<std::string, CppType> pvar_type_map;
+	for(CppType& pvar_type : pvar_types) {
+		pvar_type_map.emplace(pvar_type.name, std::move(pvar_type));
+	}
+	
 	// Write out instances file and read it back.
 	std::string instances_text = write_instances(instances_in);
 	write_file("/tmp/instances.txt", instances_text);
@@ -207,7 +213,7 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	
 	// Write out new gameplay file.
 	Gameplay gameplay_out;
-	move_instances_to_gameplay(gameplay_out, instances_out, &help_messages, &occlusion);
+	move_instances_to_gameplay(gameplay_out, instances_out, &help_messages, &occlusion, pvar_type_map);
 	gameplay_out.pvar_table = gameplay_in.pvar_table;
 	gameplay_out.pvar_moby_links = gameplay_in.pvar_moby_links;
 	gameplay_out.pvar_sub_vars = gameplay_in.pvar_sub_vars;

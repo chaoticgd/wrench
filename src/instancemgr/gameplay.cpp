@@ -298,7 +298,9 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 	recover_pvars(dest, types_dest, src, game);
 }
 
-void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src) {
+void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src, const std::map<std::string, CppType>& types_src) {
+	build_pvars(dest, src, types_src);
+	
 	dest.level_settings = std::move(src.level_settings);
 	
 	if(help_src) {
@@ -343,7 +345,4 @@ void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* he
 			|| !occlusion_src->moby_mappings.empty())) {
 		dest.occlusion = *occlusion_src;
 	}
-	
-	std::vector<CppType> types;
-	build_pvars(dest, src, types);
 }

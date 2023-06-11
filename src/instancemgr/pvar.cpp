@@ -28,40 +28,40 @@ struct PvarHeaderSpec {
 };
 
 static const PvarHeaderSpec RAC_PVAR_SUB_VARS[] = {
-	{0x00, "RacVars00", ""},
-	{0x04, "RacVars04"},
-	{0x08, "RacVars08"},
-	{0x0c, "RacVars0c"},
-	{0x10, "RacVars10", ""},
-	{0x14, "RacVars14"},
-	{0x18, "RacVars18", ""},
-	{0x1c, "RacVars1c", ""},
+	{0x00, "RacVars00", "racVars00", 0x40},
+	{0x04, "RacVars04", "racVars04"},
+	{0x08, "RacVars08", "racVars08", 0x40},
+	{0x0c, "RacVars0c", "racVars0c", 0x10},
+	{0x10, "RacVars10", "racVars10", 0x60},
+	{0x14, "RacVars14", "racVars14", 0xb0},
+	{0x18, "RacVars18", "racVars18", 0x50},
+	{0x1c, "RacVars1c", "racVars1c"},
 };
 
 static const PvarHeaderSpec GC_PVAR_SUB_VARS[] = {
-	{0x00, "TargetVars", "targetVars", 0x40},
+	{0x00, "TargetVars", "targetVars", 0x30},
 	{0x04, "GcVars04"},
-	{0x08, "GcVars08"},
-	{0x0c, "GcVars0c"},
+	{0x08, "GcVars08", "", 0x40},
+	{0x0c, "GcVars0c", "", 0x20},
 	{0x10, "ReactVars", "reactVars", 0xb0},
-	{0x14, "GcVars14"},
+	{0x14, "GcVars14", "", 0x160},
 	{0x18, "GcVars18", "", 0xf0},
-	{0x1c, "MoveVars_V2", "moveV2Vars"},
+	{0x1c, "MoveVars_V2", "moveV2Vars", 0x20},
 };
 
 static const PvarHeaderSpec UYA_PVAR_SUB_VARS[] = {
-	{0x00, "UyaVars00", ""},
+	{0x00, "UyaVars00", "", 0x40},
 	{0x04, "UyaVars04"},
-	{0x08, "UyaVars08"},
-	{0x0c, "UyaVars0c"},
-	{0x10, "UyaVars10", ""},
-	{0x14, "UyaVars14"},
+	{0x08, "UyaVars08", "", 0x40},
+	{0x0c, "UyaVars0c", "", 0x20},
+	{0x10, "UyaVars10", "", 0xc0},
+	{0x14, "UyaVars14", "", 0x10},
 	{0x18, "UyaVars18", ""},
-	{0x1c, "UyaVars1c", ""},
-	{0x20, "UyaVars20", ""},
-	{0x24, "UyaVars24"},
+	{0x1c, "UyaVars1c", "", 0xf0},
+	{0x20, "UyaVars20", "", 0x20},
+	{0x24, "UyaVars24", "", 0x20},
 	{0x28, "UyaVars28", ""},
-	{0x2c, "UyaVars2c", ""},
+	{0x2c, "UyaVars2c", "", 0x10},
 };
 
 static const PvarHeaderSpec DL_PVAR_SUB_VARS[] = {
@@ -264,7 +264,7 @@ static void generate_moby_pvar_types(std::vector<CppType>& dest, const std::map<
 			
 			// Check if there's a sub vars struct (e.g. TargetVars) at the
 			// current offset.
-			if(work.has_sub_vars && game == Game::DL) {
+			if(work.has_sub_vars) {
 				for(const PvarHeaderSpec* spec = sub_vars.begin; spec < sub_vars.end; spec++) {
 					s32 sub_var_offset = *(s32*) &(*work.pvar_data[0])[spec->pointer_offset];
 					if(sub_var_offset == offset) {
@@ -348,6 +348,10 @@ static void generate_other_pvar_types(std::vector<CppType>& dest, const std::map
 	}
 }
 
-void build_pvars(Gameplay& dest, const Instances& src, const std::vector<CppType>& types_src) {
-	
+void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::string, CppType>& types_src) {
+	dest.pvar_table.emplace();
+	dest.pvar_data.emplace();
+	dest.pvar_moby_links.emplace();
+	dest.global_pvar.emplace();
+	dest.pvar_sub_vars.emplace();
 }

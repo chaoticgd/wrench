@@ -31,7 +31,6 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 | rac1_unknown_20 |  | s32 |
 | rac1_unknown_24 |  | s32 |
 | rac1_unknown_54 |  | s32 |
-| rac1_unknown_60 |  | s32 |
 | rac1_unknown_74 |  | s32 |
 | rac23_unknown_8 |  | s32 |
 | rac23_unknown_c |  | s32 |
