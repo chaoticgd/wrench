@@ -38,7 +38,7 @@ struct UyaVars04 {
 	/* 0x00 */ int unknown_0;
 };
 
-struct UyaVars08 {
+struct TrackVars {
 	/* 0x00 */ int unknown_0;
 	/* 0x04 */ int unknown_4;
 	/* 0x08 */ int unknown_8;
@@ -68,7 +68,7 @@ struct UyaVars0c {
 	/* 0x1c */ int unknown_1c;
 };
 
-struct UyaVars10 {
+struct ReactVars {
 	/* 0x00 */ int unknown_0;
 	/* 0x04 */ int unknown_4;
 	/* 0x08 */ int unknown_8;
@@ -193,7 +193,7 @@ struct UyaVars1c {
 	/* 0xec */ int unknown_ec;
 };
 
-struct UyaVars20 {
+struct ArmorVars {
 	/* 0x00 */ int unknown_0;
 	/* 0x04 */ int unknown_4;
 	/* 0x08 */ int unknown_8;

@@ -35,7 +35,7 @@ static const PvarHeaderSpec RAC_PVAR_SUB_VARS[] = {
 	{0x10, "RacVars10", "racVars10", 0x60},
 	{0x14, "RacVars14", "racVars14", 0xb0},
 	{0x18, "RacVars18", "racVars18", 0x50},
-	{0x1c, "RacVars1c", "racVars1c"},
+	{0x1c, nullptr},
 };
 
 static const PvarHeaderSpec GC_PVAR_SUB_VARS[] = {
@@ -50,15 +50,15 @@ static const PvarHeaderSpec GC_PVAR_SUB_VARS[] = {
 };
 
 static const PvarHeaderSpec UYA_PVAR_SUB_VARS[] = {
-	{0x00, "UyaVars00", "", 0x40},
+	{0x00, "TargetVars", "targetVars", 0x40},
 	{0x04, "UyaVars04"},
-	{0x08, "UyaVars08", "", 0x40},
+	{0x08, "TrackVars", "trackVars", 0x40},
 	{0x0c, "UyaVars0c", "", 0x20},
-	{0x10, "UyaVars10", "", 0xc0},
+	{0x10, "ReactVars", "reactVars", 0xc0},
 	{0x14, "UyaVars14", "", 0x10},
 	{0x18, "UyaVars18", ""},
 	{0x1c, "UyaVars1c", "", 0xf0},
-	{0x20, "UyaVars20", "", 0x20},
+	{0x20, "ArmorVars", "armorVars", 0x20},
 	{0x24, "UyaVars24", "", 0x20},
 	{0x28, "UyaVars28", ""},
 	{0x2c, "UyaVars2c", "", 0x10},
