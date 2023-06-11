@@ -105,7 +105,7 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		input.meshes.emplace_back(tie_class.mesh);
 	}
 	for(const TieInstance& instance : opt_iterator(gameplay.tie_instances)) {
-		auto index = tie_class_to_index.find(instance.o_class);
+		auto index = tie_class_to_index.find(instance.o_class());
 		verify(index != tie_class_to_index.end(), "Cannot find tie model!");
 		VisInstance& vis_instance = input.instances[VIS_TIE].emplace_back();
 		vis_instance.mesh = index->second;
@@ -121,7 +121,7 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 	}
 	for(const MobyInstance& instance : opt_iterator(gameplay.moby_instances)) {
 		if(!instance.occlusion) {
-			auto index = moby_class_to_index.find(instance.o_class);
+			auto index = moby_class_to_index.find(instance.o_class());
 			if(index != moby_class_to_index.end()) {
 				VisInstance& vis_instance = input.instances[VIS_MOBY].emplace_back();
 				vis_instance.mesh = index->second;
@@ -168,7 +168,7 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 	for(s32 i = 0; i < (s32) vis.mappings[VIS_MOBY].size(); i++) {
 		// Skip past moby instances for which we don't precompute occlusion.
 		while(gameplay.moby_instances->at(moby_instance_index).occlusion
-			|| moby_class_to_index.find(gameplay.moby_instances->at(moby_instance_index).o_class) == moby_class_to_index.end()) {
+			|| moby_class_to_index.find(gameplay.moby_instances->at(moby_instance_index).o_class()) == moby_class_to_index.end()) {
 			moby_instance_index++;
 		}
 		

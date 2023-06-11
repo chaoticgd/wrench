@@ -30,7 +30,7 @@
 
 struct InstanceLink {};
 
-#define DEF_INSTANCE(inst_type, inst_variable) \
+#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable) \
 	struct inst_type##Link : InstanceLink { \
 		s32 id; \
 		inst_type##Link() : id(-1) {} \
@@ -61,12 +61,13 @@ static constexpr const InstanceId NULL_INSTANCE_ID = {
 enum InstanceComponent : u32 {
 	COM_NONE = 0,
 	COM_TRANSFORM = (1 << 1),
-	COM_PVARS = (1 << 2),
-	COM_COLOUR = (1 << 3),
-	COM_DRAW_DISTANCE = (1 << 4),
-	COM_SPLINE = (1 << 5),
-	COM_BOUNDING_SPHERE = (1 << 6),
-	COM_CAMERA_COLLISION = (1 << 7)
+	COM_CLASS = (1 << 2),
+	COM_PVARS = (1 << 3),
+	COM_COLOUR = (1 << 4),
+	COM_DRAW_DISTANCE = (1 << 5),
+	COM_SPLINE = (1 << 6),
+	COM_BOUNDING_SPHERE = (1 << 7),
+	COM_CAMERA_COLLISION = (1 << 8)
 };
 
 enum class TransformMode {
@@ -127,6 +128,9 @@ struct Instance {
 	const TransformComponent& transform() const;
 	TransformComponent& transform();
 	
+	s32 o_class() const;
+	s32& o_class();
+	
 	const std::vector<u8>& pvars() const;
 	std::vector<u8>& pvars();
 	// These last two pvar members are only used during reading/writing!
@@ -166,6 +170,7 @@ private:
 	InstanceId _id;
 	u32 _components_mask;
 	TransformComponent _transform;
+	s32 _o_class = -1;
 	std::vector<u8> _pvars;
 	s32 _pvar_index = -1; // Only used during reading/writing!
 	GlobalPvarPointers _global_pvar_pointers; // Only used when writing!
@@ -224,7 +229,7 @@ public:
 	ThisInstance* from_id(s32 id) {
 		auto index = _id_to_index.find(id);
 		if(index != _id_to_index.end()) {
-			return _instances.at(index->second);
+			return &_instances.at(index->second);
 		} else {
 			return nullptr;
 		}

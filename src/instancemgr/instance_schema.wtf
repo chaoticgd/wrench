@@ -20,14 +20,13 @@ format_version: 21
 
 InstanceType Moby {
 	desc: "Moving, interactive, or otherwise dynamic objects with an associated update function."
-	components: "COM_TRANSFORM | COM_PVARS | COM_DRAW_DISTANCE | COM_COLOUR"
+	components: "COM_TRANSFORM | COM_CLASS | COM_PVARS | COM_DRAW_DISTANCE | COM_COLOUR"
 	transform_mode: "POSITION_ROTATION_SCALE"
 	variable: "moby_instances"
 	
 	s8 mission {}
 	s32 uid {}
 	s32 bolts {}
-	s32 o_class {}
 	s32 update_distance {}
 	bool is_rooted {}
 	f32 rooted_distance {}
@@ -67,11 +66,10 @@ InstanceType MobyGroup {
 
 InstanceType Tie {
 	desc: "Large static objects."
-	components: "COM_TRANSFORM | COM_DRAW_DISTANCE"
+	components: "COM_TRANSFORM | COM_CLASS |COM_DRAW_DISTANCE"
 	transform_mode: "MATRIX"
 	variable: "tie_instances"
 	
-	s32 o_class {}
 	s32 occlusion_index {}
 	s32 directional_lights {}
 	s32 uid {}
@@ -88,11 +86,10 @@ InstanceType TieGroup {
 
 InstanceType Shrub {
 	desc: "Small static objects with only a single LOD level and optionally a billboard."
-	components: "COM_TRANSFORM | COM_DRAW_DISTANCE | COM_COLOUR"
+	components: "COM_TRANSFORM | COM_CLASS |COM_DRAW_DISTANCE | COM_COLOUR"
 	transform_mode: "MATRIX"
 	variable: "shrub_instances"
 	
-	s32 o_class {}
 	s32 unknown_5c {}
 	s32 dir_lights {}
 	s32 unknown_64 {}
@@ -210,20 +207,17 @@ InstanceType Pill {
 
 InstanceType Camera {
 	desc: "A camera."
-	components: "COM_TRANSFORM | COM_PVARS"
+	components: "COM_TRANSFORM | COM_CLASS |COM_PVARS"
 	transform_mode: "POSITION_ROTATION"
 	variable: "cameras"
-	
-	s32 type {}
 }
 
 InstanceType Sound {
 	desc: "A sound instance."
-	components: "COM_TRANSFORM | COM_PVARS"
+	components: "COM_TRANSFORM | COM_CLASS |COM_PVARS"
 	transform_mode: "MATRIX_INVERSE_ROTATION"
 	variable: "sound_instances"
 	
-	s16 o_class {}
 	s16 m_class {}
 	f32 range {}
 }

@@ -126,7 +126,7 @@ struct RacMobyBlock {
 		SWAP_PACKED(l.rac1_unknown_c, r.unknown_c);
 		SWAP_PACKED(l.rac1_unknown_10, r.unknown_10);
 		SWAP_PACKED(l.rac1_unknown_14, r.unknown_14);
-		SWAP_PACKED(l.o_class, r.o_class);
+		SWAP_PACKED(l.o_class(), r.o_class);
 		SWAP_PACKED(l.update_distance, r.update_distance);
 		r.unused_28 = 32;
 		r.unused_2c = 64;
@@ -225,7 +225,7 @@ struct GcUyaMobyBlock {
 		SWAP_PACKED(l.rac23_unknown_1c, r.unknown_1c);
 		SWAP_PACKED(l.rac23_unknown_20, r.unknown_20);
 		SWAP_PACKED(l.rac23_unknown_24, r.unknown_24);
-		SWAP_PACKED(l.o_class, r.o_class);
+		SWAP_PACKED(l.o_class(), r.o_class);
 		SWAP_PACKED(l.update_distance, r.update_distance);
 		r.unused_38 = 32;
 		r.unused_3c = 64;
@@ -316,7 +316,7 @@ struct DlMobyBlock {
 		SWAP_PACKED(l.mission, r.mission);
 		SWAP_PACKED(l.uid, r.uid);
 		SWAP_PACKED(l.bolts, r.bolts);
-		SWAP_PACKED(l.o_class, r.o_class);
+		SWAP_PACKED(l.o_class(), r.o_class);
 		SWAP_PACKED(l.update_distance, r.update_distance);
 		r.unused_20 = 32;
 		r.unused_24 = 64;
@@ -520,8 +520,8 @@ struct TieClassBlock {
 	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
 		std::vector<s32> classes;
 		for(const TieInstance& inst : opt_iterator(src.tie_instances)) {
-			if(std::find(BEGIN_END(classes), inst.o_class) == classes.end()) {
-				classes.push_back(inst.o_class);
+			if(std::find(BEGIN_END(classes), inst.o_class()) == classes.end()) {
+				classes.push_back(inst.o_class());
 			}
 		}
 		dest.write<s32>(classes.size());
@@ -536,8 +536,8 @@ struct ShrubClassBlock {
 	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
 		std::vector<s32> classes;
 		for(const ShrubInstance& inst : opt_iterator(src.shrub_instances)) {
-			if(std::find(BEGIN_END(classes), inst.o_class) == classes.end()) {
-				classes.push_back(inst.o_class);
+			if(std::find(BEGIN_END(classes), inst.o_class()) == classes.end()) {
+				classes.push_back(inst.o_class());
 			}
 		}
 		dest.write<s32>(classes.size());
@@ -563,7 +563,7 @@ static_assert(sizeof(RacTieInstance) == 0xe0);
 static void swap_instance(TieInstance& l, RacTieInstance& r) {
 	swap_matrix(l, r);
 	SWAP_PACKED(l.draw_distance(), r.draw_distance);
-	SWAP_PACKED(l.o_class, r.o_class);
+	SWAP_PACKED(l.o_class(), r.o_class);
 	r.pad_8 = 0;
 	SWAP_PACKED(l.occlusion_index, r.occlusion_index);
 	SWAP_PACKED(l.directional_lights, r.directional_lights);
@@ -597,7 +597,7 @@ static_assert(sizeof(GcUyaDlTieInstance) == 0x60);
 static void swap_instance(TieInstance& l, GcUyaDlTieInstance& r) {
 	swap_matrix(l, r);
 	SWAP_PACKED(l.draw_distance(), r.draw_distance);
-	SWAP_PACKED(l.o_class, r.o_class);
+	SWAP_PACKED(l.o_class(), r.o_class);
 	r.pad_8 = 0;
 	SWAP_PACKED(l.occlusion_index, r.occlusion_index);
 	SWAP_PACKED(l.directional_lights, r.directional_lights);
@@ -624,7 +624,7 @@ static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
 	swap_matrix(l, r);
 	SWAP_PACKED(l.draw_distance(), r.draw_distance);
 	SWAP_COLOUR(l.colour(), r.colour);
-	SWAP_PACKED(l.o_class, r.o_class);
+	SWAP_PACKED(l.o_class(), r.o_class);
 	r.unused_8 = 0;
 	r.unused_c = 0;
 	r.unused_5c = 0;

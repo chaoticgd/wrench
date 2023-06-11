@@ -585,7 +585,7 @@ packed_struct(CameraPacked,
 static void swap_instance(CameraInstance& l, CameraPacked& r) {
 	swap_position_rotation(l, r);
 	SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
-	SWAP_PACKED(l.type, r.type);
+	SWAP_PACKED(l.o_class(), r.type);
 }
 
 packed_struct(SoundInstancePacked,
@@ -603,7 +603,7 @@ packed_struct(SoundInstancePacked,
 static void swap_instance(SoundInstance& l, SoundInstancePacked& r) {
 	swap_matrix_inverse_rotation(l, r);
 	SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
-	SWAP_PACKED(l.o_class, r.o_class);
+	SWAP_PACKED(l.o_class(), r.o_class);
 	SWAP_PACKED(l.m_class, r.m_class);
 	r.update_fun_ptr = 0;
 	SWAP_PACKED(l.range, r.range);

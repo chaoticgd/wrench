@@ -299,8 +299,8 @@ static void draw_mobies(Level& lvl, InstanceList<MobyInstance>& instances, GLenu
 	size_t begin = 0;
 	size_t end = 0;
 	for(size_t i = 1; i <= instances.size(); i++) {
-		s32 last_class = instances[i - 1].o_class;
-		if(i == instances.size() || instances[i].o_class != last_class) {
+		s32 last_class = instances[i - 1].o_class();
+		if(i == instances.size() || instances[i].o_class() != last_class) {
 			end = i;
 			auto iter = lvl.moby_classes.find(last_class);
 			if(iter != lvl.moby_classes.end() && iter->second.render_mesh.has_value()) {
@@ -323,8 +323,8 @@ static void draw_ties(Level& lvl, const InstanceList<TieInstance>& instances, GL
 	size_t begin = 0;
 	size_t end = 0;
 	for(size_t i = 1; i <= instances.size(); i++) {
-		s32 last_class = instances[i - 1].o_class;
-		if(i == instances.size() || instances[i].o_class != last_class) {
+		s32 last_class = instances[i - 1].o_class();
+		if(i == instances.size() || instances[i].o_class() != last_class) {
 			end = i;
 			auto iter = lvl.tie_classes.find(last_class);
 			if(iter != lvl.tie_classes.end() && iter->second.render_mesh.has_value()) {
@@ -347,8 +347,8 @@ static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances
 	size_t begin = 0;
 	size_t end = 0;
 	for(size_t i = 1; i <= instances.size(); i++) {
-		s32 last_class = instances[i - 1].o_class;
-		if(i == instances.size() || instances[i].o_class != last_class) {
+		s32 last_class = instances[i - 1].o_class();
+		if(i == instances.size() || instances[i].o_class() != last_class) {
 			end = i;
 			auto iter = lvl.shrub_classes.find(last_class);
 			if(iter != lvl.shrub_classes.end() && iter->second.render_mesh.has_value()) {
@@ -365,8 +365,8 @@ static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances
 
 static void draw_selected_shrub_normals(Level& lvl) {
 	for(ShrubInstance& inst : lvl.instances().shrub_instances) {
-		if(inst.selected && lvl.shrub_classes.find(inst.o_class) != lvl.shrub_classes.end()) {
-			const EditorClass& cls = lvl.shrub_classes.at(inst.o_class);
+		if(inst.selected && lvl.shrub_classes.find(inst.o_class()) != lvl.shrub_classes.end()) {
+			const EditorClass& cls = lvl.shrub_classes.at(inst.o_class());
 			if(cls.mesh.has_value()) {
 				std::vector<Vertex> vertices;
 				for(const Vertex& v : cls.mesh->vertices) {
@@ -402,8 +402,8 @@ static void draw_selected_shrub_normals(Level& lvl) {
 
 static void draw_selected_moby_normals(Level& lvl) {
 	for(MobyInstance& inst : lvl.instances().moby_instances) {
-		if(inst.selected && lvl.moby_classes.find(inst.o_class) != lvl.moby_classes.end()) {
-			const EditorClass& cls = lvl.moby_classes.at(inst.o_class);
+		if(inst.selected && lvl.moby_classes.find(inst.o_class()) != lvl.moby_classes.end()) {
+			const EditorClass& cls = lvl.moby_classes.at(inst.o_class());
 			if(cls.mesh.has_value()) {
 				std::vector<Vertex> vertices;
 				for(const Vertex& v : cls.mesh->vertices) {
@@ -522,8 +522,8 @@ static void draw_moby_icons(Level& lvl, InstanceList<MobyInstance>& instances) {
 	size_t begin = 0;
 	size_t end = 0;
 	for(size_t i = 1; i <= instances.size(); i++) {
-		s32 last_class = instances[i - 1].o_class;
-		if(i == instances.size() || instances[i].o_class != last_class) {
+		s32 last_class = instances[i - 1].o_class();
+		if(i == instances.size() || instances[i].o_class() != last_class) {
 			end = i;
 			auto iter = lvl.moby_classes.find(last_class);
 			if(iter == lvl.moby_classes.end() || !iter->second.render_mesh.has_value()) {

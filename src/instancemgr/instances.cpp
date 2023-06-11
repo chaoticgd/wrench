@@ -21,6 +21,19 @@
 #include <wtf/wtf.h>
 #include <wtf/wtf_writer.h>
 
+Instance* Instances::from_id(InstanceId id) {
+	switch(id.type) {
+		#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable) \
+			case INST_##inst_type_uppercase: return inst_variable.from_id(id.value);
+		#define GENERATED_INSTANCE_MACRO_CALLS
+		#include "_generated_instance_types.inl"
+		#undef GENERATED_INSTANCE_MACRO_CALLS
+		#undef DEF_INSTANCE
+		default: {}
+	}
+	return nullptr;
+}
+
 void Instances::clear_selection() {
 	this->for_each([&](Instance& inst) {
 		inst.selected = false;

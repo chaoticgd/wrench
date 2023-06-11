@@ -14,7 +14,6 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 | mission |  | s8 |
 | uid |  | s32 |
 | bolts |  | s32 |
-| o_class |  | s32 |
 | update_distance |  | s32 |
 | is_rooted |  | bool |
 | rooted_distance |  | f32 |
@@ -59,7 +58,6 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 
 | Name | Description | Type |
 | - | - | - |
-| o_class |  | s32 |
 | occlusion_index |  | s32 |
 | directional_lights |  | s32 |
 | uid |  | s32 |
@@ -81,7 +79,6 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 
 | Name | Description | Type |
 | - | - | - |
-| o_class |  | s32 |
 | unknown_5c |  | s32 |
 | dir_lights |  | s32 |
 | unknown_64 |  | s32 |
@@ -183,12 +180,6 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 ### Camera
 
 
-*Fields*
-
-| Name | Description | Type |
-| - | - | - |
-| type |  | s32 |
-
 ### Sound
 
 
@@ -196,7 +187,6 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 
 | Name | Description | Type |
 | - | - | - |
-| o_class |  | s16 |
 | m_class |  | s16 |
 | range |  | f32 |
 

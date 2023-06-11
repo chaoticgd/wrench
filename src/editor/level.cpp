@@ -179,6 +179,22 @@ void Level::read(LevelAsset& asset, Game g) {
 		es.materials = upload_materials(scene.materials, textures);
 		shrub_classes.emplace(shrub.id(), std::move(es));
 	});
+	
+	for(s32 i = 0; i < 100; i++) {
+		auto pvar_type = types.find(stringf("camera%d", i));
+		if(pvar_type != types.end()) {
+			EditorClass& cam_class = camera_classes[i];
+			cam_class.pvar_type = &pvar_type->second;
+		}
+	}
+	
+	for(s32 i = 0; i < 100; i++) {
+		auto pvar_type = types.find(stringf("sound%d", i));
+		if(pvar_type != types.end()) {
+			EditorClass& sound_class = sound_classes[i];
+			sound_class.pvar_type = &pvar_type->second;
+		}
+	}
 }
 
 void Level::save(const fs::path& path) {
@@ -228,5 +244,10 @@ LevelWadAsset& Level::level_wad() {
 }
 
 Instances& Level::instances() {
+	return _instances;
+}
+
+
+const Instances& Level::instances() const {
 	return _instances;
 }

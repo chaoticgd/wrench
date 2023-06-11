@@ -103,7 +103,10 @@ static void generate_instance_macro_calls(WtfNode* root) {
 		const WtfAttribute* variable = wtf_attribute_of_type(type, "variable", WTF_STRING);
 		assert(variable);
 		
-		out("DEF_INSTANCE(%s, %s)", type->tag, variable->string.begin);
+		std::string uppercase = type->tag;
+		for(char& c : uppercase) c = toupper(c);
+		
+		out("DEF_INSTANCE(%s, %s, %s)", type->tag, uppercase.c_str(), variable->string.begin);
 	}
 }
 

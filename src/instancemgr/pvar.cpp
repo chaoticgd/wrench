@@ -146,7 +146,7 @@ void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const
 	std::map<s32, PvarMobyWork> moby_classes;
 	for(MobyInstance& inst : dest.moby_instances) {
 		if(!inst.pvars().empty()) {
-			PvarMobyWork& moby_class = moby_classes[inst.o_class];
+			PvarMobyWork& moby_class = moby_classes[inst.o_class()];
 			moby_class.pvar_data.emplace_back(&inst.pvars());
 			if(inst.mode_bits & MOBY_MB1_HAS_SUB_VARS) {
 				moby_class.has_sub_vars = true;
@@ -175,7 +175,7 @@ void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const
 	std::map<s32, PvarWork> camera_classes;
 	for(CameraInstance& inst : dest.cameras) {
 		if(!inst.pvars().empty()) {
-			PvarWork& camera_class = camera_classes[inst.type];
+			PvarWork& camera_class = camera_classes[inst.o_class()];
 			camera_class.pvar_size = inst.pvars().size();
 		}
 	}
@@ -184,7 +184,7 @@ void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const
 	std::map<s32, PvarWork> sound_classes;
 	for(SoundInstance& inst : dest.sound_instances) {
 		if(!inst.pvars().empty()) {
-			PvarWork& sound_class = sound_classes[inst.o_class];
+			PvarWork& sound_class = sound_classes[inst.o_class()];
 			sound_class.pvar_size = inst.pvars().size();
 		}
 	}
@@ -194,13 +194,13 @@ void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const
 	for(const PvarFixupEntry& entry : opt_iterator(src.pvar_moby_links)) {
 		Instance* inst = pvar_to_inst[entry.pvar_index];
 		if(inst->type() == INST_MOBY) {
-			s32 o_class = ((MobyInstance*) pvar_to_inst[entry.pvar_index])->o_class;
+			s32 o_class = ((MobyInstance*) pvar_to_inst[entry.pvar_index])->o_class();
 			moby_classes[o_class].moby_links.emplace_back(entry.offset);
 		} else if(inst->type() == INST_CAMERA) {
-			s32 type = ((CameraInstance*) pvar_to_inst[entry.pvar_index])->type;
+			s32 type = ((CameraInstance*) pvar_to_inst[entry.pvar_index])->o_class();
 			camera_classes[type].moby_links.emplace_back(entry.offset);
 		} else if(inst->type() == INST_SOUND) {
-			s32 o_class = ((SoundInstance*) pvar_to_inst[entry.pvar_index])->o_class;
+			s32 o_class = ((SoundInstance*) pvar_to_inst[entry.pvar_index])->o_class();
 			sound_classes[o_class].moby_links.emplace_back(entry.offset);
 		}
 	}
@@ -318,6 +318,14 @@ static void generate_other_pvar_types(std::vector<CppType>& dest, const std::map
 		pvar_type.size = work.pvar_size;
 		
 		s32 offset = 0;
+		
+		if(strcmp(type, "camera") == 0 && game == Game::DL) {
+			CppType& field = pvar_type.struct_or_union.fields.emplace_back(CPP_TYPE_NAME);
+			field.name = "s";
+			field.offset = offset;
+			field.type_name.string = "cameraShared";
+			offset += 0x20;
+		}
 		
 		while(offset < pvar_type.size) {
 			bool hungry = true;

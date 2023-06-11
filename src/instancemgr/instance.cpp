@@ -198,6 +198,16 @@ TransformComponent& Instance::transform() {
 	return _transform;
 }
 
+s32 Instance::o_class() const {
+	verify_fatal(_components_mask & COM_CLASS);
+	return _o_class;
+}
+
+s32& Instance::o_class() {
+	verify_fatal(_components_mask & COM_CLASS);
+	return _o_class;
+}
+
 const std::vector<u8>& Instance::pvars() const {
 	verify_fatal(_components_mask & COM_PVARS);
 	return _pvars;
@@ -283,6 +293,10 @@ void Instance::read_common(const WtfNode* src) {
 		transform().read(src);
 	}
 	
+	if(has_component(COM_CLASS)) {
+		read_inst_field(o_class(), src, "class");
+	}
+	
 	if(has_component(COM_PVARS)) {
 		read_inst_field(pvars(), src, "pvars");
 	}
@@ -322,6 +336,10 @@ void Instance::begin_write(WtfWriter* dest) const {
 	
 	if(has_component(COM_TRANSFORM)) {
 		transform().write(dest);
+	}
+	
+	if(has_component(COM_CLASS)) {
+		write_inst_field(dest, "class", o_class());
 	}
 	
 	if(has_component(COM_PVARS)) {

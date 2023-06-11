@@ -66,6 +66,8 @@ struct Instances {
 	template <typename Callback>
 	void for_each(Callback callback);
 	
+	Instance* from_id(InstanceId id);
+	
 	void clear_selection();
 	std::vector<InstanceId> selected_instances() const;
 };
@@ -107,7 +109,7 @@ static void for_each_instance_of_type_with(u32 required_components_mask, const I
 
 template <typename Callback>
 void Instances::for_each_with(u32 required_components_mask, Callback callback) const {
-#define DEF_INSTANCE(inst_type, inst_variable) \
+#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable) \
 	for_each_instance_of_type_with(required_components_mask, inst_variable, callback);
 #define GENERATED_INSTANCE_MACRO_CALLS
 #include "_generated_instance_types.inl"

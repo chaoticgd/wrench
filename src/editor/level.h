@@ -51,6 +51,7 @@ public:
 	LevelWadAsset& level_wad();
 	
 	Instances& instances();
+	const Instances& instances() const;
 	
 	Game game;
 	
@@ -59,6 +60,8 @@ public:
 	std::map<s32, EditorClass> moby_classes;
 	std::map<s32, EditorClass> tie_classes;
 	std::map<s32, EditorClass> shrub_classes;
+	std::map<s32, EditorClass> camera_classes;
+	std::map<s32, EditorClass> sound_classes;
 	
 private:
 	LevelAsset* _asset = nullptr;
