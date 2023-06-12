@@ -32,7 +32,6 @@ CppType::CppType(CppType&& rhs) {
 	size = rhs.size;
 	alignment = rhs.alignment;
 	precedence = rhs.precedence;
-	expanded = rhs.expanded;
 	descriptor = rhs.descriptor;
 	create_pvar_type(*this);
 	move_assign_pvar_type(*this, rhs);
@@ -54,7 +53,6 @@ CppType& CppType::operator=(CppType&& rhs) {
 	size = rhs.size;
 	alignment = rhs.alignment;
 	precedence = rhs.precedence;
-	expanded = rhs.expanded;
 	descriptor = rhs.descriptor;
 	create_pvar_type(*this);
 	move_assign_pvar_type(*this, rhs);

@@ -33,7 +33,7 @@ static const CppType* get_pvar_type(const Level& lvl);
 template <typename ThisInstance>
 const CppType* get_single_pvar_type(const InstanceList<ThisInstance>& instances, const std::map<s32, EditorClass>& classes);
 static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vector<InstanceId>& ids, const std::vector<std::vector<u8>*>& pvars);
-static void generate_rows(const CppType& type, const std::string& name, const PvarInspectorState& inspector, s32 offset, s32 depth);
+static void generate_rows(const CppType& type, const std::string& name, const PvarInspectorState& inspector, s32 index, s32 offset, s32 depth, s32 indent);
 static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 size, const std::vector<InstanceId>& ids);
 static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type);
 
@@ -87,7 +87,7 @@ void pvar_inspector(Level& lvl) {
 			inspector.ids = &ids;
 			inspector.pvars = pvars[0];
 			inspector.diff = &diff;
-			generate_rows(*pvar_type, pvar_type->name, inspector, 0, 0);
+			generate_rows(*pvar_type, pvar_type->name, inspector, -1, 0, 0, 0);
 			
 			ImGui::EndTable();
 		}
@@ -223,28 +223,41 @@ static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vec
 	return !needs_resize;
 }
 
-static void generate_rows(const CppType& type, const std::string& name, const PvarInspectorState& inspector, s32 offset, s32 depth) {
-	ImGui::PushID(name.c_str());
+static void generate_rows(const CppType& type, const std::string& name, const PvarInspectorState& inspector, s32 index, s32 offset, s32 depth, s32 indent) {
+	ImGui::PushID(index);
 	defer([&]() { ImGui::PopID(); });
 	
-	if((depth > 0 || type.descriptor != CPP_STRUCT_OR_UNION) && type.descriptor != CPP_TYPE_NAME) {
+	static std::map<s64, bool> expanded_map;
+	
+	if(depth > 0 && type.descriptor != CPP_TYPE_NAME) {
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
+		ImGui::AlignTextToFramePadding();
 		ImGui::Text("%x", offset);
 		ImGui::TableNextColumn();
-		if(ImGui::Selectable(name.c_str(), type.expanded)) {
-			type.expanded = !type.expanded;
+		for(s32 i = 0; i < indent - 1; i++) {
+			ImGui::Text(" ");
+			ImGui::SameLine();
 		}
+		ImGui::AlignTextToFramePadding();
+		ImGui::Text("%s", name.c_str());
 		ImGui::TableNextColumn();
 	}
 	
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
-			ImGui::Text("(array)");
-			if(type.expanded) {
+			bool& expanded = expanded_map[(s64) offset | ((s64) depth << 32)];
+			
+			verify_fatal(type.array.element_type.get());
+			ImGui::AlignTextToFramePadding();
+			std::string subscript = stringf("%s[%d]", type.array.element_type->name.c_str(), type.array.element_count);
+			if(ImGui::Selectable(subscript.c_str(), expanded, ImGuiSelectableFlags_SpanAllColumns)) {
+				expanded = !expanded;
+			}
+			if(expanded) {
 				for(s32 i = 0; i < type.array.element_count; i++) {
 					std::string subscript = stringf("%*s[%d]", depth, "", i);
-					generate_rows(*type.array.element_type, subscript, inspector, offset + i * type.array.element_type->size, depth + 1);
+					generate_rows(*type.array.element_type, subscript, inspector, i, offset + i * type.array.element_type->size, depth + 1, indent + 1);
 				}
 			}
 			break;
@@ -281,13 +294,19 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
+			bool& expanded = expanded_map[(s64) offset | ((s64) depth << 32)];
+			
 			if(depth > 0) {
-				ImGui::Text("(struct or union)");
+				ImGui::AlignTextToFramePadding();
+				std::string struct_name = stringf("struct %s", type.name.c_str());
+				if(ImGui::Selectable(struct_name.c_str(), expanded, ImGuiSelectableFlags_SpanAllColumns)) {
+					expanded = !expanded;
+				}
 			}
-			if(type.expanded || depth == 0) {
+			if(expanded || depth == 0) {
 				for(s32 i = 0; i < type.struct_or_union.fields.size(); i++) {
 					const CppType& field = type.struct_or_union.fields[i];
-					generate_rows(field, field.name, inspector, offset + field.offset, depth + 1);
+					generate_rows(field, field.name, inspector, i, offset + field.offset, depth + 1, indent + 1);
 				}
 			}
 			break;
@@ -296,22 +315,22 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 			auto& types = inspector.lvl->level().forest().types();
 			auto iter = types.find(type.type_name.string);
 			if(iter != types.end()) {
-				generate_rows(iter->second, type.name, inspector, offset, depth + 1);
+				generate_rows(iter->second, type.name, inspector, -1, offset, depth + 1, indent);
 			} else {
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				ImGui::Text("%x", offset);
 				ImGui::TableNextColumn();
-				if(ImGui::Selectable(name.c_str(), type.expanded)) {
-					type.expanded = !type.expanded;
-				}
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("%s", name.c_str());
 				ImGui::TableNextColumn();
 				ImGui::Text("(no definition available)");
 			}
 			break;
 		}
 		case CPP_POINTER_OR_REFERENCE: {
-			ImGui::Text("0x%x", *(s32*) &inspector.pvars[offset]);
+			s32 pointer = *(s32*) &(*inspector.pvars)[offset];
+			ImGui::Text("pointer 0x%x", pointer);
 			break;
 		}
 	}
