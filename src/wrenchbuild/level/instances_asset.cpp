@@ -188,6 +188,11 @@ static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, Bui
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
 	const std::vector<GameplayBlockDescription>* blocks = get_gameplay_block_descriptions(config.game(), hint);
 	
+	// Parse C++ types from the overlay asset bank.
+	AssetForest type_forest;
+	type_forest.mount<LooseAssetBank>("data/overlay", false);
+	type_forest.load_and_parse_source_files(config.game());
+	
 	// Parse gameplay file.
 	Gameplay gameplay_in;
 	read_gameplay(gameplay_in, src, config.game(), *blocks);
@@ -199,26 +204,19 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	std::vector<CppType> pvar_types;
 	move_gameplay_to_instances(instances_in, &help_messages, &occlusion, pvar_types, gameplay_in, config.game());
 	
-	// Build a map of the pvar types.
-	std::map<std::string, CppType> pvar_type_map;
+	// Add recovered type information to the parsed map of pvar types.
 	for(CppType& pvar_type : pvar_types) {
-		pvar_type_map.emplace(pvar_type.name, std::move(pvar_type));
+		type_forest.types().emplace(pvar_type.name, std::move(pvar_type));
 	}
 	
 	// Write out instances file and read it back.
 	std::string instances_text = write_instances(instances_in);
 	write_file("/tmp/instances.txt", instances_text);
 	Instances instances_out = read_instances(instances_text);
-	instances_out.global_pvar = std::move(instances_in.global_pvar);
 	
 	// Write out new gameplay file.
 	Gameplay gameplay_out;
-	move_instances_to_gameplay(gameplay_out, instances_out, &help_messages, &occlusion, pvar_type_map);
-	gameplay_out.pvar_table = gameplay_in.pvar_table;
-	gameplay_out.pvar_moby_links = gameplay_in.pvar_moby_links;
-	gameplay_out.pvar_sub_vars = gameplay_in.pvar_sub_vars;
-	gameplay_out.global_pvar = gameplay_in.global_pvar;
-	gameplay_out.global_pvar_table = gameplay_in.global_pvar_table;
+	move_instances_to_gameplay(gameplay_out, instances_out, &help_messages, &occlusion, type_forest.types());
 	std::vector<u8> dest = write_gameplay(gameplay_out, config.game(), *blocks);
 		
 	// Compare the new file against the original.

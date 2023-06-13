@@ -34,7 +34,7 @@ packed_struct(PvarFixupEntry,
 	/* 0x4 */ u32 offset;
 )
 
-packed_struct(GlobalPvarPointer,
+packed_struct(SharedDataPointer,
 	/* 0x0 */ u16 pvar_index;
 	/* 0x2 */ u16 pointer_offset;
 	/* 0x4 */ s32 global_pvar_offset;
@@ -60,7 +60,6 @@ struct Gameplay {
 	Opt<std::vector<TieGroupInstance>> tie_groups;
 	Opt<std::vector<ShrubInstance>> shrub_instances;
 	Opt<std::vector<ShrubGroupInstance>> shrub_groups;
-	Opt<std::vector<u8>> global_pvar;
 	
 	Opt<std::vector<DirLightInstance>> dir_lights;
 	Opt<std::vector<PointLightInstance>> point_lights;
@@ -84,7 +83,8 @@ struct Gameplay {
 	Opt<std::vector<u8>> pvar_data;
 	Opt<std::vector<PvarFixupEntry>> pvar_moby_links;
 	Opt<std::vector<PvarFixupEntry>> pvar_sub_vars;
-	Opt<std::vector<GlobalPvarPointer>> global_pvar_table;
+	Opt<std::vector<u8>> shared_data;
+	Opt<std::vector<SharedDataPointer>> shared_data_table;
 };
 
 // *****************************************************************************

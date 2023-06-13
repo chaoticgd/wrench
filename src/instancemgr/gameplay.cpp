@@ -126,7 +126,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x50, bf<PvarFixupBlock>(&Gameplay::pvar_moby_links), "moby link fixup table"},
 	{0x5c, bf<PvarFixupBlock>(&Gameplay::pvar_sub_vars), "sub var fixup table"},
 	{0x48, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
-	{0x4c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
+	{0x4c, {SharedDataBlock::read, SharedDataBlock::write}, "shared data"},
 	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
 	{0x34, bf<InstanceBlock<TieInstance, RacTieInstance>>(&Gameplay::tie_instances), "tie instances"},
 	{0x38, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
@@ -166,7 +166,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x58, bf<PvarFixupBlock>(&Gameplay::pvar_moby_links), "moby link fixup table"},
 	{0x64, bf<PvarFixupBlock>(&Gameplay::pvar_sub_vars), "sub var fixup table"},
 	{0x50, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
-	{0x54, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
+	{0x54, {SharedDataBlock::read, SharedDataBlock::write}, "shared data"},
 	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
 	{0x34, bf<InstanceBlock<TieInstance, GcUyaDlTieInstance>>(&Gameplay::tie_instances), "tie instances"},
 	{0x94, {TieAmbientRgbaBlock::read, TieAmbientRgbaBlock::write}, "tie ambient rgbas"},
@@ -206,7 +206,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x3c, bf<PvarFixupBlock>(&Gameplay::pvar_moby_links), "moby link fixup table"},
 	{0x48, bf<PvarFixupBlock>(&Gameplay::pvar_sub_vars), "sub var fixup table"},
 	{0x34, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
-	{0x38, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
+	{0x38, {SharedDataBlock::read, SharedDataBlock::write}, "shared data"},
 	{0x5c, bf<PathBlock>(&Gameplay::paths), "paths"},
 	{0x4c, bf<InstanceBlock<CuboidInstance, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
 	{0x50, bf<InstanceBlock<SphereInstance, ShapePacked>>(&Gameplay::spheres), "spheres"},
@@ -246,7 +246,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS 
 	{0x10, bf<PvarFixupBlock>(&Gameplay::pvar_moby_links), "moby link fixup table"},
 	{0x1c, bf<PvarFixupBlock>(&Gameplay::pvar_sub_vars), "sub var fixup table"},
 	{0x08, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
-	{0x0c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
+	{0x0c, {SharedDataBlock::read, SharedDataBlock::write}, "global pvar"},
 };
 
 void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::vector<CppType>& types_dest, Gameplay& src, Game game) {
@@ -262,7 +262,6 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 	dest.tie_groups = std::move(opt_iterator(src.tie_groups));
 	dest.shrub_instances = std::move(opt_iterator(src.shrub_instances));
 	dest.shrub_groups = std::move(opt_iterator(src.shrub_groups));
-	dest.global_pvar = std::move(opt_iterator(src.global_pvar));
 	
 	dest.dir_lights = std::move(opt_iterator(src.dir_lights));
 	dest.point_lights = std::move(opt_iterator(src.point_lights));
@@ -322,7 +321,6 @@ void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* he
 	dest.tie_groups = src.tie_groups.release();
 	dest.shrub_instances = (src.shrub_instances).release();
 	dest.shrub_groups = src.shrub_groups.release();
-	dest.global_pvar = std::move(src.global_pvar);
 	
 	dest.dir_lights = src.dir_lights.release();
 	dest.point_lights = src.point_lights.release();

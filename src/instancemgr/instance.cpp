@@ -188,6 +188,38 @@ void TransformComponent::write(WtfWriter* dest) const {
 	}
 }
 
+void PvarComponent::read(const WtfNode* src) {
+	read_inst_field(data, src, "pvars");
+	
+	const WtfAttribute* shared_data_pointers_attrib = wtf_attribute_of_type(src, "shared_data_pointers", WTF_ARRAY);
+	if(shared_data_pointers_attrib) {
+		for(const WtfAttribute* attrib = shared_data_pointers_attrib->first_array_element; attrib != nullptr; attrib = attrib->next) {
+			verify(attrib->type == WTF_ARRAY, "Bad shared data pointers list on moby instance.");
+			WtfAttribute* pointer_offset = attrib->first_array_element;
+			verify(pointer_offset && pointer_offset->type == WTF_NUMBER, "Bad shared data pointers list on moby instance.");
+			WtfAttribute* shared_data_id = pointer_offset->next;
+			verify(shared_data_id && shared_data_id->type == WTF_NUMBER, "Bad shared data pointers list on moby instance.");
+			shared_data_pointers.emplace_back(pointer_offset->number.i, shared_data_id->number.i);
+		}
+	}
+}
+
+void PvarComponent::write(WtfWriter* dest) const {
+	write_inst_field(dest, "pvars", data);
+	
+	if(!shared_data_pointers.empty()) {
+		wtf_begin_attribute(dest, "shared_data_pointers");
+		wtf_begin_array(dest);
+		for(auto& [pointer, shared_data_id] : shared_data_pointers) {
+			wtf_begin_array(dest);
+			wtf_write_integer(dest, pointer);
+			wtf_write_integer(dest, shared_data_id);
+			wtf_end_array(dest);
+		}
+		wtf_end_array(dest);
+	}
+}
+
 const TransformComponent& Instance::transform() const {
 	verify_fatal(_components_mask & COM_TRANSFORM);
 	return _transform;
@@ -208,34 +240,14 @@ s32& Instance::o_class() {
 	return _o_class;
 }
 
-const std::vector<u8>& Instance::pvars() const {
+const PvarComponent& Instance::pvars() const {
 	verify_fatal(_components_mask & COM_PVARS);
 	return _pvars;
 }
 
-std::vector<u8>& Instance::pvars() {
+PvarComponent& Instance::pvars() {
 	verify_fatal(_components_mask & COM_PVARS);
 	return _pvars;
-}
-
-s32 Instance::temp_pvar_index() const {
-	verify_fatal(_components_mask & COM_PVARS);
-	return _pvar_index;
-}
-
-s32& Instance::temp_pvar_index() {
-	verify_fatal(_components_mask & COM_PVARS);
-	return _pvar_index;
-}
-
-const GlobalPvarPointers& Instance::temp_global_pvar_pointers() const {
-	verify_fatal(_components_mask & COM_PVARS);
-	return _global_pvar_pointers;
-}
-
-GlobalPvarPointers& Instance::temp_global_pvar_pointers() {
-	verify_fatal(_components_mask & COM_PVARS);
-	return _global_pvar_pointers;
 }
 
 const glm::vec3& Instance::colour() const {
@@ -298,7 +310,7 @@ void Instance::read_common(const WtfNode* src) {
 	}
 	
 	if(has_component(COM_PVARS)) {
-		read_inst_field(pvars(), src, "pvars");
+		pvars().read(src);
 	}
 	
 	if(has_component(COM_COLOUR)) {
@@ -343,7 +355,7 @@ void Instance::begin_write(WtfWriter* dest) const {
 	}
 	
 	if(has_component(COM_PVARS)) {
-		write_inst_field(dest, "pvars", pvars());
+		pvars().write(dest);
 	}
 	
 	if(has_component(COM_COLOUR)) {

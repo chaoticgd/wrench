@@ -104,6 +104,15 @@ private:
 	f32 _scale = 1.f;
 };
 
+struct PvarComponent {
+	std::vector<u8> data;
+	std::vector<std::pair<s32, s32>> shared_data_pointers;
+	mutable s32 temp_pvar_index = -1;
+	
+	void read(const WtfNode* src);
+	void write(WtfWriter* dest) const;
+};
+
 using GlobalPvarPointers = std::vector<std::pair<s32, s32>>;
 
 struct CameraCollisionParams {
@@ -131,13 +140,8 @@ struct Instance {
 	s32 o_class() const;
 	s32& o_class();
 	
-	const std::vector<u8>& pvars() const;
-	std::vector<u8>& pvars();
-	// These last two pvar members are only used during reading/writing!
-	s32 temp_pvar_index() const;
-	s32& temp_pvar_index();
-	const GlobalPvarPointers& temp_global_pvar_pointers() const;
-	GlobalPvarPointers& temp_global_pvar_pointers();
+	const PvarComponent& pvars() const;
+	PvarComponent& pvars();
 	
 	const glm::vec3& colour() const;
 	glm::vec3& colour();
@@ -171,9 +175,7 @@ private:
 	u32 _components_mask;
 	TransformComponent _transform;
 	s32 _o_class = -1;
-	std::vector<u8> _pvars;
-	s32 _pvar_index = -1; // Only used during reading/writing!
-	GlobalPvarPointers _global_pvar_pointers; // Only used when writing!
+	PvarComponent _pvars;
 	glm::vec3 _colour = glm::vec3(0.f, 0.f, 0.f);
 	f32 _draw_distance = 0.f;
 	std::vector<glm::vec4> _spline;

@@ -727,6 +727,10 @@ void AssetForest::load_and_parse_source_files(Game game) {
 	}
 }
 
+std::map<std::string, CppType>& AssetForest::types() {
+	return _types;
+}
+
 const std::map<std::string, CppType>& AssetForest::types() const {
 	return _types;
 }

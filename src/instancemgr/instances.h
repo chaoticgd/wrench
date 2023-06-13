@@ -35,7 +35,6 @@ struct Instances {
 	InstanceList<TieGroupInstance> tie_groups;
 	InstanceList<ShrubInstance> shrub_instances;
 	InstanceList<ShrubGroupInstance> shrub_groups;
-	std::vector<u8> global_pvar;
 	
 	// environment/lighting
 	InstanceList<DirLightInstance> dir_lights;
@@ -55,6 +54,7 @@ struct Instances {
 	InstanceList<PathInstance> paths;
 	InstanceList<GrindPathInstance> grind_paths;
 	InstanceList<AreaInstance> areas;
+	InstanceList<SharedDataInstance> shared_data;
 	
 	template <typename Callback>
 	void for_each_with(u32 required_components_mask, Callback callback) const;

@@ -416,6 +416,7 @@ public:
 	void unmount_last();
 	void load_and_parse_source_files(Game game);
 	
+	std::map<std::string, CppType>& types();
 	const std::map<std::string, CppType>& types() const;
 	
 private:

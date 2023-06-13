@@ -53,7 +53,7 @@ void pvar_inspector(Level& lvl) {
 		lvl.instances().for_each_with(COM_PVARS, [&](Instance& inst) {
 			if(inst.selected) {
 				ids.emplace_back(inst.id());
-				pvars.emplace_back(&inst.pvars());
+				pvars.emplace_back(&inst.pvars().data);
 			}
 		});
 		
@@ -196,7 +196,7 @@ static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vec
 					}
 					lvl.instances().for_each_with(COM_PVARS, [&](Instance& inst) {
 						if(map.find(inst.id()) != map.end()) {
-							inst.pvars().resize(command.new_size, 0);
+							inst.pvars().data.resize(command.new_size, 0);
 						}
 					});
 				},
@@ -209,9 +209,9 @@ static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vec
 						auto info = map.find(inst.id());
 						if(info != map.end()) {
 							if(!info->second->truncated_data.empty()) {
-								inst.pvars().insert(inst.pvars().end(), BEGIN_END(info->second->truncated_data));
+								inst.pvars().data.insert(inst.pvars().data.end(), BEGIN_END(info->second->truncated_data));
 							} else {
-								inst.pvars().resize(info->second->old_size);
+								inst.pvars().data.resize(info->second->old_size);
 							}
 						}
 					});
@@ -358,8 +358,8 @@ static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 s
 		
 		PokePvarInfo& info = command.instances.emplace_back();
 		info.id = id;
-		verify_fatal(offset + size <= inst->pvars().size());
-		memcpy(info.old_data, &(inst->pvars()[offset]), size);
+		verify_fatal(offset + size <= inst->pvars().data.size());
+		memcpy(info.old_data, &(inst->pvars().data[offset]), size);
 	}
 	
 	lvl.push_command<PokePvarCommand>(std::move(command),
@@ -367,16 +367,16 @@ static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 s
 			for(PokePvarInfo& info : command.instances) {
 				Instance* inst = lvl.instances().from_id(info.id);
 				verify_fatal(inst);
-				verify_fatal(command.offset + command.size <= inst->pvars().size());
-				memcpy(&(inst->pvars()[command.offset]), command.new_data, command.size);
+				verify_fatal(command.offset + command.size <= inst->pvars().data.size());
+				memcpy(&(inst->pvars().data[command.offset]), command.new_data, command.size);
 			}
 		},
 		[](Level& lvl, PokePvarCommand& command) {
 			for(PokePvarInfo& info : command.instances) {
 				Instance* inst = lvl.instances().from_id(info.id);
 				verify_fatal(inst);
-				verify_fatal(command.offset + command.size <= inst->pvars().size());
-				memcpy(&(inst->pvars()[command.offset]), info.old_data, command.size);
+				verify_fatal(command.offset + command.size <= inst->pvars().data.size());
+				memcpy(&(inst->pvars().data[command.offset]), info.old_data, command.size);
 			}
 		});
 }

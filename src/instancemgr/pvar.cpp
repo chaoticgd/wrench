@@ -111,17 +111,17 @@ static void generate_other_pvar_types(std::vector<CppType>& dest, const std::map
 template <typename Callback>
 void for_each_pvar_instance(Instances& dest, Callback callback) {
 	for(MobyInstance& inst : dest.moby_instances) {
-		if(inst.temp_pvar_index() > -1) {
+		if(inst.pvars().temp_pvar_index > -1) {
 			callback(inst);
 		}
 	}
 	for(CameraInstance& inst : dest.cameras) {
-		if(inst.temp_pvar_index() > -1) {
+		if(inst.pvars().temp_pvar_index > -1) {
 			callback(inst);
 		}
 	}
 	for(SoundInstance& inst : dest.sound_instances) {
-		if(inst.temp_pvar_index() > -1) {
+		if(inst.pvars().temp_pvar_index > -1) {
 			callback(inst);
 		}
 	}
@@ -137,17 +137,17 @@ void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const
 	// Scatter pvar data amongst the moby, camera and sound instances.
 	std::vector<Instance*> pvar_to_inst(src.pvar_table->size());
 	for_each_pvar_instance(dest, [&](Instance& inst) {
-		const PvarTableEntry& entry = src.pvar_table->at(inst.temp_pvar_index());
-		inst.pvars() = Buffer(*src.pvar_data).read_multiple<u8>(entry.offset, entry.size).copy();
-		pvar_to_inst.at(inst.temp_pvar_index()) = &inst;
+		const PvarTableEntry& entry = src.pvar_table->at(inst.pvars().temp_pvar_index);
+		inst.pvars().data = Buffer(*src.pvar_data).read_multiple<u8>(entry.offset, entry.size).copy();
+		pvar_to_inst.at(inst.pvars().temp_pvar_index) = &inst;
 	});
 	
 	// Build a map of all the moby classes that have pvars.
 	std::map<s32, PvarMobyWork> moby_classes;
 	for(MobyInstance& inst : dest.moby_instances) {
-		if(!inst.pvars().empty()) {
+		if(!inst.pvars().data.empty()) {
 			PvarMobyWork& moby_class = moby_classes[inst.o_class()];
-			moby_class.pvar_data.emplace_back(&inst.pvars());
+			moby_class.pvar_data.emplace_back(&inst.pvars().data);
 			if(inst.mode_bits & MOBY_MB1_HAS_SUB_VARS) {
 				moby_class.has_sub_vars = true;
 			}
@@ -174,18 +174,18 @@ void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const
 	// Build a map of all the camera that have pvars.
 	std::map<s32, PvarWork> camera_classes;
 	for(CameraInstance& inst : dest.cameras) {
-		if(!inst.pvars().empty()) {
+		if(!inst.pvars().data.empty()) {
 			PvarWork& camera_class = camera_classes[inst.o_class()];
-			camera_class.pvar_size = inst.pvars().size();
+			camera_class.pvar_size = inst.pvars().data.size();
 		}
 	}
 	
 	// Build a map of all the sound that have pvars.
 	std::map<s32, PvarWork> sound_classes;
 	for(SoundInstance& inst : dest.sound_instances) {
-		if(!inst.pvars().empty()) {
+		if(!inst.pvars().data.empty()) {
 			PvarWork& sound_class = sound_classes[inst.o_class()];
-			sound_class.pvar_size = inst.pvars().size();
+			sound_class.pvar_size = inst.pvars().data.size();
 		}
 	}
 	
@@ -356,10 +356,114 @@ static void generate_other_pvar_types(std::vector<CppType>& dest, const std::map
 	}
 }
 
+static void enumerate_moby_links(std::vector<PvarFixupEntry>& dest, const CppType& type, s32 offset, s32 pvar_index, const std::map<std::string, CppType>& types);
+
 void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::string, CppType>& types_src) {
 	dest.pvar_table.emplace();
 	dest.pvar_data.emplace();
 	dest.pvar_moby_links.emplace();
-	dest.global_pvar.emplace();
 	dest.pvar_sub_vars.emplace();
+	dest.shared_data.emplace();
+	dest.shared_data_table.emplace();
+	std::map<s32, s32> shared_data_offsets;
+	for(const SharedDataInstance& inst : src.shared_data) {
+		shared_data_offsets[inst.id().value] = dest.shared_data->size();
+		dest.shared_data->insert(dest.shared_data->end(), BEGIN_END(inst.pvars().data));
+	}
+	
+	src.for_each_with(COM_PVARS, [&](const Instance& inst) {
+		std::vector<u8> pvars = inst.pvars().data;
+		if(pvars.empty()) {
+			return;
+		}
+		
+		std::string type_name;
+		if(inst.type() == INST_MOBY) {
+			type_name = stringf("update%d", inst.o_class());
+		} else if(inst.type() == INST_CAMERA) {
+			type_name = stringf("camera%d", inst.o_class());
+		} else if(inst.type() == INST_SOUND) {
+			type_name = stringf("sound%d", inst.o_class());
+		} else {
+			return;
+		}
+		auto type_iter = types_src.find(type_name);
+		verify(type_iter != types_src.end(), "Failed to lookup pvar type '%s'.", type_name.c_str());
+		const CppType& type = type_iter->second;
+		verify(type.descriptor == CPP_STRUCT_OR_UNION && !type.struct_or_union.is_union, "Pvar type must be a struct.");
+		verify(type.size == pvars.size(), "Pvar data is the wrong size.");
+		
+		// TODO: Fixup links.
+		
+		if(pvars.size() % 0x10 != 0) {
+			pvars.resize(align64(pvars.size(), 0x10));
+		}
+		
+		inst.pvars().temp_pvar_index = (s32) dest.pvar_table->size();
+		PvarTableEntry& entry = dest.pvar_table->emplace_back();
+		entry.offset = dest.pvar_data->size();
+		entry.size = (s32) pvars.size();
+		dest.pvar_data->insert(dest.pvar_data->end(), BEGIN_END(pvars));
+		
+		// Write fixup entries for moby links, so they can be rewritten at load
+		// time by the game.
+		enumerate_moby_links(*dest.pvar_moby_links, type, 0, inst.pvars().temp_pvar_index, types_src);
+		
+		// Write fixup entries for sub vars. This allows the game to convert
+		// the sub var pointers to absolute pointers at load time.
+		if(!type.struct_or_union.fields.empty()) {
+			const CppType& field = type.struct_or_union.fields[0];
+			if(field.descriptor == CPP_TYPE_NAME && field.type_name.string == "SubVars") {
+				for(s32 i = 0; i < field.size; i += 4) {
+					s32 pointer = *(s32*) &pvars[i];
+					if(pointer > 0) {
+						PvarFixupEntry& entry = dest.pvar_sub_vars->emplace_back();
+						entry.pvar_index = inst.pvars().temp_pvar_index;
+						entry.offset = i;
+					}
+				}
+			}
+		}
+		
+		// Write fixup entries for pointers to the shared data, so that again
+		// they can be converted to absolute pointers at load time.
+		for(auto& [pointer, value] : inst.pvars().shared_data_pointers) {
+			SharedDataPointer& entry = dest.shared_data_table->emplace_back();
+			entry.pvar_index = inst.pvars().temp_pvar_index;
+			entry.pointer_offset = pointer;
+			entry.global_pvar_offset = value;
+		}
+	});
+}
+
+static void enumerate_moby_links(std::vector<PvarFixupEntry>& dest, const CppType& type, s32 offset, s32 pvar_index, const std::map<std::string, CppType>& types) {
+	switch(type.descriptor) {
+		case CPP_ARRAY: {
+			for(s32 i = 0; i < type.array.element_count; i++) {
+				enumerate_moby_links(dest, *type.array.element_type, offset + i * type.array.element_type->size, pvar_index, types);
+			}
+			break;
+		}
+		case CPP_STRUCT_OR_UNION: {
+			if(!type.struct_or_union.is_union) {
+				for(const CppType& field : type.struct_or_union.fields) {
+					enumerate_moby_links(dest, field, offset + field.offset, pvar_index, types);
+				}
+			}
+			break;
+		}
+		case CPP_TYPE_NAME: {
+			if(type.type_name.string == "mobylink") {
+				PvarFixupEntry& entry = dest.emplace_back();
+				entry.pvar_index = pvar_index;
+				entry.offset = offset;
+			} else {
+				auto iter = types.find(type.type_name.string);
+				verify(iter != types.end(), "Failed to lookup type '%s'.", type.type_name.string.c_str());
+				enumerate_moby_links(dest, iter->second, offset, pvar_index, types);
+			}
+			break;
+		}
+		default: {}
+	}
 }

@@ -119,7 +119,7 @@ struct RacMobyBlock {
 	static void swap_moby(MobyInstance& l, RacMobyInstance& r) {
 		r.size = sizeof(RacMobyInstance);
 		swap_position_rotation_scale(l, r);
-		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
+		SWAP_PACKED(l.pvars().temp_pvar_index, r.pvar_index);
 		SWAP_PACKED(l.draw_distance(), r.draw_distance);
 		SWAP_PACKED(l.rac1_unknown_4, r.unknown_4);
 		SWAP_PACKED(l.rac1_unknown_8, r.unknown_8);
@@ -213,7 +213,7 @@ struct GcUyaMobyBlock {
 	static void swap_moby(MobyInstance& l, GcUyaMobyInstance& r) {
 		r.size = 0x88;
 		swap_position_rotation_scale(l, r);
-		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
+		SWAP_PACKED(l.pvars().temp_pvar_index, r.pvar_index);
 		SWAP_PACKED(l.draw_distance(), r.draw_distance);
 		SWAP_COLOUR(l.colour(), r.light_colour);
 		SWAP_PACKED(l.mission, r.mission);
@@ -310,7 +310,7 @@ struct DlMobyBlock {
 	static void swap_moby(MobyInstance& l, DlMobyInstance& r) {
 		r.size = 0x70;
 		swap_position_rotation_scale(l, r);
-		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
+		SWAP_PACKED(l.pvars().temp_pvar_index, r.pvar_index);
 		SWAP_PACKED(l.draw_distance(), r.draw_distance);
 		SWAP_COLOUR(l.colour(), r.colour);
 		SWAP_PACKED(l.mission, r.mission);
@@ -334,13 +334,13 @@ struct PvarTableBlock {
 	static void read(Gameplay& dest, Buffer src, Game game) {
 		s32 pvar_count = 0;
 		for(const MobyInstance& inst : opt_iterator(dest.moby_instances)) {
-			pvar_count = std::max(pvar_count, inst.temp_pvar_index() + 1);
+			pvar_count = std::max(pvar_count, inst.pvars().temp_pvar_index + 1);
 		}
 		for(const CameraInstance& inst : opt_iterator(dest.cameras)) {
-			pvar_count = std::max(pvar_count, inst.temp_pvar_index() + 1);
+			pvar_count = std::max(pvar_count, inst.pvars().temp_pvar_index + 1);
 		}
 		for(const SoundInstance& inst : opt_iterator(dest.sound_instances)) {
-			pvar_count = std::max(pvar_count, inst.temp_pvar_index() + 1);
+			pvar_count = std::max(pvar_count, inst.pvars().temp_pvar_index + 1);
 		}
 		
 		dest.pvar_table = src.read_multiple<PvarTableEntry>(0, pvar_count, "pvar table").copy();
@@ -452,28 +452,35 @@ struct GroupBlock {
 	}
 };
 
-packed_struct(GlobalPvarBlockHeader,
-	/* 0x0 */ s32 global_pvar_size;
+packed_struct(SharedDataBlockHeader,
+	/* 0x0 */ s32 data_size;
 	/* 0x4 */ s32 pointer_count;
 	/* 0x8 */ s32 unused_8[2];
 )
 
-struct GlobalPvarBlock {
+struct SharedDataBlock {
 	static void read(Gameplay& dest, Buffer src, Game game) {
-		auto& header = src.read<GlobalPvarBlockHeader>(0, "global pvar block header");
-		dest.global_pvar = src.read_multiple<u8>(0x10, header.global_pvar_size, "global pvar").copy();
-		dest.global_pvar_table = src.read_multiple<GlobalPvarPointer>(0x10 + header.global_pvar_size, header.pointer_count, "global pvar pointers").copy();
+		auto& header = src.read<SharedDataBlockHeader>(0, "global pvar block header");
+		dest.shared_data = src.read_multiple<u8>(0x10, header.data_size, "global pvar").copy();
+		dest.shared_data_table = src.read_multiple<SharedDataPointer>(0x10 + header.data_size, header.pointer_count, "global pvar pointers").copy();
 	}
 	
 	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
-		if(!src.global_pvar.has_value() && !src.global_pvar_table.has_value()) {
-			GlobalPvarBlockHeader header {};
+		if(!src.shared_data.has_value() || !src.shared_data_table.has_value()) {
+			SharedDataBlockHeader header = {};
 			dest.write(header);
 			return true;
 		}
 		
-		dest.write_multiple(*src.global_pvar);
-		dest.write_multiple(*src.global_pvar_table);
+		SharedDataBlockHeader header = {};
+		header.data_size = align32((s32) src.shared_data->size(), 0x10);
+		header.pointer_count = (s32) src.shared_data_table->size();
+		dest.write(header);
+		
+		dest.write_multiple(*src.shared_data);
+		dest.pad(0x10);
+		dest.write_multiple(*src.shared_data_table);
+		
 		return true;
 	}
 };

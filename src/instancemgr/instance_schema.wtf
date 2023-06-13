@@ -250,3 +250,9 @@ InstanceType Area {
 	CylinderLinks cylinders {}
 	CuboidLinks negative_cuboids {}
 }
+
+InstanceType SharedData {
+	desc: "A container for data shared between multiple moby, camera or sound instances. Referenced via pvars. Shared data pvars cannot contain pointers to other shared data instances."
+	components: "COM_PVARS"
+	variable: "shared_data"
+}
