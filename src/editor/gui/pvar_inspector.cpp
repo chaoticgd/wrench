@@ -45,7 +45,6 @@ void pvar_inspector(Level& lvl) {
 		return;
 	}
 	
-	ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable;
 	if(ImGui::CollapsingHeader("Pvars")) {
 		ImGui::BeginChild("pvars");
 	
@@ -76,7 +75,7 @@ void pvar_inspector(Level& lvl) {
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 		ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
-		if(ImGui::BeginTable("pvar_table", 3, flags)) {
+		if(ImGui::BeginTable("pvar_table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
 			ImGui::TableSetupColumn("Ofs", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);

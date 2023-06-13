@@ -15,7 +15,7 @@ struct SubVars {
 	/* 0x2c */ void* unknown_2c;
 };
 
-struct UyaVars00 {
+struct TargetVars {
 	/* 0x00 */ int unknown_0;
 	/* 0x04 */ int unknown_4;
 	/* 0x08 */ int unknown_8;
