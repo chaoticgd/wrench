@@ -12,18 +12,29 @@ struct SubVars {
 };
 
 struct TargetVars {
-	/* 0x00 */ int unknown_0;
-	/* 0x04 */ int unknown_4;
-	/* 0x08 */ int unknown_8;
-	/* 0x0c */ int unknown_c;
-	/* 0x10 */ int unknown_10;
-	/* 0x14 */ int unknown_14;
-	/* 0x18 */ int unknown_18;
-	/* 0x1c */ int unknown_1c;
+	/* 0x00 */ float hitPoints;
+	/* 0x04 */ short maxHitPoints; /* int? */
+	/* 0x06 */ char field2_0x6;
+	/* 0x07 */ char field3_0x7;
+	/* 0x08 */ unsigned char attackDamage[6];
+	/* 0x0e */ unsigned short hitCount;
+	/* 0x10 */ int flags;
+	/* 0x14 */ char field7_0x14;
+	/* 0x15 */ char field8_0x15;
+	/* 0x16 */ char field9_0x16;
+	/* 0x17 */ unsigned char weaponThatHurtMeLast;
+	/* 0x18 */ MobyInstance* mobyThatHurtMeLast;
+	/* 0x1c */ unsigned short damageCounter;
+	/* 0x1e */ char field13_0x1e;
+	/* 0x1f */ char field14_0x1f;
 	/* 0x20 */ int unknown_20;
 	/* 0x24 */ int unknown_24;
 	/* 0x28 */ int unknown_28;
 	/* 0x2c */ int unknown_2c;
+	/* 0x30 */ int unknown_30;
+	/* 0x34 */ int unknown_34;
+	/* 0x38 */ int unknown_38;
+	/* 0x3c */ int unknown_3c;
 };
 
 struct GcVars04 {

@@ -39,7 +39,7 @@ static const PvarHeaderSpec RAC_PVAR_SUB_VARS[] = {
 };
 
 static const PvarHeaderSpec GC_PVAR_SUB_VARS[] = {
-	{0x00, "TargetVars", "targetVars", 0x30},
+	{0x00, "TargetVars", "targetVars", 0x40},
 	{0x04, "GcVars04"},
 	{0x08, "GcVars08", "", 0x40},
 	{0x0c, "GcVars0c", "", 0x20},
