@@ -213,6 +213,9 @@ Shaders::Shaders() :
 			
 			void main() {
 				gl_FragColor = texture2D(sampler, uv);
+				if(gl_FragColor.a < 0.001) {
+					discard;
+				}
 			}
 		)",
 		[&](GLuint id) {
