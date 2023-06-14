@@ -463,11 +463,20 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 		}
 	}
 	
-	forest.load_and_parse_source_files(config.game());
-	
 	AssetLink link;
 	link.set(asset.c_str());
 	Asset& wad = forest.lookup_asset(link, nullptr);
+	
+	Game game;
+	if(BuildAsset* build = wad.maybe_as<BuildAsset>()) {
+		game = game_from_string(build->game());
+	} else {
+		verify(config.game() != Game::UNKNOWN, "Must specify -g on the command line.");
+		game = config.game();
+	}
+	
+	// Parse pvar types.
+	forest.load_and_parse_source_files(game);
 	
 	printf("[  0%%] Scanning dependencies of %s\n", asset.c_str());
 	

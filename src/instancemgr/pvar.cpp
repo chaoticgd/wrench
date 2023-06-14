@@ -483,7 +483,7 @@ void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::strin
 		verify(type_iter != types_src.end(), "Failed to lookup pvar type '%s'.", type_name.c_str());
 		const CppType& type = type_iter->second;
 		verify(type.descriptor == CPP_STRUCT_OR_UNION && !type.struct_or_union.is_union, "Pvar type must be a struct.");
-		verify(type.size == pvars.size(), "Pvar data is the wrong size.");
+		verify(type.size == pvars.size(), "Pvar data is the wrong size for type %s (%d vs %d).", type_name.c_str(), (s32) pvars.size(), type.size);
 		
 		// TODO: Fixup links.
 		
