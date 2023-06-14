@@ -203,6 +203,7 @@ static void pack_editor_wad() {
 	header.instance_3d_view_icons[INST_CYLINDER] = pack_compressed_image(wad, "data/editor/icons/cylinder.png");
 	header.instance_3d_view_icons[INST_PILL] = pack_compressed_image(wad, "data/editor/icons/pill.png");
 	header.instance_3d_view_icons[INST_CAMERA] = pack_compressed_image(wad, "data/editor/icons/camera.png");
+	header.instance_3d_view_icons[INST_AREA] = pack_compressed_image(wad, "data/editor/icons/area.png");
 	header.instance_3d_view_icons[INST_SOUND] = pack_compressed_image(wad, "data/editor/icons/sound.png");
 	
 	wad.pad(SECTOR_SIZE, 0);

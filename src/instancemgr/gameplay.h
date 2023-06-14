@@ -114,7 +114,4 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const st
 const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game);
 std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game);
 
-void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::vector<CppType>& types_dest, Gameplay& src, Game game);
-void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src, const std::map<std::string, CppType>& types_src);
-
 #endif

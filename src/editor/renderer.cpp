@@ -70,6 +70,7 @@ static GLuint cylinder_inst_buffer = 0;
 static GLuint pill_inst_buffer = 0;
 static GLuint camera_inst_buffer = 0;
 static GLuint sound_inst_buffer = 0;
+static GLuint area_inst_buffer = 0;
 static GLuint program = 0;
 
 void init_renderer() {
@@ -131,6 +132,7 @@ void prepare_frame(Level& lvl) {
 	upload_instance_buffer(pill_inst_buffer, lvl.instances().pills);
 	upload_instance_buffer(camera_inst_buffer, lvl.instances().cameras);
 	upload_instance_buffer(sound_inst_buffer, lvl.instances().sound_instances);
+	upload_instance_buffer(area_inst_buffer, lvl.instances().areas);
 }
 
 struct InstanceData {
@@ -288,6 +290,10 @@ static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, c
 	
 	if(settings.draw_grind_paths) {
 		draw_paths(lvl.instances().grind_paths, cyan);
+	}
+	
+	if(settings.draw_areas && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, area_inst_buffer, 0, lvl.instances().areas.size());
 	}
 }
 
@@ -511,6 +517,10 @@ static void draw_icons(Level& lvl, const RenderSettings& settings) {
 	
 	if(settings.draw_sound_instances) {
 		draw_icon_instanced(INST_SOUND, sound_inst_buffer, 0, lvl.instances().sound_instances.size());
+	}
+	
+	if(settings.draw_areas) {
+		draw_icon_instanced(INST_AREA, area_inst_buffer, 0, lvl.instances().areas.size());
 	}
 }
 

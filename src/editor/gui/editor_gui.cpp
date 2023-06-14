@@ -176,6 +176,7 @@ static void menu_bar() {
 				ImGui::Checkbox("Sound Instances", &a.render_settings.draw_sound_instances);
 				ImGui::Checkbox("Paths", &a.render_settings.draw_paths);
 				ImGui::Checkbox("Grind Paths", &a.render_settings.draw_grind_paths);
+				ImGui::Checkbox("Areas", &a.render_settings.draw_areas);
 				ImGui::Checkbox("Collision", &a.render_settings.draw_collision);
 				ImGui::Separator();
 				ImGui::Checkbox("Selected Instance Normals", &a.render_settings.draw_selected_instance_normals);

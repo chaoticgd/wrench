@@ -33,6 +33,7 @@ add_custom_target(
 
 add_library(wrenchinstancemgr STATIC
 	gameplay.cpp
+	gameplay_convert.cpp
 	instance.cpp
 	instances.cpp
 	level_settings.cpp

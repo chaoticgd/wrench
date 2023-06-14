@@ -16,13 +16,12 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCHBUILD_LEVEL_INSTANCES_ASSET_H
-#define WRENCHBUILD_LEVEL_INSTANCES_ASSET_H
+#ifndef INSTANCEMGR_GAMEPLAY_CONVERT_H
+#define INSTANCEMGR_GAMEPLAY_CONVERT_H
 
-#include <instancemgr/gameplay_convert.h>
-#include <assetmgr/asset_types.h>
+#include <instancemgr/gameplay.h>
 
-void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint);
-Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_src, const std::map<std::string, CppType>& types_src, const BuildConfig& config, const char* hint);
+void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::vector<CppType>& types_dest, Gameplay& src, Game game);
+void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src, const std::map<std::string, CppType>& types_src);
 
 #endif

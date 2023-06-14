@@ -240,7 +240,8 @@ InstanceType GrindPath {
 
 InstanceType Area {
 	desc: "A volume composed of multiple smaller volumes."
-	components: "COM_BOUNDING_SPHERE"
+	components: "COM_TRANSFORM | COM_BOUNDING_SPHERE"
+	transform_mode: "POSITION"
 	variable: "areas"
 	
 	s32 last_update_time {}
