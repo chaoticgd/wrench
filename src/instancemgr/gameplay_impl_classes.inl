@@ -384,6 +384,8 @@ struct PvarFixupBlock {
 	
 	static bool write(OutBuffer dest, const std::vector<PvarFixupEntry>& src, Game game) {
 		dest.write_multiple(src);
+		dest.write<s32>(-1);
+		dest.write<s32>(-1);
 		return true;
 	}
 };
@@ -462,7 +464,7 @@ struct SharedDataBlock {
 	static void read(Gameplay& dest, Buffer src, Game game) {
 		auto& header = src.read<SharedDataBlockHeader>(0, "global pvar block header");
 		dest.shared_data = src.read_multiple<u8>(0x10, header.data_size, "global pvar").copy();
-		dest.shared_data_table = src.read_multiple<SharedDataPointer>(0x10 + header.data_size, header.pointer_count, "global pvar pointers").copy();
+		dest.shared_data_table = src.read_multiple<SharedDataEntry>(0x10 + header.data_size, header.pointer_count, "global pvar pointers").copy();
 	}
 	
 	static bool write(OutBuffer dest, const Gameplay& src, Game game) {

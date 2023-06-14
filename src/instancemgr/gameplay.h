@@ -34,10 +34,10 @@ packed_struct(PvarFixupEntry,
 	/* 0x4 */ u32 offset;
 )
 
-packed_struct(SharedDataPointer,
+packed_struct(SharedDataEntry,
 	/* 0x0 */ u16 pvar_index;
 	/* 0x2 */ u16 pointer_offset;
-	/* 0x4 */ s32 global_pvar_offset;
+	/* 0x4 */ s32 shared_data_offset;
 )
 
 // Represents a packed gameplay file.
@@ -84,7 +84,7 @@ struct Gameplay {
 	Opt<std::vector<PvarFixupEntry>> pvar_moby_links;
 	Opt<std::vector<PvarFixupEntry>> pvar_sub_vars;
 	Opt<std::vector<u8>> shared_data;
-	Opt<std::vector<SharedDataPointer>> shared_data_table;
+	Opt<std::vector<SharedDataEntry>> shared_data_table;
 };
 
 // *****************************************************************************

@@ -217,7 +217,7 @@ struct EnvTransitionBlock {
 			dest.write(Vec4f::pack(inst.bounding_sphere()));
 		}
 		for(EnvTransitionInstance inst : src) {
-			EnvTransitionPacked packed;
+			EnvTransitionPacked packed = {};
 			packed.inverse_matrix = Mat4::pack(inst.transform().inverse_matrix());
 			packed.flags = inst.enable_hero | (inst.enable_fog << 1);
 			packed.unused_7c = 0;
