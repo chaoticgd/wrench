@@ -1468,6 +1468,13 @@ AssetType MobyClass {
 		games: [1 2 3 4]
 	}
 	
+	Child editor_icon {
+		desc: "The icon shown in the 3D view in the editor if a mesh is not available."
+		allowed_types: ["Texture"]
+		required: false
+		games: [1 2 3 4]
+	}
+	
 	Hint level {
 		syntax: "level"
 		example: "level"

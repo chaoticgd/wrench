@@ -31,6 +31,7 @@ struct EditorClass {
 	Opt<Mesh> mesh;
 	Opt<RenderMesh> render_mesh;
 	std::vector<RenderMaterial> materials;
+	Opt<RenderMaterial> icon;
 	const CppType* pvar_type = nullptr;
 };
 

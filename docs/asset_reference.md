@@ -962,6 +962,7 @@ No attributes.
 | core | *Not yet documented.* | MobyClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
 | materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RAC/GC/UYA/DL |
 | editor_mesh | The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies. | Mesh | No | RAC/GC/UYA/DL |
+| editor_icon | The icon shown in the 3D view in the editor if a mesh is not available. | Texture | No | RAC/GC/UYA/DL |
 
 
 *Hints*

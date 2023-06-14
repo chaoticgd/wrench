@@ -21,6 +21,7 @@
 #include <core/png.h>
 #include <assetmgr/material_asset.h>
 #include <instancemgr/gameplay.h>
+#include <gui/render_mesh.h>
 #include <editor/app.h>
 
 Level::Level() {}
@@ -102,6 +103,17 @@ void Level::read(LevelAsset& asset, Game g) {
 				ec.mesh = *mesh;
 				ec.render_mesh = upload_mesh(*mesh, true);
 				ec.materials = upload_materials(scene.materials, textures);
+			}
+		}
+		if(moby.has_editor_icon()) {
+			TextureAsset& icon_asset = moby.get_editor_icon();
+			std::unique_ptr<InputStream> stream = icon_asset.file().open_binary_file_for_reading(icon_asset.src());
+			Opt<Texture> icon = read_png(*stream);
+			if(icon.has_value()) {
+				std::vector<Texture> textures = { std::move(*icon) };
+				ColladaMaterial mat;
+				mat.surface = MaterialSurface(0);
+				ec.icon = upload_material(mat, textures);
 			}
 		}
 		auto pvar_type = types.find(stringf("update%d", moby.id()));
