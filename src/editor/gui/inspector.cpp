@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2021 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <imgui.h>
 
 #include <editor/app.h>
+#include <editor/gui/pvar_inspector.h>
 
 static const s32 MAX_LANES = 4;
 struct InspectorFieldFuncs {
@@ -51,9 +52,9 @@ template <typename Value>
 static InspectorFieldFuncs scalar_funcs(InspectorGetterSetter<Value> getset);
 static InspectorFieldFuncs vec3_funcs(InspectorGetterSetter<glm::vec3> getset);
 static InspectorFieldFuncs vec4_funcs(InspectorGetterSetter<glm::vec4> getset);
-static InspectorFieldFuncs pvar_funcs();
 template <typename ThisInstance>
 static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisInstance::*field);
+static InspectorFieldFuncs camera_collision_funcs();
 static InspectorFieldFuncs moby_rooted_funcs();
 
 static bool should_draw_field(Level& lvl, const InspectorField& field);
@@ -83,102 +84,152 @@ void inspector() {
 	}
 	Level& lvl = *a.get_level();
 	
-	const std::vector<InspectorField> fields = {
-		// Components
-		{COM_NONE           , INST_NONE      , "Type     ", type_funcs()},
-		{COM_NONE           , INST_NONE      , "ID       ", id_funcs()},
-		{COM_TRANSFORM      , INST_NONE      , "Position ", vec3_funcs(adapt_getter_setter(&Instance::position, &Instance::set_position))},
-		{COM_TRANSFORM      , INST_NONE      , "Rotation ", vec3_funcs(adapt_getter_setter(&Instance::rotation, &Instance::set_rotation))},
-		{COM_TRANSFORM      , INST_NONE      , "Scale    ", scalar_funcs(adapt_getter_setter(&Instance::scale, &Instance::set_scale))},
-		{COM_PVARS          , INST_NONE      , "Pvars    ", pvar_funcs()},
-		{COM_DRAW_DISTANCE  , INST_NONE      , "Draw Dist", scalar_funcs(adapt_reference_member_function<f32>(&Instance::draw_distance))},
-		{COM_BOUNDING_SPHERE, INST_NONE      , "Bsphere  ", vec4_funcs(adapt_reference_member_function<glm::vec4>(&Instance::bounding_sphere))},
+	static const std::vector<InspectorField> header_fields = {
+		{COM_NONE            , INST_NONE      , "Type     ", type_funcs()},
+		{COM_NONE            , INST_NONE      , "ID       ", id_funcs()},
+	};
+	
+	static const std::vector<InspectorField> fields = {
+		{COM_DRAW_DISTANCE   , INST_NONE          , "Draw Dist", scalar_funcs(adapt_reference_member_function<f32>(&Instance::draw_distance))},
+		{COM_BOUNDING_SPHERE , INST_NONE          , "Bsphere", vec4_funcs(adapt_reference_member_function<glm::vec4>(&Instance::bounding_sphere))},
+		{COM_CAMERA_COLLISION, INST_NONE          , "Cam Coll", camera_collision_funcs()},
+		// Moby
+		{COM_NONE            , INST_MOBY          , "Mission", scalar_funcs(adapt_member_pointer(&MobyInstance::mission))},
+		{COM_NONE            , INST_MOBY          , "UID", scalar_funcs(adapt_member_pointer(&MobyInstance::uid))},
+		{COM_NONE            , INST_MOBY          , "Bolts", scalar_funcs(adapt_member_pointer(&MobyInstance::bolts))},
+		{COM_NONE            , INST_MOBY          , "Class", scalar_funcs(adapt_reference_member_function<s32>(&MobyInstance::o_class))},
+		{COM_NONE            , INST_MOBY          , "Updt Dist", scalar_funcs(adapt_member_pointer(&MobyInstance::update_distance))},
+		{COM_NONE            , INST_MOBY          , "Rooted", moby_rooted_funcs()},
+		{COM_NONE            , INST_MOBY          , "Occlusion", scalar_funcs(adapt_member_pointer(&MobyInstance::occlusion))},
+		{COM_NONE            , INST_MOBY          , "Mode Bits", scalar_funcs(adapt_member_pointer(&MobyInstance::mode_bits))},
+		{COM_NONE            , INST_MOBY          , "Light", foreign_id_funcs(INST_DIRLIGHT, &MobyInstance::light)},
+		// Tie
+		{COM_NONE            , INST_TIE           , "Class", scalar_funcs(adapt_reference_member_function<s32>(&TieInstance::o_class))},
+		{COM_NONE            , INST_TIE           , "Occlusion", scalar_funcs(adapt_member_pointer(&TieInstance::occlusion_index))},
+		{COM_NONE            , INST_TIE           , "Light", foreign_id_funcs(INST_DIRLIGHT, &TieInstance::directional_lights)},
+		{COM_NONE            , INST_TIE           , "UID", scalar_funcs(adapt_member_pointer(&TieInstance::uid))},
+		// Shrub
+		{COM_NONE            , INST_SHRUB         , "Class", scalar_funcs(adapt_reference_member_function<s32>(&ShrubInstance::o_class))},
+		{COM_NONE            , INST_SHRUB         , "Unk 5c", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_5c))},
+		{COM_NONE            , INST_SHRUB         , "DirLights", scalar_funcs(adapt_member_pointer(&ShrubInstance::dir_lights))},
+		{COM_NONE            , INST_SHRUB         , "Unk 64", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_64))},
+		{COM_NONE            , INST_SHRUB         , "Unk 68", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_68))},
+		{COM_NONE            , INST_SHRUB         , "Unk 6c", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_6c))},
+		// DirLight
+		{COM_NONE            , INST_DIRLIGHT      , "Colour A", vec4_funcs(adapt_member_pointer(&DirLightInstance::col_a))},
+		{COM_NONE            , INST_DIRLIGHT      , "Dir A", vec4_funcs(adapt_member_pointer(&DirLightInstance::dir_a))},
+		{COM_NONE            , INST_DIRLIGHT      , "Colour B", vec4_funcs(adapt_member_pointer(&DirLightInstance::col_b))},
+		{COM_NONE            , INST_DIRLIGHT      , "Dir B", vec4_funcs(adapt_member_pointer(&DirLightInstance::dir_b))},
+		// PointLight
+		{COM_NONE            , INST_POINTLIGHT    , "Radius", scalar_funcs(adapt_member_pointer(&PointLightInstance::radius))},
+		// EnvSamplePoint
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Hero Light", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::hero_light))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Music Track", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::music_track))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Hero Colour R", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::hero_colour_r))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Hero Colour G", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::hero_colour_g))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Hero Colour B", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::hero_colour_b))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Enable Reverb Params", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::enable_reverb_params))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Reverb Type", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::reverb_type))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Reverb Depth", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::reverb_depth))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Reverb Delay", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::reverb_delay))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Reverb Feedback", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::reverb_feedback))},
+		// EnvTransition
+		{COM_NONE            , INST_ENVTRANSITION , "Enable Hero", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::enable_hero))},
+		{COM_NONE            , INST_ENVTRANSITION , "Hero Colour 1", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::hero_colour_1))},
+		{COM_NONE            , INST_ENVTRANSITION , "Hero Colour 2", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::hero_colour_2))},
+		{COM_NONE            , INST_ENVTRANSITION , "Hero Light 1", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::hero_light_1))},
+		{COM_NONE            , INST_ENVTRANSITION , "Hero Light 2", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::hero_light_2))},
+		{COM_NONE            , INST_ENVTRANSITION , "Enable Fog", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::enable_fog))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Colour 1", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_colour_1))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Colour 2", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_colour_2))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Near Dist 1", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_near_dist_1))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Near Intensity 1", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_near_intensity_1))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Far Dist 1", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_far_dist_1))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Far Intensity 1", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_far_intensity_2))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Near Dist 2", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_near_dist_2))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Near Intensity 2", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_near_intensity_2))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Far Dist 2", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_far_dist_2))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Far Intensity 2", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_far_intensity_2))},
 		// Camera
-		{COM_NONE           , INST_CAMERA    , "Type     ", scalar_funcs(adapt_member_pointer(&Camera::type))},
-		// SoundInstance
-		{COM_NONE           , INST_SOUND     , "O Class  ", scalar_funcs(adapt_member_pointer(&SoundInstance::o_class))},
-		{COM_NONE           , INST_SOUND     , "M Class  ", scalar_funcs(adapt_member_pointer(&SoundInstance::m_class))},
-		{COM_NONE           , INST_SOUND     , "Range    ", scalar_funcs(adapt_member_pointer(&SoundInstance::range))},
-		// MobyInstance
-		{COM_NONE           , INST_MOBY      , "Mission  ", scalar_funcs(adapt_member_pointer(&MobyInstance::mission))},
-		{COM_NONE           , INST_MOBY      , "UID      ", scalar_funcs(adapt_member_pointer(&MobyInstance::uid))},
-		{COM_NONE           , INST_MOBY      , "Bolts    ", scalar_funcs(adapt_member_pointer(&MobyInstance::bolts))},
-		{COM_NONE           , INST_MOBY      , "Class    ", scalar_funcs(adapt_member_pointer(&MobyInstance::o_class))},
-		{COM_NONE           , INST_MOBY      , "Updt Dist", scalar_funcs(adapt_member_pointer(&MobyInstance::update_distance))},
-		{COM_NONE           , INST_MOBY      , "Group    ", scalar_funcs(adapt_member_pointer(&MobyInstance::group))},
-		{COM_NONE           , INST_MOBY      , "Rooted   ", moby_rooted_funcs()},
-		{COM_NONE           , INST_MOBY      , "Occlusion", scalar_funcs(adapt_member_pointer(&MobyInstance::occlusion))},
-		{COM_NONE           , INST_MOBY      , "Mode Bits", scalar_funcs(adapt_member_pointer(&MobyInstance::mode_bits))},
-		{COM_NONE           , INST_MOBY      , "Light    ", foreign_id_funcs(INST_LIGHT, &MobyInstance::light)},
+		{COM_NONE            , INST_CAMERA        , "Class", scalar_funcs(adapt_reference_member_function<s32>(&CameraInstance::o_class))},
+		// Sound
+		{COM_NONE            , INST_SOUND         , "Class", scalar_funcs(adapt_reference_member_function<s32>(&SoundInstance::o_class))},
+		{COM_NONE            , INST_SOUND         , "M Class", scalar_funcs(adapt_member_pointer(&SoundInstance::m_class))},
+		{COM_NONE            , INST_SOUND         , "Range", scalar_funcs(adapt_member_pointer(&SoundInstance::range))},
 		// GrindPath
-		{COM_NONE           , INST_GRIND_PATH, "Wrap     ", scalar_funcs(adapt_member_pointer(&GrindPath::wrap))},
-		{COM_NONE           , INST_GRIND_PATH, "Inactive ", scalar_funcs(adapt_member_pointer(&GrindPath::inactive))},
-		{COM_NONE           , INST_GRIND_PATH, "Unk 4    ", scalar_funcs(adapt_member_pointer(&GrindPath::unknown_4))},
-		// DirectionalLight
-		{COM_NONE           , INST_LIGHT     , "Colour A ", vec4_funcs(adapt_member_pointer(&DirectionalLight::colour_a))},
-		{COM_NONE           , INST_LIGHT     , "Dir A    ", vec4_funcs(adapt_member_pointer(&DirectionalLight::direction_a))},
-		{COM_NONE           , INST_LIGHT     , "Colour B ", vec4_funcs(adapt_member_pointer(&DirectionalLight::colour_b))},
-		{COM_NONE           , INST_LIGHT     , "Dir B    ", vec4_funcs(adapt_member_pointer(&DirectionalLight::direction_b))},
-		// TieInstance
-		{COM_NONE           , INST_TIE       , "Class    ", scalar_funcs(adapt_member_pointer(&TieInstance::o_class))},
-		{COM_NONE           , INST_TIE       , "Occlusion", scalar_funcs(adapt_member_pointer(&TieInstance::occlusion_index))},
-		{COM_NONE           , INST_TIE       , "Light    ", foreign_id_funcs(INST_LIGHT, &TieInstance::directional_lights)},
-		{COM_NONE           , INST_TIE       , "UID      ", scalar_funcs(adapt_member_pointer(&TieInstance::uid))},
-		// ShrubInstance
-		{COM_NONE           , INST_SHRUB     , "Class    ", scalar_funcs(adapt_member_pointer(&ShrubInstance::o_class))},
-		{COM_NONE           , INST_SHRUB     , "Unk 8    ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_8))},
-		{COM_NONE           , INST_SHRUB     , "Unk c    ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_c))},
-		{COM_NONE           , INST_SHRUB     , "Unk 5c   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_5c))},
-		{COM_NONE           , INST_SHRUB     , "Unk 60   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_60))},
-		{COM_NONE           , INST_SHRUB     , "Unk 64   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_64))},
-		{COM_NONE           , INST_SHRUB     , "Unk 68   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_68))},
-		{COM_NONE           , INST_SHRUB     , "Unk 6c   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_6c))},
+		{COM_NONE            , INST_GRINDPATH     , "Wrap", scalar_funcs(adapt_member_pointer(&GrindPathInstance::wrap))},
+		{COM_NONE            , INST_GRINDPATH     , "Inactive", scalar_funcs(adapt_member_pointer(&GrindPathInstance::inactive))},
+		{COM_NONE            , INST_GRINDPATH     , "Unk 4", scalar_funcs(adapt_member_pointer(&GrindPathInstance::unknown_4))},
 	};
 	
-	const std::vector<InspectorField> rac1_fields = {
-		{COM_NONE           , INST_MOBY      , "Unk 4    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_4))},
-		{COM_NONE           , INST_MOBY      , "Unk 8    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_8))},
-		{COM_NONE           , INST_MOBY      , "Unk c    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_c))},
-		{COM_NONE           , INST_MOBY      , "Unk 10   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_10))},
-		{COM_NONE           , INST_MOBY      , "Unk 14   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_14))},
-		{COM_NONE           , INST_MOBY      , "Unk 18   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_18))},
-		{COM_NONE           , INST_MOBY      , "Unk 1c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_1c))},
-		{COM_NONE           , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_20))},
-		{COM_NONE           , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_24))},
-		{COM_NONE           , INST_MOBY      , "Unk 28   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_28))},
-		{COM_NONE           , INST_MOBY      , "Unk 2c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_2c))},
-		{COM_NONE           , INST_MOBY      , "Unk 54   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_54))},
-		{COM_NONE           , INST_MOBY      , "Unk 60   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_60))},
-		{COM_NONE           , INST_MOBY      , "Unk 70   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_70))},
-		{COM_NONE           , INST_MOBY      , "Unk 74   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_74))}
+	static const std::vector<InspectorField> rac1_fields = {
+		{COM_NONE            , INST_MOBY      , "Unk 4    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_4))},
+		{COM_NONE            , INST_MOBY      , "Unk 8    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_8))},
+		{COM_NONE            , INST_MOBY      , "Unk c    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_c))},
+		{COM_NONE            , INST_MOBY      , "Unk 10   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_10))},
+		{COM_NONE            , INST_MOBY      , "Unk 14   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_14))},
+		{COM_NONE            , INST_MOBY      , "Unk 18   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_18))},
+		{COM_NONE            , INST_MOBY      , "Unk 1c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_1c))},
+		{COM_NONE            , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_20))},
+		{COM_NONE            , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_24))},
+		{COM_NONE            , INST_MOBY      , "Unk 54   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_54))},
+		{COM_NONE            , INST_MOBY      , "Unk 74   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_74))}
 	};
 	
-	const std::vector<InspectorField> rac23_fields = {
-		{COM_NONE           , INST_MOBY      , "Unk 8    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_8))},
-		{COM_NONE           , INST_MOBY      , "Unk c    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_c))},
-		{COM_NONE           , INST_MOBY      , "Unk 18   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_18))},
-		{COM_NONE           , INST_MOBY      , "Unk 1c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_1c))},
-		{COM_NONE           , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_20))},
-		{COM_NONE           , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_24))},
-		{COM_NONE           , INST_MOBY      , "Unk 38   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_38))},
-		{COM_NONE           , INST_MOBY      , "Unk 3c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_3c))},
-		{COM_NONE           , INST_MOBY      , "Unk 4c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_4c))},
-		{COM_NONE           , INST_MOBY      , "Unk 84   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_84))}
+	static const std::vector<InspectorField> rac23_fields = {
+		{COM_NONE            , INST_MOBY      , "Unk 8    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_8))},
+		{COM_NONE            , INST_MOBY      , "Unk c    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_c))},
+		{COM_NONE            , INST_MOBY      , "Unk 18   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_18))},
+		{COM_NONE            , INST_MOBY      , "Unk 1c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_1c))},
+		{COM_NONE            , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_20))},
+		{COM_NONE            , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_24))},
+		{COM_NONE            , INST_MOBY      , "Unk 4c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_4c))},
+		{COM_NONE            , INST_MOBY      , "Unk 84   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_84))}
 	};
 	
-	if(ImGui::BeginTable("inspector", 2)) {
+	static const std::vector<InspectorField> gc_uya_dl_fields = {
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Enable Fog Params", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::enable_fog_params))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Near Intensity", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_near_intensity))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Far Intensity", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_far_intensity))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog R", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_r))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog G", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_g))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog B", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_b))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Near Dist", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_near_dist))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Far Dist", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_far_dist))},
+	};
+	
+	if(ImGui::BeginTable("header", 2)) {
 		ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed);
 		ImGui::TableSetupColumn("input", ImGuiTableColumnFlags_WidthStretch);
-		
-		draw_fields(lvl, fields);
-		if(lvl.game == Game::RAC) {
-			draw_fields(lvl, rac1_fields);
-		}
-		if(lvl.game == Game::GC || lvl.game == Game::UYA) {
-			draw_fields(lvl, rac23_fields);
-		}
+		draw_fields(lvl, header_fields);
 		ImGui::EndTable();
 	}
+	
+	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
+	if(ImGui::CollapsingHeader("Attributes")) {
+		if(ImGui::BeginTable("inspector", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
+			ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
+			ImGui::TableSetupColumn("input", ImGuiTableColumnFlags_WidthStretch);
+			draw_fields(lvl, fields);
+			if(lvl.game == Game::RAC) {
+				draw_fields(lvl, rac1_fields);
+			}
+			if(lvl.game == Game::GC || lvl.game == Game::UYA) {
+				draw_fields(lvl, rac23_fields);
+			}
+			if(lvl.game != Game::RAC) {
+				draw_fields(lvl, gc_uya_dl_fields);
+			}
+			ImGui::EndTable();
+		}
+	}
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+	
+	pvar_inspector(lvl);
 }
 
 
@@ -192,7 +243,7 @@ static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields) {
 			should_draw_current_values(values_equal, lvl, field);
 			
 			Instance* first = nullptr;
-			lvl.gameplay().for_each_instance([&](Instance& inst) {
+			lvl.instances().for_each([&](Instance& inst) {
 				if(first == nullptr && inst.selected) {
 					first = &inst;
 				}
@@ -220,24 +271,7 @@ static InspectorFieldFuncs type_funcs() {
 	};
 	funcs.draw = [](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
 		if(values_equal[0]) {
-			const char* type;
-			switch(first.type()) {
-				case INST_NONE: verify_not_reached_fatal("Invalid instance type."); break;
-				case INST_GC_8c_DL_70: type = "GC 8c DL 70"; break;
-				case INST_LIGHT_TRIGGER: type = "Light Trigger"; break;
-				case INST_CAMERA: type = "Camera"; break;
-				case INST_SOUND: type = "Sound"; break;
-				case INST_MOBY: type = "Moby"; break;
-				case INST_PATH: type = "Path"; break;
-				case INST_CUBOID: type = "Cuboid"; break;
-				case INST_SPHERE: type = "Sphere"; break;
-				case INST_CYLINDER: type = "Cylinder"; break;
-				case INST_GRIND_PATH: type = "Grind Path"; break;
-				case INST_LIGHT: type = "Light"; break;
-				case INST_TIE: type = "Tie"; break;
-				case INST_SHRUB: type = "Shrub"; break;
-				default: verify_not_reached_fatal("Invalid instance type.");
-			}
+			const char* type = instance_type_to_string(first.type());
 			ImGui::Text("%s", type);
 		} else {
 			ImGui::Text("<multiple selected>");
@@ -330,22 +364,6 @@ static InspectorFieldFuncs vec4_funcs(InspectorGetterSetter<glm::vec4> getset) {
 	return funcs;
 }
 
-static InspectorFieldFuncs pvar_funcs() {
-	InspectorFieldFuncs funcs;
-	funcs.lane_count = 1;
-	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
-		return lhs.pvars().size() == 0 && rhs.pvars().size() == 0;
-	};
-	funcs.draw = [](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
-		if(values_equal[0]) {
-			ImGui::Text("<empty>");
-		} else {
-			ImGui::Button("View");
-		}
-	};
-	return funcs;
-}
-
 template <typename ThisInstance>
 static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisInstance::*field) {
 	InspectorFieldFuncs funcs;
@@ -365,7 +383,7 @@ static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisI
 		bool changed = false;
 		ImGui::PushItemWidth(calc_remaining_item_width());
 		if(ImGui::BeginCombo("##combo", value_str.c_str())) {
-			lvl.gameplay().for_each_instance([&](Instance& inst) {
+			lvl.instances().for_each([&](Instance& inst) {
 				if(inst.type() == foreign_type) {
 					s32 new_value = inst.id().value;
 					std::string new_value_str = std::to_string(new_value);
@@ -381,6 +399,46 @@ static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisI
 		if(changed) {
 			std::array<bool, MAX_LANES> dummy;
 			apply_to_all_selected<0>(lvl, value, dummy, adapt_member_pointer(field));
+		}
+	};
+	return funcs;
+}
+
+static InspectorFieldFuncs camera_collision_funcs() {
+	InspectorFieldFuncs funcs;
+	funcs.lane_count = 1;
+	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
+		return lhs.camera_collision() == rhs.camera_collision();
+	};
+	funcs.draw = [](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+		CameraCollisionParams first_params = first.camera_collision();
+		
+		bool changed = false;
+		changed |= ImGui::Checkbox("##cam_coll_enabled", &first_params.enabled);
+		ImGui::SameLine();
+		ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
+		if(!first_params.enabled) {
+			flags |= ImGuiInputTextFlags_ReadOnly;
+		}
+		f32 remaining_width = calc_remaining_item_width();
+		ImGui::PushItemWidth(remaining_width / 3);
+		changed |= ImGui::InputInt("##flags", &first_params.flags, 1, 100, flags);
+		ImGui::SameLine();
+		changed |= ImGui::InputInt("##i_value", &first_params.i_value, 1, 100, flags);
+		ImGui::SameLine();
+		changed |= ImGui::InputFloat("##f_value", &first_params.f_value, 0.f, 0.f, "%f", flags);
+		ImGui::PopItemWidth();
+		
+		if(changed) {
+			std::array<bool, MAX_LANES> dummy;
+			apply_to_all_selected<0>(lvl, first_params, dummy, {
+				[](Instance& inst) {
+					return inst.camera_collision();
+				},
+				[](Instance& inst, CameraCollisionParams value) {
+					inst.camera_collision() = value;
+				}
+			});
 		}
 	};
 	return funcs;
@@ -431,7 +489,7 @@ static InspectorFieldFuncs moby_rooted_funcs() {
 static bool should_draw_field(Level& lvl, const InspectorField& field) {
 	bool one_instance_has_field = false;
 	bool all_instances_have_field = true;
-	lvl.gameplay().for_each_instance([&](Instance& inst) {
+	lvl.instances().for_each([&](Instance& inst) {
 		if(inst.selected) {
 			bool required_type = field.required_type == INST_NONE || inst.type() == field.required_type;
 			if(inst.has_component(field.required_component) && required_type) {
@@ -449,7 +507,7 @@ static void should_draw_current_values(bool values_equal[MAX_LANES], Level& lvl,
 		values_equal[lane] = true;
 	}
 	Instance* last_inst = nullptr;
-	lvl.gameplay().for_each_instance([&](Instance& inst) {
+	lvl.instances().for_each([&](Instance& inst) {
 		if(inst.selected) {
 			if(last_inst != nullptr) {
 				for(s32 lane = 0; lane < field.funcs.lane_count; lane++) {
@@ -476,10 +534,10 @@ static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_
 	InspectorCommand data;
 	data.funcs = funcs;
 	data.lanes = lanes;
-	data.ids = lvl.gameplay().selected_instances();
+	data.ids = lvl.instances().selected_instances();
 	data.value = value;
 	
-	lvl.gameplay().for_each_instance([&](Instance& inst) {
+	lvl.instances().for_each([&](Instance& inst) {
 		if(contains(data.ids, inst.id())) {
 			data.old_values.push_back(funcs.get(inst));
 		}
@@ -487,7 +545,7 @@ static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_
 	
 	lvl.push_command<InspectorCommand>(std::move(data),
 		[](Level& lvl, InspectorCommand& data) {
-			lvl.gameplay().for_each_instance([&](Instance& inst) {
+			lvl.instances().for_each([&](Instance& inst) {
 				if(contains(data.ids, inst.id())) {
 					if constexpr(lane_count > 0) {
 						Value temp = data.funcs.get(inst);
@@ -505,7 +563,7 @@ static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_
 		},
 		[](Level& lvl, InspectorCommand& data) {
 			size_t i = 0;
-			lvl.gameplay().for_each_instance([&](Instance& inst) {
+			lvl.instances().for_each([&](Instance& inst) {
 				if(contains(data.ids, inst.id())) {
 					data.funcs.set(inst, data.old_values[i++]);
 				}

@@ -64,9 +64,10 @@ packed_struct(LauncherWadHeader,
 )
 
 packed_struct(EditorWadHeader,
-	/* 0x00 */ s32 header_size;
-	/* 0x04 */ Sector32 sector;
-	/* 0x08 */ SectorRange tool_icons[32];
+	/* 0x000 */ s32 header_size;
+	/* 0x004 */ Sector32 sector;
+	/* 0x008 */ SectorRange tool_icons[32];
+	/* 0x108 */ SectorRange instance_3d_view_icons[32];
 )
 
 packed_struct(ToolWadInfo,
@@ -89,6 +90,7 @@ struct WadPaths {
 	std::string launcher;
 	std::string editor;
 	std::string underlay;
+	std::string overlay;
 };
 
 WadPaths find_wads(const char* bin_path);

@@ -32,6 +32,7 @@
 #include <wtf/wtf_writer.h>
 #include <core/stream.h>
 #include <core/memory_profiler.h>
+#include <cppparser/cpp_parser.h>
 #include <assetmgr/game_info.h>
 #include <assetmgr/asset_util.h>
 #include <assetmgr/asset_dispatch.h>
@@ -150,14 +151,22 @@ public:
 	template <typename ChildType>
 	ChildType& child(const char* tag) {
 		Asset& asset = physical_child(ChildType::ASSET_TYPE, tag);
-		return asset.as<ChildType>();
+		ChildType& resolved_asset = asset.as<ChildType>();
+		verify(&resolved_asset.file() == &file(),
+			"Tried to access asset '%s' which is of the wrong type.",
+			asset.absolute_link().to_string().c_str());
+		return resolved_asset;
 	}
 	
 	template <typename ChildType>
 	ChildType& child(s32 tag) {
 		std::string str = std::to_string(tag);
 		Asset& asset = physical_child(ChildType::ASSET_TYPE, str.c_str());
-		return asset.as<ChildType>();
+		ChildType& resolved_asset = asset.as<ChildType>();
+		verify(&resolved_asset.file() == &file(),
+			"Tried to access asset '%s' which is of the wrong type.",
+			asset.absolute_link().to_string().c_str());
+		return resolved_asset;
 	}
 	
 	Asset& as(AssetType type);
@@ -327,6 +336,7 @@ public:
 	Asset* root();
 	
 	GameInfo game_info;
+	s32 index;
 	
 protected:
 	AssetBank(AssetForest& forest, bool is_writeable);
@@ -337,6 +347,9 @@ protected:
 	
 	std::string read_text_file(const FileReference& reference) const;
 	std::vector<u8> read_binary_file(const FileReference& reference) const;
+	
+	std::string get_common_source_path() const;
+	std::string get_game_source_path(Game game) const;
 	
 	std::function<void()> _unlocker; // We can't call virtual functions from the destructor so we use a lambda.
 	
@@ -353,6 +366,7 @@ private:
 	virtual void write_text_file(const fs::path& path, const char* contents) = 0;
 	virtual bool file_exists(const fs::path& path) const = 0;
 	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
+	virtual void enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const = 0;
 	virtual s32 check_lock() const;
 	virtual void lock();
 	
@@ -381,6 +395,7 @@ public:
 	template <typename Bank, typename... ConstructorArgs>
 	AssetBank& mount(ConstructorArgs... args) {
 		AssetBank* bank = _banks.emplace_back(std::make_unique<Bank>(*this, args...)).get();
+		bank->index = (s32) (_banks.size() - 1);
 		if(bank->is_writeable()) {
 			if(s32 pid = bank->check_lock()) {
 				fprintf(stderr, "error: Another process (with PID %d) has locked this asset bank. This implies the process is still alive or has previously crashed. To bypass this error, delete the lock file in the asset bank directory.\n", pid);
@@ -399,9 +414,14 @@ public:
 	}
 	
 	void unmount_last();
-
+	void load_and_parse_source_files(Game game);
+	
+	std::map<std::string, CppType>& types();
+	const std::map<std::string, CppType>& types() const;
+	
 private:
 	std::vector<std::unique_ptr<AssetBank>> _banks;
+	std::map<std::string, CppType> _types;
 };
 
 class LooseAssetBank : public AssetBank {
@@ -416,6 +436,7 @@ private:
 	void write_text_file(const fs::path& path, const char* contents) override;
 	bool file_exists(const fs::path& path) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
+	void enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const override;
 	s32 check_lock() const override;
 	void lock() override;
 	public:
@@ -433,6 +454,7 @@ private:
 	void write_text_file(const fs::path& path, const char* contents) override;
 	bool file_exists(const fs::path& path) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
+	void enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const override;
 	s32 check_lock() const override;
 	void lock() override;
 	
@@ -443,11 +465,11 @@ private:
 template <typename ClassAsset>
 std::string generate_asset_path(const char* directory, const char* type, s32 id, const Asset& parent) {
 	if(parent.has_child(id)) {
-		const ClassAsset& child = parent.get_child(id).as<ClassAsset>();
-		if(child.has_name() && !child.name().empty()) {
-			std::string name = to_snake_case(child.name().c_str());
-			if(child.has_category() && !child.category().empty()) {
-				std::string category = to_snake_case(child.category().c_str());
+		const ClassAsset* child = parent.get_child(id).maybe_as<ClassAsset>();
+		if(child && child->has_name() && !child->name().empty()) {
+			std::string name = to_snake_case(child->name().c_str());
+			if(child->has_category() && !child->category().empty()) {
+				std::string category = to_snake_case(child->category().c_str());
 				return stringf("%s/%s/%d_%s/%s_%s.asset", directory, category.c_str(), id, name.c_str(), type, name.c_str());
 			} else {
 				return stringf("%s/%d_%s/%s_%s.asset", directory, id, name.c_str(), type, name.c_str());

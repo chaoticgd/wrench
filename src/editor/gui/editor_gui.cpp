@@ -162,14 +162,24 @@ static void menu_bar() {
 			}
 			if(ImGui::BeginMenu("Visibility")) {
 				ImGui::Checkbox("Tfrags", &a.render_settings.draw_tfrags);
-				ImGui::Checkbox("Mobies", &a.render_settings.draw_mobies);
-				ImGui::Checkbox("Ties", &a.render_settings.draw_ties);
-				ImGui::Checkbox("Shrubs", &a.render_settings.draw_shrubs);
+				ImGui::Checkbox("Moby Instances", &a.render_settings.draw_moby_instances);
+				ImGui::Checkbox("Moby Groups", &a.render_settings.draw_moby_groups);
+				ImGui::Checkbox("Tie Instances", &a.render_settings.draw_tie_instances);
+				ImGui::Checkbox("Tie Groups", &a.render_settings.draw_tie_groups);
+				ImGui::Checkbox("Shrub Instances", &a.render_settings.draw_shrub_instances);
+				ImGui::Checkbox("Shrub Groups", &a.render_settings.draw_shrub_groups);
+				ImGui::Checkbox("Point Lights", &a.render_settings.draw_point_lights);
+				ImGui::Checkbox("Env Sample Points", &a.render_settings.draw_env_sample_points);
+				ImGui::Checkbox("Env Transitions", &a.render_settings.draw_env_transitions);
 				ImGui::Checkbox("Cuboids", &a.render_settings.draw_cuboids);
 				ImGui::Checkbox("Spheres", &a.render_settings.draw_spheres);
 				ImGui::Checkbox("Cylinders", &a.render_settings.draw_cylinders);
+				ImGui::Checkbox("Pills", &a.render_settings.draw_pills);
+				ImGui::Checkbox("Cameras", &a.render_settings.draw_cameras);
+				ImGui::Checkbox("Sound Instances", &a.render_settings.draw_sound_instances);
 				ImGui::Checkbox("Paths", &a.render_settings.draw_paths);
 				ImGui::Checkbox("Grind Paths", &a.render_settings.draw_grind_paths);
+				ImGui::Checkbox("Areas", &a.render_settings.draw_areas);
 				ImGui::Checkbox("Collision", &a.render_settings.draw_collision);
 				ImGui::Separator();
 				ImGui::Checkbox("Selected Instance Normals", &a.render_settings.draw_selected_instance_normals);

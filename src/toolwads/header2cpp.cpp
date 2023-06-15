@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <stdio.h>
+#undef NDEBUG
 #include <assert.h>
 #include <stdint.h>
 

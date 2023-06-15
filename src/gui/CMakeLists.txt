@@ -2,7 +2,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	message(FATAL_ERROR "You should build Wrench using the CMakeLists.txt file in the root of the repository.")
 endif()
 
-add_library(wrenchgui
+add_library(wrenchgui STATIC
 	gui.cpp
 	config.cpp
 	about.cpp

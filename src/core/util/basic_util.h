@@ -119,6 +119,15 @@ T& opt_iterator(Opt<T>& opt) {
 	}
 }
 
+template <typename T>
+T opt_or_zero(Opt<T>& opt) {
+	if(opt.has_value()) {
+		return *opt;
+	} else {
+		return 0;
+	}
+}
+
 template <typename>
 struct IsVector : std::false_type {};
 template <typename Element>

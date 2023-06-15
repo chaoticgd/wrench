@@ -20,7 +20,7 @@
 #define WRENCHBUILD_LEVEL_DATA_WAD_H
 
 #include <assetmgr/asset_types.h>
-#include <engine/gameplay.h>
+#include <instancemgr/gameplay.h>
 #include <wrenchbuild/level/level_chunks.h>
 
 void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);

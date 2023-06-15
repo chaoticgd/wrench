@@ -47,6 +47,8 @@ GameInfo read_game_info(char* input) {
 			info.type = AssetBankType::UNDERLAY;
 		} else if(strcmp(type->string.begin, "game") == 0) {
 			info.type = AssetBankType::GAME;
+		} else if(strcmp(type->string.begin, "overlay") == 0) {
+			info.type = AssetBankType::OVERLAY;
 		} else if(strcmp(type->string.begin, "test") == 0) {
 			info.type = AssetBankType::TEST;
 		} else {
@@ -115,6 +117,8 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 		wtf_write_string(ctx, "underlay");
 	} else if(info.type == AssetBankType::GAME) {
 		wtf_write_string(ctx, "game");
+	} else if(info.type == AssetBankType::OVERLAY) {
+		wtf_write_string(ctx, "overlay");
 	} else if(info.type == AssetBankType::TEST) {
 		wtf_write_string(ctx, "test");
 	} else {

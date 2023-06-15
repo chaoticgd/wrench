@@ -19,6 +19,7 @@
 #include <math.h>
 #include <string>
 #include <vector>
+#undef NDEBUG
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
@@ -160,7 +161,7 @@ static void write_attribute_table(const WtfNode* asset_type) {
 		if(attrib_hidden && attrib_hidden->type == WTF_BOOLEAN && attrib_hidden->boolean) {
 			continue;
 		}
-		char* end_of_name = strchr(child->type_name, 'A');
+		char* end_of_name = strrchr(child->type_name, 'A');
 		if(!end_of_name || strcmp(end_of_name, "Attribute") != 0) {
 			continue;
 		}
@@ -440,10 +441,10 @@ static void reify_value(WtfWriter* ctx, const WtfAttribute* value) {
 static void out(const char* format, ...) {
 	va_list list;
 	va_start(list, format);
-	if (out_file != NULL) {
+	if(out_file != NULL) {
 		vfprintf(out_file, format, list);
 	}
-	if (out_handle != NULL) {
+	if(out_handle != NULL) {
 		file_vprintf(out_handle, format, list);
 	}
 	va_end(list);

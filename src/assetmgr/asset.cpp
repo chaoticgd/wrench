@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <filesystem>
 
-#include "asset_types.h"
+#include <assetmgr/asset_types.h>
 
 #ifndef _MSC_VER
 #include <unistd.h> // getpid
@@ -562,6 +562,14 @@ std::string AssetBank::read_text_file(const FileReference& reference) const {
 	return read_text_file(reference.owner->_relative_directory/reference.path);
 }
 
+std::string AssetBank::get_common_source_path() const {
+	return "src/game_common";
+}
+
+std::string AssetBank::get_game_source_path(Game game) const {
+	return stringf("src/game_%s", game_to_string(game).c_str());
+}
+
 bool AssetBank::is_writeable() const {
 	return _is_writeable;
 }
@@ -686,6 +694,47 @@ void AssetForest::unmount_last() {
 	_banks.back()->_higher_precedence = nullptr;
 }
 
+void AssetForest::load_and_parse_source_files(Game game) {
+	std::map<fs::path, const AssetBank*> source_files;
+	for(const std::unique_ptr<AssetBank>& bank : _banks) {
+		bank->enumerate_source_files(source_files, game);
+	}
+	
+	for(const auto& [path, bank] : source_files) {
+		printf("Parsing %s\n", path.string().c_str());
+		std::string cpp = bank->read_text_file(path);
+		if(!cpp.empty()) {
+			std::vector<CppToken> tokens = eat_cpp_file(&cpp[0]);
+			std::map<std::string, CppType> types;
+			parse_cpp_types(types, tokens);
+			// If two types with the same name exist in different asset banks,
+			// make sure we use the type from the higher precedence bank.
+			for(auto& [name, type] : types) {
+				auto iter = _types.find(name);
+				if(iter == _types.end() || bank->index > iter->second.precedence) {
+					type.precedence = bank->index;
+					if(iter != _types.end()) {
+						_types.erase(name);
+					}
+					_types.emplace(name, std::move(type));
+				}
+			}
+		}
+	}
+	
+	for(auto& [name, type] : _types) {
+		layout_cpp_type(type, _types, CPP_PS2_ABI);
+	}
+}
+
+std::map<std::string, CppType>& AssetForest::types() {
+	return _types;
+}
+
+const std::map<std::string, CppType>& AssetForest::types() const {
+	return _types;
+}
+
 // *****************************************************************************
 
 LooseAssetBank::LooseAssetBank(AssetForest& forest, fs::path directory, bool is_writeable)
@@ -754,6 +803,18 @@ std::vector<fs::path> LooseAssetBank::enumerate_asset_files() const {
 	return asset_files;
 }
 
+void LooseAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const {
+	std::string common_source_path = get_common_source_path();
+	std::string game_source_path = get_game_source_path(game);
+	
+	for(auto& entry : fs::recursive_directory_iterator(_directory)) {
+		std::string str = entry.path().lexically_relative(_directory).string();
+		if(entry.is_regular_file() && (str.starts_with(common_source_path) || str.starts_with(game_source_path))) {
+			dest[fs::path(str)] = this;
+		}
+	}
+}
+
 s32 LooseAssetBank::check_lock() const {
 	if(fs::exists(_directory/"lock")) {
 		std::string pid = read_text_file("lock");
@@ -810,6 +871,18 @@ std::vector<fs::path> MemoryAssetBank::enumerate_asset_files() const {
 		}
 	}
 	return asset_files;
+}
+
+void MemoryAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const {
+	std::string common_source_path = get_common_source_path();
+	std::string game_source_path = get_game_source_path(game);
+	
+	std::vector<fs::path> asset_files;
+	for(auto& [path, contents] : _files) {
+		if(path.string().starts_with(common_source_path) || path.string().starts_with(game_source_path)) {
+			dest[path] = this;
+		}
+	}
 }
 
 s32 MemoryAssetBank::check_lock() const {

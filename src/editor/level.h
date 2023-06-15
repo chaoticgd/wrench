@@ -21,15 +21,18 @@
 
 #include <map>
 
-#include <engine/gameplay.h>
+#include <cppparser/cpp_parser.h>
+#include <instancemgr/instances.h>
 #include <assetmgr/asset_types.h>
 #include <gui/render_mesh.h>
 #include <editor/editor.h>
 
 struct EditorClass {
-	Mesh mesh;
-	RenderMesh render_mesh;
+	Opt<Mesh> mesh;
+	Opt<RenderMesh> render_mesh;
 	std::vector<RenderMaterial> materials;
+	Opt<RenderMaterial> icon;
+	const CppType* pvar_type = nullptr;
 };
 
 struct EditorChunk {
@@ -48,21 +51,23 @@ public:
 	LevelAsset& level();
 	LevelWadAsset& level_wad();
 	
-	Gameplay& gameplay();
+	Instances& instances();
+	const Instances& instances() const;
 	
 	Game game;
 	
 	std::vector<EditorChunk> chunks;
 	std::vector<RenderMaterial> tfrag_materials;
-	std::map<s32, EditorClass> mobies;
-	std::map<s32, EditorClass> ties;
-	std::map<s32, EditorClass> shrubs;
+	std::map<s32, EditorClass> moby_classes;
+	std::map<s32, EditorClass> tie_classes;
+	std::map<s32, EditorClass> shrub_classes;
+	std::map<s32, EditorClass> camera_classes;
+	std::map<s32, EditorClass> sound_classes;
 	
 private:
 	LevelAsset* _asset = nullptr;
-	BinaryAsset* _gameplay_asset = nullptr;
-	Gameplay _gameplay;
-	PvarTypes _pvar_types;
+	InstancesAsset* _instances_asset = nullptr;
+	Instances _instances;
 };
 
 #endif

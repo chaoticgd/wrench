@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -208,11 +208,35 @@ void wtf_write_string_attribute(WtfWriter* ctx, const char* key, const char* str
 	wtf_end_attribute(ctx);
 }
 
-void wtf_write_floats(WtfWriter* ctx, float* floats, int count) {
+void wtf_write_bytes(WtfWriter* ctx, const uint8_t* bytes, int count) {
+	if(ctx->array_empty) {
+		*ctx->dest += "\n";
+		ctx->array_empty = 0;
+	}
+	if(ctx->array_depth > 0) {
+		indent(ctx);
+	}
+	*ctx->dest += "[";
+	for(int i = 0; i < count; i++) {
+		char string[8] = {0};
+		snprintf(string, 8, "%d%s", bytes[i], (i < count - 1) ? " " : "");
+		*ctx->dest += string;
+	}
+	*ctx->dest += "]\n";
+}
+
+void wtf_write_floats(WtfWriter* ctx, const float* floats, int count) {
+	if(ctx->array_empty) {
+		*ctx->dest += "\n";
+		ctx->array_empty = 0;
+	}
+	if(ctx->array_depth > 0) {
+		indent(ctx);
+	}
 	*ctx->dest += "[";
 	for(int i = 0; i < count; i++) {
 		char string[64] = {0};
-		snprintf(string, 64, "%.9g%s", floats[i], i < count - 1 ? " " : "");
+		snprintf(string, 64, "%.9g%s", floats[i], (i < count - 1) ? " " : "");
 		*ctx->dest += string;
 	}
 	*ctx->dest += "]\n";

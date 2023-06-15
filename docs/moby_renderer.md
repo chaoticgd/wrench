@@ -174,7 +174,7 @@ The first 9 bits of each vertex v[i] is an ID which determines at which index ve
 
 ### Blending
 
-The games support skeletal animation with 3 joints per vertex. Psuedocode for how game performs blending is shown below:
+The games support skeletal animation with 3 joints per vertex. Psuedocode for how the games perform blending is shown below:
 
 ```
 mtx4 VU0mem[64];
@@ -187,11 +187,11 @@ for(submesh in submeshes) {
 	for(v in vertices_that_do_two_way_blends) {
 		VU0mem[v.ST/4] = SPR[v.JI];
 		v.matrix = VU0mem[v.L1/4]*(v.W1/255.f)+VU0mem[v.L2/4]*(v.W2/255.f);
-		VU0mem[v.SB] = v.matrix;
+		VU0mem[v.SB/4] = v.matrix;
 	}
 	for(v in vertices_that_do_three_way_blends) {
 		v.matrix = VU0mem[v.L1/4]*(v.W1/255.f)+VU0mem[v.L2/4]*(v.W2/255.f)+VU0mem[v.L3/4]*(v.W3/255.f);
-		VU0mem[v.SB] = v.matrix;
+		VU0mem[v.SB/4] = v.matrix;
 	}
 	for(v in vertices_that_dont_do_blends) {
 		VU0mem[v.ST/4] = SPR[v.JI];
@@ -200,6 +200,6 @@ for(submesh in submeshes) {
 }
 ```
 
-where `VU0mem` refers to Vector Unit 0's data memory and `SPR` refers to the EE core's scratchpad memory. In the actual game the implementation of the above logic is split across a routine on the EE core and a VU0 microprogram. These two parts communicate via shared registers.
+where `VU0mem` refers to Vector Unit 0's data memory, `SPR` refers to the EE core's scratchpad memory and `v.matrix` refers to the blended matrix to be applied to a given vertex. In the actual game the implementation of the above logic is split across a routine on the EE core and a VU0 microprogram. These two parts communicate via shared registers.
 
 Note that the state of VU0 memory is preserved between submeshes, and Insomniac's moby exporter took advantage of this. Also note that just because a vertex does no blends, that does not mean that it isn't animated using a previously blended matrix.

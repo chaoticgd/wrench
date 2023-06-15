@@ -28,7 +28,9 @@
 
 #include "wtf.h"
 
+#include <math.h>
 #include <ctype.h>
+#undef NDEBUG
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,7 +55,7 @@ static ErrorStr count_additional_nodes_generated_by_tag(WtfReader* ctx, const ch
 static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent);
 static WtfNode* add_nodes(WtfReader* ctx, char* type_name, char* tag);
 static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest);
-static ErrorStr parse_float(WtfReader* ctx, float* dest);
+static ErrorStr parse_number(WtfReader* ctx, int32_t* i, float* f);
 static ErrorStr parse_string(WtfReader* ctx, char** dest);
 static char* parse_identifier(WtfReader* ctx);
 static int is_identifier_char(char c);
@@ -382,15 +384,16 @@ static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest) {
 				
 				ctx->input += 4;
 			} else {
-				float number;
-				ErrorStr error = parse_float(ctx, &number);
+				int32_t i;
+				float f;
+				ErrorStr error = parse_number(ctx, &i, &f);
 				if(error) {
 					return error;
 				}
 				if(ctx->attributes) {
 					attribute->type = WTF_NUMBER;
-					attribute->number.i = (int32_t) number;
-					attribute->number.f = number;
+					attribute->number.i = i;
+					attribute->number.f = f;
 				}
 			}
 		}
@@ -403,17 +406,53 @@ static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest) {
 	return NULL;
 }
 
-static ErrorStr parse_float(WtfReader* ctx, float* dest) {
+static ErrorStr parse_number(WtfReader* ctx, int32_t* i, float* f) {
 	char* next;
-	float value = strtof(ctx->input, &next);
 	
+	if(strncmp(ctx->input, "nan", 3) == 0) {
+		*i = 0;
+		*f = NAN;
+		ctx->input += 3;
+		return NULL;
+	}
+	
+	if(strncmp(ctx->input, "-nan", 4) == 0) {
+		*i = 0;
+		*f = NAN;
+		ctx->input += 4;
+		return NULL;
+	}
+	
+	if(strncmp(ctx->input, "inf", 3) == 0) {
+		*i = INT32_MAX;
+		*f = INFINITY;
+		ctx->input += 3;
+		return NULL;
+	}
+	
+	if(strncmp(ctx->input, "-inf", 4) == 0) {
+		*i = INT32_MIN;
+		*f = -INFINITY;
+		ctx->input += 4;
+		return NULL;
+	}
+	
+	int32_t value_i = strtoll(ctx->input, &next, 10);
 	if(next == ctx->input) {
-		snprintf(ERROR_STR, sizeof(ERROR_STR), "Failed to parse float on line %d.", ctx->line);
+		snprintf(ERROR_STR, sizeof(ERROR_STR), "Failed to parse number on line %d.", ctx->line);
+		return ERROR_STR;
+	}
+	
+	float value_f = strtof(ctx->input, &next);
+	if(next == ctx->input) {
+		snprintf(ERROR_STR, sizeof(ERROR_STR), "Failed to parse number on line %d.", ctx->line);
 		return ERROR_STR;
 	}
 	
 	ctx->input = next;
-	*dest = value;
+	*i = value_i;
+	*f = value_f;
+	
 	return NULL;
 }
 

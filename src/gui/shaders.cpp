@@ -92,7 +92,9 @@ Shaders::Shaders() :
 	textured(
 		R"(
 			#version 120
-
+			
+			uniform mat4 view;
+			uniform mat4 projection;
 			attribute mat4 inst_matrix;
 			attribute vec4 inst_colour;
 			attribute vec4 inst_id;
@@ -103,19 +105,19 @@ Shaders::Shaders() :
 			varying vec4 shading;
 
 			void main() {
-				gl_Position = inst_matrix * vec4(position, 1);
+				gl_Position = projection * view * inst_matrix * vec4(position, 1);
 				uv = vec2(tex_coord.x, -tex_coord.y);
 				shading = vec4(vec3(abs(normal.x + normal.y + normal.z) / 10.f), 0.f);
 			}
 		)",
 		R"(
 			#version 120
-
+			
 			uniform vec4 colour;
 			uniform sampler2D sampler;
 			varying vec2 uv;
 			varying vec4 shading;
-
+			
 			void main() {
 				gl_FragColor = texture2D(sampler, vec2(uv.x, 1.f - uv.y)) * colour - shading;
 			}
@@ -129,6 +131,9 @@ Shaders::Shaders() :
 			glBindAttribLocation(id, 8, "tex_coord");
 		},
 		[&](GLuint id) {
+			textured_view_matrix = glGetUniformLocation(id, "view");
+			textured_projection_matrix = glGetUniformLocation(id, "projection");
+			
 			textured_colour = glGetUniformLocation(id, "colour");
 			textured_sampler = glGetUniformLocation(id, "sampler");
 		}
@@ -136,7 +141,9 @@ Shaders::Shaders() :
 	selection(
 		R"(
 			#version 120
-
+			
+			uniform mat4 view;
+			uniform mat4 projection;
 			attribute mat4 inst_matrix;
 			attribute vec4 inst_colour;
 			attribute vec4 inst_id;
@@ -144,17 +151,17 @@ Shaders::Shaders() :
 			attribute vec3 normal;
 			attribute vec2 tex_coord;
 			varying vec4 inst_colour_frag;
-
+			
 			void main() {
-				gl_Position = inst_matrix * vec4(position, 1) - vec4(0, 0, 0.0001, 0);
+				gl_Position = projection * view * inst_matrix * vec4(position, 1) - vec4(0, 0, 0.0001, 0);
 				inst_colour_frag = inst_colour;
 			}
 		)",
 		R"(
 			#version 120
-
+			
 			varying vec4 inst_colour_frag;
-
+			
 			void main() {
 				gl_FragColor = inst_colour_frag;
 			}
@@ -167,12 +174,70 @@ Shaders::Shaders() :
 			glBindAttribLocation(id, 7, "normal");
 			glBindAttribLocation(id, 8, "tex_coord");
 		},
-		[&](GLuint id) {}
+		[&](GLuint id) {
+			selection_view_matrix = glGetUniformLocation(id, "view");
+			selection_projection_matrix = glGetUniformLocation(id, "projection");
+		}
+	),
+	icons(
+		R"(
+			#version 120
+			
+			uniform mat4 view;
+			uniform mat4 projection;
+			attribute mat4 inst_matrix;
+			attribute vec4 inst_colour;
+			attribute vec4 inst_id;
+			attribute vec3 position;
+			attribute vec3 normal;
+			attribute vec2 tex_coord;
+			varying vec2 uv;
+
+			void main() {
+				vec3 cam_right = vec3(view[0][0], view[1][0], view[2][0]);
+				vec3 cam_up = vec3(view[0][1], view[1][1], view[2][1]);
+				vec3 pos = vec3(inst_matrix[3])
+					+ cam_right * position.x
+					+ cam_up * position.y;
+				vec4 point_pos = projection * view * vec4(pos, 1);
+				vec4 centre_pos = projection * view * inst_matrix[3];
+				gl_Position = vec4(point_pos.x, point_pos.y, centre_pos.z, centre_pos.w);
+				uv = tex_coord;
+			}
+		)",
+		R"(
+			#version 120
+			
+			uniform sampler2D sampler;
+			varying vec2 uv;
+			
+			void main() {
+				gl_FragColor = texture2D(sampler, uv);
+				if(gl_FragColor.a < 0.001) {
+					discard;
+				}
+			}
+		)",
+		[&](GLuint id) {
+			glBindAttribLocation(id, 0, "inst_matrix");
+			glBindAttribLocation(id, 4, "inst_colour");
+			glBindAttribLocation(id, 5, "inst_id");
+			glBindAttribLocation(id, 6, "position");
+			glBindAttribLocation(id, 7, "normal");
+			glBindAttribLocation(id, 8, "tex_coord");
+		},
+		[&](GLuint id) {
+			icons_view_matrix = glGetUniformLocation(id, "view");
+			icons_projection_matrix = glGetUniformLocation(id, "projection");
+			icons_sampler = glGetUniformLocation(id, "sampler");
+		}
 	),
 	pickframe(
 		R"(
 			#version 120
-
+			
+			uniform mat4 view;
+			uniform mat4 projection;
 			attribute mat4 inst_matrix;
 			attribute vec4 inst_colour;
 			attribute vec4 inst_id;
@@ -180,9 +245,9 @@ Shaders::Shaders() :
 			attribute vec3 normal;
 			attribute vec2 tex_coord;
 			varying vec4 inst_id_frag;
-
+			
 			void main() {
-				gl_Position = inst_matrix * vec4(position, 1);
+				gl_Position = projection * view * inst_matrix * vec4(position, 1);
 				inst_id_frag = inst_id;
 			}
 		)",
@@ -203,12 +268,65 @@ Shaders::Shaders() :
 			glBindAttribLocation(id, 7, "normal");
 			glBindAttribLocation(id, 8, "tex_coord");
 		},
-		[&](GLuint id) {}
+		[&](GLuint id) {
+			pickframe_view_matrix = glGetUniformLocation(id, "view");
+			pickframe_projection_matrix = glGetUniformLocation(id, "projection");
+		}
+	),
+	pickframe_icons(
+		R"(
+			#version 120
+			
+			uniform mat4 view;
+			uniform mat4 projection;
+			attribute mat4 inst_matrix;
+			attribute vec4 inst_colour;
+			attribute vec4 inst_id;
+			attribute vec3 position;
+			attribute vec3 normal;
+			attribute vec2 tex_coord;
+			varying vec4 inst_id_frag;
+
+			void main() {
+				vec3 cam_right = vec3(view[0][0], view[1][0], view[2][0]);
+				vec3 cam_up = vec3(view[0][1], view[1][1], view[2][1]);
+				vec3 pos = vec3(inst_matrix[3])
+					+ cam_right * position.x
+					+ cam_up * position.y;
+				vec4 point_pos = projection * view * vec4(pos, 1);
+				vec4 centre_pos = projection * view * inst_matrix[3];
+				gl_Position = vec4(point_pos.x, point_pos.y, centre_pos.z, centre_pos.w);
+				inst_id_frag = inst_id;
+			}
+		)",
+		R"(
+			#version 120
+			
+			varying vec4 inst_id_frag;
+			
+			void main() {
+				gl_FragColor = inst_id_frag;
+			}
+		)",
+		[&](GLuint id) {
+			glBindAttribLocation(id, 0, "inst_matrix");
+			glBindAttribLocation(id, 4, "inst_colour");
+			glBindAttribLocation(id, 5, "inst_id");
+			glBindAttribLocation(id, 6, "position");
+			glBindAttribLocation(id, 7, "normal");
+			glBindAttribLocation(id, 8, "tex_coord");
+		},
+		[&](GLuint id) {
+			pickframe_icons_view_matrix = glGetUniformLocation(id, "view");
+			pickframe_icons_projection_matrix = glGetUniformLocation(id, "projection");
+		}
 	)
 {}
 
 void Shaders::init() {
 	textured.init();
 	selection.init();
+	icons.init();
 	pickframe.init();
+	pickframe_icons.init();
 }

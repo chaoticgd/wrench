@@ -28,7 +28,7 @@
 #include <editor/gui/editor_gui.h>
 #include <editor/renderer.h>
 
-static void run_wrench(GLFWwindow* window, const std::string& underlay_path, const std::string& game_path, const std::string& mod_path);
+static void run_wrench(GLFWwindow* window, const WadPaths& wad_paths, const std::string& game_path, const std::string& mod_path);
 static void update(f32 delta_time);
 static void update_camera(app* a);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -54,12 +54,12 @@ int main(int argc, char** argv) {
 	callbacks.key_callback = key_callback;
 	
 	GLFWwindow* window = gui::startup("Wrench Editor", 1280, 720, true, &callbacks);
-	run_wrench(window, wads.underlay, game_path, mod_path);
+	run_wrench(window, wads, game_path, mod_path);
 	gui::shutdown(window);
 }
 
 
-static void run_wrench(GLFWwindow* window, const std::string& underlay_path, const std::string& game_path, const std::string& mod_path) {
+static void run_wrench(GLFWwindow* window, const WadPaths& wad_paths, const std::string& game_path, const std::string& mod_path) {
 	app a;
 	g_app = &a;
 	
@@ -73,7 +73,7 @@ static void run_wrench(GLFWwindow* window, const std::string& underlay_path, con
 	
 	// Load the underlay, and mark all underlay assets as weakly deleted so they
 	// don't show up if the asset isn't actually present.
-	a.asset_forest.mount<LooseAssetBank>(underlay_path.c_str(), false);
+	a.underlay_bank = &a.asset_forest.mount<LooseAssetBank>(wad_paths.underlay.c_str(), false);
 	a.asset_forest.any_root()->for_each_logical_descendant([&](Asset& asset) {
 		// If the asset has strongly_deleted set to false, interpret that to
 		// mean the asset should shouldn't be weakly deleted.
@@ -83,7 +83,10 @@ static void run_wrench(GLFWwindow* window, const std::string& underlay_path, con
 	});
 	
 	a.game_bank = &a.asset_forest.mount<LooseAssetBank>(game_path, false);
+	a.overlay_bank = &a.asset_forest.mount<LooseAssetBank>(wad_paths.overlay.c_str(), false);
 	a.mod_bank = &a.asset_forest.mount<LooseAssetBank>(mod_path, true);
+	
+	a.asset_forest.load_and_parse_source_files(a.game_bank->game_info.game.game);
 	
 	verify(a.game_bank->game_info.type == AssetBankType::GAME,
 		"The asset bank specified for the game is not a game.");

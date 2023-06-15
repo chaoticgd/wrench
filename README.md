@@ -2,19 +2,19 @@
 
 A set of modding tools for the Ratchet & Clank PS2 games. Compatible with R&C1, R&C2, R&C3 and Deadlocked. Work in progress.
 
-To download the latest release, see the [Releases](https://github.com/chaoticgd/wrench/releases) page. To download the latest unstable build, see the [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable) page. Currently only Windows and Linux are supported.
+- [Releases](https://github.com/chaoticgd/wrench/releases)
+- [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable)
+- [Documentation](docs/README.md)
 
-For documentation about Wrench and reverse engineered information about tha games see [this page](docs/README.md). Feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
+Feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
 
 Features currently include:
-- Asset System
-	- A system to create, distribute and load mods.
-	- Multiple mods can be loaded at a time.
 - Launcher
 	- A user interface to manage mods.
 	- Used to launch the level editor.
 - Build Tool
 	- Pack/unpack entire ISO files.
+	- **New in v0.4!** Pack/unpack gameplay instances as `.instances` files.
 	- Unpack tfrag meshes as COLLADA files.
 	- Unpack moby meshes as COLLADA files.
 	- Unpack tie meshes as COLLADA files.
@@ -27,9 +27,15 @@ Features currently include:
 	- Pack/unpack everything else as binary files.
 - Level Editor
 	- View unpacked levels.
-	- Move objects and modify their attributes.
+	- Move objects and modify their attributes (including pvars).
 - **New in v0.4!** Memory Card Editor
 	- Only works properly on Deadlocked saves. Experimental.
+- Asset System
+	- A system to create, distribute and load mods.
+	- Multiple mods can be loaded at a time.
+- **New in v0.4!** Instance System
+	- A source format for storing object instances.
+	- Use pvar data types from C++ header files (reflection).
 
 ## Screenshots
 

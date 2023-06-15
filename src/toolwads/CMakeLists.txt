@@ -9,7 +9,7 @@ endif()
 add_executable(toolwadpacker
 	packer.cpp
 )
-target_link_libraries(toolwadpacker wrenchcore wrenchengine versioninfo)
+target_link_libraries(toolwadpacker wrenchcore wrenchengine wrenchinstancemgr versioninfo)
 
 # ******************************************************************************
 # Generate wads
@@ -54,7 +54,7 @@ add_custom_command(
 	COMMENT "Generating _generated_wadinfo.cpp"
 )
 
-add_library(wadinfo
+add_library(wadinfo STATIC
 	${CMAKE_BINARY_DIR}/_generated_wadinfo.cpp
 	find_wads.cpp
 )

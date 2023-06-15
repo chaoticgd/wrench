@@ -20,6 +20,8 @@
 
 static GLuint frame_buffer_texture = 0;
 
+static void enumerate_instances_referenced_by_selected(Instances& instances);
+
 void view_3d() {
 	app& a = *g_app;
 	
@@ -29,7 +31,9 @@ void view_3d() {
 		ImGui::TextWrapped("   No level open. To open a level, use the level selector in the menu bar.");
 		return;
 	}
-
+	
+	enumerate_instances_referenced_by_selected(lvl->instances());
+	
 	ImVec2* view_pos = &a.render_settings.view_pos;
 	*view_pos = ImGui::GetWindowPos();
 	view_pos->x += ImGui::GetWindowContentRegionMin().x;
@@ -41,21 +45,88 @@ void view_3d() {
 	
 	auto& cam_pos = a.render_settings.camera_position;
 	auto& cam_rot = a.render_settings.camera_rotation;
-	glm::mat4 world_to_clip = compose_world_to_clip(*view_size, cam_pos, cam_rot);
-	prepare_frame(*lvl, world_to_clip);
+	glm::mat4 view = compose_view_matrix(cam_pos, cam_rot);
+	glm::mat4 projection = compose_projection_matrix(*view_size);
+	prepare_frame(*lvl);
 	
 	render_to_texture(&frame_buffer_texture, view_size->x, view_size->y, [&]() {
 		glClearColor(0, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glViewport(0, 0, view_size->x, view_size->y);
 		
-		draw_level(*lvl, world_to_clip, a.render_settings);
+		draw_level(*lvl, view, projection, a.render_settings);
 		
 		ImGuiContext& g = *GImGui;
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, g.Style.WindowPadding * 2.0f);
-		a.active_tool().draw(a, world_to_clip);
+		a.active_tool().draw(a, view, projection);
 		ImGui::PopStyleVar();
 	});
 	
 	ImGui::Image((void*) (intptr_t) frame_buffer_texture, *view_size);
+}
+
+static void enumerate_instances_referenced_by_selected(Instances& instances) {
+	instances.for_each([&](Instance& instance) {
+		instance.referenced_by_selected = false;
+	});
+	
+	for(MobyGroupInstance& group : instances.moby_groups) {
+		if(group.selected) {
+			for(MobyLink link : group.members) {
+				if(MobyInstance* inst = instances.moby_instances.from_id(link.id)) {
+					inst->referenced_by_selected = true;
+				}
+			}
+		}
+	}
+	
+	for(TieGroupInstance& group : instances.tie_groups) {
+		if(group.selected) {
+			for(TieLink link : group.members) {
+				if(TieInstance* inst = instances.tie_instances.from_id(link.id)) {
+					inst->referenced_by_selected = true;
+				}
+			}
+		}
+	}
+	
+	for(ShrubGroupInstance& group : instances.shrub_groups) {
+		if(group.selected) {
+			for(ShrubLink link : group.members) {
+				if(ShrubInstance* inst = instances.shrub_instances.from_id(link.id)) {
+					inst->referenced_by_selected = true;
+				}
+			}
+		}
+	}
+	
+	for(AreaInstance& area : instances.areas) {
+		if(area.selected) {
+			for(PathLink link : area.paths) {
+				if(PathInstance* inst = instances.paths.from_id(link.id)) {
+					inst->referenced_by_selected = true;
+				}
+			}
+			for(CuboidLink link : area.cuboids) {
+				if(CuboidInstance* inst = instances.cuboids.from_id(link.id)) {
+					inst->referenced_by_selected = true;
+				}
+			}
+			for(SphereLink link : area.spheres) {
+				if(SphereInstance* inst = instances.spheres.from_id(link.id)) {
+					inst->referenced_by_selected = true;
+				}
+			}
+			for(CylinderLink link : area.cylinders) {
+				if(CylinderInstance* inst = instances.cylinders.from_id(link.id)) {
+					inst->referenced_by_selected = true;
+				}
+			}
+			for(CuboidLink link : area.negative_cuboids) {
+				if(CuboidInstance* inst = instances.cuboids.from_id(link.id)) {
+					inst->referenced_by_selected = true;
+				}
+			}
+		}
+	}
 }

@@ -2,7 +2,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	message(FATAL_ERROR "You should build Wrench using the CMakeLists.txt file in the root of the repository.")
 endif()
 
-add_library(wrenchiso
+add_library(wrenchiso STATIC
 	iso_unpacker.cpp
 	iso_packer.cpp
 	iso_tools.cpp

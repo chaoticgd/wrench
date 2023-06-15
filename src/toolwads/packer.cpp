@@ -19,6 +19,7 @@
 #include <fstream>
 #include <core/png.h>
 #include <engine/compression.h>
+#include <instancemgr/instance.h>
 #include <toolwads/wads.h>
 
 static void pack_build_wad();
@@ -134,6 +135,7 @@ static void pack_gui_wad() {
 	header.fonts[0] = pack_file(wad, "data/gui/Barlow-Regular.ttf");
 	header.fonts[1] = pack_file(wad, "data/gui/Barlow-Italic.ttf");
 	
+	wad.pad(SECTOR_SIZE, 0);
 	wad.write<GuiWadHeader>(0, header);
 }
 
@@ -149,6 +151,7 @@ static void pack_launcher_wad() {
 	header.placeholder_images[0] = pack_compressed_image(wad, "data/launcher/my_mod.png");
 	header.oobe = pack_oobe_wad(wad);
 	
+	wad.pad(SECTOR_SIZE, 0);
 	wad.write<LauncherWadHeader>(0, header);
 }
 
@@ -168,7 +171,7 @@ static SectorRange pack_oobe_wad(OutputStream& dest) {
 	stream.write(0, header);
 	
 	std::vector<u8> compressed_bytes;
-	compress_wad(compressed_bytes, bytes, "", 8);
+	compress_wad(compressed_bytes, bytes, "", 1);
 	
 	dest.write_v(compressed_bytes);
 	
@@ -191,6 +194,24 @@ static void pack_editor_wad() {
 	header.tool_icons[2] = pack_ascii_icon(wad, "data/editor/icons/translate_tool.txt");
 	header.tool_icons[3] = pack_ascii_icon(wad, "data/editor/icons/spline_tool.txt");
 	
+	header.instance_3d_view_icons[INST_MOBY] = pack_compressed_image(wad, "data/editor/icons/moby.png");
+	header.instance_3d_view_icons[INST_MOBYGROUP] = pack_compressed_image(wad, "data/editor/icons/moby_group.png");
+	header.instance_3d_view_icons[INST_TIE] = pack_compressed_image(wad, "data/editor/icons/tie.png");
+	header.instance_3d_view_icons[INST_TIEGROUP] = pack_compressed_image(wad, "data/editor/icons/tie_group.png");
+	header.instance_3d_view_icons[INST_SHRUB] = pack_compressed_image(wad, "data/editor/icons/shrub.png");
+	header.instance_3d_view_icons[INST_SHRUBGROUP] = pack_compressed_image(wad, "data/editor/icons/shrub_group.png");
+	header.instance_3d_view_icons[INST_POINTLIGHT] = pack_compressed_image(wad, "data/editor/icons/point_light.png");
+	header.instance_3d_view_icons[INST_ENVSAMPLEPOINT] = pack_compressed_image(wad, "data/editor/icons/env_sample_point.png");
+	header.instance_3d_view_icons[INST_ENVTRANSITION] = pack_compressed_image(wad, "data/editor/icons/env_transition.png");
+	header.instance_3d_view_icons[INST_CUBOID] = pack_compressed_image(wad, "data/editor/icons/cuboid.png");
+	header.instance_3d_view_icons[INST_SPHERE] = pack_compressed_image(wad, "data/editor/icons/sphere.png");
+	header.instance_3d_view_icons[INST_CYLINDER] = pack_compressed_image(wad, "data/editor/icons/cylinder.png");
+	header.instance_3d_view_icons[INST_PILL] = pack_compressed_image(wad, "data/editor/icons/pill.png");
+	header.instance_3d_view_icons[INST_CAMERA] = pack_compressed_image(wad, "data/editor/icons/camera.png");
+	header.instance_3d_view_icons[INST_SOUND] = pack_compressed_image(wad, "data/editor/icons/sound.png");
+	header.instance_3d_view_icons[INST_AREA] = pack_compressed_image(wad, "data/editor/icons/area.png");
+	
+	wad.pad(SECTOR_SIZE, 0);
 	wad.write<EditorWadHeader>(0, header);
 }
 
@@ -243,10 +264,10 @@ static SectorRange pack_file(OutputStream& dest, const char* src_path) {
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
 	
 	std::vector<u8> compressed_bytes;
-	compress_wad(compressed_bytes, bytes, "", 8);
+	compress_wad(compressed_bytes, bytes, "", 1);
 	
 	dest.write_v(compressed_bytes);
-	dest.pad(SECTOR_SIZE, 0);
+	
 	SectorRange range;
 	range.offset = Sector32::size_from_bytes(offset);
 	range.size = Sector32::size_from_bytes(dest.tell() - offset);
@@ -263,7 +284,7 @@ static SectorRange pack_compressed_image(OutputStream& dest, const char* src_pat
 	pack_image(stream, src_path);
 	
 	std::vector<u8> compressed_bytes;
-	compress_wad(compressed_bytes, bytes, "", 8);
+	compress_wad(compressed_bytes, bytes, "", 1);
 	
 	dest.write_v(compressed_bytes);
 	

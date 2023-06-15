@@ -9,9 +9,11 @@ add_library(wrenchwtf STATIC
 
 add_subdirectory(platform)
 add_subdirectory(core)
+add_subdirectory(cppparser)
 add_subdirectory(toolwads)
 add_subdirectory(engine)
 add_subdirectory(assetmgr)
+add_subdirectory(instancemgr)
 add_subdirectory(gui)
 add_subdirectory(launcher)
 add_subdirectory(editor)

@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -41,12 +41,14 @@ static void buttons_window(Mod* mod, f32 buttons_window_height);
 static void begin_main_window(f32 buttons_window_height);
 static Texture load_image_from_launcher_wad(SectorRange range);
 
+static WadPaths wad_paths;
+
 int main(int argc, char** argv) {
 	g_launcher.mode = LauncherMode::DRAWING_GUI;
 	
-	WadPaths wads = find_wads(argv[0]);
-	g_guiwad.open(wads.gui);
-	g_launcher.wad.open(wads.launcher);
+	wad_paths = find_wads(argv[0]);
+	g_guiwad.open(wad_paths.gui);
+	g_launcher.wad.open(wad_paths.launcher);
 	
 	gui::setup_bin_paths(argv[0]);
 	
@@ -394,6 +396,7 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 	if(ImGui::Button("Build & Run##the_button")) {
 		if(!g_game_path.empty()) {
 			pack_params.game_path = g_game_path;
+			pack_params.overlay_path = wad_paths.overlay;
 			pack_params.mod_paths = enabled_mods();
 			g_launcher.emulator_params.iso_path = gui::run_packer(pack_params, pack_command);
 			ImGui::OpenPopup("Build & Run##the_popup");

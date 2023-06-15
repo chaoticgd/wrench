@@ -105,12 +105,11 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		input.meshes.emplace_back(tie_class.mesh);
 	}
 	for(const TieInstance& instance : opt_iterator(gameplay.tie_instances)) {
-		auto index = tie_class_to_index.find(instance.o_class);
+		auto index = tie_class_to_index.find(instance.o_class());
 		verify(index != tie_class_to_index.end(), "Cannot find tie model!");
 		VisInstance& vis_instance = input.instances[VIS_TIE].emplace_back();
 		vis_instance.mesh = index->second;
-		vis_instance.matrix = instance.matrix();
-		vis_instance.matrix[3][3] = 1.f;
+		vis_instance.matrix = instance.transform().matrix();
 		vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
 	}
 	
@@ -122,12 +121,11 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 	}
 	for(const MobyInstance& instance : opt_iterator(gameplay.moby_instances)) {
 		if(!instance.occlusion) {
-			auto index = moby_class_to_index.find(instance.o_class);
+			auto index = moby_class_to_index.find(instance.o_class());
 			if(index != moby_class_to_index.end()) {
 				VisInstance& vis_instance = input.instances[VIS_MOBY].emplace_back();
 				vis_instance.mesh = index->second;
-				vis_instance.matrix = instance.matrix();
-				vis_instance.matrix[3][3] = 1.f;
+				vis_instance.matrix = instance.transform().matrix();
 				vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
 			}
 		}
@@ -170,7 +168,7 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 	for(s32 i = 0; i < (s32) vis.mappings[VIS_MOBY].size(); i++) {
 		// Skip past moby instances for which we don't precompute occlusion.
 		while(gameplay.moby_instances->at(moby_instance_index).occlusion
-			|| moby_class_to_index.find(gameplay.moby_instances->at(moby_instance_index).o_class) == moby_class_to_index.end()) {
+			|| moby_class_to_index.find(gameplay.moby_instances->at(moby_instance_index).o_class()) == moby_class_to_index.end()) {
 			moby_instance_index++;
 		}
 		
@@ -186,33 +184,17 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 }
 
 static s32 chunk_index_from_position(const glm::vec3& point, const Gameplay& gameplay) {
-	verify_fatal(gameplay.properties.has_value());
-	const Properties& properties = *gameplay.properties;
-	if(properties.chunk_planes.has_value() && !properties.chunk_planes->empty()) {
-		glm::vec3 plane_1_point = {
-			(*properties.chunk_planes)[0].point_x,
-			(*properties.chunk_planes)[0].point_y,
-			(*properties.chunk_planes)[0].point_z
-		};
-		glm::vec3 plane_1_normal = {
-			(*properties.chunk_planes)[0].normal_x,
-			(*properties.chunk_planes)[0].normal_y,
-			(*properties.chunk_planes)[0].normal_z
-		};
+	verify_fatal(gameplay.level_settings.has_value());
+	const LevelSettings& level_settings = *gameplay.level_settings;
+	if(!level_settings.chunk_planes.empty()) {
+		glm::vec3 plane_1_point = level_settings.chunk_planes[0].point;
+		glm::vec3 plane_1_normal = level_settings.chunk_planes[0].normal;
 		if(glm::dot(plane_1_normal, point - plane_1_point) > 0.f) {
 			return 1;
 		}
-		if(properties.chunk_planes->size() > 1) {
-			glm::vec3 plane_2_point = {
-				(*properties.chunk_planes)[1].point_x,
-				(*properties.chunk_planes)[1].point_y,
-				(*properties.chunk_planes)[1].point_z
-			};
-			glm::vec3 plane_2_normal = {
-				(*properties.chunk_planes)[1].normal_x,
-				(*properties.chunk_planes)[1].normal_y,
-				(*properties.chunk_planes)[1].normal_z
-			};
+		if(level_settings.chunk_planes.size() > 1) {
+			glm::vec3 plane_2_point = level_settings.chunk_planes[1].point;
+			glm::vec3 plane_2_normal = level_settings.chunk_planes[1].normal;
 			if(glm::dot(plane_2_normal, point - plane_2_point) > 0.f) {
 				return 2;
 			}

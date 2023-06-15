@@ -4,8 +4,6 @@ endif()
 
 add_library(wrenchcore STATIC
 	buffer.cpp
-	instance.cpp
-	level.cpp
 	util/basic_util.cpp
 	util/error_util.cpp
 	mesh.cpp

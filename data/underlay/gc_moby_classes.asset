@@ -1,2 +1,3 @@
 MobyClass gc.moby_classes.0     { category: "Hero"          name: "Ratchet" }
 MobyClass gc.moby_classes.10    { category: "Hero"          name: "Clank" }
+MobyClass gc.moby_classes.2716  { category: "Gameplay"      name: "Slot Machine" }

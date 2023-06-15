@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#undef NDEBUG
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
@@ -37,7 +38,6 @@
 #define FILE_REFERENCE_ATTRIB "FileReferenceAttribute"
 
 static void generate_asset_type(const WtfNode* asset_type, int id);
-static void generate_asset_type_function(const WtfNode* root);
 static void generate_create_asset_function(const WtfNode* root);
 static void generate_asset_string_to_type_function(const WtfNode* root);
 static void generate_asset_type_to_string_function(const WtfNode* root);
@@ -52,7 +52,6 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 static void generate_attribute_getter_code(const WtfNode* attribute, int depth);
 static void generate_attribute_setter_code(const WtfNode* attribute, int depth);
 static void generate_child_functions(const WtfNode* asset_type);
-static void generate_setter_functions(const WtfNode* asset_type);
 static std::string node_to_cpp_type(const WtfNode* node);
 static void indent(int ind);
 static void out(const char* format, ...);
@@ -89,6 +88,9 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
+	const WtfAttribute* format_version = wtf_attribute(root, "format_version");
+	assert(format_version && format_version->type == WTF_NUMBER);
+	
 	out("// Generated from %s. Do not edit.\n\n", argv[1]);
 	
 	out("// *****************************************************************************\n");
@@ -96,7 +98,7 @@ int main(int argc, char** argv) {
 	out("// *****************************************************************************\n\n");
 	
 	out("#ifdef GENERATED_ASSET_HEADER\n\n");
-	out("extern int ASSET_FORMAT_VERSION;\n\n");
+	out("#define ASSET_FORMAT_VERSION %d\n\n", format_version->number.i);
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
 		out("class %sAsset;\n", node->tag);
 	}
@@ -115,10 +117,6 @@ int main(int argc, char** argv) {
 	out("// *****************************************************************************\n\n");
 	
 	out("#ifdef GENERATED_ASSET_IMPLEMENTATION\n");
-	
-	const WtfAttribute* format_version = wtf_attribute(root, "format_version");
-	assert(format_version && format_version->type == WTF_NUMBER);
-	out("int ASSET_FORMAT_VERSION = %d;\n\n", format_version->number.i);
 	
 	generate_create_asset_function(root);
 	generate_asset_string_to_type_function(root);
@@ -345,7 +343,7 @@ static void generate_read_function(const WtfNode* asset_type) {
 			out("\tconst WtfAttribute* %s = wtf_attribute(node, \"%s\");\n", attrib.c_str(), node->tag);
 			out("\tif(%s) {\n", attrib.c_str());
 			generate_read_attribute_code(node, result.c_str(), attrib.c_str(), 0);
-			out("\t_attrib_exists |= ATTRIB_%s;\n", node->tag);
+			out("\t\t_attrib_exists |= ATTRIB_%s;\n", node->tag);
 			out("\t}\n");
 		}
 	}
@@ -736,10 +734,10 @@ static void indent(int ind) {
 static void out(const char* format, ...) {
 	va_list list;
 	va_start(list, format);
-	if (out_file != NULL) {
+	if(out_file != NULL) {
 		vfprintf(out_file, format, list);
 	}
-	if (out_handle != NULL) {
+	if(out_handle != NULL) {
 		file_vprintf(out_handle, format, list);
 	}
 	va_end(list);

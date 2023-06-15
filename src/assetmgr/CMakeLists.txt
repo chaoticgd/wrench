@@ -31,7 +31,7 @@ add_custom_target(
 	DEPENDS docs/asset_reference.md
 )
 
-add_library(wrench_assetmgr
+add_library(wrench_assetmgr STATIC
 	game_info.cpp
 	asset_util.cpp
 	asset.cpp
@@ -40,5 +40,5 @@ add_library(wrench_assetmgr
 	material_asset.cpp
 	${CMAKE_BINARY_DIR}/_generated_asset_types.inl
 )
-target_link_libraries(wrench_assetmgr wrenchcore zip)
-target_precompile_headers(wrenchcore PUBLIC asset.h)
+target_link_libraries(wrench_assetmgr wrenchcore wrenchcppparser zip)
+target_precompile_headers(wrench_assetmgr PUBLIC asset.h)

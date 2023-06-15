@@ -52,12 +52,24 @@ struct Shaders {
 	void init();
 	
 	Shader textured;
+	GLint textured_view_matrix;
+	GLint textured_projection_matrix;
 	GLint textured_colour;
 	GLint textured_sampler;
 	
 	Shader selection;
-	
+	GLint selection_view_matrix;
+	GLint selection_projection_matrix;
+	Shader icons;
+	GLint icons_view_matrix;
+	GLint icons_projection_matrix;
+	GLint icons_sampler;
 	Shader pickframe;
+	GLint pickframe_view_matrix;
+	GLint pickframe_projection_matrix;
+	Shader pickframe_icons;
+	GLint pickframe_icons_view_matrix;
+	GLint pickframe_icons_projection_matrix;
 };
 
 #endif

@@ -1,2 +1,9 @@
 MobyClass dl.moby_classes.0     { category: "Hero"          name: "Ratchet" }
 MobyClass dl.moby_classes.10    { category: "Hero"          name: "Clank" }
+MobyClass dl.moby_classes.2871  { category: "Water"         name: "Ocean"                 Texture editor_icon { src: "icons/ocean.png" strongly_deleted: false } }
+MobyClass dl.moby_classes.3709  { category: "Enemies"       name: "Sheep" }
+MobyClass dl.moby_classes.8248  { category: "Vehicles"      name: "Landstalker" }
+MobyClass dl.moby_classes.8299  { category: "Gameplay"      name: "Bot Grind Cable Pad" }
+MobyClass dl.moby_classes.8300  { category: "Gameplay"      name: "Bot Grind Cable Terminator" }
+MobyClass dl.moby_classes.8309  { category: "Gameplay"      name: "Bolt Crank" }
+MobyClass dl.moby_classes.8355  { category: "Gameplay"      name: "Mission Control"       Texture editor_icon { src: "icons/dreadzone.png" strongly_deleted: false } }
