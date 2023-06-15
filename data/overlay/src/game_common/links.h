@@ -20,3 +20,6 @@ typedef int pathlink;
 typedef int grindlink;
 typedef int arealink;
 typedef int shareddatalink;
+
+typedef int music;
+typedef int missionlink;
