@@ -73,10 +73,10 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 }
 
 static void generate_psuedo_positions(Instances& instances) {
-	f32 moby_group_z = 0.f;
-	f32 tie_group_z = 1.f;
-	f32 shrub_group_z = 2.f;
-	f32 area_z = 3.f;
+	f32 moby_group_z = 2.f;
+	f32 tie_group_z = 4.f;
+	f32 shrub_group_z = 6.f;
+	f32 area_z = 8.f;
 	
 	for(MobyGroupInstance& group : instances.moby_groups) {
 		if(!group.members.empty()) {
