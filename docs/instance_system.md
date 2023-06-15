@@ -12,7 +12,7 @@ See [Instance Reference](instance_reference.md).
 
 ## Pvars
 
-Each moby instance, camera instance and sound instance can have extra data associated with it. The structure of this data depends on the class of the respective instance. Wrench defines this data in the form of C++ type definitions which are stored in C++ header files referenced from the pvar_type and pvar_type_fallback children of the MobyClass asset.
+Each moby instance, camera instance and sound instance can have extra data associated with it. The structure of this data depends on the class of the respective instance. Wrench defines this data in the form of C++ type definitions which are stored in asset banks under the src/game_common/ and src/game_\<game\>/ directories (where \<game\> is rac, gc, uya or dl).
 
 These files are read using a custom C++ parser. See [C++ Parser](cpp_parsed.md).
 
