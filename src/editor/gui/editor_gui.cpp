@@ -162,9 +162,12 @@ static void menu_bar() {
 			}
 			if(ImGui::BeginMenu("Visibility")) {
 				ImGui::Checkbox("Tfrags", &a.render_settings.draw_tfrags);
-				ImGui::Checkbox("Moby Instances", &a.render_settings.draw_mobies);
-				ImGui::Checkbox("Tie Instances", &a.render_settings.draw_ties);
-				ImGui::Checkbox("Shrub Instances", &a.render_settings.draw_shrubs);
+				ImGui::Checkbox("Moby Instances", &a.render_settings.draw_moby_instances);
+				ImGui::Checkbox("Moby Groups", &a.render_settings.draw_moby_groups);
+				ImGui::Checkbox("Tie Instances", &a.render_settings.draw_tie_instances);
+				ImGui::Checkbox("Tie Groups", &a.render_settings.draw_tie_groups);
+				ImGui::Checkbox("Shrub Instances", &a.render_settings.draw_shrub_instances);
+				ImGui::Checkbox("Shrub Groups", &a.render_settings.draw_shrub_groups);
 				ImGui::Checkbox("Point Lights", &a.render_settings.draw_point_lights);
 				ImGui::Checkbox("Env Sample Points", &a.render_settings.draw_env_sample_points);
 				ImGui::Checkbox("Env Transitions", &a.render_settings.draw_env_transitions);

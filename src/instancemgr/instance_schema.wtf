@@ -58,7 +58,8 @@ InstanceType Moby {
 
 InstanceType MobyGroup {
 	desc: "A group of moby instances."
-	components: "COM_NONE"
+	components: "COM_TRANSFORM"
+	transform_mode: "POSITION"
 	variable: "moby_groups"
 	
 	MobyLinks members {}
@@ -78,7 +79,8 @@ InstanceType Tie {
 
 InstanceType TieGroup {
 	desc: "A group of tie instances."
-	components: "COM_NONE"
+	components: "COM_TRANSFORM"
+	transform_mode: "POSITION"
 	variable: "tie_groups"
 	
 	TieLinks members {}
@@ -99,7 +101,8 @@ InstanceType Shrub {
 
 InstanceType ShrubGroup {
 	desc: "A group of shrub instances."
-	components: "COM_NONE"
+	components: "COM_TRANSFORM"
+	transform_mode: "POSITION"
 	variable: "shrub_groups"
 	
 	ShrubLinks members {}

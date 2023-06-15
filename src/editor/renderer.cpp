@@ -59,8 +59,11 @@ static RenderMaterial orange;
 static RenderMaterial cyan;
 static RenderMaterial instance_icons[ARRAY_SIZE(wadinfo.editor.instance_3d_view_icons)];
 static GLuint moby_inst_buffer = 0;
+static GLuint moby_group_inst_buffer = 0;
 static GLuint tie_inst_buffer = 0;
+static GLuint tie_group_inst_buffer = 0;
 static GLuint shrub_inst_buffer = 0;
+static GLuint shrub_group_inst_buffer = 0;
 static GLuint point_light_inst_buffer = 0;
 static GLuint env_sample_point_inst_buffer = 0;
 static GLuint env_transition_inst_buffer = 0;
@@ -121,8 +124,11 @@ void shutdown_renderer() {
 
 void prepare_frame(Level& lvl) {
 	upload_instance_buffer(moby_inst_buffer, lvl.instances().moby_instances);
+	upload_instance_buffer(moby_group_inst_buffer, lvl.instances().moby_groups);
 	upload_instance_buffer(tie_inst_buffer, lvl.instances().tie_instances);
+	upload_instance_buffer(tie_group_inst_buffer, lvl.instances().tie_groups);
 	upload_instance_buffer(shrub_inst_buffer, lvl.instances().shrub_instances);
+	upload_instance_buffer(shrub_group_inst_buffer, lvl.instances().shrub_groups);
 	upload_instance_buffer(point_light_inst_buffer, lvl.instances().point_lights);
 	upload_instance_buffer(env_sample_point_inst_buffer, lvl.instances().env_sample_points);
 	upload_instance_buffer(env_transition_inst_buffer, lvl.instances().env_transitions);
@@ -236,16 +242,28 @@ void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projecti
 }
 
 static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings) {
-	if(settings.draw_mobies) {
+	if(settings.draw_moby_instances) {
 		draw_mobies(lvl, lvl.instances().moby_instances, mesh_mode, GL_LINE);
 	}
 	
-	if(settings.draw_ties) {
+	if(settings.draw_moby_groups && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, moby_group_inst_buffer, 0, lvl.instances().moby_groups.size());
+	}
+	
+	if(settings.draw_tie_instances) {
 		draw_ties(lvl, lvl.instances().tie_instances, mesh_mode, GL_LINE);
 	}
 	
-	if(settings.draw_shrubs) {
+	if(settings.draw_tie_groups && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, tie_group_inst_buffer, 0, lvl.instances().tie_groups.size());
+	}
+	
+	if(settings.draw_shrub_instances) {
 		draw_shrubs(lvl, lvl.instances().shrub_instances, mesh_mode, GL_LINE);
+	}
+	
+	if(settings.draw_shrub_groups && draw_wireframes) {
+		draw_cube_instanced(GL_LINE, white, shrub_group_inst_buffer, 0, lvl.instances().shrub_groups.size());
 	}
 	
 	if(settings.draw_point_lights && draw_wireframes) {
@@ -479,8 +497,20 @@ static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial
 static void draw_icons(Level& lvl, const RenderSettings& settings) {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	
-	if(settings.draw_mobies) {
+	if(settings.draw_moby_instances) {
 		draw_moby_icons(lvl, lvl.instances().moby_instances);
+	}
+	
+	if(settings.draw_moby_groups) {
+		draw_icon_instanced(INST_MOBYGROUP, moby_group_inst_buffer, 0, lvl.instances().moby_groups.size());
+	}
+	
+	if(settings.draw_tie_groups) {
+		draw_icon_instanced(INST_TIEGROUP, tie_group_inst_buffer, 0, lvl.instances().tie_groups.size());
+	}
+	
+	if(settings.draw_shrub_groups) {
+		draw_icon_instanced(INST_SHRUBGROUP, shrub_group_inst_buffer, 0, lvl.instances().shrub_groups.size());
 	}
 	
 	if(settings.draw_point_lights) {

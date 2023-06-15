@@ -18,7 +18,7 @@
 
 #include "gameplay_convert.h"
 
-static void generate_psuedo_positions_for_areas(Instances& instances);
+static void generate_psuedo_positions(Instances& instances);
 
 void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::vector<CppType>& types_dest, Gameplay& src, Game game) {
 	if(src.level_settings.has_value()) {
@@ -50,8 +50,6 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 	dest.grind_paths = std::move(opt_iterator(src.grind_paths));
 	dest.areas = std::move(opt_iterator(src.areas));
 	
-	generate_psuedo_positions_for_areas(dest);
-	
 	if(help_dest) {
 		help_dest->us_english = std::move(opt_iterator(src.us_english_help_messages));
 		help_dest->uk_english = std::move(opt_iterator(src.uk_english_help_messages));
@@ -68,16 +66,79 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 	}
 	
 	recover_pvars(dest, types_dest, src, game);
+	
+	// Generate positions for objects that should be visible in the 3D view but
+	// that don't have positions stored for them in the game's files.
+	generate_psuedo_positions(dest);
 }
 
-static void generate_psuedo_positions_for_areas(Instances& instances) {
+static void generate_psuedo_positions(Instances& instances) {
+	f32 moby_group_z = 0.f;
+	f32 tie_group_z = 1.f;
+	f32 shrub_group_z = 2.f;
+	f32 area_z = 3.f;
+	
+	for(MobyGroupInstance& group : instances.moby_groups) {
+		if(!group.members.empty()) {
+			glm::vec3 pos = {0.f, 0.f, 0.f};
+			s32 count = 0;
+			for(MobyLink link : group.members) {
+				MobyInstance* inst = instances.moby_instances.from_id(link.id);
+				if(inst) {
+					pos += inst->transform().pos();
+					count++;
+				}
+			}
+			group.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count));
+		} else {
+			glm::vec3 pos((f32) group.id().value, 0.f, moby_group_z);
+			group.transform().set_from_pos_rot_scale(pos);
+		}
+	}
+	
+	for(TieGroupInstance& group : instances.tie_groups) {
+		if(!group.members.empty()) {
+			glm::vec3 pos = {0.f, 0.f, 0.f};
+			s32 count = 0;
+			for(TieLink link : group.members) {
+				TieInstance* inst = instances.tie_instances.from_id(link.id);
+				if(inst) {
+					pos += inst->transform().pos();
+					count++;
+				}
+			}
+			group.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count));
+		} else {
+			glm::vec3 pos((f32) group.id().value, 0.f, tie_group_z);
+			group.transform().set_from_pos_rot_scale(pos);
+		}
+	}
+	
+	for(ShrubGroupInstance& group : instances.shrub_groups) {
+		if(!group.members.empty()) {
+			glm::vec3 pos = {0.f, 0.f, 0.f};
+			s32 count = 0;
+			for(ShrubLink link : group.members) {
+				ShrubInstance* inst = instances.shrub_instances.from_id(link.id);
+				if(inst) {
+					pos += inst->transform().pos();
+					count++;
+				}
+			}
+			group.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count));
+		} else {
+			glm::vec3 pos((f32) group.id().value, 0.f, shrub_group_z);
+			group.transform().set_from_pos_rot_scale(pos);
+		}
+	}
+	
 	for(AreaInstance& area : instances.areas) {
-		glm::vec3 pos = {0, 0, 0};
-		f32 count = 0;
+		glm::vec3 pos = {0.f, 0.f, 0.f};
+		s32 count = 0;
 		for(PathLink link : area.paths) {
 			PathInstance& path = instances.paths[link.id];
 			if(!path.spline().empty()) {
-				glm::vec3 path_pos = {0, 0, 0};
+				glm::vec3 path_pos = {0.f, 0.f, 0.f};
 				for(glm::vec4& vertex : path.spline()) {
 					path_pos += glm::vec3(vertex);
 				}
@@ -100,7 +161,10 @@ static void generate_psuedo_positions_for_areas(Instances& instances) {
 			count++;
 		}
 		if(count > 0) {
-			area.transform().set_from_pos_rot_scale(pos * (1.f / count));
+			area.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count));
+		} else {
+			glm::vec3 pos((f32) area.id().value, 0.f, area_z);
+			area.transform().set_from_pos_rot_scale(pos);
 		}
 	}
 }

@@ -195,6 +195,9 @@ static void pack_editor_wad() {
 	header.tool_icons[3] = pack_ascii_icon(wad, "data/editor/icons/spline_tool.txt");
 	
 	header.instance_3d_view_icons[INST_MOBY] = pack_compressed_image(wad, "data/editor/icons/moby.png");
+	header.instance_3d_view_icons[INST_MOBYGROUP] = pack_compressed_image(wad, "data/editor/icons/moby_group.png");
+	header.instance_3d_view_icons[INST_TIEGROUP] = pack_compressed_image(wad, "data/editor/icons/moby_group.png");
+	header.instance_3d_view_icons[INST_SHRUBGROUP] = pack_compressed_image(wad, "data/editor/icons/moby_group.png");
 	header.instance_3d_view_icons[INST_POINTLIGHT] = pack_compressed_image(wad, "data/editor/icons/point_light.png");
 	header.instance_3d_view_icons[INST_ENVSAMPLEPOINT] = pack_compressed_image(wad, "data/editor/icons/env_sample_point.png");
 	header.instance_3d_view_icons[INST_ENVTRANSITION] = pack_compressed_image(wad, "data/editor/icons/env_transition.png");
@@ -203,8 +206,8 @@ static void pack_editor_wad() {
 	header.instance_3d_view_icons[INST_CYLINDER] = pack_compressed_image(wad, "data/editor/icons/cylinder.png");
 	header.instance_3d_view_icons[INST_PILL] = pack_compressed_image(wad, "data/editor/icons/pill.png");
 	header.instance_3d_view_icons[INST_CAMERA] = pack_compressed_image(wad, "data/editor/icons/camera.png");
-	header.instance_3d_view_icons[INST_AREA] = pack_compressed_image(wad, "data/editor/icons/area.png");
 	header.instance_3d_view_icons[INST_SOUND] = pack_compressed_image(wad, "data/editor/icons/sound.png");
+	header.instance_3d_view_icons[INST_AREA] = pack_compressed_image(wad, "data/editor/icons/area.png");
 	
 	wad.pad(SECTOR_SIZE, 0);
 	wad.write<EditorWadHeader>(0, header);

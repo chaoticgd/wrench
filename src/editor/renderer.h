@@ -45,9 +45,12 @@ struct RenderSettings {
 	glm::vec2 camera_rotation { 0, 0 };
 	
 	bool draw_tfrags = true;
-	bool draw_mobies = true;
-	bool draw_ties = true;
-	bool draw_shrubs = true;
+	bool draw_moby_instances = true;
+	bool draw_moby_groups = true;
+	bool draw_tie_instances = true;
+	bool draw_tie_groups = true;
+	bool draw_shrub_instances = true;
+	bool draw_shrub_groups = true;
 	bool draw_point_lights = true;
 	bool draw_env_sample_points = true;
 	bool draw_env_transitions = true;
