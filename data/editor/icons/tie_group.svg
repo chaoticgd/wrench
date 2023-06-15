@@ -30,9 +30,9 @@
      units="px"
      width="64px"
      showguides="false"
-     inkscape:zoom="10.516251"
-     inkscape:cx="24.676094"
-     inkscape:cy="33.757277"
+     inkscape:zoom="15.958707"
+     inkscape:cx="24.626055"
+     inkscape:cy="33.774666"
      inkscape:window-width="1920"
      inkscape:window-height="1056"
      inkscape:window-x="1920"
@@ -50,15 +50,6 @@
      id="defs2">
     <linearGradient
        inkscape:collect="always"
-       xlink:href="#linearGradient834"
-       id="linearGradient836"
-       x1="32"
-       y1="44"
-       x2="32"
-       y2="8"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
        id="linearGradient834">
       <stop
          style="stop-color:#ff5555;stop-opacity:1;"
@@ -69,6 +60,15 @@
          offset="1"
          id="stop832" />
     </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient834"
+       id="linearGradient836"
+       x1="32"
+       y1="44"
+       x2="32"
+       y2="8"
+       gradientUnits="userSpaceOnUse" />
   </defs>
   <g
      inkscape:label="tie_group"
@@ -76,35 +76,35 @@
      id="layer1"
      style="display:inline">
     <path
-       style="display:inline;fill:url(#linearGradient836);fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
+       style="fill:url(#linearGradient836);fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1;fill-opacity:1"
        d="M 56,20 V 44 C 50.014159,41.774506 42,42 36,36 H 28 C 22,42 14.124,41.754684 8,44 V 20 c 6.316168,2.277148 14,2 20,8 h 8 c 6,-6 14.171603,-5.793046 20,-8 z"
        id="path962"
        sodipodi:nodetypes="ccccccccc" />
     <path
-       style="display:inline;fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
+       style="fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
        d="m 28,28 v 8"
        id="path4038" />
     <path
-       style="display:inline;fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
+       style="fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
        d="m 36,28 v 8"
        id="path4040" />
     <path
-       style="display:inline;fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
+       style="fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="m 28,31 c -2,-4.88e-4 -6,-2 -8,-2"
        id="path4809"
        sodipodi:nodetypes="cc" />
     <path
-       style="display:inline;fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
+       style="fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="m 36,31 c 2,-4.88e-4 6,-2 8,-2"
        id="path4811"
        sodipodi:nodetypes="cc" />
     <path
-       style="display:inline;fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
+       style="display:inline;fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="m 28,33 c -2,-4.88e-4 -6,2 -8,2"
        id="path4809-7"
        sodipodi:nodetypes="cc" />
     <path
-       style="display:inline;fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
+       style="display:inline;fill:none;fill-rule:evenodd;stroke:#dc4b4b;stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="m 36,33 c 2,-4.88e-4 6,2 8,2"
        id="path4811-5"
        sodipodi:nodetypes="cc" />
