@@ -163,7 +163,7 @@ static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vec
 	
 	bool needs_resize = false;
 	for(size_t i = 0; i < pvars.size(); i++) {
-		if(type.size != pvars[i]->size()) {
+		if(align32(type.size, 16) != pvars[i]->size()) {
 			needs_resize = true;
 		}
 	}
@@ -176,7 +176,7 @@ static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vec
 		
 		if(ImGui::Button("Resize Pvar Data")) {
 			ResizePvarCommand command;
-			command.new_size = type.size;
+			command.new_size = align32(type.size, 16);
 			for(size_t i = 0; i < ids.size(); i++) {
 				ResizePvarInfo& instance = command.instances.emplace_back();
 				instance.id = ids[i];
@@ -249,14 +249,14 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 			
 			verify_fatal(type.array.element_type.get());
 			ImGui::AlignTextToFramePadding();
-			std::string subscript = stringf("%s[%d]", type.array.element_type->name.c_str(), type.array.element_count);
-			if(ImGui::Selectable(subscript.c_str(), expanded, ImGuiSelectableFlags_SpanAllColumns)) {
+			std::string element_count_str = stringf("[%d]", type.array.element_count);
+			if(ImGui::Selectable(element_count_str.c_str(), expanded, ImGuiSelectableFlags_SpanAllColumns)) {
 				expanded = !expanded;
 			}
 			if(expanded) {
 				for(s32 i = 0; i < type.array.element_count; i++) {
-					std::string subscript = stringf("%*s[%d]", depth, "", i);
-					generate_rows(*type.array.element_type, subscript, inspector, i, offset + i * type.array.element_type->size, depth + 1, indent + 1);
+					std::string element_name = std::to_string(i);
+					generate_rows(*type.array.element_type, element_name, inspector, i, offset + i * type.array.element_type->size, depth + 1, indent + 1);
 				}
 			}
 			break;
@@ -314,12 +314,16 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 			auto& types = inspector.lvl->level().forest().types();
 			auto iter = types.find(type.type_name.string);
 			if(iter != types.end()) {
-				generate_rows(iter->second, type.name, inspector, -1, offset, depth + 1, indent);
+				generate_rows(iter->second, name, inspector, -1, offset, depth + 1, indent);
 			} else {
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				ImGui::Text("%x", offset);
 				ImGui::TableNextColumn();
+				for(s32 i = 0; i < indent - 1; i++) {
+					ImGui::Text(" ");
+					ImGui::SameLine();
+				}
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("%s", name.c_str());
 				ImGui::TableNextColumn();
