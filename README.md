@@ -2,9 +2,11 @@
 
 A set of modding tools for the Ratchet & Clank PS2 games. Compatible with R&C1, R&C2, R&C3 and Deadlocked. Work in progress.
 
-To download the latest release, see the [Releases](https://github.com/chaoticgd/wrench/releases) page. To download the latest unstable build, see the [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable) page. Currently only Windows and Linux are supported.
+- [Releases](https://github.com/chaoticgd/wrench/releases)
+- [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable)
+- [Documentation](docs/README.md)
 
-For documentation and technical information about the games see [this page](docs/README.md). Feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
+Feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
 
 Features currently include:
 - Launcher
@@ -25,12 +27,15 @@ Features currently include:
 	- Pack/unpack everything else as binary files.
 - Level Editor
 	- View unpacked levels.
-	- Move objects and modify their attributes.
+	- Move objects and modify their attributes (including pvars).
 - **New in v0.4!** Memory Card Editor
 	- Only works properly on Deadlocked saves. Experimental.
 - Asset System
 	- A system to create, distribute and load mods.
 	- Multiple mods can be loaded at a time.
+- **New in v0.4!** Instance System
+	- A source format for storing object instances.
+	- Use pvar data types from C++ header files (reflection).
 
 ## Screenshots
 
