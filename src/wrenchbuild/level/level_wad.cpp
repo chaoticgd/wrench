@@ -264,7 +264,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 		if(missions.has_child(i)) {
 			const MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
 			if(mission.has_instances()) {
-				header.instances[i] = pack_asset_sa<SectorRange>(dest, mission.get_instances(), config);
+				header.instances[i] = pack_asset_sa<SectorRange>(dest, mission.get_instances(), config, FMT_INSTANCES_MISSION);
 			}
 		}
 	}
@@ -278,7 +278,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 			if(mission.has_instances()) {
 				std::vector<u8> bytes;
 				MemoryOutputStream stream(bytes);
-				pack_asset<ByteRange>(stream, mission.get_instances(), config, 0x10);
+				pack_asset<ByteRange>(stream, mission.get_instances(), config, 0x10, FMT_INSTANCES_MISSION);
 				
 				max_sizes.max_instances_size = std::max(max_sizes.max_instances_size, (s32) bytes.size());
 				
