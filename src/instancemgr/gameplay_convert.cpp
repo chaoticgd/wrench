@@ -89,7 +89,7 @@ static void generate_psuedo_positions(Instances& instances) {
 					count++;
 				}
 			}
-			group.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count));
+			group.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count) + glm::vec3(0.f, 0.f, 1.f));
 		} else {
 			glm::vec3 pos((f32) group.id().value * 2.f, 0.f, moby_group_z);
 			group.transform().set_from_pos_rot_scale(pos);
@@ -107,7 +107,7 @@ static void generate_psuedo_positions(Instances& instances) {
 					count++;
 				}
 			}
-			group.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count));
+			group.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count) + glm::vec3(0.f, 0.f, 1.f));
 		} else {
 			glm::vec3 pos((f32) group.id().value * 2.f, 0.f, tie_group_z);
 			group.transform().set_from_pos_rot_scale(pos);
@@ -125,7 +125,7 @@ static void generate_psuedo_positions(Instances& instances) {
 					count++;
 				}
 			}
-			group.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count));
+			group.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count) + glm::vec3(0.f, 0.f, 1.f));
 		} else {
 			glm::vec3 pos((f32) group.id().value * 2.f, 0.f, shrub_group_z);
 			group.transform().set_from_pos_rot_scale(pos);
@@ -161,7 +161,7 @@ static void generate_psuedo_positions(Instances& instances) {
 			count++;
 		}
 		if(count > 0) {
-			area.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count));
+			area.transform().set_from_pos_rot_scale(pos * (1.f / (f32) count) + glm::vec3(0.f, 0.f, 1.f));
 		} else {
 			glm::vec3 pos((f32) area.id().value * 2.f, 0.f, area_z);
 			area.transform().set_from_pos_rot_scale(pos);
