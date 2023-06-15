@@ -165,7 +165,9 @@ TEST_CASE("c++ parser" "[instancemgr]") {
 }
 
 static bool test_parser(const char* src, CppType&& expected) {
-	std::string str(src);
+	std::string str;
+	str += "#pragma wrench parser on\n";
+	str += src;
 	std::vector<CppToken> tokens = eat_cpp_file(&str[0]);
 	std::map<std::string, CppType> types;
 	parse_cpp_types(types, tokens);
