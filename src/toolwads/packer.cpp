@@ -196,7 +196,7 @@ static void pack_editor_wad() {
 	
 	header.instance_3d_view_icons[INST_MOBY] = pack_compressed_image(wad, "data/editor/icons/moby.png");
 	header.instance_3d_view_icons[INST_MOBYGROUP] = pack_compressed_image(wad, "data/editor/icons/moby_group.png");
-	header.instance_3d_view_icons[INST_TIEGROUP] = pack_compressed_image(wad, "data/editor/icons/moby_group.png");
+	header.instance_3d_view_icons[INST_TIEGROUP] = pack_compressed_image(wad, "data/editor/icons/tie_group.png");
 	header.instance_3d_view_icons[INST_SHRUBGROUP] = pack_compressed_image(wad, "data/editor/icons/moby_group.png");
 	header.instance_3d_view_icons[INST_POINTLIGHT] = pack_compressed_image(wad, "data/editor/icons/point_light.png");
 	header.instance_3d_view_icons[INST_ENVSAMPLEPOINT] = pack_compressed_image(wad, "data/editor/icons/env_sample_point.png");
