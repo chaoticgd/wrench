@@ -165,9 +165,9 @@ static CppType parse_type_name(CppParserState& parser) {
 	const CppToken& first = parser.cur();
 	
 	if(first.type == CPP_KEYWORD) {
-		bool has_keyword[CPP_KEYWORD_COUNT];
+		u8 has_keyword[CPP_KEYWORD_COUNT];
 		bool has_double_long = false;
-		memset(has_keyword, false, CPP_KEYWORD_COUNT);
+		memset(has_keyword, 0, CPP_KEYWORD_COUNT);
 		
 		// Parse tokens until a token of a type that can't be part of a built-in
 		// type name is encountered.
@@ -192,7 +192,7 @@ static CppType parse_type_name(CppParserState& parser) {
 				if(token.keyword == CPP_KEYWORD_long && has_keyword[CPP_KEYWORD_long]) {
 					has_double_long = true;
 				}
-				has_keyword[token.keyword] = true;
+				has_keyword[token.keyword] = 1;
 				parser.advance();
 			} else {
 				break;
