@@ -127,6 +127,10 @@ static void print_token(const CppToken& token) {
 			}
 			break;
 		}
+		case CPP_PREPROCESSOR_DIRECTIVE: {
+			UNSCOPED_INFO("preprocessor directive");
+			break;
+		}
 	}
 }
 
