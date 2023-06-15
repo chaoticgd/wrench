@@ -485,7 +485,7 @@ void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::strin
 		verify(type.descriptor == CPP_STRUCT_OR_UNION && !type.struct_or_union.is_union, "Pvar type must be a struct.");
 		verify(align32(type.size, 16) == pvars.size(),
 			"Pvar data is the wrong size for type %s (%d vs %d). Size should be a multiple of 16 bytes.",
-			type_name.c_str(), (s32) pvars.size(), type.size);
+			type_name.c_str(), (s32) pvars.size(), align32(type.size, 16));
 		
 		// TODO: Fixup links.
 		

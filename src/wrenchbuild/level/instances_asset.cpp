@@ -24,6 +24,7 @@
 
 static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config);
+static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, BuildConfig config, const char* hint);
 static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config);
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint);
@@ -34,6 +35,11 @@ on_load(Instances, []() {
 	InstancesAsset::funcs.unpack_rac2 = wrap_hint_unpacker_func<InstancesAsset>(unpack_instances_asset);
 	InstancesAsset::funcs.unpack_rac3 = wrap_hint_unpacker_func<InstancesAsset>(unpack_instances_asset);
 	InstancesAsset::funcs.unpack_dl = wrap_hint_unpacker_func<InstancesAsset>(unpack_instances_asset);
+	
+	InstancesAsset::funcs.pack_rac1 = wrap_hint_packer_func<InstancesAsset>(pack_instances_asset);
+	InstancesAsset::funcs.pack_rac2 = wrap_hint_packer_func<InstancesAsset>(pack_instances_asset);
+	InstancesAsset::funcs.pack_rac3 = wrap_hint_packer_func<InstancesAsset>(pack_instances_asset);
+	InstancesAsset::funcs.pack_dl = wrap_hint_packer_func<InstancesAsset>(pack_instances_asset);
 	
 	InstancesAsset::funcs.test_rac = new AssetTestFunc(test_instances_asset);
 	InstancesAsset::funcs.test_gc = new AssetTestFunc(test_instances_asset);
@@ -148,6 +154,15 @@ Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_src, const st
 		return gameplay;
 	}
 	verify_not_reached("Instances asset is of an invalid type.");
+}
+
+static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, BuildConfig config, const char* hint) {
+	std::string instances_str = src.file().read_text_file(src.src().path);
+	Instances instances = read_instances(instances_str);
+	Gameplay gameplay;
+	move_instances_to_gameplay(gameplay, instances, nullptr, nullptr, src.forest().types());
+	std::vector<u8> buffer = write_gameplay(gameplay, config.game(), *get_gameplay_block_descriptions(config.game(), hint));
+	dest.write_v(buffer);
 }
 
 static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config) {
