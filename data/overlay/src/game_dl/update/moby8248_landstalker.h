@@ -1,6 +1,6 @@
 #pragma wrench parser on
 
-struct update8248_Landstalker { // 0x590
+struct update8248 { // 0x590
 	/* 0x000 */ SubVars sVars;
 	/* 0x050 */ TargetVars tVars;
 	/* 0x0e0 */ FlashVars fVars;
