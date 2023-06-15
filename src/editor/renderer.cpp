@@ -26,7 +26,7 @@
 
 template <typename ThisInstance>
 static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstance>& insts);
-static glm::vec4 inst_colour(bool selected);
+static glm::vec4 inst_colour(const Instance& inst);
 static glm::vec4 encode_inst_id(InstanceId id);
 static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings);
 static void draw_mobies(Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
@@ -155,7 +155,7 @@ static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstan
 	inst_data.reserve(insts.size());
 	for(const ThisInstance& inst : insts) {
 		glm::mat4 mat = inst.transform().matrix();
-		inst_data.emplace_back(mat, inst_colour(inst.selected), encode_inst_id(inst.id()));
+		inst_data.emplace_back(mat, inst_colour(inst), encode_inst_id(inst.id()));
 	}
 	
 	glDeleteBuffers(1, &buffer);
@@ -165,8 +165,13 @@ static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstan
 	glBufferData(GL_ARRAY_BUFFER, inst_buffer_size, inst_data.data(), GL_STATIC_DRAW);
 }
 
-static glm::vec4 inst_colour(bool selected) {
-	return selected ? glm::vec4(1.f, 0.f, 0.f, 1.f) : glm::vec4(0.f, 0.f, 0.f, 0.f);
+static glm::vec4 inst_colour(const Instance& inst) {
+	if(inst.selected) {
+		return glm::vec4(1.f, 0.f, 0.f, 1.f);
+	} else if(inst.referenced_by_selected) {
+		return glm::vec4(0.f, 0.f, 1.f, 1.f);
+	}
+	return glm::vec4(0.f, 0.f, 0.f, 0.f);
 }
 
 static glm::vec4 encode_inst_id(InstanceId id) {
@@ -484,7 +489,7 @@ static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial
 		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 		submesh.vertex_count = vertices.size();
 		
-		auto inst = InstanceData(glm::mat4(1.f), inst_colour(path.selected), encode_inst_id(path.id()));
+		auto inst = InstanceData(glm::mat4(1.f), inst_colour(path), encode_inst_id(path.id()));
 		GlBuffer inst_buffer;
 		glGenBuffers(1, &inst_buffer.id);
 		glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);

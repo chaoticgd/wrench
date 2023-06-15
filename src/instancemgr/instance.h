@@ -133,6 +133,7 @@ struct Instance {
 	u32 components_mask() const { return _components_mask; }
 	bool has_component(InstanceComponent component) const { return (_components_mask & component) == component; }
 	bool selected = false;
+	bool referenced_by_selected = false;
 	
 	const TransformComponent& transform() const;
 	TransformComponent& transform();
