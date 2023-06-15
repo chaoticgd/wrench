@@ -165,7 +165,7 @@ static CppType parse_type_name(CppParserState& parser) {
 	const CppToken& first = parser.cur();
 	
 	if(first.type == CPP_KEYWORD) {
-		u8 has_keyword[CPP_KEYWORD_COUNT];
+		u8 has_keyword[128];
 		bool has_double_long = false;
 		memset(has_keyword, 0, CPP_KEYWORD_COUNT);
 		
