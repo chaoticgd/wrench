@@ -20,8 +20,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <Windows.h>
-#include <Namedpipeapi.h>
+#include <windows.h>
+#include <namedpipeapi.h>
 #include <processthreadsapi.h>
 #include <handleapi.h>
 

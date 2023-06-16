@@ -130,7 +130,8 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	WrenchPipeHandle* pipe = pipe_open(command_string.c_str(), WRENCH_PIPE_MODE_READ);
 	if (!pipe) {
 		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.output += std::string("pipe_open failed: ") + PIPEIO_ERROR_CONTEXT_STRING + "\n";
+		command.shared.output += PIPEIO_ERROR_CONTEXT_STRING;
+		command.shared.output += "\n";
 		command.shared.state = STOPPED;
 		command.shared.success = false;
 		return;
@@ -166,7 +167,7 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 			command.shared.output += "\nProcess exited normally.\n";
 			command.shared.success = true;
 		} else {
-			command.shared.output += stringf("\nProcess exited with error code %d.\nError message upon pipe closing: %s\n", exit_code, PIPEIO_ERROR_CONTEXT_STRING);
+			command.shared.output += stringf("%s\n\nProcess exited with error code %d.\n", PIPEIO_ERROR_CONTEXT_STRING, exit_code);
 			command.shared.success = false;
 		}
 	}

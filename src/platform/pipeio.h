@@ -37,8 +37,6 @@ extern const char* PIPEIO_ERROR_CONTEXT_STRING;
 enum _wrench_pipe_mode {
 	// Opens a read-only pipe.
 	WRENCH_PIPE_MODE_READ = 1
-	// Opens a write-only pipe, currently not implemented.
-	// WRENCH_PIPE_MODE_WRITE             = 2
 } typedef WrenchPipeMode;
 
 /**
