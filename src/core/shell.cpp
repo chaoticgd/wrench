@@ -122,7 +122,7 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 		return;
 	}
 
-#ifdef linux
+#ifdef __linux__
 	// Redirect stderr to stdout so we can capture it.
 	command_string += "2>&1";
 #endif
