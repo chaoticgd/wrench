@@ -322,7 +322,8 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 	AssetForest forest;
 	
 	FileInputStream stream;
-	verify(stream.open(input_path), "Failed to open input file '%s' for reading.", input_path.string().c_str());
+	verify(stream.open(input_path), "Failed to open input file '%s' for reading (%s).",
+		input_path.string().c_str(), stream.last_error.c_str());
 	
 	// Check if it's an ISO file.
 	if(stream.size() > 16 * SECTOR_SIZE + 6) {
@@ -501,7 +502,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset) {
 	WrenchFileHandle* file = file_open(input_path.string().c_str(), WRENCH_FILE_MODE_READ);
-	verify(file, "Failed to open file for reading.");
+	verify(file, "Failed to open file '%s' for reading (%s).", input_path.string().c_str(), FILEIO_ERROR_CONTEXT_STRING);
 	
 	std::vector<u8> header = read_file(file, offset, 0x10);
 	verify(header[0] == 'W' && header[1] == 'A' && header[2] == 'D',

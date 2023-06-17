@@ -122,7 +122,7 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 		return;
 	}
 
-#ifdef linux
+#ifdef __linux__
 	// Redirect stderr to stdout so we can capture it.
 	command_string += "2>&1";
 #endif
@@ -130,7 +130,8 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	WrenchPipeHandle* pipe = pipe_open(command_string.c_str(), WRENCH_PIPE_MODE_READ);
 	if (!pipe) {
 		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.output += std::string("pipe_open failed: ") + PIPEIO_ERROR_CONTEXT_STRING + "\n";
+		command.shared.output += PIPEIO_ERROR_CONTEXT_STRING;
+		command.shared.output += "\n";
 		command.shared.state = STOPPED;
 		command.shared.success = false;
 		return;
@@ -162,11 +163,16 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	{
 		std::lock_guard<std::mutex> lock(command.mutex);
 		command.shared.state = STOPPED;
-		if(exit_code == 0) {
-			command.shared.output += "\nProcess exited normally.\n";
-			command.shared.success = true;
+		if(strlen(PIPEIO_ERROR_CONTEXT_STRING) == 0) {
+			if(exit_code == 0) {
+				command.shared.output += "\nProcess exited normally.\n";
+				command.shared.success = true;
+			} else {
+				command.shared.output += stringf("\nProcess exited with error code %d.\n", exit_code);
+				command.shared.success = false;
+			}
 		} else {
-			command.shared.output += stringf("\nProcess exited with error code %d.\nError message upon pipe closing: %s\n", exit_code, PIPEIO_ERROR_CONTEXT_STRING);
+			command.shared.output += stringf("\nFailed to close pipe (%s).\n", PIPEIO_ERROR_CONTEXT_STRING);
 			command.shared.success = false;
 		}
 	}

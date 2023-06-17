@@ -20,15 +20,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <Windows.h>
-#include <Namedpipeapi.h>
+#include <windows.h>
+#include <namedpipeapi.h>
 #include <processthreadsapi.h>
 #include <handleapi.h>
 
-static const char* _pipeio_message_ok = "No errors occurred.";
+static const char* _pipeio_message_ok = "";
 static char _pipeio_message_error_buffer[128];
 
-const char* PIPEIO_ERROR_CONTEXT_STRING = "No errors occurred.";
+const char* PIPEIO_ERROR_CONTEXT_STRING = "";
 
 #define _pipeio_verify_not_reached(retval, message, ...) \
 	{ \
@@ -104,14 +104,14 @@ WrenchPipeHandle* pipe_open(const char* command, const WrenchPipeMode mode) {
 	_pipeio_verify_with_clear(success != 0,
 		(WrenchPipeHandle*) 0,
 		_pipe_open_clear(&list),
-		"Failed to create pipes. WinAPI Error Code: %lu.",
+		"CreatePipe: %lu.",
 		GetLastError());
 
 	success = SetHandleInformation(list.read_handle, HANDLE_FLAG_INHERIT, 0);
 	_pipeio_verify_with_clear(success != 0,
 		(WrenchPipeHandle*) 0,
 		_pipe_open_clear(&list),
-		"Failed to set handle information for the pipe. WinAPI Error Code: %lu.",
+		"SetHandleInformation: %lu.",
 		GetLastError());
 
 	STARTUPINFOW startup_info;
@@ -130,28 +130,28 @@ WrenchPipeHandle* pipe_open(const char* command, const WrenchPipeMode mode) {
 	_pipeio_verify_with_clear(wide_string_size != 0,
 		(WrenchPipeHandle*) 0,
 		_pipe_open_clear(&list),
-		"Failed to compute wide command string size. WinAPI Error Code: %lu.",
+		"MultiByteToWideChar: %lu.",
 		GetLastError());
 
 	list.wide_string = (LPWSTR) malloc(wide_string_size * sizeof(WCHAR));
 	_pipeio_verify_with_clear(list.wide_string != (LPWSTR) 0,
 		(WrenchPipeHandle*) 0,
 		_pipe_open_clear(&list),
-		"Failed to allocate wide command string.");
+		"malloc");
 
 	int written_bytes =
 		MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input_string, -1, list.wide_string, wide_string_size);
 	_pipeio_verify_with_clear(written_bytes != 0,
 		(WrenchPipeHandle*) 0,
 		_pipe_open_clear(&list),
-		"Failed to convert command string. WinAPI Error Code: %lu.",
+		"MultiByteToWideChar: %lu.",
 		GetLastError());
 
 	success = CreateProcessW(NULL, list.wide_string, NULL, NULL, TRUE, 0, NULL, NULL, &startup_info, &process_info);
 	_pipeio_verify_with_clear(success != 0,
 		(WrenchPipeHandle*) 0,
 		_pipe_open_clear(&list),
-		"Failed to create process. WinAPI Error Code: %lu.",
+		"CreateProcessW: %lu.",
 		GetLastError());
 
 	list.process_handle = process_info.hProcess;
@@ -188,7 +188,7 @@ char* pipe_gets(char* str, size_t buffer_size, WrenchPipeHandle* pipe) {
 
 	DWORD bytes_read;
 	BOOL success = ReadFile(pipe->pipe, str, buffer_size - 1, &bytes_read, NULL);
-	_pipeio_verify(success != 0, (char*) 0, "Failed to read from pipe. WinAPI Error Code: %lu.", GetLastError());
+	_pipeio_verify(success != 0, (char*) 0, "ReadFile: %lu.", GetLastError());
 
 	size_t num_bytes = (size_t) bytes_read;
 
@@ -220,7 +220,7 @@ long pipe_close(WrenchPipeHandle* pipe) {
 	// Terminating a process that has already terminated will result in an access denied error which is fine for us.
 	_pipeio_verify(success != 0 || terminate_error == ERROR_ACCESS_DENIED,
 		EOF,
-		"Failed to terminate process. WinAPI Error Code: %lu.",
+		"TerminateProcess: %lu.",
 		terminate_error);
 
 	DWORD wait_return_code = WaitForSingleObject(pipe->process, 30000);
@@ -230,23 +230,23 @@ long pipe_close(WrenchPipeHandle* pipe) {
 	DWORD exit_code;
 	success = GetExitCodeProcess(pipe->process, (LPDWORD) &exit_code);
 	_pipeio_verify(
-		success != 0, EOF, "Failed to retrieve exit code of process. WinAPI Error Code: %lu.", GetLastError());
+		success != 0, EOF, "GetExitCodeProcess: %lu.", GetLastError());
 
 	if(pipe->pipe != INVALID_HANDLE_VALUE) {
 		success = CloseHandle(pipe->pipe);
-		_pipeio_verify(success != 0, EOF, "Failed to close pipe handle. WinAPI Error Code: %lu.", GetLastError());
+		_pipeio_verify(success != 0, EOF, "CloseHandle: %lu.", GetLastError());
 		pipe->pipe = INVALID_HANDLE_VALUE;
 	}
 
 	if(pipe->process != INVALID_HANDLE_VALUE) {
 		success = CloseHandle(pipe->process);
-		_pipeio_verify(success != 0, EOF, "Failed to close process handle. WinAPI Error Code: %lu.", GetLastError());
+		_pipeio_verify(success != 0, EOF, "CloseHandle: %lu.", GetLastError());
 		pipe->process = INVALID_HANDLE_VALUE;
 	}
 
 	if(pipe->thread != INVALID_HANDLE_VALUE) {
 		success = CloseHandle(pipe->thread);
-		_pipeio_verify(success != 0, EOF, "Failed to close thread handle. WinAPI Error Code: %lu.", GetLastError());
+		_pipeio_verify(success != 0, EOF, "CloseHandle: %lu.", GetLastError());
 		pipe->thread = INVALID_HANDLE_VALUE;
 	}
 

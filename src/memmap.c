@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 	uint8_t* ee_memory = malloc(EE_MEMORY_SIZE);
 	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
 	if(!file) {
-		fprintf(stderr, "Failed to open file.\n");
+		fprintf(stderr, "Failed to open file '%s' for reading (%s).\n", argv[1], FILEIO_ERROR_CONTEXT_STRING);
 		return 1;
 	}
 	if(file_read(ee_memory, EE_MEMORY_SIZE, file) != EE_MEMORY_SIZE) {

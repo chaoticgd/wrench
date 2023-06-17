@@ -20,13 +20,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <Windows.h>
+#include <windows.h>
 #include <fileapi.h>
 
-static const char* _fileio_message_ok = "No errors occurred.";
+static const char* _fileio_message_ok = "";
 static char _fileio_message_error_buffer[128];
 
-const char* FILEIO_ERROR_CONTEXT_STRING = "No errors occurred.";
+const char* FILEIO_ERROR_CONTEXT_STRING = "";
 
 struct _wrench_file_handle {
 	HANDLE file;
