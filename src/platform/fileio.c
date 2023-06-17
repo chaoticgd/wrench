@@ -89,6 +89,7 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 	
 	file->file = fopen(filename, mode_string);
 	if(!file->file) {
+		free(file);
 		snprintf(error_buffer, sizeof(error_buffer), "fopen: %s", strerror(errno));
 		return NULL;
 	}
