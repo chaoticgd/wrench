@@ -101,9 +101,10 @@ void ZippedAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*
 	s64 count = zip_get_num_entries(_zip, 0);
 	for(s64 i = 0; i < count; i++) {
 		if(const char* name = zip_get_name(_zip, i, 0)) {
-			fs::path path = fs::path(name).lexically_relative(_prefix);
-			if(path.string().starts_with(common_source_path) || path.string().starts_with(game_source_path)) {
-				dest[path] = this;
+			std::string str = fs::path(name).lexically_relative(_prefix);
+			std::replace(str.begin(), str.end(), '\\', '/');
+			if(str.starts_with(common_source_path) || str.starts_with(game_source_path)) {
+				dest[str] = this;
 			}
 		}
 	}

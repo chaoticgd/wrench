@@ -809,6 +809,7 @@ void LooseAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*>
 	
 	for(auto& entry : fs::recursive_directory_iterator(_directory)) {
 		std::string str = entry.path().lexically_relative(_directory).string();
+		std::replace(str.begin(), str.end(), '\\', '/');
 		if(entry.is_regular_file() && (str.starts_with(common_source_path) || str.starts_with(game_source_path))) {
 			dest[fs::path(str)] = this;
 		}
