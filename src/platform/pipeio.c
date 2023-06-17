@@ -24,8 +24,8 @@
 #include <stdio.h>
 #include <string.h>
 
-static const char* message_ok = "No errors occurred.";
-static char error_buffer[128] = "No errors occurred.";
+static const char* message_ok = "";
+static char error_buffer[128] = "";
 
 const char* PIPEIO_ERROR_CONTEXT_STRING = error_buffer;
 

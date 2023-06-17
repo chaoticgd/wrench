@@ -163,11 +163,16 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	{
 		std::lock_guard<std::mutex> lock(command.mutex);
 		command.shared.state = STOPPED;
-		if(exit_code == 0) {
-			command.shared.output += "\nProcess exited normally.\n";
-			command.shared.success = true;
+		if(strlen(PIPEIO_ERROR_CONTEXT_STRING) == 0) {
+			if(exit_code == 0) {
+				command.shared.output += "\nProcess exited normally.\n";
+				command.shared.success = true;
+			} else {
+				command.shared.output += stringf("\nProcess exited with error code %d.\n", exit_code);
+				command.shared.success = false;
+			}
 		} else {
-			command.shared.output += stringf("%s\n\nProcess exited with error code %d.\n", PIPEIO_ERROR_CONTEXT_STRING, exit_code);
+			command.shared.output += stringf("\nFailed to close pipe (%s).\n", PIPEIO_ERROR_CONTEXT_STRING);
 			command.shared.success = false;
 		}
 	}
