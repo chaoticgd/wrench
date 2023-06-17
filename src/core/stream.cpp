@@ -32,20 +32,24 @@ BlackHoleOutputStream::BlackHoleOutputStream() {}
 
 bool BlackHoleOutputStream::seek(s64 offset) {
 	ofs = offset;
+	last_error.clear();
 	return true;
 }
 
 s64 BlackHoleOutputStream::tell() const {
+	last_error.clear();
 	return ofs;
 }
 
 s64 BlackHoleOutputStream::size() const {
+	last_error.clear();
 	return top;
 }
 
 bool BlackHoleOutputStream::write_n(const u8*, s64 size) {
 	ofs += size;
 	top = std::max(top, ofs);
+	last_error.clear();
 	return true;
 }
 
@@ -61,13 +65,16 @@ MemoryInputStream::MemoryInputStream(const std::vector<u8>& bytes)
 
 bool MemoryInputStream::seek(s64 offset) {
 	ofs = offset;
+	last_error.clear();
 	return true;
 }
 
 s64 MemoryInputStream::tell() const {
+	last_error.clear();
 	return ofs;
 }
 s64 MemoryInputStream::size() const {
+	last_error.clear();
 	return end - begin;
 }
 
@@ -75,6 +82,7 @@ bool MemoryInputStream::read_n(u8* dest, s64 size) {
 	verify(ofs + size <= end - begin, "Tried to read past end of memory input stream.");
 	memcpy(dest, begin + ofs, size);
 	ofs += size;
+	last_error.clear();
 	return true;
 }
 
@@ -85,14 +93,17 @@ MemoryOutputStream::MemoryOutputStream(std::vector<u8>& backing_)
 
 bool MemoryOutputStream::seek(s64 offset) {
 	ofs = offset;
+	last_error.clear();
 	return true;
 }
 
 s64 MemoryOutputStream::tell() const {
+	last_error.clear();
 	return ofs;
 }
 
 s64 MemoryOutputStream::size() const {
+	last_error.clear();
 	return backing.size();
 }
 
@@ -102,6 +113,7 @@ bool MemoryOutputStream::write_n(const u8* src, s64 size) {
 	}
 	memcpy(&backing[ofs], src, size);
 	ofs += size;
+	last_error.clear();
 	return true;
 }
 
@@ -117,26 +129,38 @@ FileInputStream::~FileInputStream() {
 
 bool FileInputStream::open(const fs::path& path) {
 	if(file != nullptr) {
-		file_close(file);
+		if(file_close(file) == EOF) {
+			last_error = FILEIO_ERROR_CONTEXT_STRING;
+			return false;
+		}
 	}
 	file = file_open(path.string().c_str(), WRENCH_FILE_MODE_READ);
+	last_error = FILEIO_ERROR_CONTEXT_STRING;
 	return file != nullptr;
 }
 
 bool FileInputStream::seek(s64 offset) {
-	return file_seek(file, offset, WRENCH_FILE_ORIGIN_START) == 0;
+	int result = file_seek(file, offset, WRENCH_FILE_ORIGIN_START);
+	last_error = FILEIO_ERROR_CONTEXT_STRING;
+	return result == 0;
 }
 
 s64 FileInputStream::tell() const {
-	return file_tell(file);
+	size_t pos = file_tell(file);
+	last_error = FILEIO_ERROR_CONTEXT_STRING;
+	return pos;
 }
 
 s64 FileInputStream::size() const {
-	return file_size(file);
+	size_t result = file_size(file);
+	last_error = FILEIO_ERROR_CONTEXT_STRING;
+	return result;
 }
 
 bool FileInputStream::read_n(u8* dest, s64 size) {
-	return file_read(dest, size, file) == size;
+	size_t result = file_read(dest, size, file);
+	last_error = FILEIO_ERROR_CONTEXT_STRING;
+	return result == size;
 }
 
 // *****************************************************************************
@@ -154,23 +178,32 @@ bool FileOutputStream::open(const fs::path& path) {
 		file_close(file);
 	}
 	file = file_open(path.string().c_str(), WRENCH_FILE_MODE_WRITE);
+	last_error = FILEIO_ERROR_CONTEXT_STRING;
 	return file != nullptr;
 }
 
 bool FileOutputStream::seek(s64 offset) {
-	return file_seek(file, offset, WRENCH_FILE_ORIGIN_START) == 0;
+	int result = file_seek(file, offset, WRENCH_FILE_ORIGIN_START);
+	last_error = FILEIO_ERROR_CONTEXT_STRING;
+	return result == 0;
 }
 
 s64 FileOutputStream::tell() const {
-	return file_tell(file);
+	size_t result = file_tell(file);
+	last_error = FILEIO_ERROR_CONTEXT_STRING;
+	return result;
 }
 
 s64 FileOutputStream::size() const {
-	return file_size(file);
+	size_t result = file_size(file);
+	last_error = FILEIO_ERROR_CONTEXT_STRING;
+	return result;
 }
 
 bool FileOutputStream::write_n(const u8* src, s64 size) {
-	return file_write(src, size, file) == size;
+	size_t result = file_write(src, size, file);
+	last_error = FILEIO_ERROR_CONTEXT_STRING;
+	return result == size;
 }
 
 // *****************************************************************************

@@ -50,7 +50,7 @@ WrenchPipeHandle* pipe_open(const char* command, const WrenchPipeMode mode) {
 		return NULL;
 	}
 
-	PIPEIO_ERROR_CONTEXT_STRING = message_ok;
+	snprintf(error_buffer, sizeof(error_buffer), "%s", message_ok);
 	return pipe;
 }
 
@@ -58,7 +58,7 @@ char* pipe_gets(char* str, size_t buffer_size, WrenchPipeHandle* pipe) {
 	assert(pipe);
 	
 	if(buffer_size == 0) {
-		PIPEIO_ERROR_CONTEXT_STRING = message_ok;
+		snprintf(error_buffer, sizeof(error_buffer), "%s", message_ok);
 		return 0;
 	}
 	
@@ -69,7 +69,7 @@ char* pipe_gets(char* str, size_t buffer_size, WrenchPipeHandle* pipe) {
 		snprintf(error_buffer, sizeof(error_buffer), "fgets: %s", strerror(errno));
 	}
 	
-	PIPEIO_ERROR_CONTEXT_STRING = message_ok;
+	snprintf(error_buffer, sizeof(error_buffer), "%s", message_ok);
 	return ptr;
 }
 
@@ -83,6 +83,6 @@ long pipe_close(WrenchPipeHandle* pipe) {
 		snprintf(error_buffer, sizeof(error_buffer), "pclose: %s", strerror(errno));
 	}
 
-	PIPEIO_ERROR_CONTEXT_STRING = message_ok;
+	snprintf(error_buffer, sizeof(error_buffer), "%s", message_ok);
 	return val;
 }

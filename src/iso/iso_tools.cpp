@@ -32,7 +32,7 @@
 // been reduced to a humble subcommand within a greater tool. Pity it.
 void inspect_iso(const std::string& iso_path) {
 	FileInputStream iso;
-	verify(iso.open(iso_path), "Failed to open ISO file.");
+	verify(iso.open(iso_path), "Failed to open ISO file (%s).", iso.last_error.c_str());
 	
 	IsoFilesystem filesystem = read_iso_filesystem(iso);
 	

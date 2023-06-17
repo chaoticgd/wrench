@@ -42,6 +42,8 @@ public:
 	virtual bool seek(s64 offset) = 0;
 	virtual s64 tell() const = 0;
 	virtual s64 size() const = 0;
+	
+	mutable std::string last_error;
 };
 
 class InputStream : public Stream {
@@ -192,6 +194,7 @@ public:
 	bool read_n(u8* dest, s64 size) override;
 
 	WrenchFileHandle* file = nullptr;
+	std::string error_message;
 };
 
 class FileOutputStream : public OutputStream {
