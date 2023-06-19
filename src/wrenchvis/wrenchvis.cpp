@@ -20,7 +20,6 @@
 #include <engine/tfrag_high.h>
 #include <engine/occlusion.h>
 #include <instancemgr/gameplay_convert.h>
-#include <toolwads/wads.h>
 #include <wrenchvis/visibility.h>
 
 struct OcclChunk {
@@ -64,8 +63,6 @@ int main(int argc, char** argv) {
 		fprintf(stderr, "usage: %s <game path> <mod path> <asset link of LevelWad asset>\n", (argc > 0) ? argv[0] : "wrenchvis");
 		return 1;
 	}
-	
-	WadPaths wads = find_wads(argv[0]);
 	
 	std::string game_path = argv[1];
 	std::string mod_path = argv[2];

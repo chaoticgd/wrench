@@ -39,6 +39,7 @@ struct Layout {
 
 static void menu_bar();
 static void level_editor_menu_bar();
+static void occlusion_things(Level* level);
 static void tool_bar();
 static void begin_dock_space();
 static void dockable_windows();
@@ -249,12 +250,31 @@ static void level_editor_menu_bar() {
 		g_app->load_level(asset->as<LevelAsset>());
 	}
 	
+	occlusion_things(level);
+}
+
+static void occlusion_things(Level* level) {
 	static CommandThread occl_command;
 	static gui::RebuildOcclusionParams occl_params;
 	
-	ImGui::BeginDisabled(!level);
+	const char* occlusion_problem = nullptr;
+	if(!occlusion_problem && !level) {
+		occlusion_problem = "No level loaded.";
+	}
+	if(!occlusion_problem && !level->level_wad().has_occlusion())  {
+		occlusion_problem = "Missing occlusion asset.";
+	}
+	if(!occlusion_problem && !level->level_wad().get_occlusion().has_octants())  {
+		occlusion_problem = "Occlusion asset has missing octants attribute.";
+	}
+	if(!occlusion_problem && !level->level_wad().get_occlusion().has_grid())  {
+		occlusion_problem = "Occlusion asset has missing grid attribute.";
+	}
+	if(!occlusion_problem && !level->level_wad().get_occlusion().has_mappings())  {
+		occlusion_problem = "Occlusion asset has mappings attribute.";
+	}
 	
-	if(ImGui::Button("Rebuild Occlusion##the_button") && level) {
+	if(ImGui::Button("Rebuild Occlusion##the_button") && !occlusion_problem) {
 		// Setup the file structure so that the new occlusion file can be
 		// written out in place of the old one.
 		if(&level->level_wad().get_occlusion().bank() != g_app->mod_bank && level->level().parent()) {
@@ -290,9 +310,11 @@ static void level_editor_menu_bar() {
 		gui::run_occlusion_rebuild(occl_params, occl_command);
 		
 		ImGui::OpenPopup("Rebuild Occlusion##the_popup");
+	} else if(ImGui::IsItemHovered() && occlusion_problem) {
+		ImGui::BeginTooltip();
+		ImGui::Text("%s", occlusion_problem);
+		ImGui::EndTooltip();
 	}
-	
-	ImGui::EndDisabled();
 	
 	gui::command_output_screen("Rebuild Occlusion##the_popup", occl_command, []() {});
 }

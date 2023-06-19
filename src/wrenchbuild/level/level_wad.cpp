@@ -162,7 +162,6 @@ static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHead
 	unpack_gc_uya_level_data_wad(dest, data, config);
 	
 	ByteRange64 gameplay_range = header.gameplay.bytes();
-	printf("%lx %lx %lx\n", src.size(), gameplay_range.offset ,gameplay_range.size);
 	fflush(stdout);
 	std::vector<u8> gameplay = src.read_multiple<u8>(gameplay_range.offset, gameplay_range.size);
 	unpack_instances(dest.gameplay<InstancesAsset>(), &dest, gameplay, nullptr, config, FMT_INSTANCES_GAMEPLAY);
