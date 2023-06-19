@@ -4,7 +4,7 @@ Wrench includes a special-purpose C++ parser which is used for reading data type
 
 ## Enablement
 
-This parser can on be turned using the following line in a referenced header file:
+This parser can be turned on using the following line in a header file:
 
 ```
 #pragma wrench parser on

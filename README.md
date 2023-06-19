@@ -35,7 +35,7 @@ Features currently include:
 - **New in v0.4!** Instance System
 	- A source format for storing object instances.
 	- Use pvar data types from C++ header files (reflection).
-- *New in v0.4!** Visibility Tool
+- **New in v0.4!** Visibility Tool
 	- Rebuild occlusion data for levels on demand.
 	- Implemented as an OpenGL renderer.
 
