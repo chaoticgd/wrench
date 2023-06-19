@@ -43,6 +43,12 @@ struct PackerParams {
 	} debug;
 };
 
+struct RebuildOcclusionParams {
+	std::string game_path;
+	std::string mod_path;
+	std::string level_wad_asset;
+};
+
 struct EditorParams {
 	std::string game_path;
 	std::string mod_path;
@@ -56,6 +62,7 @@ void setup_bin_paths(const char* bin_path);
 
 void run_unpacker(const UnpackerParams& params, CommandThread& command);
 std::string run_packer(const PackerParams& params, CommandThread& command);
+void run_occlusion_rebuild(const RebuildOcclusionParams& params, CommandThread& command);
 void open_in_editor(const EditorParams& params);
 void run_emulator(const EmulatorParams& params, bool blocking = true);
 

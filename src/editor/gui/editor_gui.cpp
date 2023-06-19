@@ -242,13 +242,59 @@ static void level_editor_menu_bar() {
 		preview_value = "(level)";
 	}
 	
-	
 	static AssetSelector level_selector;
 	level_selector.required_type = LevelAsset::ASSET_TYPE;
 	ImGui::SetNextItemWidth(200);
 	if(Asset* asset = asset_selector("##level_selector", preview_value, level_selector, g_app->asset_forest)) {
 		g_app->load_level(asset->as<LevelAsset>());
 	}
+	
+	static CommandThread occl_command;
+	static gui::RebuildOcclusionParams occl_params;
+	
+	ImGui::BeginDisabled(!level);
+	
+	if(ImGui::Button("Rebuild Occlusion##the_button") && level) {
+		// Setup the file structure so that the new occlusion file can be
+		// written out in place of the old one.
+		if(&level->level_wad().get_occlusion().bank() != g_app->mod_bank && level->level().parent()) {
+			s32 level_id = level->level_wad().id();
+			std::string path = generate_asset_path<LevelAsset>("levels", "level", level_id, *level->level().parent());
+			OcclusionAsset& old_occl = level->level_wad().get_occlusion();
+			
+			// Create a new .asset file for the occlusion data.
+			AssetFile& occlusion_file = g_app->mod_bank->asset_file(path);
+			AssetLink link = level->level_wad().get_occlusion().absolute_link();
+			OcclusionAsset& new_occl = occlusion_file.asset_from_link(OcclusionAsset::ASSET_TYPE, link).as<OcclusionAsset>();
+			
+			// Copy the old grid and mappings to the mod asset bank as placeholders.
+			std::string octants = old_occl.file().read_text_file(old_occl.octants().path);
+			std::unique_ptr<InputStream> grid_src = old_occl.file().open_binary_file_for_reading(old_occl.grid());
+			std::unique_ptr<InputStream> mappings_src = old_occl.file().open_binary_file_for_reading(old_occl.mappings());
+			FileReference octants_ref = new_occl.file().write_text_file("occlusion_octants.csv", octants.c_str());
+			auto [grid_dest, grid_ref] = new_occl.file().open_binary_file_for_writing("occlusion_grid.bin");
+			auto [mappings_dest, mappings_ref] = new_occl.file().open_binary_file_for_writing("occlusion_mappings.bin");
+			Stream::copy(*grid_dest, *grid_src, grid_src->size());
+			Stream::copy(*mappings_dest, *mappings_src, grid_src->size());
+			new_occl.set_octants(octants_ref);
+			new_occl.set_grid(grid_ref);
+			new_occl.set_mappings(mappings_ref);
+			
+			// Write the .asset file.
+			occlusion_file.write();
+		}
+		
+		occl_params.game_path = g_app->game_path;
+		occl_params.mod_path = g_app->mod_path;
+		occl_params.level_wad_asset = level->level_wad().absolute_link().to_string();
+		gui::run_occlusion_rebuild(occl_params, occl_command);
+		
+		ImGui::OpenPopup("Rebuild Occlusion##the_popup");
+	}
+	
+	ImGui::EndDisabled();
+	
+	gui::command_output_screen("Rebuild Occlusion##the_popup", occl_command, []() {});
 }
 
 static void tool_bar() {

@@ -18,6 +18,7 @@ add_subdirectory(gui)
 add_subdirectory(launcher)
 add_subdirectory(editor)
 add_subdirectory(wrenchbuild)
+add_subdirectory(wrenchvis)
 
 add_executable(vif
 	vifcli.cpp

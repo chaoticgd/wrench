@@ -77,7 +77,7 @@ struct Gameplay {
 	Opt<std::vector<GrindPathInstance>> grind_paths;
 	Opt<std::vector<AreaInstance>> areas;
 	
-	Opt<OcclusionMappings> occlusion;
+	Opt<std::vector<u8>> occlusion;
 	
 	Opt<std::vector<PvarTableEntry>> pvar_table;
 	Opt<std::vector<u8>> pvar_data;

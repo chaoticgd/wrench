@@ -25,7 +25,6 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/level/level_classes.h>
 #include <wrenchbuild/level/tfrags_asset.h>
-#include <wrenchbuild/level/occlusion_asset.h>
 
 // This file is quite messy! Also the texture packing code needs to be redone!
 
@@ -60,7 +59,7 @@ void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_ra
 	TfragsAsset& tfrags = chunk.tfrags(SWITCH_FILES);
 	
 	unpack_asset(tfrags, data, ByteRange{header.tfrags, tfrags_size}, config);
-	unpack_asset(dest.occlusion<OcclusionAsset>(), data, level_core_block_range(header.occlusion, block_bounds), config);
+	unpack_asset(dest.occlusion(), data, level_core_block_range(header.occlusion, block_bounds), config);
 	if(header.sky) {
 		unpack_asset(dest.sky<SkyAsset>(SWITCH_FILES), data, level_core_block_range(header.sky, block_bounds), config);
 	}
@@ -198,8 +197,6 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		max_collision_size = std::max(max_collision_size, (s32) chunk.collision.size());
 	}
 	
-	ClassesHigh high_classes = load_classes(src);
-	
 	data.pad(0x40, 0);
 	header.tfrags = (s32) data.tell();
 	data.write_v(chunks[0].tfrags);
@@ -209,12 +206,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	}
 	
 	const Asset& occlusion_asset = src.get_occlusion();
-	if(const OcclusionAsset* asset = occlusion_asset.maybe_as<OcclusionAsset>()) {
-		data.pad(0x40, 0);
-		header.occlusion = pack_occlusion(data, gameplay, *asset, chunks, high_classes, config).offset;
-	} else {
-		header.occlusion = pack_asset<ByteRange>(data, occlusion_asset, config, 0x40).offset;
-	}
+	header.occlusion = pack_asset<ByteRange>(data, occlusion_asset, config, 0x40).offset;
 	if(src.has_sky()) {
 		header.sky = pack_asset<ByteRange>(data, src.get_sky(), config, 0x40).offset;
 	}

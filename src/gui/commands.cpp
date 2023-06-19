@@ -24,6 +24,7 @@
 struct BinPaths {
 	std::string wrenchbuild;
 	std::string wrencheditor;
+	std::string wrenchvis;
 };
 
 static BinPaths bin_paths;
@@ -32,6 +33,7 @@ void gui::setup_bin_paths(const char* bin_path) {
 	fs::path directory = fs::path(bin_path).remove_filename();
 	bin_paths.wrenchbuild = (directory/"wrenchbuild").string();
 	bin_paths.wrencheditor = (directory/"wrencheditor").string();
+	bin_paths.wrenchvis = (directory/"wrenchvis").string();
 }
 
 void gui::run_unpacker(const UnpackerParams& params, CommandThread& command) {
@@ -80,6 +82,15 @@ std::string gui::run_packer(const PackerParams& params, CommandThread& command) 
 	args.emplace_back("--flusher-thread-hack"); // Aggressively flush stdout and stderr.
 	command.start(args);
 	return output_path;
+}
+
+void gui::run_occlusion_rebuild(const RebuildOcclusionParams& params, CommandThread& command) {
+	std::vector<std::string> args;
+	args.emplace_back(bin_paths.wrenchvis);
+	args.emplace_back(params.game_path);
+	args.emplace_back(params.mod_path);
+	args.emplace_back(params.level_wad_asset);
+	command.start(args);
 }
 
 void gui::open_in_editor(const EditorParams& params) {

@@ -59,6 +59,7 @@ set(RELEASE_FILES
 	$<TARGET_FILE:wrenchbuild>
 	$<TARGET_FILE:wrencheditor>
 	$<TARGET_FILE:wrenchlauncher>
+	$<TARGET_FILE:wrenchvis>
 	"${CMAKE_BINARY_DIR}/editor.wad"
 	"${CMAKE_BINARY_DIR}/gui.wad"
 	"${CMAKE_BINARY_DIR}/launcher.wad"

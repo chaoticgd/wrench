@@ -253,9 +253,9 @@ std::vector<OcclusionVector> read_occlusion_octants(const char* ptr) {
 	
 	while(*ptr != '\0') {
 		OcclusionVector& octant = octants.emplace_back();
-		int total_read = sscanf(ptr, "%d %d %d\n", &octant.x, &octant.y, &octant.z);
+		int total_read = sscanf(ptr, "%d,%d,%d\n", &octant.x, &octant.y, &octant.z);
 		verify(total_read == 3, "Failed to parse octants list.");
-		for(;*ptr != '\n' && *ptr != '\0'; ptr++);
+		for(; *ptr != '\n' && *ptr != '\0'; ptr++);
 		if(*ptr == '\n') ptr++;
 	}
 	
@@ -264,7 +264,7 @@ std::vector<OcclusionVector> read_occlusion_octants(const char* ptr) {
 
 void write_occlusion_octants(OutBuffer dest, const std::vector<OcclusionVector>& octants) {
 	for(const OcclusionVector& octant : octants) {
-		dest.writelf("%d %d %d", octant.x, octant.y, octant.z);
+		dest.writelf("%d,%d,%d", octant.x, octant.y, octant.z);
 	}
 	dest.vec.push_back(0);
 }

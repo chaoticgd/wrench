@@ -17,7 +17,5 @@ add_library(wrenchengine STATIC
 	tfrag_debug.cpp
 	tie.cpp
 	vag.cpp
-	visibility.cpp
 )
 target_link_libraries(wrenchengine wrenchcore)
-target_link_libraries(wrenchengine glfw glm glad)

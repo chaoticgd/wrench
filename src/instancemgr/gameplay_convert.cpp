@@ -20,7 +20,7 @@
 
 static void generate_psuedo_positions(Instances& instances);
 
-void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::vector<CppType>& types_dest, Gameplay& src, Game game) {
+void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, std::vector<u8>* occl_dest, std::vector<CppType>* types_dest, Gameplay& src, Game game) {
 	if(src.level_settings.has_value()) {
 		dest.level_settings = std::move(*src.level_settings);
 	}
@@ -65,7 +65,9 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 		*occl_dest = *src.occlusion;
 	}
 	
-	recover_pvars(dest, types_dest, src, game);
+	if(types_dest) {
+		recover_pvars(dest, *types_dest, src, game);
+	}
 	
 	// Generate positions for objects that should be visible in the 3D view but
 	// that don't have positions stored for them in the game's files.
@@ -169,7 +171,7 @@ static void generate_psuedo_positions(Instances& instances) {
 	}
 }
 
-void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src, const std::map<std::string, CppType>& types_src) {
+void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, std::vector<u8>* occlusion_src, const std::map<std::string, CppType>& types_src) {
 	build_pvars(dest, src, types_src);
 	
 	dest.level_settings = std::move(src.level_settings);
@@ -210,9 +212,7 @@ void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* he
 	dest.grind_paths = src.grind_paths.release();
 	dest.areas = src.areas.release();
 	
-	if(occlusion_src && (!occlusion_src->tfrag_mappings.empty()
-			|| !occlusion_src->tie_mappings.empty()
-			|| !occlusion_src->moby_mappings.empty())) {
+	if(occlusion_src && !occlusion_src->empty()) {
 		dest.occlusion = *occlusion_src;
 	}
 }

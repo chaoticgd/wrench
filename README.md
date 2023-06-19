@@ -23,7 +23,6 @@ Features currently include:
 	- Pack/unpack sky meshes as COLLADA files.
 	- Pack/unpack textures as PNG files.
 	- **New in v0.4!** Pack/unpack packed executables and level overlays as ELF files.
-	- **New in v0.4!** Recompute the occlusion data.
 	- Pack/unpack everything else as binary files.
 - Level Editor
 	- View unpacked levels.
@@ -36,6 +35,9 @@ Features currently include:
 - **New in v0.4!** Instance System
 	- A source format for storing object instances.
 	- Use pvar data types from C++ header files (reflection).
+- *New in v0.4!** Visibility Tool
+	- Rebuild occlusion data for levels on demand.
+	- Implemented as an OpenGL renderer.
 
 ## Screenshots
 

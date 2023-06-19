@@ -52,7 +52,7 @@ static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, Build
 	unpack_instances(dest, nullptr, buffer, nullptr, config, hint);
 }
 
-void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint) {
+void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint) {
 	std::vector<u8> main_decompressed;
 	verify(decompress_wad(main_decompressed, main), "Failed to decompress instances.");
 	
@@ -62,7 +62,9 @@ void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std:
 	Instances instances;
 	HelpMessages help;
 	std::vector<CppType> pvar_types;
-	move_gameplay_to_instances(instances, &help, nullptr, pvar_types, gameplay, config.game());
+	move_gameplay_to_instances(instances, &help, nullptr, &pvar_types, gameplay, config.game());
+	
+	std::vector<u8> occlusion_mappings;
 	
 	if(art) {
 		std::vector<u8> art_decompressed;
@@ -75,14 +77,23 @@ void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_dest, const std:
 		instances.tie_groups = std::move(opt_iterator(art_instances.tie_groups));
 		instances.shrub_instances = std::move(opt_iterator(art_instances.shrub_instances));
 		instances.shrub_groups = std::move(opt_iterator(art_instances.shrub_groups));
+		occlusion_mappings = std::move(opt_iterator(art_instances.occlusion));
+	} else {
+		occlusion_mappings = std::move(opt_iterator(gameplay.occlusion));
 	}
 	
 	std::string text = write_instances(instances);
 	FileReference ref = dest.file().write_text_file(stringf("%s.instances", hint), text.c_str());
 	dest.set_src(ref);
 	
-	if(help_dest) {
-		unpack_help_messages(*help_dest, help, config);
+	if(help_occl_dest) {
+		unpack_help_messages(*help_occl_dest, help, config);
+		if(!occlusion_mappings.empty()) {
+			OcclusionAsset& occl = help_occl_dest->occlusion();
+			auto [stream, ref] = occl.file().open_binary_file_for_writing(fs::path(std::string("occlusion_mappings.bin")));
+			stream->write_n(occlusion_mappings.data(), occlusion_mappings.size());
+			occl.set_mappings(ref);
+		}
 	}
 	
 	// Write types.
@@ -134,14 +145,14 @@ static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, B
 	}
 }
 
-Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_src, const std::map<std::string, CppType>& types_src, const BuildConfig& config, const char* hint) {
+Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, const std::map<std::string, CppType>& types_src, const BuildConfig& config, const char* hint) {
 	std::vector<u8> gameplay_buffer;
 	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
 		std::string instances_wtf = asset->file().read_text_file(asset->src().path);
 		Instances instances = read_instances(instances_wtf);
 		Opt<HelpMessages> help;
-		if(help_src) {
-			pack_help_messages(help.emplace(), *help_src, config);
+		if(help_occl_src) {
+			pack_help_messages(help.emplace(), *help_occl_src, config);
 		}
 		Gameplay gameplay;
 		move_instances_to_gameplay(gameplay, instances, &(*help), nullptr, types_src);
@@ -215,9 +226,9 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	// Separate out the different parts of the file.
 	Instances instances_in;
 	HelpMessages help_messages;
-	OcclusionMappings occlusion;
+	std::vector<u8> occlusion;
 	std::vector<CppType> pvar_types;
-	move_gameplay_to_instances(instances_in, &help_messages, &occlusion, pvar_types, gameplay_in, config.game());
+	move_gameplay_to_instances(instances_in, &help_messages, &occlusion, &pvar_types, gameplay_in, config.game());
 	
 	// Add recovered type information to the parsed map of pvar types.
 	for(CppType& pvar_type : pvar_types) {
