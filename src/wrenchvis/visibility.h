@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ENGINE_VISIBILITY_H
-#define ENGINE_VISIBILITY_H
+#ifndef WRENCHVIS_VISIBILITY_H
+#define WRENCHVIS_VISIBILITY_H
 
 // Implements the Potentially Visible Set occlusion culling algorithm used for
 // reducing the number of objects the game draws per frame based on the position

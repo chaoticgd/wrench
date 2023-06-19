@@ -594,7 +594,7 @@ struct AreasBlock {
 	}
 };
 
-packed_struct(OcclusionMappingsHeader,
+packed_struct(OcclusionMappingsGameplayHeader,
 	s32 tfrag_mapping_count;
 	s32 tie_mapping_count;
 	s32 moby_mapping_count;
@@ -602,25 +602,14 @@ packed_struct(OcclusionMappingsHeader,
 )
 
 struct OcclusionMappingsBlock {
-	static void read(OcclusionMappings& dest, Buffer src, Game game) {
-		auto& header = src.read<OcclusionMappingsHeader>(0, "occlusion header");
-		s64 ofs = 0x10;
-		dest.tfrag_mappings = src.read_multiple<OcclusionMapping>(ofs, header.tfrag_mapping_count, "tfrag occlusion mappings").copy();
-		ofs += header.tfrag_mapping_count * 8;
-		dest.tie_mappings = src.read_multiple<OcclusionMapping>(ofs, header.tie_mapping_count, "tie occlusion mappings").copy();
-		ofs += header.tie_mapping_count * 8;
-		dest.moby_mappings = src.read_multiple<OcclusionMapping>(ofs, header.moby_mapping_count, "moby occlusion mappings").copy();
+	static void read(std::vector<u8>& dest, Buffer src, Game game) {
+		auto& header = src.read<OcclusionMappingsGameplayHeader>(0, "occlusion header");
+		s32 total_count = header.tfrag_mapping_count + header.tie_mapping_count + header.moby_mapping_count;
+		dest = src.read_multiple<u8>(0, 0x10 + total_count * 8).copy();
 	}
 	
-	static void write(OutBuffer dest, const OcclusionMappings& src, Game game) {
-		OcclusionMappingsHeader header;
-		header.tfrag_mapping_count = (s32) src.tfrag_mappings.size();
-		header.tie_mapping_count = (s32) src.tie_mappings.size();
-		header.moby_mapping_count = (s32) src.moby_mappings.size();
-		dest.write(header);
-		dest.write_multiple(src.tfrag_mappings);
-		dest.write_multiple(src.tie_mappings);
-		dest.write_multiple(src.moby_mappings);
+	static void write(OutBuffer dest, const std::vector<u8>& src, Game game) {
+		dest.write_multiple(src);
 	}
 };
 

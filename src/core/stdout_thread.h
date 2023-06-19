@@ -16,16 +16,13 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCHBUILD_LEVEL_OCCLUSION_ASSET_H
-#define WRENCHBUILD_LEVEL_OCCLUSION_ASSET_H
+#ifndef CORE_STDOUT_THREAD_H
+#define CORE_STDOUT_THREAD_H
 
-#include <instancemgr/gameplay.h>
-#include <wrenchbuild/asset_unpacker.h>
-#include <wrenchbuild/asset_packer.h>
-#include <wrenchbuild/tests.h>
-#include <wrenchbuild/level/level_chunks.h>
-#include <wrenchbuild/level/level_classes.h>
+// This is a hack to constantly flush stdout to prevent the output in Wrench's
+// GUI from freezing on Linux. There's probably a better way to do this.
 
-ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const OcclusionAsset& asset, const std::vector<LevelChunk>& chunks, const ClassesHigh& high_classes, BuildConfig config);
+void start_stdout_flusher_thread();
+void stop_stdout_flusher_thread();
 
 #endif

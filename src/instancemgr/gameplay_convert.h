@@ -21,7 +21,7 @@
 
 #include <instancemgr/gameplay.h>
 
-void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::vector<CppType>& types_dest, Gameplay& src, Game game);
-void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src, const std::map<std::string, CppType>& types_src);
+void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, std::vector<u8>* occl_dest, std::vector<CppType>* types_dest, Gameplay& src, Game game);
+void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, std::vector<u8>* occlusion_src, const std::map<std::string, CppType>& types_src);
 
 #endif

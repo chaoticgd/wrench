@@ -194,17 +194,6 @@ enum MobyModeBits1 {
 	MOBY_MB1_HAS_SUB_VARS = 0x20
 };
 
-packed_struct(OcclusionMapping,
-	s32 bit_index;
-	s32 occlusion_id;
-)
-
-struct OcclusionMappings {
-	std::vector<OcclusionMapping> tfrag_mappings;
-	std::vector<OcclusionMapping> tie_mappings;
-	std::vector<OcclusionMapping> moby_mappings;
-};
-
 template <typename ThisInstance>
 class InstanceList {
 private:

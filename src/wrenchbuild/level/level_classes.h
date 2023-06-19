@@ -25,25 +25,6 @@
 
 struct LevelCoreHeader;
 
-struct MobyClassHigh {
-	const MobyClassAsset* asset = nullptr;
-	ColladaScene scene;
-	Mesh* mesh = nullptr;
-};
-
-struct TieClassHigh {
-	const TieClassAsset* asset = nullptr;
-	ColladaScene scene;
-	Mesh* mesh = nullptr;
-};
-
-struct ClassesHigh {
-	std::map<s32, MobyClassHigh> moby_classes;
-	std::map<s32, TieClassHigh> tie_classes;
-};
-
-ClassesHigh load_classes(const LevelWadAsset& level);
-
 void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, const std::vector<GsRamEntry>& gs_table, InputStream& gs_ram, const std::vector<s64>& block_bounds, BuildConfig config, s32 moby_stash_addr, const std::set<s32>& moby_stash);
 void pack_moby_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config);
 void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, BuildConfig config);
