@@ -24,6 +24,7 @@
 #include <core/util.h>
 #include <core/timer.h>
 #include <core/stream.h>
+#include <core/stdout_thread.h>
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
 #include <assetmgr/zipped_asset_bank.h>
@@ -85,8 +86,6 @@ static void extract_shrub(const fs::path& input_path, const fs::path& output_pat
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path);
 static void print_usage(bool developer_subcommands);
 static void print_version();
-static void start_stdout_flusher_thread();
-static void stop_stdout_flusher_thread();
 
 #define require_args(arg_count) verify(argc == arg_count, "Incorrect number of arguments.");
 
@@ -677,40 +676,6 @@ static void print_version() {
 		printf("%hhx", wadinfo.build.commit[i]);
 	}
 	printf("\n");
-}
-
-static std::mutex stdout_flush_mutex;
-static bool stdout_flush_started = false;
-static bool stdout_flush_finished = false;
-static std::thread stdout_flush_thread;
-
-static void start_stdout_flusher_thread() {
-	if(!stdout_flush_started) {
-		stdout_flush_started = true;
-		stdout_flush_thread = std::thread([]() {
-			for(;;) {
-				{
-					std::lock_guard<std::mutex> g(stdout_flush_mutex);
-					if(stdout_flush_finished) {
-						break;
-					}
-				}
-				fflush(stdout);
-				fflush(stderr);
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));
-			}
-		});
-	}
-}
-
-static void stop_stdout_flusher_thread() {
-	if(stdout_flush_started) {
-		{
-			std::lock_guard<std::mutex> g(stdout_flush_mutex);
-			stdout_flush_finished = true;
-		}
-		stdout_flush_thread.join();
-	}
 }
 
 // If you're hitting this assert it means the asset schema is out of sync with

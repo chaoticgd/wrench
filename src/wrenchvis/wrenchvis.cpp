@@ -16,6 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <core/stdout_thread.h>
 #include <assetmgr/asset_types.h>
 #include <engine/tfrag_high.h>
 #include <engine/occlusion.h>
@@ -84,7 +85,19 @@ int main(int argc, char** argv) {
 	level.moby_classes = load_moby_classes(level_wad.get_moby_classes());
 	level.tie_classes = load_tie_classes(level_wad.get_tie_classes());
 	level.instances = load_instances(level_wad.get_gameplay(), game_bank.game_info.game.game);
-	generate_occlusion_data(level_wad.get_occlusion(), level);
+	
+	start_stdout_flusher_thread();
+	try {
+		generate_occlusion_data(level_wad.get_occlusion(), level);
+		stop_stdout_flusher_thread();
+	} catch(RuntimeError& e) {
+		e.print();
+		stop_stdout_flusher_thread();
+		return 1;
+	} catch(...) {
+		stop_stdout_flusher_thread();
+		throw;
+	}
 }
 
 static std::vector<OcclChunk> load_chunks(const CollectionAsset& collection, Game game) {
