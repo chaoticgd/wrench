@@ -414,7 +414,8 @@ public:
 	}
 	
 	void unmount_last();
-	void load_and_parse_source_files(Game game);
+	void read_source_files(Game game);
+	void write_source_files(AssetBank& bank, Game game);
 	
 	std::map<std::string, CppType>& types();
 	const std::map<std::string, CppType>& types() const;

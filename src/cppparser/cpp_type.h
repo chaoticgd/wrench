@@ -138,6 +138,7 @@ struct CppABI {
 
 void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const CppABI& abi);
 void dump_cpp_type(OutBuffer& dest, const CppType& type);
+void destructively_merge_cpp_structs(CppType& dest, CppType& src);
 const char* cpp_built_in(CppBuiltIn built_in);
 
 extern CppABI NATIVE_ABI;

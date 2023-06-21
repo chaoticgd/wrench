@@ -373,6 +373,8 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			printf("[100%%] Done!\n");
 			
 			bank.write();
+			forest.write_source_files(bank, bank.game_info.game.game);
+			
 			return;
 		}
 	}
@@ -430,6 +432,8 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			printf("[100%%] Done!\n");
 			
 			bank.write();
+			forest.write_source_files(bank, bank.game_info.game.game);
+			
 			return;
 		}
 	}
@@ -476,7 +480,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	}
 	
 	// Parse pvar types.
-	forest.load_and_parse_source_files(game);
+	forest.read_source_files(game);
 	
 	printf("[  0%%] Scanning dependencies of %s\n", asset.c_str());
 	
