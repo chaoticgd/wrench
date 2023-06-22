@@ -14,7 +14,7 @@ See [Instance Reference](instance_reference.md).
 
 Each moby instance, camera instance and sound instance can have extra data associated with it. The structure of this data depends on the class of the respective instance. Wrench defines this data in the form of C++ type definitions which are stored in asset banks under the src/game_common/ and src/game_\<game\>/ directories (where \<game\> is rac, gc, uya or dl).
 
-These files are read using a custom C++ parser. See [C++ Parser](cpp_parser.md). The pvar data stored in the instances file conforms to the PS2 ABI.
+These files are read using a custom C++ parser. See [C++ Parser](cpp_parser.md).
 
 Some pvar instances start with a standard header, called the sub var header. This header contains pointers which points to sections within the pvar data which are shared between multiple classes.
 
