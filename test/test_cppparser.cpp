@@ -156,6 +156,35 @@ TEST_CASE("c++ parser" "[instancemgr]") {
 		}()
 	));
 	CHECK(test_parser(
+		"struct /* comment */ SomeVars /* comment */ { s8 byte; s16 halfword; s32 word; s64 doubleword; s128 quadword; };",
+		[]() {
+			CppType type(CPP_STRUCT_OR_UNION);
+			
+			type.name = "SomeVars";
+			CppType& byte = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			byte.name = "byte";
+			byte.built_in = CPP_S8;
+			
+			CppType& halfword = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			halfword.name = "halfword";
+			halfword.built_in = CPP_S16;
+			
+			CppType& word = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			word.name = "word";
+			word.built_in = CPP_S32;
+			
+			CppType& doubleword = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			doubleword.name = "doubleword";
+			doubleword.built_in = CPP_S64;
+			
+			CppType& quadword = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			quadword.name = "quadword";
+			quadword.built_in = CPP_S128;
+			
+			return type;
+		}()
+	));
+	CHECK(test_parser(
 		"union Union { float **double_pointer; };",
 		[]() {
 			CppType type(CPP_STRUCT_OR_UNION);

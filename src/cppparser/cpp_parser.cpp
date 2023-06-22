@@ -293,11 +293,32 @@ static CppType parse_type_name(CppParserState& parser) {
 		}
 		return type;
 	} else if(first.type == CPP_IDENTIFIER) {
-		CppType type(CPP_TYPE_NAME);
-		type.type_name.string = std::string(first.str_begin, first.str_end);
-		
+		std::string str(first.str_begin, first.str_end);
 		parser.advance();
 		
+		static const struct { CppBuiltIn built_in; const char* name; } fixed_width_integers[] = {
+			{CPP_S8, "s8"},
+			{CPP_U8, "u8"},
+			{CPP_S16, "s16"},
+			{CPP_U16, "u16"},
+			{CPP_S32, "s32"},
+			{CPP_U32, "u32"},
+			{CPP_S64, "s64"},
+			{CPP_U64, "u64"},
+			{CPP_S128, "s128"},
+			{CPP_U128, "u128"},
+		};
+		
+		for(const auto& entry : fixed_width_integers) {
+			if(str == entry.name) {
+				CppType type(CPP_BUILT_IN);
+				type.built_in = entry.built_in;
+				return type;
+			}
+		}
+		
+		CppType type(CPP_TYPE_NAME);
+		type.type_name.string = std::move(str);
 		return type;
 	}
 	verify_not_reached("Expected type name on line %d, got %s.", first.line, cpp_token_type(first.type));

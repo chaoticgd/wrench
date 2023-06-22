@@ -11,20 +11,14 @@ struct vec3 {
 	float z;
 };
 
-struct vec4 {
-	long long value;
-};
-
+typedef u128 vec4;
 typedef vec4 vec4f;
-
-struct quat {
-	long long value;
-};
+typedef u128 quat;
 
 struct mtx3 {
-	long long value[3];
+	u128 value[3];
 };
 
 struct mtx4 {
-	long long value[4];
+	u128 value[4];
 };
