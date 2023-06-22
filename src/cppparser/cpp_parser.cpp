@@ -42,6 +42,7 @@ struct CppParserState {
 	}
 };
 
+static void parse_enum(CppType& dest, CppParserState& parser);
 static void parse_struct_or_union(CppType& dest, CppParserState& parser);
 static CppType parse_field(CppParserState& parser);
 static CppType parse_type_name(CppParserState& parser);
@@ -62,10 +63,17 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 			}
 		}
 		
-		if(enabled && tokens[parser.pos].type == CPP_KEYWORD && (tokens[parser.pos].keyword == CPP_KEYWORD_struct || tokens[parser.pos].keyword == CPP_KEYWORD_union)) {
-			if(parser.pos + 1 < tokens.size() && tokens[parser.pos + 1].type == CPP_IDENTIFIER) {
-				if(parser.pos + 2 < tokens.size() && tokens[parser.pos + 2].type == CPP_OPERATOR && tokens[parser.pos + 2].op == CPP_OP_OPENING_CURLY) {
-					std::string_view name(tokens[parser.pos + 1].str_begin, tokens[parser.pos + 1].str_end);
+		if(!enabled || tokens[parser.pos].type != CPP_KEYWORD) {
+			parser.pos++;
+			continue;
+		}
+		
+		if(tokens[parser.pos].keyword == CPP_KEYWORD_struct || tokens[parser.pos].keyword == CPP_KEYWORD_union) {
+			size_t second_pos = tokens[parser.pos].next;
+			if(second_pos < tokens.size() && tokens[second_pos].type == CPP_IDENTIFIER) {
+				size_t third_pos = tokens[second_pos].next;
+				if(third_pos < tokens.size() && tokens[third_pos].type == CPP_OPERATOR && tokens[third_pos].op == CPP_OP_OPENING_CURLY) {
+					std::string_view name(tokens[second_pos].str_begin, tokens[second_pos].str_end);
 					CppType type(CPP_STRUCT_OR_UNION);
 					type.struct_or_union.is_union = tokens[parser.pos].keyword == CPP_KEYWORD_union;
 					type.name = name;
@@ -79,7 +87,25 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 			}
 		}
 		
-		if(enabled && tokens[parser.pos].type == CPP_KEYWORD && tokens[parser.pos].keyword == CPP_KEYWORD_typedef) {
+		if(tokens[parser.pos].keyword == CPP_KEYWORD_enum) {
+			size_t second_pos = tokens[parser.pos].next;
+			if(second_pos < tokens.size() && tokens[second_pos].type == CPP_IDENTIFIER) {
+				size_t third_pos = tokens[second_pos].next;
+				if(third_pos < tokens.size() && tokens[third_pos].type == CPP_OPERATOR && tokens[third_pos].op == CPP_OP_OPENING_CURLY) {
+					std::string_view name(tokens[second_pos].str_begin, tokens[second_pos].str_end);
+					CppType type(CPP_ENUM);
+					type.name = name;
+					parser.advance();
+					parser.advance();
+					parser.advance();
+					parse_enum(type, parser);
+					types.emplace(name, std::move(type));
+					continue;
+				}
+			}
+		}
+		
+		if(tokens[parser.pos].keyword == CPP_KEYWORD_typedef) {
 			parser.advance();
 			CppType type = parse_field(parser);
 			types.emplace(type.name, std::move(type));
@@ -89,6 +115,34 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 	}
 	
 	return ever_enabled_for_this_file;
+}
+
+static void parse_enum(CppType& dest, CppParserState& parser) {
+	while(true) {
+		const CppToken& first = parser.cur();
+		if(first.type == CPP_OPERATOR && first.op == CPP_OP_CLOSING_CURLY) {
+			parser.advance();
+			break;
+		}
+		
+		verify(first.type == CPP_IDENTIFIER, "Expected identifier on line %d, got %s.", first.line, cpp_token_type(first.type));
+		parser.advance();
+		
+		const CppToken& second = parser.cur();
+		verify(second.type == CPP_OPERATOR && second.op == CPP_OP_EQUALS, "Expected '=' on line %d, got %s.", second.line, cpp_token_type(second.type));
+		parser.advance();
+		
+		const CppToken& third = parser.cur();
+		verify(third.type == CPP_INTEGER_LITERAL, "Expected integer literal on line %d in enum, got %s.", third.line, cpp_token_type(third.type));
+		parser.advance();
+		
+		dest.enumeration.constants.emplace_back(third.i, std::string(first.str_begin, first.str_end));
+		
+		const CppToken& comma = parser.cur();
+		if(comma.type == CPP_OPERATOR && comma.op == CPP_OP_COMMA) {
+			parser.advance();
+		}
+	}
 }
 
 static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
@@ -141,12 +195,13 @@ static CppType parse_field(CppParserState& parser) {
 		parser.advance();
 		
 		const CppToken& literal = parser.cur();
-		verify(literal.type == CPP_INTEGER_LITERAL, "Expected integer literal on line %d.", literal.line);
+		verify(literal.type == CPP_INTEGER_LITERAL, "Expected integer literal on line %d, got %s.", literal.line, cpp_token_type(literal.type));
 		array_indices.emplace_back(literal.i);
 		parser.advance();
 		
 		const CppToken closing_bracket_token = parser.cur();
-		verify(closing_bracket_token.type == CPP_OPERATOR && closing_bracket_token.op == CPP_OP_CLOSING_SQUARE, "Expected ']' on line %d.", closing_bracket_token.line);
+		verify(closing_bracket_token.type == CPP_OPERATOR && closing_bracket_token.op == CPP_OP_CLOSING_SQUARE,
+			"Expected ']' on line %d, got %s.", closing_bracket_token.line, cpp_token_type(closing_bracket_token.type));
 		parser.advance();
 	}
 	for(size_t i = array_indices.size(); i > 0; i--) {
@@ -245,5 +300,5 @@ static CppType parse_type_name(CppParserState& parser) {
 		
 		return type;
 	}
-	verify_not_reached("Expected type name, got token of type %s on line %d.", cpp_token_type(first.type), first.line);
+	verify_not_reached("Expected type name on line %d, got %s.", first.line, cpp_token_type(first.type));
 }

@@ -76,7 +76,7 @@ void pvar_inspector(Level& lvl) {
 		ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
 		if(ImGui::BeginTable("pvar_table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
-			ImGui::TableSetupColumn("Ofs", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
+			ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 			ImGui::TableHeadersRow();
@@ -289,7 +289,26 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 			break;
 		}
 		case CPP_ENUM: {
-			ImGui::Text("(enum)");
+			s32 value = *(s32*) &(*inspector.pvars)[offset];
+			std::string name;
+			for(auto& [other_value, other_name] : type.enumeration.constants) {
+				if(other_value == value) {
+					name = other_name.c_str();
+				}
+			}
+			if(name.empty()) {
+				name = std::to_string(value);
+			}
+			ImGui::SetNextItemWidth(-1.f);
+			if(ImGui::BeginCombo("##enum", name.c_str())) {
+				for(auto& [other_value, other_name] : type.enumeration.constants) {
+					if(ImGui::Selectable(other_name.c_str(), other_value == value)) {
+						verify_fatal(type.size == 4);
+						push_poke_pvar_command(*inspector.lvl, offset, (u8*) &other_value, 4, *inspector.ids);
+					}
+				}
+				ImGui::EndCombo();
+			}
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
