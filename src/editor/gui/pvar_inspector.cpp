@@ -227,6 +227,7 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 	defer([&]() { ImGui::PopID(); });
 	
 	static std::map<s64, bool> expanded_map;
+	static u8 zero[16] = {};
 	
 	if(depth > 0 && type.descriptor != CPP_TYPE_NAME) {
 		ImGui::TableNextRow();
@@ -270,7 +271,6 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 			const char* format = ImGui::DataTypeGetInfo(imgui_type)->PrintFmt;
 			
 			char data_as_string[64];
-			static u8 zero[16] = {};
 			if(memcmp(&(*inspector.diff)[offset], zero, type.size) == 0) {
 				// This value is the same for all selected objects, so display
 				// it normally.
@@ -289,20 +289,23 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 			break;
 		}
 		case CPP_ENUM: {
-			s32 value = *(s32*) &(*inspector.pvars)[offset];
+			Opt<s32> value;
 			std::string name;
-			for(auto& [other_value, other_name] : type.enumeration.constants) {
-				if(other_value == value) {
-					name = other_name.c_str();
+			if(memcmp(&(*inspector.diff)[offset], zero, type.size) == 0) {
+				value = *(s32*) &(*inspector.pvars)[offset];
+				for(auto& [other_value, other_name] : type.enumeration.constants) {
+					if(other_value == *value) {
+						name = other_name.c_str();
+					}
 				}
-			}
-			if(name.empty()) {
-				name = std::to_string(value);
+				if(name.empty()) {
+					name = std::to_string(*value);
+				}
 			}
 			ImGui::SetNextItemWidth(-1.f);
 			if(ImGui::BeginCombo("##enum", name.c_str())) {
 				for(auto& [other_value, other_name] : type.enumeration.constants) {
-					if(ImGui::Selectable(other_name.c_str(), other_value == value)) {
+					if(ImGui::Selectable(other_name.c_str(), value.has_value() && other_value == *value)) {
 						verify_fatal(type.size == 4);
 						push_poke_pvar_command(*inspector.lvl, offset, (u8*) &other_value, 4, *inspector.ids);
 					}
