@@ -191,15 +191,30 @@ void TransformComponent::write(WtfWriter* dest) const {
 void PvarComponent::read(const WtfNode* src) {
 	read_inst_field(data, src, "pvars");
 	
-	const WtfAttribute* shared_data_pointers_attrib = wtf_attribute_of_type(src, "shared_data_pointers", WTF_ARRAY);
+	const WtfAttribute* relative_pointers_attrib = wtf_attribute_of_type(src, "relative_pvar_pointers", WTF_ARRAY);
+	if(relative_pointers_attrib) {
+		for(const WtfAttribute* attrib = relative_pointers_attrib->first_array_element; attrib != nullptr; attrib = attrib->next) {
+			verify(attrib->type == WTF_NUMBER, "Bad relative pointer list on moby instance.");
+			
+			PvarPointer& pointer = pointers.emplace_back();
+			pointer.offset = attrib->number.i;
+			pointer.type = PvarPointerType::RELATIVE;
+		}
+	}
+	
+	const WtfAttribute* shared_data_pointers_attrib = wtf_attribute_of_type(src, "shared_pvar_pointers", WTF_ARRAY);
 	if(shared_data_pointers_attrib) {
 		for(const WtfAttribute* attrib = shared_data_pointers_attrib->first_array_element; attrib != nullptr; attrib = attrib->next) {
 			verify(attrib->type == WTF_ARRAY, "Bad shared data pointers list on moby instance.");
 			WtfAttribute* pointer_offset = attrib->first_array_element;
-			verify(pointer_offset && pointer_offset->type == WTF_NUMBER, "Bad shared data pointers list on moby instance.");
+			verify(pointer_offset && pointer_offset->type == WTF_NUMBER, "Bad shared data pointer list on moby instance.");
 			WtfAttribute* shared_data_id = pointer_offset->next;
-			verify(shared_data_id && shared_data_id->type == WTF_NUMBER, "Bad shared data pointers list on moby instance.");
-			shared_data_pointers.emplace_back(pointer_offset->number.i, shared_data_id->number.i);
+			verify(shared_data_id && shared_data_id->type == WTF_NUMBER, "Bad shared data pointer list on moby instance.");
+			
+			PvarPointer& pointer = pointers.emplace_back();
+			pointer.offset = pointer_offset->number.i;
+			pointer.type = PvarPointerType::SHARED;
+			pointer.shared_data_id = shared_data_id->number.i;
 		}
 	}
 }
@@ -207,14 +222,25 @@ void PvarComponent::read(const WtfNode* src) {
 void PvarComponent::write(WtfWriter* dest) const {
 	write_inst_field(dest, "pvars", data);
 	
-	if(!shared_data_pointers.empty()) {
-		wtf_begin_attribute(dest, "shared_data_pointers");
+	if(!pointers.empty()) {
+		wtf_begin_attribute(dest, "relative_pvar_pointers");
 		wtf_begin_array(dest);
-		for(auto& [pointer, shared_data_id] : shared_data_pointers) {
-			wtf_begin_array(dest);
-			wtf_write_integer(dest, pointer);
-			wtf_write_integer(dest, shared_data_id);
-			wtf_end_array(dest);
+		for(const PvarPointer& pointer : pointers) {
+			if(pointer.type == PvarPointerType::RELATIVE) {
+				wtf_write_integer(dest, pointer.offset);
+			}
+		}
+		wtf_end_array(dest);
+		
+		wtf_begin_attribute(dest, "shared_pvar_pointers");
+		wtf_begin_array(dest);
+		for(const PvarPointer& pointer : pointers) {
+			if(pointer.type == PvarPointerType::SHARED) {
+				wtf_begin_array(dest);
+				wtf_write_integer(dest, pointer.offset);
+				wtf_write_integer(dest, pointer.shared_data_id);
+				wtf_end_array(dest);
+			}
 		}
 		wtf_end_array(dest);
 	}

@@ -104,9 +104,20 @@ private:
 	f32 _scale = 1.f;
 };
 
+enum class PvarPointerType {
+	RELATIVE, // Pointer relative to the beginning of the pvar structure.
+	SHARED // Pointer to a structure in the shared data section.
+};
+
+struct PvarPointer {
+	s32 offset;
+	PvarPointerType type;
+	s32 shared_data_id;
+};
+
 struct PvarComponent {
 	std::vector<u8> data;
-	std::vector<std::pair<s32, s32>> shared_data_pointers;
+	std::vector<PvarPointer> pointers;
 	mutable s32 temp_pvar_index = -1;
 	
 	void read(const WtfNode* src);
