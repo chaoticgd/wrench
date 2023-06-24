@@ -1,6 +1,6 @@
 # Instance Reference
 
-This file was generated from instance_schema.wtf and is for version 22 of the instance format.
+This file was generated from instance_schema.wtf and is for version 23 of the instance format.
 
 ## Instances
 

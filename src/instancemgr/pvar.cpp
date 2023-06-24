@@ -18,6 +18,7 @@
 
 #include "pvar.h"
 
+#include <algorithm>
 #include <instancemgr/gameplay.h>
 
 struct PvarHeaderSpec {
@@ -39,7 +40,7 @@ static const PvarHeaderSpec RAC_PVAR_SUB_VARS[] = {
 };
 
 static const PvarHeaderSpec GC_PVAR_SUB_VARS[] = {
-	{0x00, "TargetVars", "targetVars", 0x40},
+	{0x00, "TargetVars", "targetVars", 0x30},
 	{0x04, "GcVars04"},
 	{0x08, "GcVars08", "", 0x40},
 	{0x0c, "GcVars0c", "", 0x20},
@@ -91,13 +92,13 @@ struct PvarMobyWork {
 	bool has_sub_vars;
 	std::vector<std::vector<u8>*> pvar_data;
 	std::vector<s32> moby_links;
-	std::vector<s32> shared_data_pointers;
+	std::vector<s32> pointers;
 };
 
 struct PvarWork {
 	s32 pvar_size;
 	std::vector<s32> moby_links;
-	std::vector<s32> shared_data_pointers;
+	std::vector<s32> pointers;
 };
 
 struct SubVarsInfo {
@@ -207,19 +208,40 @@ void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const
 		}
 	}
 	
+	// Recover type information for relative pointers.
+	for(const PvarFixupEntry& entry : opt_iterator(src.pvar_relative_pointers)) {
+		Instance* inst = pvar_to_inst.at(entry.pvar_index);
+		PvarPointer& pointer = inst->pvars().pointers.emplace_back();
+		pointer.offset = entry.offset;
+		pointer.type = PvarPointerType::RELATIVE;
+		if(inst->type() == INST_MOBY) {
+			s32 o_class = ((MobyInstance*) pvar_to_inst.at(entry.pvar_index))->o_class();
+			moby_classes[o_class].pointers.emplace_back(entry.offset);
+		} else if(inst->type() == INST_CAMERA) {
+			s32 o_class = ((CameraInstance*) pvar_to_inst.at(entry.pvar_index))->o_class();
+			camera_classes[o_class].pointers.emplace_back(entry.offset);
+		} else if(inst->type() == INST_SOUND) {
+			s32 o_class = ((SoundInstance*) pvar_to_inst.at(entry.pvar_index))->o_class();
+			sound_classes[o_class].pointers.emplace_back(entry.offset);
+		}
+	}
+	
 	// Recover type information for pointers to the shared data section.
 	for(const SharedDataEntry& entry : opt_iterator(src.shared_data_table)) {
 		Instance* inst = pvar_to_inst.at(entry.pvar_index);
-		inst->pvars().shared_data_pointers.emplace_back(entry.pointer_offset, entry.shared_data_offset);
+		PvarPointer& pointer = inst->pvars().pointers.emplace_back();
+		pointer.offset = entry.pointer_offset;
+		pointer.type = PvarPointerType::SHARED;
+		pointer.shared_data_id = entry.shared_data_offset;
 		if(inst->type() == INST_MOBY) {
 			s32 o_class = ((MobyInstance*) pvar_to_inst.at(entry.pvar_index))->o_class();
-			moby_classes[o_class].shared_data_pointers.emplace_back(entry.pointer_offset);
+			moby_classes[o_class].pointers.emplace_back(entry.pointer_offset);
 		} else if(inst->type() == INST_CAMERA) {
 			s32 o_class = ((CameraInstance*) pvar_to_inst.at(entry.pvar_index))->o_class();
-			camera_classes[o_class].shared_data_pointers.emplace_back(entry.pointer_offset);
+			camera_classes[o_class].pointers.emplace_back(entry.pointer_offset);
 		} else if(inst->type() == INST_SOUND) {
 			s32 o_class = ((SoundInstance*) pvar_to_inst.at(entry.pvar_index))->o_class();
-			sound_classes[o_class].shared_data_pointers.emplace_back(entry.pointer_offset);
+			sound_classes[o_class].pointers.emplace_back(entry.pointer_offset);
 		}
 	}
 	
@@ -345,9 +367,9 @@ static void generate_moby_pvar_types(std::vector<CppType>& dest, const std::map<
 				}
 			}
 			
-			// Check if there's a shared moby pointer at the current offset.
+			// Check if there's a relative or shared data pointer at the current offset.
 			if(hungry) {
-				for(s32 pointer_offset : work.shared_data_pointers) {
+				for(s32 pointer_offset : work.pointers) {
 					if(pointer_offset == offset) {
 						CppType& field = pvar_type.struct_or_union.fields.emplace_back(CPP_POINTER_OR_REFERENCE);
 						field.name = stringf("pointer_%x", offset);
@@ -413,9 +435,9 @@ static void generate_other_pvar_types(std::vector<CppType>& dest, const std::map
 				}
 			}
 			
-			// Check if there's a shared moby pointer at the current offset.
+			// Check if there's a relative or shared data pointer at the current offset.
 			if(hungry) {
-				for(s32 pointer_offset : work.shared_data_pointers) {
+				for(s32 pointer_offset : work.pointers) {
 					if(pointer_offset == offset) {
 						CppType& field = pvar_type.struct_or_union.fields.emplace_back(CPP_POINTER_OR_REFERENCE);
 						field.name = stringf("pointer_%x", offset);
@@ -453,7 +475,7 @@ void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::strin
 	dest.pvar_table.emplace();
 	dest.pvar_data.emplace();
 	dest.pvar_moby_links.emplace();
-	dest.pvar_sub_vars.emplace();
+	dest.pvar_relative_pointers.emplace();
 	dest.shared_data.emplace();
 	dest.shared_data_table.emplace();
 	
@@ -508,31 +530,27 @@ void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::strin
 			}
 		}
 		
-		// Write fixup entries for sub vars. This allows the game to convert
-		// the sub var pointers to absolute pointers at load time.
-		if(!type.struct_or_union.fields.empty()) {
-			const CppType& field = type.struct_or_union.fields[0];
-			if(field.descriptor == CPP_TYPE_NAME && field.type_name.string == "SubVars") {
-				for(s32 i = 0; i < field.size; i += 4) {
-					s32 pointer = *(s32*) &pvars[i];
-					if(pointer > 0) {
-						PvarFixupEntry& entry = dest.pvar_sub_vars->emplace_back();
-						entry.pvar_index = inst.pvars().temp_pvar_index;
-						entry.offset = i;
-					}
-				}
+		// Write fixup entries for relative pointers. These allows the game to
+		// convert the sub var pointers and more to absolute pointers on load.
+		for(const PvarPointer& pointer : inst.pvars().pointers) {
+			if(pointer.type == PvarPointerType::RELATIVE) {
+				PvarFixupEntry& entry = dest.pvar_relative_pointers->emplace_back();
+				entry.pvar_index = inst.pvars().temp_pvar_index;
+				entry.offset = pointer.offset;
 			}
 		}
 		
 		// Write fixup entries for pointers to the shared data, so that again
 		// they can be converted to absolute pointers at load time.
-		for(auto& [pointer, value] : inst.pvars().shared_data_pointers) {
-			SharedDataEntry& entry = dest.shared_data_table->emplace_back();
-			entry.pvar_index = inst.pvars().temp_pvar_index;
-			entry.pointer_offset = pointer;
-			auto iter = shared_data_offsets.find(value);
-			verify(iter != shared_data_offsets.end(), "No shared data instance exists with ID '%d'.", value);
-			entry.shared_data_offset = iter->second;
+		for(const PvarPointer& pointer : inst.pvars().pointers) {
+			if(pointer.type == PvarPointerType::SHARED) {
+				SharedDataEntry& entry = dest.shared_data_table->emplace_back();
+				entry.pvar_index = (u16) inst.pvars().temp_pvar_index;
+				entry.pointer_offset = (u16) pointer.offset;
+				auto iter = shared_data_offsets.find(pointer.shared_data_id);
+				verify(iter != shared_data_offsets.end(), "No shared data instance exists with ID '%d'.", pointer.shared_data_id);
+				entry.shared_data_offset = iter->second;
+			}
 		}
 	};
 	

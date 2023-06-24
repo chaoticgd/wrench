@@ -28,7 +28,6 @@ static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, 
 static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config);
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint);
-static std::string pvar_type_to_string(const CppType& type);
 
 on_load(Instances, []() {
 	InstancesAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<InstancesAsset>(unpack_instances_asset);
@@ -96,17 +95,15 @@ void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const
 		}
 	}
 	
-	// Write types.
-	AssetFile& build_file = dest.bank().asset_file("build.asset");
-	for(const CppType& type : pvar_types) {
-		std::string header_path;
-		if(type.name.starts_with("update")) {
-			header_path = stringf("src/game_%s/update/moby%s.h", game_to_string(config.game()).c_str(), &type.name[6]);
+	// Merge types.
+	std::map<std::string, CppType>& types_dest = dest.forest().types();
+	for(CppType& type : pvar_types) {
+		auto iter = types_dest.find(type.name);
+		if(iter != types_dest.end()) {
+			destructively_merge_cpp_structs(iter->second, type);
 		} else {
-			header_path = stringf("src/game_%s/update/%s.h", game_to_string(config.game()).c_str(), type.name.c_str());
+			types_dest.emplace(type.name, std::move(type));
 		}
-		std::string cpp = pvar_type_to_string(type);
-		build_file.write_text_file(fs::path(header_path), cpp.c_str());
 	}
 }
 
@@ -217,7 +214,7 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	// Parse C++ types from the overlay asset bank.
 	AssetForest type_forest;
 	type_forest.mount<LooseAssetBank>("data/overlay", false);
-	type_forest.load_and_parse_source_files(config.game());
+	type_forest.read_source_files(config.game());
 	
 	// Parse gameplay file.
 	Gameplay gameplay_in;
@@ -277,13 +274,4 @@ static const std::vector<GameplayBlockDescription>* get_gameplay_block_descripti
 		default: verify_fatal(0);
 	}
 	return blocks;
-}
-
-static std::string pvar_type_to_string(const CppType& type) {
-	std::vector<u8> cpp;
-	OutBuffer buffer(cpp);
-	buffer.writelf("#pragma wrench parser on");
-	buffer.writesf("\n");
-	dump_cpp_type(buffer, type);
-	return std::string(cpp.begin(), cpp.end());
 }

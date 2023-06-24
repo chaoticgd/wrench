@@ -82,7 +82,7 @@ struct Gameplay {
 	Opt<std::vector<PvarTableEntry>> pvar_table;
 	Opt<std::vector<u8>> pvar_data;
 	Opt<std::vector<PvarFixupEntry>> pvar_moby_links;
-	Opt<std::vector<PvarFixupEntry>> pvar_sub_vars;
+	Opt<std::vector<PvarFixupEntry>> pvar_relative_pointers;
 	Opt<std::vector<u8>> shared_data;
 	Opt<std::vector<SharedDataEntry>> shared_data_table;
 };

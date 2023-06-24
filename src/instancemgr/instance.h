@@ -104,13 +104,28 @@ private:
 	f32 _scale = 1.f;
 };
 
+enum class PvarPointerType {
+	NULLPTR, // Null pointer.
+	RELATIVE, // Pointer relative to the beginning of the pvar structure.
+	SHARED // Pointer to a structure in the shared data section.
+};
+
+struct PvarPointer {
+	s32 offset = -1;
+	PvarPointerType type = PvarPointerType::NULLPTR;
+	s32 shared_data_id = -1;
+	
+	friend auto operator<=>(const PvarPointer& lhs, const PvarPointer& rhs) = default;
+};
+
 struct PvarComponent {
 	std::vector<u8> data;
-	std::vector<std::pair<s32, s32>> shared_data_pointers;
+	std::vector<PvarPointer> pointers; // Must always be sorted!
 	mutable s32 temp_pvar_index = -1;
 	
 	void read(const WtfNode* src);
 	void write(WtfWriter* dest) const;
+	void validate() const;
 };
 
 using GlobalPvarPointers = std::vector<std::pair<s32, s32>>;

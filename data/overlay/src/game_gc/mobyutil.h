@@ -31,10 +31,6 @@ struct TargetVars {
 	/* 0x24 */ int unknown_24;
 	/* 0x28 */ int unknown_28;
 	/* 0x2c */ int unknown_2c;
-	/* 0x30 */ int unknown_30;
-	/* 0x34 */ int unknown_34;
-	/* 0x38 */ int unknown_38;
-	/* 0x3c */ int unknown_3c;
 };
 
 struct GcVars04 {

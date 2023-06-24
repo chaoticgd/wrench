@@ -3,8 +3,11 @@
 ## v0.4
 
 New features:
+- Added a new instance system and format for storing and editing instances/entities/game objects.
+- Added a special-purpose C++ parser for defining pvar data types.
+- Added an overlay asset bank, mounted between the game and mods, for built-in pvar data types.
 - Added an experimental memory card editor (mostly Deadlocked only).
-- Occlusion data for a level is now rebuilt during the packing process. This means that objects should no longer disappear when they are moved far from their initial position.
+- Occlusion data for a level can now be rebuilt on demand from the level editor.
 - Packed ELF files and the level code overlays can now be unpacked to a regular ELF file.
 - Tfrag meshes are now unpacked with quad faces (internally tfaces are recovered, but I'm yet to develop a solution to properly export that information).
 - Overhauled the documentation.

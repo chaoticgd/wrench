@@ -328,6 +328,22 @@ static void indent_cpp(OutBuffer& dest, const CppDumpContext& context) {
 	}
 }
 
+
+void destructively_merge_cpp_structs(CppType& dest, CppType& src) {
+	verify_fatal(dest.name == src.name);
+	verify_fatal(dest.descriptor == CPP_STRUCT_OR_UNION && !dest.struct_or_union.is_union);
+	verify_fatal(src.descriptor == CPP_STRUCT_OR_UNION && !src.struct_or_union.is_union);
+	for(CppType& dest_field : dest.struct_or_union.fields) {
+		if(dest_field.name.starts_with("unknown")) {
+			for(CppType& src_field : src.struct_or_union.fields) {
+				if(src_field.offset == dest_field.offset && src_field.size == dest_field.size) {
+					dest_field = std::move(src_field);
+				}
+			}
+		}
+	}
+}
+
 const char* cpp_built_in(CppBuiltIn built_in) {
 	switch(built_in) {
 		case CPP_VOID: return "void";
@@ -435,8 +451,8 @@ CppABI CPP_PS2_ABI = {
 		/* [CPP_UINT] = */ 4,
 		/* [CPP_LONG] = */ 8,
 		/* [CPP_ULONG] = */ 8,
-		/* [CPP_LONGLONG] = */ 16, // Some weirdness here with these games.
-		/* [CPP_ULONGLONG] = */ 16,
+		/* [CPP_LONGLONG] = */ 8,
+		/* [CPP_ULONGLONG] = */ 8,
 		/* [CPP_S8] = */ 1,
 		/* [CPP_U8] = */ 1,
 		/* [CPP_S16] = */ 2,
@@ -462,8 +478,8 @@ CppABI CPP_PS2_ABI = {
 		/* [CPP_UINT] = */ 4,
 		/* [CPP_LONG] = */ 8,
 		/* [CPP_ULONG] = */ 8,
-		/* [CPP_LONGLONG] = */ 16,
-		/* [CPP_ULONGLONG] = */ 16,
+		/* [CPP_LONGLONG] = */ 8,
+		/* [CPP_ULONGLONG] = */ 8,
 		/* [CPP_S8] = */ 1,
 		/* [CPP_U8] = */ 1,
 		/* [CPP_S16] = */ 2,

@@ -694,7 +694,7 @@ void AssetForest::unmount_last() {
 	_banks.back()->_higher_precedence = nullptr;
 }
 
-void AssetForest::load_and_parse_source_files(Game game) {
+void AssetForest::read_source_files(Game game) {
 	std::map<fs::path, const AssetBank*> source_files;
 	for(const std::unique_ptr<AssetBank>& bank : _banks) {
 		bank->enumerate_source_files(source_files, game);
@@ -724,6 +724,26 @@ void AssetForest::load_and_parse_source_files(Game game) {
 	
 	for(auto& [name, type] : _types) {
 		layout_cpp_type(type, _types, CPP_PS2_ABI);
+	}
+}
+
+void AssetForest::write_source_files(AssetBank& bank, Game game) {
+	AssetFile& build_file = bank.asset_file("build.asset");
+	for(auto& [name, type] : types()) {
+		std::string header_path;
+		if(type.name.starts_with("update")) {
+			header_path = stringf("src/game_%s/update/moby%s.h", game_to_string(game).c_str(), &type.name[6]);
+		} else {
+			verify_fatal(type.name.starts_with("camera") || type.name.starts_with("sound"));
+			header_path = stringf("src/game_%s/update/%s.h", game_to_string(game).c_str(), type.name.c_str());
+		}
+		std::vector<u8> cpp;
+		OutBuffer buffer(cpp);
+		buffer.writelf("#pragma wrench parser on");
+		buffer.writesf("\n");
+		dump_cpp_type(buffer, type);
+		buffer.write<s8>(0);
+		build_file.write_text_file(fs::path(header_path), (const char*) cpp.data());
 	}
 }
 

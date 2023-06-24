@@ -144,6 +144,7 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
+| 23   |       | Added new relative_pvar_pointers attribute to instances that have a pvar component. |
 | 22   |       | Occlusion is now computed on demand instead of during a build. Occlusion assets now have grid and mapping attributes. |
 | 21   |       | Added new instances format. Added Instances asset type. Added the C++ parsing system and the overlay asset bank. |
 | 20   |       | Added Occlusion asset type. The code child of LevelWad asset has been renamed to overlay. Removed the tfrags and collision children of the LevelWad asset (the assets from the first chunk are used instead). |

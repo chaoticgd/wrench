@@ -48,7 +48,7 @@ using f64 = double;
 #define WRENCH_PI 3.14159265358979323846
 
 
-#define BEGIN_END(container) container.begin(), container.end()
+#define BEGIN_END(container) (container).begin(), (container).end()
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
 #define ARRAY_PAIR(array) array, ARRAY_SIZE(array)

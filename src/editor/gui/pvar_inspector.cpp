@@ -23,10 +23,13 @@
 
 struct PvarInspectorState {
 	Level* lvl;
-	const CppType* type;
+	const CppType* root;
 	std::vector<InstanceId>* ids;
 	std::vector<u8>* pvars;
 	std::vector<u8>* diff;
+	bool pointers_match;
+	std::vector<PvarPointer>* pointers = nullptr;
+	InstanceList<SharedDataInstance>* shared_data;
 };
 
 static const CppType* get_pvar_type(const Level& lvl);
@@ -34,7 +37,10 @@ template <typename ThisInstance>
 const CppType* get_single_pvar_type(const InstanceList<ThisInstance>& instances, const std::map<s32, EditorClass>& classes);
 static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vector<InstanceId>& ids, const std::vector<std::vector<u8>*>& pvars);
 static void generate_rows(const CppType& type, const std::string& name, const PvarInspectorState& inspector, s32 index, s32 offset, s32 depth, s32 indent);
-static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 size, const std::vector<InstanceId>& ids);
+static void generate_built_in_input(const CppType& type, const PvarInspectorState& inspector, s32 offset);
+static void generate_enum_input(const CppType& type, const PvarInspectorState& inspector, s32 offset);
+static void generate_pointer_input(const CppType& type, const PvarInspectorState& inspector, s32 offset);
+static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 size, const std::vector<InstanceId>& ids, const PvarPointer* new_pointer);
 static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type);
 
 void pvar_inspector(Level& lvl) {
@@ -50,10 +56,19 @@ void pvar_inspector(Level& lvl) {
 	
 		std::vector<InstanceId> ids;
 		std::vector<std::vector<u8>*> pvars;
+		std::vector<PvarPointer>* first_pointers = nullptr;
+		bool pointers_match = true;
 		lvl.instances().for_each_with(COM_PVARS, [&](Instance& inst) {
 			if(inst.selected) {
 				ids.emplace_back(inst.id());
 				pvars.emplace_back(&inst.pvars().data);
+				if(first_pointers) {
+					if(inst.pvars().pointers != *first_pointers) {
+						pointers_match = false;
+					}
+				} else {
+					first_pointers = &inst.pvars().pointers;
+				}
 			}
 		});
 		
@@ -76,16 +91,22 @@ void pvar_inspector(Level& lvl) {
 		ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
 		if(ImGui::BeginTable("pvar_table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
-			ImGui::TableSetupColumn("Ofs", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
+			ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 			ImGui::TableHeadersRow();
 			
 			PvarInspectorState inspector;
 			inspector.lvl = &lvl;
+			inspector.root = pvar_type;
 			inspector.ids = &ids;
 			inspector.pvars = pvars[0];
 			inspector.diff = &diff;
+			inspector.pointers_match = pointers_match;
+			if(pointers_match) {
+				inspector.pointers = first_pointers;
+			}
+			inspector.shared_data = &lvl.instances().shared_data;
 			generate_rows(*pvar_type, pvar_type->name, inspector, -1, 0, 0, 0);
 			
 			ImGui::EndTable();
@@ -140,8 +161,18 @@ const CppType* get_single_pvar_type(const InstanceList<ThisInstance>& instances,
 	}
 	if(o_class > -1) {
 		auto iter = classes.find(o_class);
-		if(iter != classes.end() && iter->second.pvar_type) {
-			return iter->second.pvar_type;
+		bool class_exists = iter != classes.end();
+		if(class_exists) {
+			bool class_has_pvar_type = iter->second.pvar_type != nullptr;
+			if(class_has_pvar_type) {
+				bool pvar_type_is_struct_or_union = iter->second.pvar_type->descriptor == CPP_STRUCT_OR_UNION;
+				if(pvar_type_is_struct_or_union) {
+					bool pvar_type_is_struct = !iter->second.pvar_type->struct_or_union.is_union;
+					if(pvar_type_is_struct) {
+						return iter->second.pvar_type;
+					}
+				}
+			}
 		}
 	}
 	return nullptr;
@@ -262,34 +293,11 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 			break;
 		}
 		case CPP_BUILT_IN: {
-			u8 data[16];
-			verify_fatal(type.size <= 16);
-			memcpy(data, &(*inspector.pvars)[offset], type.size);
-			
-			ImGuiDataType imgui_type = cpp_built_in_type_to_imgui_data_type(type);
-			const char* format = ImGui::DataTypeGetInfo(imgui_type)->PrintFmt;
-			
-			char data_as_string[64];
-			static u8 zero[16] = {};
-			if(memcmp(&(*inspector.diff)[offset], zero, type.size) == 0) {
-				// This value is the same for all selected objects, so display
-				// it normally.
-				ImGui::DataTypeFormatString(data_as_string, ARRAY_SIZE(data_as_string), imgui_type, data, format);
-			} else {
-				// Multiple objects are selected where this value differs, so
-				// display a blank text field.
-				data_as_string[0] = 0;
-			}
-			
-			if(ImGui::InputText("##input", data_as_string, ARRAY_SIZE(data_as_string), ImGuiInputTextFlags_EnterReturnsTrue)) {
-				if(ImGui::DataTypeApplyFromText(data_as_string, imgui_type, data, format)) {
-					push_poke_pvar_command(*inspector.lvl, offset, data, type.size, *inspector.ids);
-				}
-			}
+			generate_built_in_input(type, inspector, offset);
 			break;
 		}
 		case CPP_ENUM: {
-			ImGui::Text("(enum)");
+			generate_enum_input(type, inspector, offset);
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
@@ -308,6 +316,7 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 					generate_rows(field, field.name, inspector, i, offset + field.offset, depth + 1, indent + 1);
 				}
 			}
+			
 			break;
 		}
 		case CPP_TYPE_NAME: {
@@ -332,30 +341,172 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 			break;
 		}
 		case CPP_POINTER_OR_REFERENCE: {
-			s32 pointer = *(s32*) &(*inspector.pvars)[offset];
-			ImGui::Text("pointer 0x%x", pointer);
+			generate_pointer_input(type, inspector, offset);
 			break;
 		}
+	}
+}
+
+static void generate_built_in_input(const CppType& type, const PvarInspectorState& inspector, s32 offset) {
+	static u8 zero[16] = {};
+	
+	u8 data[16];
+	verify_fatal(type.size <= 16);
+	memcpy(data, &(*inspector.pvars)[offset], type.size);
+	
+	ImGuiDataType imgui_type = cpp_built_in_type_to_imgui_data_type(type);
+	const char* format = ImGui::DataTypeGetInfo(imgui_type)->PrintFmt;
+	
+	char data_as_string[64];
+	if(memcmp(&(*inspector.diff)[offset], zero, type.size) == 0) {
+		// This value is the same for all selected objects, so display
+		// it normally.
+		ImGui::DataTypeFormatString(data_as_string, ARRAY_SIZE(data_as_string), imgui_type, data, format);
+	} else {
+		// Multiple objects are selected where this value differs, so
+		// display a blank text field.
+		data_as_string[0] = 0;
+	}
+	
+	if(ImGui::InputText("##input", data_as_string, ARRAY_SIZE(data_as_string), ImGuiInputTextFlags_EnterReturnsTrue)) {
+		if(ImGui::DataTypeApplyFromText(data_as_string, imgui_type, data, format)) {
+			push_poke_pvar_command(*inspector.lvl, offset, data, type.size, *inspector.ids, nullptr);
+		}
+	}
+}
+
+static void generate_enum_input(const CppType& type, const PvarInspectorState& inspector, s32 offset) {
+	static u8 zero[16] = {};
+	
+	Opt<s32> value;
+	std::string name;
+	if(memcmp(&(*inspector.diff)[offset], zero, type.size) == 0) {
+		value = *(s32*) &(*inspector.pvars)[offset];
+		for(auto& [other_value, other_name] : type.enumeration.constants) {
+			if(other_value == *value) {
+				name = other_name.c_str();
+			}
+		}
+		if(name.empty()) {
+			name = std::to_string(*value);
+		}
+	}
+	ImGui::SetNextItemWidth(-1.f);
+	if(ImGui::BeginCombo("##enum", name.c_str())) {
+		for(auto& [other_value, other_name] : type.enumeration.constants) {
+			if(ImGui::Selectable(other_name.c_str(), value.has_value() && other_value == *value)) {
+				verify_fatal(type.size == 4);
+				push_poke_pvar_command(*inspector.lvl, offset, (u8*) &other_value, 4, *inspector.ids, nullptr);
+			}
+		}
+		ImGui::EndCombo();
+	}
+}
+
+static void generate_pointer_input(const CppType& type, const PvarInspectorState& inspector, s32 offset) {
+	s32 value = *(s32*) &(*inspector.pvars)[offset];
+	std::string name;
+	if(inspector.pointers) {
+		for(const PvarPointer& pointer : *inspector.pointers) {
+			if(pointer.offset == offset) {
+				verify_fatal(pointer.type != PvarPointerType::NULLPTR);
+				switch(pointer.type) {
+					case PvarPointerType::NULLPTR: {
+						verify_not_reached_fatal("Pvar pointer of type NULLPTR stored.");
+						break;
+					}
+					case PvarPointerType::RELATIVE: {
+						for(const CppType& field : inspector.root->struct_or_union.fields) {
+							if(field.offset == value) {
+								name = stringf("&this->%s", field.name.c_str());
+								break;
+							}
+						}
+						if(name.empty()) {
+							name = stringf("(u8*) this + 0x%x\n", value);
+						}
+						break;
+					}
+					case PvarPointerType::SHARED: {
+						name = stringf("&SharedData[%d]", pointer.shared_data_id);
+						break;
+					}
+				}
+				break;
+			}
+		}
+	}
+	if(name.empty()) {
+		if(inspector.pointers_match) {
+			name = "NULL";
+		} else {
+			name = "(at least one pointer differs)";
+		}
+	}
+	ImGui::SetNextItemWidth(-1.f);
+	if(ImGui::BeginCombo("##pointer", name.c_str())) {
+		if(ImGui::Selectable("NULL")) {
+			s32 value = 0;
+			PvarPointer pointer;
+			pointer.offset = offset;
+			pointer.type = PvarPointerType::NULLPTR;
+			push_poke_pvar_command(*inspector.lvl, offset, (const u8*) &value, sizeof(value), *inspector.ids, &pointer);
+		}
+		
+		for(const CppType& field : inspector.root->struct_or_union.fields) {
+			std::string name = stringf("&this->%s", field.name.c_str());
+			if(ImGui::Selectable(name.c_str())) {
+				s32 value = field.offset;
+				PvarPointer pointer;
+				pointer.offset = offset;
+				pointer.type = PvarPointerType::RELATIVE;
+				push_poke_pvar_command(*inspector.lvl, offset, (const u8*) &value, sizeof(value), *inspector.ids, &pointer);
+			}
+		}
+		
+		for(const SharedDataInstance& inst : *inspector.shared_data) {
+			std::string name = stringf("&SharedData[%d]", inst.id().value);
+			if(ImGui::Selectable(name.c_str())) {
+				s32 value = 0;
+				PvarPointer pointer;
+				pointer.offset = offset;
+				pointer.type = PvarPointerType::SHARED;
+				pointer.shared_data_id = inst.id().value;
+				push_poke_pvar_command(*inspector.lvl, offset, (const u8*) &value, sizeof(value), *inspector.ids, &pointer);
+			}
+		}
+		
+		ImGui::EndCombo();
 	}
 }
 
 struct PokePvarInfo {
 	InstanceId id;
 	u8 old_data[16];
+	bool has_old_pointer = false;
+	PvarPointer old_pointer;
 };
 
 struct PokePvarCommand {
 	s32 offset;
 	s32 size;
 	u8 new_data[16];
+	bool modifies_pointers = false;
+	bool has_new_pointer = false;
+	PvarPointer new_pointer;
 	std::vector<PokePvarInfo> instances;
 };
 
-static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 size, const std::vector<InstanceId>& ids) {
+static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 size, const std::vector<InstanceId>& ids, const PvarPointer* new_pointer) {
 	PokePvarCommand command;
 	command.offset = offset;
 	command.size = size;
 	memcpy(command.new_data, data, size);
+	if(new_pointer) {
+		command.modifies_pointers = true;
+		command.has_new_pointer = new_pointer->type != PvarPointerType::NULLPTR;
+		command.new_pointer = *new_pointer;
+	}
 	for(const InstanceId& id : ids) {
 		Instance* inst = lvl.instances().from_id(id);
 		verify_fatal(inst);
@@ -364,6 +515,16 @@ static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 s
 		info.id = id;
 		verify_fatal(offset + size <= inst->pvars().data.size());
 		memcpy(info.old_data, &(inst->pvars().data[offset]), size);
+		
+		if(command.modifies_pointers) {
+			for(PvarPointer& pointer : inst->pvars().pointers) {
+				if(pointer.offset == new_pointer->offset) {
+					verify_fatal(!info.has_old_pointer);
+					info.has_old_pointer = true;
+					info.old_pointer = pointer;
+				}
+			}
+		}
 	}
 	
 	lvl.push_command<PokePvarCommand>(std::move(command),
@@ -373,6 +534,29 @@ static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 s
 				verify_fatal(inst);
 				verify_fatal(command.offset + command.size <= inst->pvars().data.size());
 				memcpy(&(inst->pvars().data[command.offset]), command.new_data, command.size);
+				if(command.modifies_pointers) {
+					if(info.has_old_pointer && command.has_new_pointer) {
+						bool found = false;
+						for(PvarPointer& pointer : inst->pvars().pointers) {
+							if(pointer.offset == command.new_pointer.offset) {
+								pointer = command.new_pointer;
+								found = true;
+							}
+						}
+						verify_fatal(found);
+					} else if(info.has_old_pointer) {
+						std::vector<PvarPointer>& pointers = inst->pvars().pointers;
+						for(size_t i = 0; i < pointers.size(); i++) {
+							if(pointers[i].offset == info.old_pointer.offset) {
+								pointers.erase(pointers.begin() + i);
+								break;
+							}
+						}
+					} else if(command.has_new_pointer) {
+						inst->pvars().pointers.emplace_back(command.new_pointer);
+						std::sort(BEGIN_END(inst->pvars().pointers));
+					}
+				}
 			}
 		},
 		[](Level& lvl, PokePvarCommand& command) {
@@ -381,6 +565,29 @@ static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 s
 				verify_fatal(inst);
 				verify_fatal(command.offset + command.size <= inst->pvars().data.size());
 				memcpy(&(inst->pvars().data[command.offset]), info.old_data, command.size);
+				if(command.modifies_pointers) {
+					if(info.has_old_pointer && command.has_new_pointer) {
+						bool found = false;
+						for(PvarPointer& pointer : inst->pvars().pointers) {
+							if(pointer.offset == info.old_pointer.offset) {
+								pointer = info.old_pointer;
+								found = true;
+							}
+						}
+						verify_fatal(found);
+					} else if(info.has_old_pointer) {
+						inst->pvars().pointers.emplace_back(info.old_pointer);
+						std::sort(BEGIN_END(inst->pvars().pointers));
+					} else if(command.has_new_pointer) {
+						std::vector<PvarPointer>& pointers = inst->pvars().pointers;
+						for(size_t i = 0; i < pointers.size(); i++) {
+							if(pointers[i].offset == command.new_pointer.offset) {
+								pointers.erase(pointers.begin() + i);
+								break;
+							}
+						}
+					}
+				}
 			}
 		});
 }
