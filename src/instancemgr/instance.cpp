@@ -194,7 +194,7 @@ void PvarComponent::read(const WtfNode* src) {
 	const WtfAttribute* relative_pointers_attrib = wtf_attribute_of_type(src, "relative_pvar_pointers", WTF_ARRAY);
 	if(relative_pointers_attrib) {
 		for(const WtfAttribute* attrib = relative_pointers_attrib->first_array_element; attrib != nullptr; attrib = attrib->next) {
-			verify(attrib->type == WTF_NUMBER, "Bad relative pointer list on moby instance.");
+			verify(attrib->type == WTF_NUMBER, "Bad relative pointer list on instance.");
 			
 			PvarPointer& pointer = pointers.emplace_back();
 			pointer.offset = attrib->number.i;
@@ -207,15 +207,29 @@ void PvarComponent::read(const WtfNode* src) {
 		for(const WtfAttribute* attrib = shared_data_pointers_attrib->first_array_element; attrib != nullptr; attrib = attrib->next) {
 			verify(attrib->type == WTF_ARRAY, "Bad shared data pointers list on moby instance.");
 			WtfAttribute* pointer_offset = attrib->first_array_element;
-			verify(pointer_offset && pointer_offset->type == WTF_NUMBER, "Bad shared data pointer list on moby instance.");
+			verify(pointer_offset && pointer_offset->type == WTF_NUMBER, "Bad shared data pointer list on instance.");
 			WtfAttribute* shared_data_id = pointer_offset->next;
-			verify(shared_data_id && shared_data_id->type == WTF_NUMBER, "Bad shared data pointer list on moby instance.");
+			verify(shared_data_id && shared_data_id->type == WTF_NUMBER, "Bad shared data pointer list on instance.");
 			
 			PvarPointer& pointer = pointers.emplace_back();
 			pointer.offset = pointer_offset->number.i;
 			pointer.type = PvarPointerType::SHARED;
 			pointer.shared_data_id = shared_data_id->number.i;
 		}
+	}
+	
+	std::sort(BEGIN_END(pointers));
+	
+	validate();
+}
+
+void PvarComponent::validate() const {
+	// Validate order and uniqueness (this is important for undo/redo integrity).
+	s32 last_offset = -1;
+	for(size_t i = 0; i < pointers.size(); i++) {
+		verify_fatal(pointers[i].offset > -1);
+		verify_fatal(last_offset == -1 || last_offset < pointers[i].offset);
+		last_offset = pointers[i].offset;
 	}
 }
 
