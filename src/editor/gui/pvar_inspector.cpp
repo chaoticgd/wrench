@@ -414,11 +414,19 @@ static void generate_pointer_input(const CppType& type, const PvarInspectorState
 						break;
 					}
 					case PvarPointerType::RELATIVE: {
-						name = stringf("relative pointer %x", value);
+						for(const CppType& field : inspector.root->struct_or_union.fields) {
+							if(field.offset == value) {
+								name = stringf("&this->%s", field.name.c_str());
+								break;
+							}
+						}
+						if(name.empty()) {
+							name = stringf("(u8*) this + 0x%x\n", value);
+						}
 						break;
 					}
 					case PvarPointerType::SHARED: {
-						name = stringf("shared data pointer %x", value);
+						name = stringf("&SharedData[%d]", pointer.shared_data_id);
 						break;
 					}
 				}
@@ -436,7 +444,7 @@ static void generate_pointer_input(const CppType& type, const PvarInspectorState
 			PvarPointer pointer;
 			pointer.offset = offset;
 			pointer.type = PvarPointerType::NULLPTR;
-			//push_poke_pvar_command(*inspector.lvl, offset, (const u8*) &value, sizeof(value), *inspector.ids, &pointer);
+			push_poke_pvar_command(*inspector.lvl, offset, (const u8*) &value, sizeof(value), *inspector.ids, &pointer);
 		}
 		
 		for(const CppType& field : inspector.root->struct_or_union.fields) {
@@ -446,7 +454,7 @@ static void generate_pointer_input(const CppType& type, const PvarInspectorState
 				PvarPointer pointer;
 				pointer.offset = offset;
 				pointer.type = PvarPointerType::RELATIVE;
-				//push_poke_pvar_command(*inspector.lvl, offset, (const u8*) &value, sizeof(value), *inspector.ids, &pointer);
+				push_poke_pvar_command(*inspector.lvl, offset, (const u8*) &value, sizeof(value), *inspector.ids, &pointer);
 			}
 		}
 		
@@ -458,7 +466,7 @@ static void generate_pointer_input(const CppType& type, const PvarInspectorState
 				pointer.offset = offset;
 				pointer.type = PvarPointerType::SHARED;
 				pointer.shared_data_id = inst.id().value;
-				//push_poke_pvar_command(*inspector.lvl, offset, (const u8*) &value, sizeof(value), *inspector.ids, &pointer);
+				push_poke_pvar_command(*inspector.lvl, offset, (const u8*) &value, sizeof(value), *inspector.ids, &pointer);
 			}
 		}
 		
@@ -477,6 +485,7 @@ struct PokePvarCommand {
 	s32 offset;
 	s32 size;
 	u8 new_data[16];
+	bool modifies_pointers = false;
 	bool has_new_pointer = false;
 	PvarPointer new_pointer;
 	std::vector<PokePvarInfo> instances;
@@ -488,7 +497,8 @@ static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 s
 	command.size = size;
 	memcpy(command.new_data, data, size);
 	if(new_pointer) {
-		command.has_new_pointer = true;
+		command.modifies_pointers = true;
+		command.has_new_pointer = new_pointer->type != PvarPointerType::NULLPTR;
 		command.new_pointer = *new_pointer;
 	}
 	for(const InstanceId& id : ids) {
@@ -500,16 +510,13 @@ static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 s
 		verify_fatal(offset + size <= inst->pvars().data.size());
 		memcpy(info.old_data, &(inst->pvars().data[offset]), size);
 		
-		if(new_pointer) {
+		if(command.modifies_pointers) {
 			for(PvarPointer& pointer : inst->pvars().pointers) {
 				if(pointer.offset == new_pointer->offset) {
 					verify_fatal(!info.has_old_pointer);
 					info.has_old_pointer = true;
 					info.old_pointer = pointer;
 				}
-			}
-			if(!info.has_old_pointer) {
-				//std::remove_if
 			}
 		}
 	}
@@ -521,16 +528,27 @@ static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 s
 				verify_fatal(inst);
 				verify_fatal(command.offset + command.size <= inst->pvars().data.size());
 				memcpy(&(inst->pvars().data[command.offset]), command.new_data, command.size);
-				if(command.has_new_pointer) {
-					bool found = false;
-					for(PvarPointer& pointer : inst->pvars().pointers) {
-						if(pointer.offset == command.new_pointer.offset) {
-							pointer = command.new_pointer;
-							found = true;
+				if(command.modifies_pointers) {
+					if(info.has_old_pointer && command.has_new_pointer) {
+						bool found = false;
+						for(PvarPointer& pointer : inst->pvars().pointers) {
+							if(pointer.offset == command.new_pointer.offset) {
+								pointer = command.new_pointer;
+								found = true;
+							}
 						}
-					}
-					if(!found) {
+						verify_fatal(found);
+					} else if(info.has_old_pointer) {
+						std::vector<PvarPointer>& pointers = inst->pvars().pointers;
+						for(size_t i = 0; i < pointers.size(); i++) {
+							if(pointers[i].offset == info.old_pointer.offset) {
+								pointers.erase(pointers.begin() + i);
+								break;
+							}
+						}
+					} else if(command.has_new_pointer) {
 						inst->pvars().pointers.emplace_back(command.new_pointer);
+						std::sort(BEGIN_END(inst->pvars().pointers));
 					}
 				}
 			}
@@ -541,16 +559,27 @@ static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 s
 				verify_fatal(inst);
 				verify_fatal(command.offset + command.size <= inst->pvars().data.size());
 				memcpy(&(inst->pvars().data[command.offset]), info.old_data, command.size);
-				if(command.has_new_pointer) {
-					bool found = false;
-					for(PvarPointer& pointer : inst->pvars().pointers) {
-						if(pointer.offset == command.new_pointer.offset) {
-							pointer = info.old_pointer;
-							found = true;
+				if(command.modifies_pointers) {
+					if(info.has_old_pointer && command.has_new_pointer) {
+						bool found = false;
+						for(PvarPointer& pointer : inst->pvars().pointers) {
+							if(pointer.offset == info.old_pointer.offset) {
+								pointer = info.old_pointer;
+								found = true;
+							}
 						}
-					}
-					if(!found) {
-						
+						verify_fatal(found);
+					} else if(info.has_old_pointer) {
+						inst->pvars().pointers.emplace_back(info.old_pointer);
+						std::sort(BEGIN_END(inst->pvars().pointers));
+					} else if(command.has_new_pointer) {
+						std::vector<PvarPointer>& pointers = inst->pvars().pointers;
+						for(size_t i = 0; i < pointers.size(); i++) {
+							if(pointers[i].offset == command.new_pointer.offset) {
+								pointers.erase(pointers.begin() + i);
+								break;
+							}
+						}
 					}
 				}
 			}
