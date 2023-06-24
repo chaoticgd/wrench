@@ -27,7 +27,8 @@ struct PvarInspectorState {
 	std::vector<InstanceId>* ids;
 	std::vector<u8>* pvars;
 	std::vector<u8>* diff;
-	std::vector<PvarPointer>* pointers;
+	bool pointers_match;
+	std::vector<PvarPointer>* pointers = nullptr;
 	InstanceList<SharedDataInstance>* shared_data;
 };
 
@@ -101,6 +102,7 @@ void pvar_inspector(Level& lvl) {
 			inspector.ids = &ids;
 			inspector.pvars = pvars[0];
 			inspector.diff = &diff;
+			inspector.pointers_match = pointers_match;
 			if(pointers_match) {
 				inspector.pointers = first_pointers;
 			}
@@ -435,7 +437,11 @@ static void generate_pointer_input(const CppType& type, const PvarInspectorState
 		}
 	}
 	if(name.empty()) {
-		name = "NULL";
+		if(inspector.pointers_match) {
+			name = "NULL";
+		} else {
+			name = "(at least one pointer differs)";
+		}
 	}
 	ImGui::SetNextItemWidth(-1.f);
 	if(ImGui::BeginCombo("##pointer", name.c_str())) {
