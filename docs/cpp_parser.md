@@ -25,6 +25,7 @@ All code between these two delimiters must conform to the limitations of the par
 - Basic built-in types: `char`, `unsigned char`, `signed char`, `short`, `unsigned short`, `int`, `unsigned int`, `long`, `unsigned long`, `long long`, `unsigned long long`, `float`, `double`, `bool` and `void`.
 - Fixed width integer types: `s8`, `u8`, `s16`, `u16`, `s32`, `u32`, `s64`, `u64`, `u128`, `s128`.
 - Pointers, references and C arrays.
+- `alignas` expression on a struct or union with an integer literal.
 
 A (probably incomplete) list of language features that are currently unsupported is provided below:
 

@@ -11,14 +11,20 @@ struct vec3 {
 	float z;
 };
 
-typedef u128 vec4;
+struct alignas(16) vec4 {
+	float x;
+	float y;
+	float z;
+	float w;
+};
+
 typedef vec4 vec4f;
-typedef u128 quat;
+typedef vec4 quat;
 
 struct mtx3 {
-	u128 value[3];
+	vec4 value[3];
 };
 
 struct mtx4 {
-	u128 value[4];
+	vec4 value[4];
 };

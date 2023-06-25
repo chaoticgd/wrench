@@ -70,17 +70,45 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 		
 		if(tokens[parser.pos].keyword == CPP_KEYWORD_struct || tokens[parser.pos].keyword == CPP_KEYWORD_union) {
 			size_t second_pos = tokens[parser.pos].next;
-			if(second_pos < tokens.size() && tokens[second_pos].type == CPP_IDENTIFIER) {
+			
+			// Parse alignof expression.
+			size_t next_pos = tokens.size();
+			s32 alignment = -1;
+			if(second_pos < tokens.size() && tokens[second_pos].type == CPP_KEYWORD && tokens[second_pos].keyword == CPP_KEYWORD_alignas) {
 				size_t third_pos = tokens[second_pos].next;
+				if(third_pos < tokens.size() && tokens[third_pos].type == CPP_OPERATOR && tokens[third_pos].op == CPP_OP_OPENING_ROUND) {
+					size_t fourth_pos = tokens[third_pos].next;
+					if(fourth_pos < tokens.size() && tokens[fourth_pos].type == CPP_INTEGER_LITERAL) {
+						size_t fifth_pos = tokens[fourth_pos].next;
+						if(fifth_pos < tokens.size() && tokens[fifth_pos].type == CPP_OPERATOR && tokens[fifth_pos].op == CPP_OP_CLOSING_ROUND) {
+							alignment = (s32) tokens[fourth_pos].i;
+							next_pos = tokens[fifth_pos].next;
+						}
+					}
+				}
+			} else {
+				next_pos = second_pos;
+			}
+			
+			// Parse struct body.
+			if(next_pos < tokens.size() && tokens[next_pos].type == CPP_IDENTIFIER) {
+				size_t third_pos = tokens[next_pos].next;
 				if(third_pos < tokens.size() && tokens[third_pos].type == CPP_OPERATOR && tokens[third_pos].op == CPP_OP_OPENING_CURLY) {
-					std::string_view name(tokens[second_pos].str_begin, tokens[second_pos].str_end);
+					std::string_view name(tokens[next_pos].str_begin, tokens[next_pos].str_end);
 					CppType type(CPP_STRUCT_OR_UNION);
 					type.struct_or_union.is_union = tokens[parser.pos].keyword == CPP_KEYWORD_union;
 					type.name = name;
-					parser.advance();
-					parser.advance();
-					parser.advance();
+					parser.advance(); // struct or union
+					if(alignment > -1) {
+						parser.advance(); // alignof
+						parser.advance(); // (
+						parser.advance(); // integer literal
+						parser.advance(); // )
+					}
+					parser.advance(); // identifier
+					parser.advance(); // {
 					parse_struct_or_union(type, parser);
+					type.alignment = alignment;
 					types.emplace(name, std::move(type));
 					continue;
 				}

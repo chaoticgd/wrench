@@ -170,11 +170,16 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
+			bool has_custom_alignment = type.alignment > -1;
 			s32 offset = 0;
-			type.alignment = 1;
+			if(!has_custom_alignment) {
+				type.alignment = 1;
+			}
 			for(CppType& field : type.struct_or_union.fields) {
 				layout_cpp_type(field, types, abi);
-				type.alignment = std::max(field.alignment, type.alignment);
+				if(!has_custom_alignment) {
+					type.alignment = std::max(field.alignment, type.alignment);
+				}
 				field.offset = align32(offset, field.alignment);
 				if(!type.struct_or_union.is_union) {
 					offset = field.offset + field.size;
