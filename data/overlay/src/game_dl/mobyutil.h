@@ -517,27 +517,3 @@ struct FpsCamVars { // 0x160
 	/* 0x140 */ vec4 prevCamPos;
 	/* 0x150 */ int karma_pad2[4];
 };
-
-struct Manipulator { // 0x40
-	/* 0x00 */ char animJoint;
-	/* 0x01 */ char state;
-	/* 0x02 */ signed char scaleOn;
-	/* 0x03 */ char absolute;
-	/* 0x04 */ int jointId;
-	/* 0x08 */ Manipulator *pChain;
-	/* 0x0c */ float interp;
-	/* 0x10 */ quat q;
-	/* 0x20 */ vec4 scale;
-	/* 0x30 */ vec4 trans;
-};
-
-struct Tweaker { // 0x80
-	/* 0x00 */ Manipulator manip;
-	/* 0x40 */ vec4f rot;
-	/* 0x50 */ vec4f speed;
-	/* 0x60 */ vec4f target;
-	/* 0x70 */ float scale;
-	/* 0x74 */ int joint;
-	/* 0x78 */ moby *pMoby;
-	/* 0x7c */ int pad[1];
-};
