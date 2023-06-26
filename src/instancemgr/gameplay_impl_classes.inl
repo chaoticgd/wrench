@@ -280,7 +280,7 @@ struct DlMobyBlock {
 			verify(entry.unused_6c == -1, "Moby field has weird value.");
 			
 			MobyInstance instance;
-			instance.set_id_value(index++);
+			instance.set_id_value(gameplay.core_moby_count + index++);
 			swap_moby(instance, entry);
 			gameplay.moby_instances->push_back(instance);
 		}

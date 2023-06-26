@@ -27,7 +27,7 @@ void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfi
 void pack_rac_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config);
 void unpack_gc_uya_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);
 void pack_gc_uya_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config);
-void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);
+s32 unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);
 void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& compressed_art_instances, std::vector<u8>& compressed_gameplay, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config);
 
 #endif

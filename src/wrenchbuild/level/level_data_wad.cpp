@@ -128,7 +128,7 @@ void pack_gc_uya_level_data_wad(OutputStream& dest, const std::vector<LevelChunk
 	dest.write(0, header);
 }
 
-void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config) {
+s32 unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config) {
 	auto header = src.read<DlLevelDataHeader>(0);
 	
 	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
@@ -140,8 +140,10 @@ void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig
 	
 	std::vector<u8> gameplay = src.read_multiple<u8>(header.gameplay_core.offset, header.gameplay_core.size);
 	std::vector<u8> art_instances = src.read_multiple<u8>(header.art_instances.offset, header.art_instances.size);
-	unpack_instances(dest.gameplay<InstancesAsset>(), &dest, gameplay, &art_instances, config, FMT_INSTANCES_GAMEPLAY);
+	s32 core_moby_count = unpack_instances(dest.gameplay<InstancesAsset>(), &dest, gameplay, &art_instances, config, FMT_INSTANCES_GAMEPLAY);
 	unpack_compressed_asset(dest.global_nav_data(), src, header.global_nav_data, config);
+	
+	return core_moby_count;
 }
 
 void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& compressed_art_instances, std::vector<u8>& compressed_gameplay, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config) {

@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 23
+format_version: 24
 
 InstanceType Moby {
 	desc: "Moving, interactive, or otherwise dynamic objects with an associated update function."
