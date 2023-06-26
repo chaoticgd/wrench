@@ -70,6 +70,8 @@ struct Instances {
 	
 	void clear_selection();
 	std::vector<InstanceId> selected_instances() const;
+	
+	Instances* core = nullptr; // Only used during packing to reference the gameplay core from the mission instances.
 };
 
 struct HelpMessage {
@@ -109,7 +111,7 @@ static void for_each_instance_of_type_with(u32 required_components_mask, const I
 
 template <typename Callback>
 void Instances::for_each_with(u32 required_components_mask, Callback callback) const {
-#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable) \
+#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
 	for_each_instance_of_type_with(required_components_mask, inst_variable, callback);
 #define GENERATED_INSTANCE_MACRO_CALLS
 #include "_generated_instance_types.inl"

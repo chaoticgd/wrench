@@ -86,7 +86,7 @@ struct Gameplay {
 	Opt<std::vector<u8>> shared_data;
 	Opt<std::vector<SharedDataEntry>> shared_data_table;
 	
-	s32 core_moby_count = 0; // Used while unpacking missions to offset the generated moby IDs.
+	s32 core_moby_count = 0; // Used while unpacking missions to offset the generated moby IDs, and while packing to offset indices.
 };
 
 // *****************************************************************************

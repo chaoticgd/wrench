@@ -531,35 +531,35 @@ struct AreasBlock {
 			packed.relative_part_offsets[AREA_PART_PATHS] = (s32) !inst.paths.empty()
 				? (links[AREA_PART_PATHS].size() * 4) : 0;
 			packed.part_counts[AREA_PART_PATHS] = (s32) inst.paths.size();
-			for(PathLink link : inst.paths) {
+			for(pathlink link : inst.paths) {
 				links[AREA_PART_PATHS].emplace_back(link.id);
 			}
 			
 			packed.relative_part_offsets[AREA_PART_CUBOIDS] = (s32) !inst.cuboids.empty()
 				? (links[AREA_PART_CUBOIDS].size() * 4) : 0;
 			packed.part_counts[AREA_PART_CUBOIDS] = (s32) inst.cuboids.size();
-			for(CuboidLink link : inst.cuboids) {
+			for(cuboidlink link : inst.cuboids) {
 				links[AREA_PART_CUBOIDS].emplace_back(link.id);
 			}
 			
 			packed.relative_part_offsets[AREA_PART_SPHERES] = (s32) !inst.spheres.empty()
 				? (links[AREA_PART_SPHERES].size() * 4) : 0;
 			packed.part_counts[AREA_PART_SPHERES] = (s32) inst.spheres.size();
-			for(SphereLink link : inst.spheres) {
+			for(spherelink link : inst.spheres) {
 				links[AREA_PART_SPHERES].emplace_back(link.id);
 			}
 			
 			packed.relative_part_offsets[AREA_PART_CYLINDERS] = (s32) !inst.cylinders.empty()
 				? (links[AREA_PART_CYLINDERS].size() * 4) : 0;
 			packed.part_counts[AREA_PART_CYLINDERS] = (s32) inst.cylinders.size();
-			for(CylinderLink link : inst.cylinders) {
+			for(cylinderlink link : inst.cylinders) {
 				links[AREA_PART_CYLINDERS].emplace_back(link.id);
 			}
 			
 			packed.relative_part_offsets[AREA_PART_NEGATIVE_CUBOIDS] = (s32) !inst.negative_cuboids.empty()
 				? (links[AREA_PART_NEGATIVE_CUBOIDS].size() * 4) : 0;
 			packed.part_counts[AREA_PART_NEGATIVE_CUBOIDS] = (s32) inst.negative_cuboids.size();
-			for(CuboidLink link : inst.negative_cuboids) {
+			for(cuboidlink link : inst.negative_cuboids) {
 				links[AREA_PART_NEGATIVE_CUBOIDS].emplace_back(link.id);
 			}
 		}

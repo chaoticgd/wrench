@@ -179,7 +179,19 @@ static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, 
 	
 	std::string instances_str = src.file().read_text_file(src.src().path);
 	Instances instances = read_instances(instances_str);
+	
+	// If we're packing a mission instances file, we also read the gameplay core
+	// to determine ID to index mappings for moby instances. TODO: Cache this.
+	Opt<Instances> core;
+	if(type == "mission") {
+		const InstancesAsset& gameplay_core = src.get_core();
+		std::string gameplay_core_str = gameplay_core.file().read_text_file(gameplay_core.src().path);
+		core = read_instances(gameplay_core_str);
+		instances.core = &(*core);
+	}
+	
 	Gameplay gameplay;
+	gameplay.core_moby_count = core.has_value() ? core->moby_instances.size() : 0;
 	move_instances_to_gameplay(gameplay, instances, nullptr, nullptr, src.forest().types());
 	std::vector<u8> buffer = write_gameplay(gameplay, config.game(), *get_gameplay_block_descriptions(config.game(), type.c_str()));
 	dest.write_v(buffer);

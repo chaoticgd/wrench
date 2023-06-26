@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <core/png.h>
 #include <instancemgr/wtf_glue.h>
+#include <instancemgr/gameplay_convert.h>
 
 LevelSettings read_level_settings(const WtfNode* node) {
 	LevelSettings settings;
@@ -104,6 +105,12 @@ LevelSettings read_level_settings(const WtfNode* node) {
 	}
 	
 	return settings;
+}
+
+void rewrite_level_settings_links(LevelSettings& settings, const Instances& instances) {
+	settings.ship_path = rewrite_link(settings.ship_path.id, INST_PATH, instances);
+	settings.ship_camera_cuboid_start = rewrite_link(settings.ship_camera_cuboid_start.id, INST_CUBOID, instances);
+	settings.ship_camera_cuboid_end = rewrite_link(settings.ship_camera_cuboid_end.id, INST_CUBOID, instances);
 }
 
 void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {

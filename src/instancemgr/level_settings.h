@@ -73,9 +73,9 @@ struct LevelSettings {
 	glm::vec3 sphere_pos = {0.f, 0.f, 0.f};
 	glm::vec3 ship_pos = {0.f, 0.f, 0.f};
 	f32 ship_rot_z = 0.f;
-	PathLink ship_path = {-1};
-	CuboidLink ship_camera_cuboid_start = {-1};
-	CuboidLink ship_camera_cuboid_end = {-1};
+	pathlink ship_path = {-1};
+	cuboidlink ship_camera_cuboid_start = {-1};
+	cuboidlink ship_camera_cuboid_end = {-1};
 	// Planes specifying the volumes of the level chunks. The first element
 	// represents the second chunk, and the second element represents the third
 	// chunk. If both tests fail, you can assume it's the first chunk (chunk 0).
@@ -92,6 +92,7 @@ struct WtfNode;
 struct WtfWriter;
 
 LevelSettings read_level_settings(const WtfNode* node);
+void rewrite_level_settings_links(LevelSettings& settings, const Instances& instances);
 void write_level_settings(WtfWriter* ctx, const LevelSettings& settings);
 
 #endif

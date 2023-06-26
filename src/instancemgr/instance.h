@@ -30,14 +30,14 @@
 
 struct InstanceLink {};
 
-#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable) \
-	struct inst_type##Link : InstanceLink { \
+#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
+	struct link_type : InstanceLink { \
 		s32 id; \
-		inst_type##Link() : id(-1) {} \
-		inst_type##Link(s32 i) : id(i) {} \
-		friend auto operator<=>(const inst_type##Link& lhs, const inst_type##Link& rhs) = default; \
+		link_type() : id(-1) {} \
+		link_type(s32 i) : id(i) {} \
+		friend auto operator<=>(const link_type& lhs, const link_type& rhs) = default; \
 	}; \
-	typedef std::vector<inst_type##Link> inst_type##Links;
+	typedef std::vector<link_type> link_type##s;
 #define GENERATED_INSTANCE_MACRO_CALLS
 #include "_generated_instance_types.inl"
 #undef GENERATED_INSTANCE_MACRO_CALLS
@@ -239,6 +239,15 @@ public:
 			return &_instances.at(index->second);
 		} else {
 			return nullptr;
+		}
+	}
+	
+	s32 id_to_index(s32 id) const {
+		auto index = _id_to_index.find(id);
+		if(index != _id_to_index.end()) {
+			return index->second;
+		} else {
+			return -1;
 		}
 	}
 	

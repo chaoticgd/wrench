@@ -49,7 +49,7 @@ This file was generated from instance_schema.wtf and is for version 24 of the in
 
 | Name | Description | Type |
 | - | - | - |
-| members |  | MobyLinks |
+| members |  | mobylinks |
 
 ### Tie
 
@@ -70,7 +70,7 @@ This file was generated from instance_schema.wtf and is for version 24 of the in
 
 | Name | Description | Type |
 | - | - | - |
-| members |  | TieLinks |
+| members |  | tielinks |
 
 ### Shrub
 
@@ -92,7 +92,7 @@ This file was generated from instance_schema.wtf and is for version 24 of the in
 
 | Name | Description | Type |
 | - | - | - |
-| members |  | ShrubLinks |
+| members |  | shrublinks |
 
 ### DirLight
 
@@ -212,11 +212,11 @@ This file was generated from instance_schema.wtf and is for version 24 of the in
 | Name | Description | Type |
 | - | - | - |
 | last_update_time |  | s32 |
-| paths |  | PathLinks |
-| cuboids |  | CuboidLinks |
-| spheres |  | SphereLinks |
-| cylinders |  | CylinderLinks |
-| negative_cuboids |  | CuboidLinks |
+| paths |  | pathlinks |
+| cuboids |  | cuboidlinks |
+| spheres |  | spherelinks |
+| cylinders |  | cylinderlinks |
+| negative_cuboids |  | cuboidlinks |
 
 ### SharedData
 

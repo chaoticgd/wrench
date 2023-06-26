@@ -23,6 +23,7 @@
 
 #include <core/build_config.h>
 #include <cppparser/cpp_type.h>
+#include <instancemgr/instance.h>
 
 struct Gameplay;
 struct Instances;
@@ -37,5 +38,8 @@ void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const
 // Bake the pvar data from the instances down into a number of data sections to
 // be stored in the gameplay file.
 void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::string, CppType>& types_src);
+
+// Determine the C++ type name for a pvar structure e.g. "update123" for moby 123.
+std::string pvar_type_name_from_instance(const Instance& inst);
 
 #endif

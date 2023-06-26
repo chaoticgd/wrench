@@ -1,7 +1,7 @@
 #pragma wrench parser on
 
 typedef int mobylink;
-typedef int grouplink;
+typedef int mobygrouplink;
 typedef int tielink;
 typedef int tiegrouplink;
 typedef int shrublink;

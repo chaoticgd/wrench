@@ -72,7 +72,7 @@ static void enumerate_instances_referenced_by_selected(Instances& instances) {
 	
 	for(MobyGroupInstance& group : instances.moby_groups) {
 		if(group.selected) {
-			for(MobyLink link : group.members) {
+			for(mobylink link : group.members) {
 				if(MobyInstance* inst = instances.moby_instances.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
@@ -82,7 +82,7 @@ static void enumerate_instances_referenced_by_selected(Instances& instances) {
 	
 	for(TieGroupInstance& group : instances.tie_groups) {
 		if(group.selected) {
-			for(TieLink link : group.members) {
+			for(tielink link : group.members) {
 				if(TieInstance* inst = instances.tie_instances.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
@@ -92,7 +92,7 @@ static void enumerate_instances_referenced_by_selected(Instances& instances) {
 	
 	for(ShrubGroupInstance& group : instances.shrub_groups) {
 		if(group.selected) {
-			for(ShrubLink link : group.members) {
+			for(shrublink link : group.members) {
 				if(ShrubInstance* inst = instances.shrub_instances.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
@@ -102,27 +102,27 @@ static void enumerate_instances_referenced_by_selected(Instances& instances) {
 	
 	for(AreaInstance& area : instances.areas) {
 		if(area.selected) {
-			for(PathLink link : area.paths) {
+			for(pathlink link : area.paths) {
 				if(PathInstance* inst = instances.paths.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
-			for(CuboidLink link : area.cuboids) {
+			for(cuboidlink link : area.cuboids) {
 				if(CuboidInstance* inst = instances.cuboids.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
-			for(SphereLink link : area.spheres) {
+			for(spherelink link : area.spheres) {
 				if(SphereInstance* inst = instances.spheres.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
-			for(CylinderLink link : area.cylinders) {
+			for(cylinderlink link : area.cylinders) {
 				if(CylinderInstance* inst = instances.cylinders.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
-			for(CuboidLink link : area.negative_cuboids) {
+			for(cuboidlink link : area.negative_cuboids) {
 				if(CuboidInstance* inst = instances.cuboids.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}

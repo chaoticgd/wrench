@@ -103,10 +103,13 @@ static void generate_instance_macro_calls(WtfNode* root) {
 		const WtfAttribute* variable = wtf_attribute_of_type(type, "variable", WTF_STRING);
 		assert(variable);
 		
+		const WtfAttribute* link_type = wtf_attribute_of_type(type, "link_type", WTF_STRING);
+		assert(link_type);
+		
 		std::string uppercase = type->tag;
 		for(char& c : uppercase) c = toupper(c);
 		
-		out("DEF_INSTANCE(%s, %s, %s)", type->tag, uppercase.c_str(), variable->string.begin);
+		out("DEF_INSTANCE(%s, %s, %s, %s)", type->tag, uppercase.c_str(), variable->string.begin, link_type->string.begin);
 	}
 }
 
@@ -160,7 +163,7 @@ static void generate_instance_types(WtfNode* root) {
 					set = field_type.set;
 				}
 			}
-			if(strstr(field->type_name, "Link")) {
+			if(strstr(field->type_name, "link")) {
 				set = nullptr;
 			}
 			if(!cpp_type) {

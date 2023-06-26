@@ -39,13 +39,13 @@ packed_struct(MobyBlockHeader,
 	s32 pad[2];
 )
 
-static std::vector<s32> moby_index_to_group(const std::vector<MobyGroupInstance>& groups, s32 instance_count) {
-	std::vector<s32> index_to_group(instance_count, -1);
-	for(s32 i =0; i < (s32) groups.size(); i++) {
+static std::map<s32, s32> moby_index_to_group(const std::vector<MobyGroupInstance>& groups) {
+	std::map<s32, s32> index_to_group;
+	for(s32 i = 0; i < (s32) groups.size(); i++) {
 		const MobyGroupInstance& group = groups[i];
-		for(MobyLink link : group.members) {
-			verify(index_to_group.at(link.id) == -1, "A moby instance is in two or more different groups!");
-			index_to_group.at(link.id) = i;
+		for(mobylink link : group.members) {
+			verify(index_to_group.find(link.id) == index_to_group.end(), "A moby instance is in two or more different groups!");
+			index_to_group[link.id] = i;
 		}
 	}
 	return index_to_group;
@@ -100,9 +100,9 @@ struct RacMobyBlock {
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
 		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
 		
-		std::vector<s32> index_to_group = moby_index_to_group(*gameplay.moby_groups, (s32) opt_size(gameplay.moby_instances));
+		std::map<s32, s32> index_to_group = moby_index_to_group(*gameplay.moby_groups);
 		
-		MobyBlockHeader header = {0};
+		MobyBlockHeader header = {};
 		header.static_count = gameplay.moby_instances->size();
 		header.spawnable_moby_count = *gameplay.spawnable_moby_count;
 		dest.write(header);
@@ -110,7 +110,12 @@ struct RacMobyBlock {
 			MobyInstance instance = (*gameplay.moby_instances)[i];
 			RacMobyInstance entry;
 			swap_moby(instance, entry);
-			entry.group = index_to_group.at(i);
+			auto group = index_to_group.find(i);
+			if(group != index_to_group.end()) {
+				entry.group = group->second;
+			} else {
+				entry.group = -1;
+			}
 			dest.write(entry);
 		}
 		return true;
@@ -194,9 +199,9 @@ struct GcUyaMobyBlock {
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
 		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
 		
-		std::vector<s32> index_to_group = moby_index_to_group(*gameplay.moby_groups, (s32) opt_size(gameplay.moby_instances));
+		std::map<s32, s32> index_to_group = moby_index_to_group(*gameplay.moby_groups);
 		
-		MobyBlockHeader header = {0};
+		MobyBlockHeader header = {};
 		header.static_count = gameplay.moby_instances->size();
 		header.spawnable_moby_count = *gameplay.spawnable_moby_count;
 		dest.write(header);
@@ -204,7 +209,12 @@ struct GcUyaMobyBlock {
 			MobyInstance instance = (*gameplay.moby_instances)[i];
 			GcUyaMobyInstance entry;
 			swap_moby(instance, entry);
-			entry.group = index_to_group.at(i);
+			auto group = index_to_group.find(i);
+			if(group != index_to_group.end()) {
+				entry.group = group->second;
+			} else {
+				entry.group = -1;
+			}
 			dest.write(entry);
 		}
 		return true;
@@ -291,9 +301,9 @@ struct DlMobyBlock {
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
 		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
 		
-		std::vector<s32> index_to_group = moby_index_to_group(*gameplay.moby_groups, (s32) opt_size(gameplay.moby_instances));
+		std::map<s32, s32> index_to_group = moby_index_to_group(*gameplay.moby_groups);
 		
-		MobyBlockHeader header = {0};
+		MobyBlockHeader header = {};
 		header.static_count = gameplay.moby_instances->size();
 		header.spawnable_moby_count = *gameplay.spawnable_moby_count;
 		dest.write(header);
@@ -301,7 +311,12 @@ struct DlMobyBlock {
 			MobyInstance instance = (*gameplay.moby_instances)[i];
 			DlMobyInstance entry;
 			swap_moby(instance, entry);
-			entry.group = index_to_group.at(i);
+			auto group = index_to_group.find(gameplay.core_moby_count + i);
+			if(group != index_to_group.end()) {
+				entry.group = group->second;
+			} else {
+				entry.group = -1;
+			}
 			dest.write(entry);
 		}
 		return true;
