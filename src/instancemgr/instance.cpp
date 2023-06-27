@@ -71,15 +71,13 @@ void TransformComponent::set_from_matrix(const glm::mat4* new_matrix, const glm:
 }
 
 static f32 constrain_angle(f32 angle) {
-	angle = fmod(angle + WRENCH_PI, 2 * WRENCH_PI);
-	if(angle < 0.f) {
-		angle += 2 * WRENCH_PI;
+	if(angle > -WRENCH_PI && angle < WRENCH_PI) {
+		return angle;
 	}
-	 return angle - WRENCH_PI;
+	return std::remainder(angle, 2 * WRENCH_PI);
 }
 
 void TransformComponent::set_from_pos_rot_scale(const glm::vec3& pos, const glm::vec3& rot, f32 scale) {
-	// Constrain angles.
 	glm::vec3 rot_wrapped;
 	for(s32 i = 0; i < 3; i++) {
 		rot_wrapped[i] = constrain_angle(rot[i]);
