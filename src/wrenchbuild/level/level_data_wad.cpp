@@ -164,13 +164,15 @@ void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& c
 	pack_compressed_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, "hud_bank");
 	header.core_data = write_vector_of_bytes(dest, data);
 	
-	std::vector<u8> art_instances_buffer = write_gameplay(gameplay, config.game(), DL_ART_INSTANCE_BLOCKS);
-	compress_wad(compressed_art_instances, art_instances_buffer, "artinsts", 8);
-	header.art_instances = write_vector_of_bytes(dest, compressed_art_instances);
-	
-	std::vector<u8> gameplay_buffer = write_gameplay(gameplay, config.game(), DL_GAMEPLAY_CORE_BLOCKS);
-	compress_wad(compressed_gameplay, gameplay_buffer, "artinsts", 8);
-	header.gameplay_core = write_vector_of_bytes(dest, compressed_gameplay);
+	if(!g_asset_packer_dry_run) {
+		std::vector<u8> art_instances_buffer = write_gameplay(gameplay, config.game(), DL_ART_INSTANCE_BLOCKS);
+		compress_wad(compressed_art_instances, art_instances_buffer, "artinsts", 8);
+		header.art_instances = write_vector_of_bytes(dest, compressed_art_instances);
+		
+		std::vector<u8> gameplay_buffer = write_gameplay(gameplay, config.game(), DL_GAMEPLAY_CORE_BLOCKS);
+		compress_wad(compressed_gameplay, gameplay_buffer, "artinsts", 8);
+		header.gameplay_core = write_vector_of_bytes(dest, compressed_gameplay);
+	}
 	
 	header.global_nav_data = pack_compressed_asset<ByteRange>(dest, src.get_global_nav_data(), config, 0x40, "globalnav");
 	

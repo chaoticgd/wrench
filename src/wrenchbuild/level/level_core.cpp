@@ -59,7 +59,9 @@ void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_ra
 	TfragsAsset& tfrags = chunk.tfrags(SWITCH_FILES);
 	
 	unpack_asset(tfrags, data, ByteRange{header.tfrags, tfrags_size}, config);
-	unpack_asset(dest.occlusion(), data, level_core_block_range(header.occlusion, block_bounds), config);
+	if(header.occlusion) {
+		unpack_asset(dest.occlusion(), data, level_core_block_range(header.occlusion, block_bounds), config);
+	}
 	if(header.sky) {
 		unpack_asset(dest.sky<SkyAsset>(SWITCH_FILES), data, level_core_block_range(header.sky, block_bounds), config);
 	}
@@ -205,8 +207,10 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		data.write<u8>(0);
 	}
 	
-	const Asset& occlusion_asset = src.get_occlusion();
-	header.occlusion = pack_asset<ByteRange>(data, occlusion_asset, config, 0x40).offset;
+	if(src.has_occlusion()) {
+		const Asset& occlusion_asset = src.get_occlusion();
+		header.occlusion = pack_asset<ByteRange>(data, occlusion_asset, config, 0x40).offset;
+	}
 	if(src.has_sky()) {
 		header.sky = pack_asset<ByteRange>(data, src.get_sky(), config, 0x40).offset;
 	}

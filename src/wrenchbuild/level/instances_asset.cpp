@@ -153,6 +153,10 @@ static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, B
 }
 
 Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, const std::map<std::string, CppType>& types_src, const BuildConfig& config, const char* hint) {
+	if(g_asset_packer_dry_run) {
+		return {};
+	}
+	
 	std::vector<u8> gameplay_buffer;
 	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
 		std::string instances_wtf = asset->file().read_text_file(asset->src().path);
@@ -175,6 +179,10 @@ Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, con
 }
 
 static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, BuildConfig config, const char* hint) {
+	if(g_asset_packer_dry_run) {
+		return;
+	}
+	
 	std::string type = next_hint(&hint);
 	
 	std::string instances_str = src.file().read_text_file(src.src().path);

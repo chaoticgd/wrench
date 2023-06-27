@@ -346,6 +346,9 @@ static SectorRange pack_data_wad(OutputStream& dest, const std::vector<LevelChun
 }
 
 static SectorRange write_gameplay_section(OutputStream& dest, const Gameplay& gameplay, BuildConfig config) {
+	if(g_asset_packer_dry_run) {
+		return {0, 0};
+	}
 	std::vector<u8> buffer = write_gameplay(gameplay, config.game(), *gameplay_block_descriptions_from_game(config.game()));
 	std::vector<u8> compressed;
 	compress_wad(compressed, buffer, "gameplay", 8);
