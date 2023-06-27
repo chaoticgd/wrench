@@ -16,9 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <core/util.h>
+#ifndef EDITOR_GUI_TRANSFORM_INSPECTOR_H
+#define EDITOR_GUI_TRANSFORM_INSPECTOR_H
 
-static const s32 MAX_LANES = 4;
+#include <editor/app.h>
 
-void inspector();
-bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count);
+void transform_inspector(Level& lvl);
+
+#endif

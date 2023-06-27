@@ -22,9 +22,9 @@
 #include <imgui.h>
 
 #include <editor/app.h>
+#include <editor/gui/transform_inspector.h>
 #include <editor/gui/pvar_inspector.h>
 
-static const s32 MAX_LANES = 4;
 struct InspectorFieldFuncs {
 	s32 lane_count;
 	std::function<bool(Instance& lhs, Instance& rhs, s32 lane)> compare;
@@ -70,7 +70,6 @@ template <typename Value, typename ThisInstance>
 static InspectorGetterSetter<Value> adapt_member_pointer(Value ThisInstance::*member_pointer);
 
 static float calc_remaining_item_width();
-static bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count);
 static std::array<std::string, MAX_LANES> vec4_to_strings(glm::vec4 vec, bool values_equal[MAX_LANES]);
 static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed);
 template <typename Scalar>
@@ -207,6 +206,9 @@ void inspector() {
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
+	
+	transform_inspector(lvl);
+	
 	if(ImGui::CollapsingHeader("Attributes")) {
 		if(ImGui::BeginTable("inspector", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
 			ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
@@ -224,6 +226,7 @@ void inspector() {
 			ImGui::EndTable();
 		}
 	}
+	
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleColor();
@@ -612,7 +615,7 @@ static float calc_remaining_item_width() {
 	return ImGui::GetWindowSize().x - ImGui::GetCursorPos().x - 16.f;
 }
 
-static bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count) {
+bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count) {
 	for(s32 lane = 0; lane < MAX_LANES; lane++) {
 		changed[lane] = false;
 	}

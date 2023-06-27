@@ -20,6 +20,7 @@
 
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include <math.h>
 #include <instancemgr/wtf_glue.h>
 #include <instancemgr/instances.h>
 
@@ -69,15 +70,29 @@ void TransformComponent::set_from_matrix(const glm::mat4* new_matrix, const glm:
 	_scale = (scale[0] + scale[1] + scale[2]) / 3.f;
 }
 
+static f32 constrain_angle(f32 angle) {
+	angle = fmod(angle + WRENCH_PI, 2 * WRENCH_PI);
+	if(angle < 0.f) {
+		angle += 2 * WRENCH_PI;
+	}
+	 return angle - WRENCH_PI;
+}
+
 void TransformComponent::set_from_pos_rot_scale(const glm::vec3& pos, const glm::vec3& rot, f32 scale) {
+	// Constrain angles.
+	glm::vec3 rot_wrapped;
+	for(s32 i = 0; i < 3; i++) {
+		rot_wrapped[i] = constrain_angle(rot[i]);
+	}
+	
 	_matrix = glm::mat4(1.f);
 	_matrix = glm::translate(_matrix, pos);
 	_matrix = glm::scale(_matrix, glm::vec3(scale));
-	_matrix = glm::rotate(_matrix, rot.z, glm::vec3(0.f, 0.f, 1.f));
-	_matrix = glm::rotate(_matrix, rot.y, glm::vec3(0.f, 1.f, 0.f));
-	_matrix = glm::rotate(_matrix, rot.x, glm::vec3(1.f, 0.f, 0.f));
+	_matrix = glm::rotate(_matrix, rot_wrapped.z, glm::vec3(0.f, 0.f, 1.f));
+	_matrix = glm::rotate(_matrix, rot_wrapped.y, glm::vec3(0.f, 1.f, 0.f));
+	_matrix = glm::rotate(_matrix, rot_wrapped.x, glm::vec3(1.f, 0.f, 0.f));
 	_inverse_matrix = glm::inverse(_matrix);
-	_rot = rot;
+	_rot = rot_wrapped;
 	_scale = scale;
 }
 
