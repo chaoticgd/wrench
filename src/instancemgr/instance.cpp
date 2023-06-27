@@ -320,16 +320,6 @@ std::vector<glm::vec4>& Instance::spline() {
 	return _spline;
 }
 
-const glm::vec4& Instance::bounding_sphere() const {
-	verify_fatal(_components_mask & COM_BOUNDING_SPHERE);
-	return _bounding_sphere;
-}
-
-glm::vec4& Instance::bounding_sphere() {
-	verify_fatal(_components_mask & COM_BOUNDING_SPHERE);
-	return _bounding_sphere;
-}
-
 const CameraCollisionParams& Instance::camera_collision() const {
 	verify_fatal(_components_mask & COM_CAMERA_COLLISION);
 	return _camera_collision;
@@ -377,10 +367,6 @@ void Instance::read_common(const WtfNode* src) {
 			points.emplace_back(glm::vec4(vector[0], vector[1], vector[2], vector[3]));
 		}
 	}
-	
-	if(has_component(COM_BOUNDING_SPHERE)) {
-		read_inst_field(bounding_sphere(), src, "bsphere");
-	}
 }
 
 void Instance::begin_write(WtfWriter* dest) const {
@@ -414,10 +400,6 @@ void Instance::begin_write(WtfWriter* dest) const {
 		}
 		wtf_end_array(dest);
 		wtf_end_attribute(dest);
-	}
-	
-	if(has_component(COM_BOUNDING_SPHERE)) {
-		write_inst_field(dest, "bsphere", bounding_sphere());
 	}
 }
 

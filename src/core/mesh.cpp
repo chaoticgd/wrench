@@ -250,6 +250,26 @@ Mesh merge_meshes(const std::vector<Mesh>& meshes, std::string name, u32 flags) 
 	return merged;
 }
 
+glm::vec4 approximate_bounding_sphere(const glm::mat4** cuboids, size_t cuboid_count, const std::pair<const glm::vec4*, size_t>* splines, size_t spline_count) {
+	std::vector<Vertex> vertices;
+	for(size_t i = 0; i < cuboid_count; i++) {
+		vertices.emplace_back(glm::vec3(*cuboids[i] * glm::vec4(-1.f, -1.f, -1.f, 1.f)));
+		vertices.emplace_back(glm::vec3(*cuboids[i] * glm::vec4(-1.f, -1.f, +1.f, 1.f)));
+		vertices.emplace_back(glm::vec3(*cuboids[i] * glm::vec4(-1.f, +1.f, -1.f, 1.f)));
+		vertices.emplace_back(glm::vec3(*cuboids[i] * glm::vec4(-1.f, +1.f, +1.f, 1.f)));
+		vertices.emplace_back(glm::vec3(*cuboids[i] * glm::vec4(+1.f, -1.f, -1.f, 1.f)));
+		vertices.emplace_back(glm::vec3(*cuboids[i] * glm::vec4(+1.f, -1.f, +1.f, 1.f)));
+		vertices.emplace_back(glm::vec3(*cuboids[i] * glm::vec4(+1.f, +1.f, -1.f, 1.f)));
+		vertices.emplace_back(glm::vec3(*cuboids[i] * glm::vec4(+1.f, +1.f, +1.f, 1.f)));
+	}
+	for(size_t i = 0; i < spline_count; i++) {
+		for(size_t j = 0; j < splines[i].second; j++) {
+			vertices.emplace_back(glm::vec3(splines[i].first[j]));
+		}
+	}
+	return approximate_bounding_sphere(vertices); 
+}
+
 glm::vec4 approximate_bounding_sphere(const std::vector<Vertex>& vertices) {
 	if(vertices.size() == 0) {
 		return glm::vec4(0, 0, 0, 0);

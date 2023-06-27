@@ -69,7 +69,7 @@ InstanceType MobyGroup {
 
 InstanceType Tie {
 	desc: "Large static objects."
-	components: "COM_TRANSFORM | COM_CLASS |COM_DRAW_DISTANCE"
+	components: "COM_TRANSFORM | COM_CLASS | COM_DRAW_DISTANCE"
 	transform_mode: "MATRIX"
 	variable: "tie_instances"
 	link_type: "tielink"
@@ -167,7 +167,7 @@ InstanceType EnvSamplePoint {
 
 InstanceType EnvTransition {
 	desc: "A volume in which there is a transition in lighting and fogging e.g. a doorway."
-	components: "COM_TRANSFORM | COM_BOUNDING_SPHERE"
+	components: "COM_TRANSFORM"
 	transform_mode: "MATRIX_INVERSE"
 	variable: "env_transitions"
 	link_type: "envtransitionlink"
@@ -250,7 +250,7 @@ InstanceType Path {
 
 InstanceType GrindPath {
 	desc: "A spline used for generating a grind rail."
-	components: "COM_SPLINE | COM_BOUNDING_SPHERE"
+	components: "COM_SPLINE"
 	variable: "grind_paths"
 	link_type: "grindpathlink"
 	
@@ -261,7 +261,7 @@ InstanceType GrindPath {
 
 InstanceType Area {
 	desc: "A volume composed of multiple smaller volumes."
-	components: "COM_TRANSFORM | COM_BOUNDING_SPHERE"
+	components: "COM_TRANSFORM"
 	transform_mode: "POSITION"
 	variable: "areas"
 	link_type: "arealink"

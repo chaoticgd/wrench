@@ -91,7 +91,6 @@ void inspector() {
 	
 	static const std::vector<InspectorField> fields = {
 		{COM_DRAW_DISTANCE   , INST_NONE          , "Draw Dist", scalar_funcs(adapt_reference_member_function<f32>(&Instance::draw_distance))},
-		{COM_BOUNDING_SPHERE , INST_NONE          , "Bsphere", vec4_funcs(adapt_reference_member_function<glm::vec4>(&Instance::bounding_sphere))},
 		{COM_CAMERA_COLLISION, INST_NONE          , "Cam Coll", camera_collision_funcs()},
 		// Moby
 		{COM_NONE            , INST_MOBY          , "Mission", scalar_funcs(adapt_member_pointer(&MobyInstance::mission))},

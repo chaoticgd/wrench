@@ -66,8 +66,7 @@ enum InstanceComponent : u32 {
 	COM_COLOUR = (1 << 4),
 	COM_DRAW_DISTANCE = (1 << 5),
 	COM_SPLINE = (1 << 6),
-	COM_BOUNDING_SPHERE = (1 << 7),
-	COM_CAMERA_COLLISION = (1 << 8)
+	COM_CAMERA_COLLISION = (1 << 7)
 };
 
 enum class TransformMode {
@@ -167,9 +166,6 @@ struct Instance {
 	
 	const std::vector<glm::vec4>& spline() const;
 	std::vector<glm::vec4>& spline();
-	
-	const glm::vec4& bounding_sphere() const;
-	glm::vec4& bounding_sphere();
 	
 	const CameraCollisionParams& camera_collision() const;
 	CameraCollisionParams& camera_collision();

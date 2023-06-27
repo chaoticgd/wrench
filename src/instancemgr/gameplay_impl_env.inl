@@ -189,34 +189,35 @@ packed_struct(EnvTransitionPacked,
 )
 
 struct EnvTransitionBlock {
-	static void read(std::vector<EnvTransitionInstance>& dest, Buffer src, Game game) {
+	static void read(Gameplay& gameplay, Buffer src, Game game) {
 		TableHeader header = src.read<TableHeader>(0, "env transitions block header");
 		s64 ofs = 0x10;
-		auto bspheres = src.read_multiple<Vec4f>(ofs, header.count_1, "env transition bspheres");
 		ofs += header.count_1 * sizeof(Vec4f);
 		auto data = src.read_multiple<EnvTransitionPacked>(ofs, header.count_1, "env transitions");
-		dest.reserve(header.count_1);
+		gameplay.env_transitions.emplace();
+		gameplay.env_transitions->reserve(header.count_1);
 		for(s64 i = 0; i < header.count_1; i++) {
 			EnvTransitionPacked packed = data[i];
-			EnvTransitionInstance& inst = dest.emplace_back();
+			EnvTransitionInstance& inst = gameplay.env_transitions->emplace_back();
 			inst.set_id_value(i);
 			glm::mat4 inverse_matrix = packed.inverse_matrix.unpack();
 			glm::mat4 matrix = glm::inverse(inverse_matrix);
 			inst.transform().set_from_matrix(&matrix, &inverse_matrix);
-			inst.bounding_sphere() = bspheres[i].unpack();
 			inst.enable_hero = packed.flags & 1;
 			inst.enable_fog = (packed.flags & 2) >> 1;
 			swap_env_transition(inst, packed);
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<EnvTransitionInstance>& src, Game game) {
-		TableHeader header = {(s32) src.size()};
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
+		TableHeader header = {(s32) gameplay.env_transitions->size()};
 		dest.write(header);
-		for(const EnvTransitionInstance& inst : src) {
-			dest.write(Vec4f::pack(inst.bounding_sphere()));
+		for(const EnvTransitionInstance& inst : opt_iterator(gameplay.env_transitions)) {
+			const glm::mat4* cuboid = &inst.transform().matrix();
+			glm::vec4 bsphere = approximate_bounding_sphere(&cuboid, 1, nullptr, 0);
+			dest.write(Vec4f::pack(bsphere));
 		}
-		for(EnvTransitionInstance inst : src) {
+		for(EnvTransitionInstance inst : opt_iterator(gameplay.env_transitions)) {
 			EnvTransitionPacked packed = {};
 			packed.inverse_matrix = Mat4::pack(inst.transform().inverse_matrix());
 			packed.flags = inst.enable_hero | (inst.enable_fog << 1);
@@ -224,6 +225,8 @@ struct EnvTransitionBlock {
 			swap_env_transition(inst, packed);
 			dest.write(packed);
 		}
+		
+		return true;
 	}
 	
 	static void swap_env_transition(EnvTransitionInstance& l, EnvTransitionPacked& r) {
