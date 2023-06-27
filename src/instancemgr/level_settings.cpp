@@ -109,8 +109,13 @@ LevelSettings read_level_settings(const WtfNode* node) {
 
 void rewrite_level_settings_links(LevelSettings& settings, const Instances& instances) {
 	settings.ship_path = rewrite_link(settings.ship_path.id, INST_PATH, instances);
-	settings.ship_camera_cuboid_start = rewrite_link(settings.ship_camera_cuboid_start.id, INST_CUBOID, instances);
-	settings.ship_camera_cuboid_end = rewrite_link(settings.ship_camera_cuboid_end.id, INST_CUBOID, instances);
+	if(settings.ship_path.id > -1) {
+		settings.ship_camera_cuboid_start = rewrite_link(settings.ship_camera_cuboid_start.id, INST_CUBOID, instances);
+		settings.ship_camera_cuboid_end = rewrite_link(settings.ship_camera_cuboid_end.id, INST_CUBOID, instances);
+	} else {
+		settings.ship_camera_cuboid_start = 0;
+		settings.ship_camera_cuboid_end = 0;
+	}
 }
 
 void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
