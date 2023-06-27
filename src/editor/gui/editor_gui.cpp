@@ -80,29 +80,18 @@ static void menu_bar() {
 	if(ImGui::BeginMainMenuBar()) {
 		bool open_error_popup = false;
 		static std::string error_message;
+		bool open_success_poopup = false;
+		static std::string success_message;
 		
 		if(ImGui::BeginMenu("File")) {
 			if(ImGui::MenuItem("Save")) {
 				if(BaseEditor* editor = g_app->get_editor()) {
 					try {
-						editor->save(fs::path());
-					} catch(SaveError& e) {
-						if(e.retry) {
-							nfdchar_t* path;
-							nfdresult_t result = NFD_SaveDialog("asset", nullptr, &path);
-							if(result == NFD_OKAY) {
-								try {
-									editor->save(path);
-								} catch(SaveError& e) {
-									error_message = e.message;
-									open_error_popup = true;
-								}
-								free(path);
-							}
-						} else {
-							error_message = e.message;
-							open_error_popup = true;
-						}
+						success_message = editor->save();
+						open_success_poopup = true;
+					} catch(RuntimeError& e) {
+						error_message = e.message;
+						open_error_popup = true;
 					}
 				} else {
 					error_message = "No editor open.";
@@ -144,6 +133,7 @@ static void menu_bar() {
 		
 		if(open_error_popup) {
 			ImGui::OpenPopup("Error");
+			open_error_popup = false;
 		}
 		
 		ImGui::SetNextWindowSize(ImVec2(300, 200));
@@ -151,6 +141,21 @@ static void menu_bar() {
 			ImGui::TextWrapped("%s", error_message.c_str());
 			if(ImGui::Button("Okay")) {
 				error_message.clear();
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
+		
+		if(open_success_poopup) {
+			ImGui::OpenPopup("Success");
+			open_success_poopup = false;
+		}
+		
+		ImGui::SetNextWindowSize(ImVec2(300, 200));
+		if(ImGui::BeginPopupModal("Success")) {
+			ImGui::TextWrapped("%s", success_message.c_str());
+			if(ImGui::Button("Okay")) {
+				success_message.clear();
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndPopup();
@@ -261,6 +266,9 @@ static void occlusion_things(Level* level) {
 	if(!occlusion_problem && !level) {
 		occlusion_problem = "No level loaded.";
 	}
+	if(!occlusion_problem && !level->level().parent()) {
+		occlusion_problem = "Level asset has no parent.";
+	}
 	if(!occlusion_problem && !level->level_wad().has_occlusion())  {
 		occlusion_problem = "Missing occlusion asset.";
 	}
@@ -277,7 +285,7 @@ static void occlusion_things(Level* level) {
 	if(ImGui::Button("Rebuild Occlusion##the_button") && !occlusion_problem) {
 		// Setup the file structure so that the new occlusion file can be
 		// written out in place of the old one.
-		if(&level->level_wad().get_occlusion().bank() != g_app->mod_bank && level->level().parent()) {
+		if(&level->level_wad().get_occlusion().bank() != g_app->mod_bank) {
 			s32 level_id = level->level_wad().id();
 			std::string path = generate_asset_path<LevelAsset>("levels", "level", level_id, *level->level().parent());
 			OcclusionAsset& old_occl = level->level_wad().get_occlusion();

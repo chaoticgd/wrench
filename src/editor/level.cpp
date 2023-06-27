@@ -209,32 +209,29 @@ void Level::read(LevelAsset& asset, Game g) {
 	}
 }
 
-void Level::save(const fs::path& path) {
+std::string Level::save() {
 	verify_fatal(_instances_asset);
 	
-	// If the gamplay asset isn't currently part of the mod, create a new .asset
-	// file for it. Throwing the first time with retry=true will open a save
-	// dialog and then the path argument will be populated with the chosen path.
-	if(_instances_asset->bank().game_info.type != AssetBankType::MOD) {
-		if(path.empty()) {
-			throw SaveError{true, "No path specified."};
-		}
-		AssetFile& gameplay_file = g_app->mod_bank->asset_file(path);
-		Asset& new_asset = gameplay_file.asset_from_link(InstancesAsset::ASSET_TYPE, _instances_asset->absolute_link());
-		if(new_asset.logical_type() != InstancesAsset::ASSET_TYPE) {
-			throw SaveError{false, "An asset of a different type already exists."};
-		}
-		_instances_asset = &new_asset.as<InstancesAsset>();
+	std::string message;
+	
+	// Setup the file structure so that the new instances file can be written
+	// out in the new asset bank.
+	if(&_instances_asset->bank() != g_app->mod_bank && _instances_asset->parent()) {
+		s32 level_id = level_wad().id();
+		std::string path = generate_asset_path<LevelAsset>("levels", "level", level_id, *level().parent());
+		
+		AssetFile& instances_file = g_app->mod_bank->asset_file(path);
+		AssetLink link = level_wad().get_gameplay().absolute_link();
+		_instances_asset = &instances_file.asset_from_link(InstancesAsset::ASSET_TYPE, link).as<InstancesAsset>();
+	
+		message += stringf("Written file: %s\n", path.c_str());
 	}
 	
 	fs::path gameplay_path;
 	if(_instances_asset->src().path.empty()) {
-		// Make sure we're not overwriting another gameplay.bin file.
-		if(!_instances_asset->file().file_exists("gameplay.bin")) {
-			gameplay_path = "gameplay.bin";
-		} else {
-			throw SaveError{false, "A gameplay.bin file already exists in that folder."};
-		}
+		// Make sure we're not overwriting another gameplay.instances file.
+		verify(!_instances_asset->file().file_exists("gameplay.instances"), "A gameplay.instances file already exists in that folder.");
+		gameplay_path = "gameplay.instances";
 	} else {
 		gameplay_path = _instances_asset->src().path;
 	}
@@ -245,6 +242,10 @@ void Level::save(const fs::path& path) {
 	_instances_asset->set_src(ref);
 	
 	_instances_asset->file().write();
+	
+	message += stringf("Written file: %s\n", gameplay_path.string().c_str());
+	
+	return message;
 }
 
 LevelAsset& Level::level() {

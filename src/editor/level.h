@@ -46,7 +46,7 @@ public:
 	Level();
 	
 	void read(LevelAsset& asset, Game g);
-	void save(const fs::path& path) override;
+	std::string save() override;
 	
 	LevelAsset& level();
 	LevelWadAsset& level_wad();
