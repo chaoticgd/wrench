@@ -31,7 +31,7 @@ void Level::read(LevelAsset& asset, Game g) {
 	_asset = &asset;
 	_instances_asset = &level_wad().get_gameplay().as<InstancesAsset>();
 		
-	std::string text = _instances_asset->file().read_text_file(_instances_asset->src().path);
+	std::string text = _instances_asset->src().read_text_file();
 	_instances = read_instances(text);
 	
 	const std::map<std::string, CppType>& types = asset.forest().types();
@@ -45,7 +45,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		EditorChunk& chunk = chunks.emplace_back();
 		
 		const MeshAsset& collision_asset = chunk_asset.get_collision().as<CollisionAsset>().get_mesh();
-		std::string collision_xml = collision_asset.file().read_text_file(collision_asset.src().path);
+		std::string collision_xml = collision_asset.src().read_text_file();
 		ColladaScene collision_scene = read_collada((char*) collision_xml.data());
 		for(const Mesh& mesh : collision_scene.meshes) {
 			chunk.collision.emplace_back(upload_mesh(mesh, true));
@@ -58,7 +58,7 @@ void Level::read(LevelAsset& asset, Game g) {
 			continue;
 		}
 		const MeshAsset& tfrags_mesh_asset = tfrags_asset.get_editor_mesh();
-		std::string xml = tfrags_mesh_asset.file().read_text_file(tfrags_mesh_asset.src().path);
+		std::string xml = tfrags_mesh_asset.src().read_text_file();
 		ColladaScene scene = read_collada((char*) xml.data());
 		Mesh* mesh = scene.find_mesh(tfrags_mesh_asset.name());
 		if(!mesh) {
@@ -72,7 +72,7 @@ void Level::read(LevelAsset& asset, Game g) {
 			
 			std::vector<Texture> textures;
 			for(FileReference ref : material_set.textures) {
-				auto stream = ref.owner->open_binary_file_for_reading(ref);
+				auto stream = ref.open_binary_file_for_reading();
 				verify(stream.get(), "Failed to open shrub texture file.");
 				Opt<Texture> texture = read_png(*stream.get());
 				verify(texture.has_value(), "Failed to read shrub texture.");
@@ -87,13 +87,13 @@ void Level::read(LevelAsset& asset, Game g) {
 		EditorClass& ec = moby_classes[moby.id()];
 		if(moby.has_editor_mesh()) {
 			MeshAsset& asset = moby.get_editor_mesh();
-			std::string xml = asset.file().read_text_file(asset.src().path);
+			std::string xml = asset.src().read_text_file();
 			ColladaScene scene = read_collada((char*) xml.data());
 			Mesh* mesh = scene.find_mesh(asset.name());
 			if(mesh) {
 				std::vector<Texture> textures;
 				moby.get_materials().for_each_logical_child_of_type<TextureAsset>([&](TextureAsset& texture) {
-					auto stream = texture.file().open_binary_file_for_reading(texture.src());
+					auto stream = texture.src().open_binary_file_for_reading();
 					Opt<Texture> tex = read_png(*stream);
 					if(tex) {
 						textures.emplace_back(*tex);
@@ -107,7 +107,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		}
 		if(moby.has_editor_icon()) {
 			TextureAsset& icon_asset = moby.get_editor_icon();
-			std::unique_ptr<InputStream> stream = icon_asset.file().open_binary_file_for_reading(icon_asset.src());
+			std::unique_ptr<InputStream> stream = icon_asset.src().open_binary_file_for_reading();
 			Opt<Texture> icon = read_png(*stream);
 			if(icon.has_value()) {
 				std::vector<Texture> textures = { std::move(*icon) };
@@ -127,7 +127,7 @@ void Level::read(LevelAsset& asset, Game g) {
 			return;
 		}
 		MeshAsset& asset = tie.get_editor_mesh();
-		std::string xml = asset.file().read_text_file(asset.src().path);
+		std::string xml = asset.src().read_text_file();
 		ColladaScene scene = read_collada((char*) xml.data());
 		Mesh* mesh = scene.find_mesh(asset.name());
 		if(!mesh) {
@@ -139,7 +139,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		
 		std::vector<Texture> textures;
 		for(FileReference ref : material_set.textures) {
-			auto stream = ref.owner->open_binary_file_for_reading(ref);
+			auto stream = ref.open_binary_file_for_reading();
 			verify(stream.get(), "Failed to open shrub texture file.");
 			Opt<Texture> texture = read_png(*stream.get());
 			verify(texture.has_value(), "Failed to read shrub texture.");
@@ -166,7 +166,7 @@ void Level::read(LevelAsset& asset, Game g) {
 			return;
 		}
 		MeshAsset& asset = core.get_mesh();
-		std::string xml = asset.file().read_text_file(asset.src().path);
+		std::string xml = asset.src().read_text_file();
 		ColladaScene scene = read_collada((char*) xml.data());
 		Mesh* mesh = scene.find_mesh(asset.name());
 		if(!mesh) {
@@ -178,7 +178,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		
 		std::vector<Texture> textures;
 		for(FileReference ref : material_set.textures) {
-			auto stream = ref.owner->open_binary_file_for_reading(ref);
+			auto stream = ref.open_binary_file_for_reading();
 			verify(stream.get(), "Failed to open shrub texture file.");
 			Opt<Texture> texture = read_png(*stream.get());
 			verify(texture.has_value(), "Failed to read shrub texture.");

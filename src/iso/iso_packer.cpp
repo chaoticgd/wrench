@@ -160,7 +160,7 @@ static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, BuildConfi
 		}
 		asset = &build.get_ps2_logo_pal();
 	}
-	auto png = asset->file().open_binary_file_for_reading(asset->src());
+	auto png = asset->src().open_binary_file_for_reading();
 	
 	Opt<Texture> texture = read_png(*png);
 	verify(texture.has_value(), "Build has bad ps2_logo.");

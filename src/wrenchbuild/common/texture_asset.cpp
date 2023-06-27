@@ -83,7 +83,7 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConf
 }
 
 static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint) {
-	auto stream = src.file().open_binary_file_for_reading(src.src());
+	auto stream = src.src().open_binary_file_for_reading();
 	verify(stream.get(), "Failed to open PNG file.");
 	Opt<Texture> texture = read_png(*stream);
 	verify(texture.has_value(), "Failed to read PNG file.");

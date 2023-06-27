@@ -62,7 +62,7 @@ static void pack_occlusion(OutputStream& dest, const OcclusionAsset& src, BuildC
 		return;
 	}
 	
-	auto stream = src.file().open_binary_file_for_reading(src.grid());
+	auto stream = src.grid().open_binary_file_for_reading();
 	verify(stream.get(), "Failed to open '%s' for reading while packing occlusion asset '%s'.",
 		src.grid().path.string().c_str(), src.absolute_link().to_string().c_str());
 	Stream::copy(dest, *stream, stream->size());

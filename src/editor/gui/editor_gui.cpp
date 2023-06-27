@@ -288,9 +288,9 @@ static void occlusion_things(Level* level) {
 			OcclusionAsset& new_occl = occlusion_file.asset_from_link(OcclusionAsset::ASSET_TYPE, link).as<OcclusionAsset>();
 			
 			// Copy the old grid and mappings to the mod asset bank as placeholders.
-			std::string octants = old_occl.file().read_text_file(old_occl.octants().path);
-			std::unique_ptr<InputStream> grid_src = old_occl.file().open_binary_file_for_reading(old_occl.grid());
-			std::unique_ptr<InputStream> mappings_src = old_occl.file().open_binary_file_for_reading(old_occl.mappings());
+			std::string octants = old_occl.octants().read_text_file();
+			std::unique_ptr<InputStream> grid_src = old_occl.grid().open_binary_file_for_reading();
+			std::unique_ptr<InputStream> mappings_src = old_occl.mappings().open_binary_file_for_reading();
 			FileReference octants_ref = new_occl.file().write_text_file("occlusion_octants.csv", octants.c_str());
 			auto [grid_dest, grid_ref] = new_occl.file().open_binary_file_for_writing("occlusion_grid.bin");
 			auto [mappings_dest, mappings_ref] = new_occl.file().open_binary_file_for_writing("occlusion_mappings.bin");

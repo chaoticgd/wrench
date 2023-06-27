@@ -108,7 +108,7 @@ static std::vector<OcclChunk> load_chunks(const CollectionAsset& collection, Gam
 			if(chunk_asset.has_tfrags()) {
 				const Asset& core_asset = chunk_asset.get_tfrags().get_core();
 				if(const BinaryAsset* binary_asset = core_asset.maybe_as<BinaryAsset>()) {
-					std::unique_ptr<InputStream> stream = binary_asset->file().open_binary_file_for_reading(binary_asset->src());
+					std::unique_ptr<InputStream> stream = binary_asset->src().open_binary_file_for_reading();
 					std::vector<u8> buffer = stream->read_multiple<u8>(0, stream->size());
 					Tfrags tfrags = read_tfrags(buffer, game);
 					ColladaScene scene = recover_tfrags(tfrags, TFRAG_SEPARATE_MESHES);
@@ -128,7 +128,7 @@ static std::map<s32, Mesh> load_moby_classes(const CollectionAsset& collection) 
 	collection.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
 		if(child.has_editor_mesh()) {
 			const MeshAsset& editor_mesh = child.get_editor_mesh();
-			std::string collada = editor_mesh.file().read_text_file(editor_mesh.src().path);
+			std::string collada = editor_mesh.src().read_text_file();
 			ColladaScene scene = read_collada((char*) collada.c_str());
 			Mesh* mesh = scene.find_mesh(editor_mesh.name());
 			verify(mesh, "Failed to find mesh '%s'.", editor_mesh.name().c_str());
@@ -142,7 +142,7 @@ static std::map<s32, Mesh> load_tie_classes(const CollectionAsset& collection) {
 	std::map<s32, Mesh> classes;
 	collection.for_each_logical_child_of_type<TieClassAsset>([&](const TieClassAsset& child) {
 		const MeshAsset& editor_mesh = child.get_editor_mesh();
-		std::string collada = editor_mesh.file().read_text_file(editor_mesh.src().path);
+		std::string collada = editor_mesh.src().read_text_file();
 		ColladaScene scene = read_collada((char*) collada.c_str());
 		Mesh* mesh = scene.find_mesh(editor_mesh.name());
 		verify(mesh, "Failed to find mesh '%s'.", editor_mesh.name().c_str());
@@ -154,10 +154,10 @@ static std::map<s32, Mesh> load_tie_classes(const CollectionAsset& collection) {
 static Instances load_instances(const Asset& src, Game game) {
 	std::vector<u8> gameplay_buffer;
 	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
-		std::string instances_wtf = asset->file().read_text_file(asset->src().path);
+		std::string instances_wtf = asset->src().read_text_file();
 		return read_instances(instances_wtf);
 	} else if(const BinaryAsset* asset = src.maybe_as<BinaryAsset>()) {
-		std::unique_ptr<InputStream> gameplay_stream = asset->file().open_binary_file_for_reading(asset->src());
+		std::unique_ptr<InputStream> gameplay_stream = asset->src().open_binary_file_for_reading();
 		std::vector<u8> buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
 		Gameplay gameplay;
 		read_gameplay(gameplay, buffer, game, *gameplay_block_descriptions_from_game(game));
@@ -169,7 +169,7 @@ static Instances load_instances(const Asset& src, Game game) {
 }
 
 static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel& level) {
-	std::string octants_txt = asset.file().read_text_file(asset.octants().path);
+	std::string octants_txt = asset.octants().read_text_file();
 	std::vector<OcclusionVector> octants = read_occlusion_octants(octants_txt.c_str());
 	
 	for(OcclusionVector& octant : octants) {

@@ -294,9 +294,7 @@ public:
 	
 	void write() const;
 	
-	std::unique_ptr<InputStream> open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest = nullptr) const;
 	std::pair<std::unique_ptr<OutputStream>, FileReference> open_binary_file_for_writing(const fs::path& path) const;
-	std::string read_text_file(const fs::path& path) const;
 	FileReference write_text_file(const fs::path& path, const char* contents) const;
 	bool file_exists(const fs::path& path) const;
 	
@@ -308,8 +306,12 @@ public:
 private:
 	friend Asset;
 	friend AssetBank;
+	friend FileReference;
 	
 	void read();
+	
+	std::unique_ptr<InputStream> open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest = nullptr) const;
+	std::string read_text_file(const fs::path& path) const;
 	
 	AssetForest& _forest;
 	AssetBank& _bank;

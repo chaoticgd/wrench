@@ -75,6 +75,9 @@ struct FileReference {
 		: owner(&owner_)
 		, path(path_) {}
 	
+	std::unique_ptr<InputStream> open_binary_file_for_reading(fs::file_time_type* modified_time_dest = nullptr) const;
+	std::string read_text_file() const;
+	
 	const AssetFile* owner = nullptr;
 	fs::path path;
 };

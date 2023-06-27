@@ -159,7 +159,7 @@ Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, con
 	
 	std::vector<u8> gameplay_buffer;
 	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
-		std::string instances_wtf = asset->file().read_text_file(asset->src().path);
+		std::string instances_wtf = asset->src().read_text_file();
 		Instances instances = read_instances(instances_wtf);
 		Opt<HelpMessages> help;
 		if(help_occl_src) {
@@ -169,7 +169,7 @@ Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, con
 		move_instances_to_gameplay(gameplay, instances, &(*help), nullptr, types_src);
 		return gameplay;
 	} else if(const BinaryAsset* asset = src.maybe_as<BinaryAsset>()) {
-		std::unique_ptr<InputStream> gameplay_stream = asset->file().open_binary_file_for_reading(asset->src());
+		std::unique_ptr<InputStream> gameplay_stream = asset->src().open_binary_file_for_reading();
 		std::vector<u8> buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
 		Gameplay gameplay;
 		read_gameplay(gameplay, buffer, config.game(), *get_gameplay_block_descriptions(config.game(), hint));
@@ -185,7 +185,7 @@ static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, 
 	
 	std::string type = next_hint(&hint);
 	
-	std::string instances_str = src.file().read_text_file(src.src().path);
+	std::string instances_str = src.src().read_text_file();
 	Instances instances = read_instances(instances_str);
 	
 	// If we're packing a mission instances file, we also read the gameplay core
@@ -193,7 +193,7 @@ static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, 
 	Opt<Instances> core;
 	if(type == "mission") {
 		const InstancesAsset& gameplay_core = src.get_core();
-		std::string gameplay_core_str = gameplay_core.file().read_text_file(gameplay_core.src().path);
+		std::string gameplay_core_str = gameplay_core.src().read_text_file();
 		core = read_instances(gameplay_core_str);
 		instances.core = &(*core);
 	}

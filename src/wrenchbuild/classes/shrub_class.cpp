@@ -99,7 +99,7 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 	const ShrubClassCoreAsset& core = src.get_core().as<ShrubClassCoreAsset>();
 	
 	const MeshAsset& mesh_asset = core.get_mesh();
-	std::string xml = mesh_asset.file().read_text_file(mesh_asset.src().path);
+	std::string xml = mesh_asset.src().read_text_file();
 	ColladaScene scene = read_collada((char*) xml.data());
 	Mesh* mesh = scene.find_mesh(mesh_asset.name());
 	verify(mesh, "No mesh with name '%s'.", mesh_asset.name().c_str());

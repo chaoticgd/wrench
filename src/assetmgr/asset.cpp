@@ -465,17 +465,8 @@ void AssetFile::write() const {
 	_bank.write_text_file(_relative_directory/_file_name, dest.c_str());
 }
 
-std::unique_ptr<InputStream> AssetFile::open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest) const {
-	verify_fatal(reference.owner == this);
-	return _bank.open_binary_file_for_reading(_relative_directory/reference.path, modified_time_dest);
-}
-
 std::pair<std::unique_ptr<OutputStream>, FileReference> AssetFile::open_binary_file_for_writing(const fs::path& path) const {
 	return {_bank.open_binary_file_for_writing(_relative_directory/path), FileReference(*this, path)};
-}
-
-std::string AssetFile::read_text_file(const fs::path& path) const {
-	return _bank.read_text_file(_relative_directory/path);
 }
 
 FileReference AssetFile::write_text_file(const fs::path& path, const char* contents) const {
@@ -544,6 +535,16 @@ void AssetFile::read() {
 	});
 	root().connect_precedence_pointers();
 	root().read(root_node);
+}
+
+std::unique_ptr<InputStream> AssetFile::open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest) const {
+	verify_fatal(reference.owner == this);
+	return _bank.open_binary_file_for_reading(_relative_directory/reference.path, modified_time_dest);
+}
+
+
+std::string AssetFile::read_text_file(const fs::path& path) const {
+	return _bank.read_text_file(_relative_directory/path);
 }
 
 // *****************************************************************************

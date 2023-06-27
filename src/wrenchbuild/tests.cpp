@@ -104,7 +104,7 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 		printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
 	}
 	
-	auto src_file = binary.file().open_binary_file_for_reading(binary.src());
+	auto src_file = binary.src().open_binary_file_for_reading();
 	std::vector<u8> src = src_file->read_multiple<u8>(src_file->size());
 	MemoryInputStream src_stream(src);
 	
