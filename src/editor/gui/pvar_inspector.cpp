@@ -498,7 +498,7 @@ struct PokePvarCommand {
 };
 
 static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 size, const std::vector<InstanceId>& ids, const PvarPointer* new_pointer) {
-	PokePvarCommand command;
+PokePvarCommand command;
 	command.offset = offset;
 	command.size = size;
 	memcpy(command.new_data, data, size);
@@ -517,6 +517,11 @@ static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 s
 		memcpy(info.old_data, &(inst->pvars().data[offset]), size);
 		
 		if(command.modifies_pointers) {
+			// The pointers might not be sorted after they're loaded, but they
+			// need to be sorted before any undo/redo operations are performed
+			// on them.
+			std::sort(BEGIN_END(inst->pvars().pointers));
+			
 			for(PvarPointer& pointer : inst->pvars().pointers) {
 				if(pointer.offset == new_pointer->offset) {
 					verify_fatal(!info.has_old_pointer);

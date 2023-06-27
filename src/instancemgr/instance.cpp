@@ -233,18 +233,18 @@ void PvarComponent::read(const WtfNode* src) {
 		}
 	}
 	
-	std::sort(BEGIN_END(pointers));
-	
 	validate();
 }
 
 void PvarComponent::validate() const {
-	// Validate order and uniqueness (this is important for undo/redo integrity).
+	// Validate uniqueness (this is important for undo/redo integrity).
+	std::vector<PvarPointer> pointers_copy = pointers;
+	std::sort(BEGIN_END(pointers_copy));
 	s32 last_offset = -1;
-	for(size_t i = 0; i < pointers.size(); i++) {
-		verify_fatal(pointers[i].offset > -1);
-		verify_fatal(last_offset == -1 || last_offset < pointers[i].offset);
-		last_offset = pointers[i].offset;
+	for(size_t i = 0; i < pointers_copy.size(); i++) {
+		verify_fatal(pointers_copy[i].offset > -1);
+		verify_fatal(last_offset == -1 || last_offset < pointers_copy[i].offset);
+		last_offset = pointers_copy[i].offset;
 	}
 }
 
