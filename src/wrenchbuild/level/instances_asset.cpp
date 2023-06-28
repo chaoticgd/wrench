@@ -51,12 +51,20 @@ static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, Build
 	unpack_instances(dest, nullptr, buffer, nullptr, config, hint);
 }
 
-void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint) {
+s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint) {
 	std::vector<u8> main_decompressed;
 	verify(decompress_wad(main_decompressed, main), "Failed to decompress instances.");
 	
+	std::string type = next_hint(&hint);
+	
+	s32 core_moby_count = 0;
+	if(type == "mission") {
+		core_moby_count = atoi(next_hint(&hint));
+	}
+	
 	Gameplay gameplay;
-	read_gameplay(gameplay, main_decompressed, config.game(), *get_gameplay_block_descriptions(config.game(), hint));
+	gameplay.core_moby_count = core_moby_count;
+	read_gameplay(gameplay, main_decompressed, config.game(), *get_gameplay_block_descriptions(config.game(), type.c_str()));
 	
 	Instances instances;
 	HelpMessages help;
@@ -82,7 +90,7 @@ void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const
 	}
 	
 	std::string text = write_instances(instances);
-	FileReference ref = dest.file().write_text_file(stringf("%s.instances", hint), text.c_str());
+	FileReference ref = dest.file().write_text_file(stringf("%s.instances", type.c_str()), text.c_str());
 	dest.set_src(ref);
 	
 	if(help_occl_dest) {
@@ -105,6 +113,8 @@ void unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const
 			types_dest.emplace(type.name, std::move(type));
 		}
 	}
+	
+	return instances.moby_instances.size();
 }
 
 static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config) {
@@ -143,9 +153,13 @@ static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, B
 }
 
 Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, const std::map<std::string, CppType>& types_src, const BuildConfig& config, const char* hint) {
+	if(g_asset_packer_dry_run) {
+		return {};
+	}
+	
 	std::vector<u8> gameplay_buffer;
 	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
-		std::string instances_wtf = asset->file().read_text_file(asset->src().path);
+		std::string instances_wtf = asset->src().read_text_file();
 		Instances instances = read_instances(instances_wtf);
 		Opt<HelpMessages> help;
 		if(help_occl_src) {
@@ -155,7 +169,7 @@ Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, con
 		move_instances_to_gameplay(gameplay, instances, &(*help), nullptr, types_src);
 		return gameplay;
 	} else if(const BinaryAsset* asset = src.maybe_as<BinaryAsset>()) {
-		std::unique_ptr<InputStream> gameplay_stream = asset->file().open_binary_file_for_reading(asset->src());
+		std::unique_ptr<InputStream> gameplay_stream = asset->src().open_binary_file_for_reading();
 		std::vector<u8> buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
 		Gameplay gameplay;
 		read_gameplay(gameplay, buffer, config.game(), *get_gameplay_block_descriptions(config.game(), hint));
@@ -165,11 +179,29 @@ Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, con
 }
 
 static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, BuildConfig config, const char* hint) {
-	std::string instances_str = src.file().read_text_file(src.src().path);
+	if(g_asset_packer_dry_run) {
+		return;
+	}
+	
+	std::string type = next_hint(&hint);
+	
+	std::string instances_str = src.src().read_text_file();
 	Instances instances = read_instances(instances_str);
+	
+	// If we're packing a mission instances file, we also read the gameplay core
+	// to determine ID to index mappings for moby instances. TODO: Cache this.
+	Opt<Instances> core;
+	if(type == "mission") {
+		const InstancesAsset& gameplay_core = src.get_core();
+		std::string gameplay_core_str = gameplay_core.src().read_text_file();
+		core = read_instances(gameplay_core_str);
+		instances.core = &(*core);
+	}
+	
 	Gameplay gameplay;
+	gameplay.core_moby_count = core.has_value() ? core->moby_instances.size() : 0;
 	move_instances_to_gameplay(gameplay, instances, nullptr, nullptr, src.forest().types());
-	std::vector<u8> buffer = write_gameplay(gameplay, config.game(), *get_gameplay_block_descriptions(config.game(), hint));
+	std::vector<u8> buffer = write_gameplay(gameplay, config.game(), *get_gameplay_block_descriptions(config.game(), type.c_str()));
 	dest.write_v(buffer);
 }
 

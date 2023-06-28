@@ -31,7 +31,7 @@ void Level::read(LevelAsset& asset, Game g) {
 	_asset = &asset;
 	_instances_asset = &level_wad().get_gameplay().as<InstancesAsset>();
 		
-	std::string text = _instances_asset->file().read_text_file(_instances_asset->src().path);
+	std::string text = _instances_asset->src().read_text_file();
 	_instances = read_instances(text);
 	
 	const std::map<std::string, CppType>& types = asset.forest().types();
@@ -45,7 +45,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		EditorChunk& chunk = chunks.emplace_back();
 		
 		const MeshAsset& collision_asset = chunk_asset.get_collision().as<CollisionAsset>().get_mesh();
-		std::string collision_xml = collision_asset.file().read_text_file(collision_asset.src().path);
+		std::string collision_xml = collision_asset.src().read_text_file();
 		ColladaScene collision_scene = read_collada((char*) collision_xml.data());
 		for(const Mesh& mesh : collision_scene.meshes) {
 			chunk.collision.emplace_back(upload_mesh(mesh, true));
@@ -58,7 +58,7 @@ void Level::read(LevelAsset& asset, Game g) {
 			continue;
 		}
 		const MeshAsset& tfrags_mesh_asset = tfrags_asset.get_editor_mesh();
-		std::string xml = tfrags_mesh_asset.file().read_text_file(tfrags_mesh_asset.src().path);
+		std::string xml = tfrags_mesh_asset.src().read_text_file();
 		ColladaScene scene = read_collada((char*) xml.data());
 		Mesh* mesh = scene.find_mesh(tfrags_mesh_asset.name());
 		if(!mesh) {
@@ -72,7 +72,7 @@ void Level::read(LevelAsset& asset, Game g) {
 			
 			std::vector<Texture> textures;
 			for(FileReference ref : material_set.textures) {
-				auto stream = ref.owner->open_binary_file_for_reading(ref);
+				auto stream = ref.open_binary_file_for_reading();
 				verify(stream.get(), "Failed to open shrub texture file.");
 				Opt<Texture> texture = read_png(*stream.get());
 				verify(texture.has_value(), "Failed to read shrub texture.");
@@ -87,13 +87,13 @@ void Level::read(LevelAsset& asset, Game g) {
 		EditorClass& ec = moby_classes[moby.id()];
 		if(moby.has_editor_mesh()) {
 			MeshAsset& asset = moby.get_editor_mesh();
-			std::string xml = asset.file().read_text_file(asset.src().path);
+			std::string xml = asset.src().read_text_file();
 			ColladaScene scene = read_collada((char*) xml.data());
 			Mesh* mesh = scene.find_mesh(asset.name());
 			if(mesh) {
 				std::vector<Texture> textures;
 				moby.get_materials().for_each_logical_child_of_type<TextureAsset>([&](TextureAsset& texture) {
-					auto stream = texture.file().open_binary_file_for_reading(texture.src());
+					auto stream = texture.src().open_binary_file_for_reading();
 					Opt<Texture> tex = read_png(*stream);
 					if(tex) {
 						textures.emplace_back(*tex);
@@ -107,7 +107,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		}
 		if(moby.has_editor_icon()) {
 			TextureAsset& icon_asset = moby.get_editor_icon();
-			std::unique_ptr<InputStream> stream = icon_asset.file().open_binary_file_for_reading(icon_asset.src());
+			std::unique_ptr<InputStream> stream = icon_asset.src().open_binary_file_for_reading();
 			Opt<Texture> icon = read_png(*stream);
 			if(icon.has_value()) {
 				std::vector<Texture> textures = { std::move(*icon) };
@@ -127,7 +127,7 @@ void Level::read(LevelAsset& asset, Game g) {
 			return;
 		}
 		MeshAsset& asset = tie.get_editor_mesh();
-		std::string xml = asset.file().read_text_file(asset.src().path);
+		std::string xml = asset.src().read_text_file();
 		ColladaScene scene = read_collada((char*) xml.data());
 		Mesh* mesh = scene.find_mesh(asset.name());
 		if(!mesh) {
@@ -139,7 +139,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		
 		std::vector<Texture> textures;
 		for(FileReference ref : material_set.textures) {
-			auto stream = ref.owner->open_binary_file_for_reading(ref);
+			auto stream = ref.open_binary_file_for_reading();
 			verify(stream.get(), "Failed to open shrub texture file.");
 			Opt<Texture> texture = read_png(*stream.get());
 			verify(texture.has_value(), "Failed to read shrub texture.");
@@ -166,7 +166,7 @@ void Level::read(LevelAsset& asset, Game g) {
 			return;
 		}
 		MeshAsset& asset = core.get_mesh();
-		std::string xml = asset.file().read_text_file(asset.src().path);
+		std::string xml = asset.src().read_text_file();
 		ColladaScene scene = read_collada((char*) xml.data());
 		Mesh* mesh = scene.find_mesh(asset.name());
 		if(!mesh) {
@@ -178,7 +178,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		
 		std::vector<Texture> textures;
 		for(FileReference ref : material_set.textures) {
-			auto stream = ref.owner->open_binary_file_for_reading(ref);
+			auto stream = ref.open_binary_file_for_reading();
 			verify(stream.get(), "Failed to open shrub texture file.");
 			Opt<Texture> texture = read_png(*stream.get());
 			verify(texture.has_value(), "Failed to read shrub texture.");
@@ -209,32 +209,29 @@ void Level::read(LevelAsset& asset, Game g) {
 	}
 }
 
-void Level::save(const fs::path& path) {
+std::string Level::save() {
 	verify_fatal(_instances_asset);
 	
-	// If the gamplay asset isn't currently part of the mod, create a new .asset
-	// file for it. Throwing the first time with retry=true will open a save
-	// dialog and then the path argument will be populated with the chosen path.
-	if(_instances_asset->bank().game_info.type != AssetBankType::MOD) {
-		if(path.empty()) {
-			throw SaveError{true, "No path specified."};
-		}
-		AssetFile& gameplay_file = g_app->mod_bank->asset_file(path);
-		Asset& new_asset = gameplay_file.asset_from_link(InstancesAsset::ASSET_TYPE, _instances_asset->absolute_link());
-		if(new_asset.logical_type() != InstancesAsset::ASSET_TYPE) {
-			throw SaveError{false, "An asset of a different type already exists."};
-		}
-		_instances_asset = &new_asset.as<InstancesAsset>();
+	std::string message;
+	
+	// Setup the file structure so that the new instances file can be written
+	// out in the new asset bank.
+	if(&_instances_asset->bank() != g_app->mod_bank && _instances_asset->parent()) {
+		s32 level_id = level_wad().id();
+		std::string path = generate_asset_path<LevelAsset>("levels", "level", level_id, *level().parent());
+		
+		AssetFile& instances_file = g_app->mod_bank->asset_file(path);
+		AssetLink link = level_wad().get_gameplay().absolute_link();
+		_instances_asset = &instances_file.asset_from_link(InstancesAsset::ASSET_TYPE, link).as<InstancesAsset>();
+	
+		message += stringf("Written file: %s\n", path.c_str());
 	}
 	
 	fs::path gameplay_path;
 	if(_instances_asset->src().path.empty()) {
-		// Make sure we're not overwriting another gameplay.bin file.
-		if(!_instances_asset->file().file_exists("gameplay.bin")) {
-			gameplay_path = "gameplay.bin";
-		} else {
-			throw SaveError{false, "A gameplay.bin file already exists in that folder."};
-		}
+		// Make sure we're not overwriting another gameplay.instances file.
+		verify(!_instances_asset->file().file_exists("gameplay.instances"), "A gameplay.instances file already exists in that folder.");
+		gameplay_path = "gameplay.instances";
 	} else {
 		gameplay_path = _instances_asset->src().path;
 	}
@@ -245,6 +242,10 @@ void Level::save(const fs::path& path) {
 	_instances_asset->set_src(ref);
 	
 	_instances_asset->file().write();
+	
+	message += stringf("Written file: %s\n", gameplay_path.string().c_str());
+	
+	return message;
 }
 
 LevelAsset& Level::level() {

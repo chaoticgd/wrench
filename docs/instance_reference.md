@@ -1,6 +1,6 @@
 # Instance Reference
 
-This file was generated from instance_schema.wtf and is for version 23 of the instance format.
+This file was generated from instance_schema.wtf and is for version 24 of the instance format.
 
 ## Instances
 
@@ -49,7 +49,7 @@ This file was generated from instance_schema.wtf and is for version 23 of the in
 
 | Name | Description | Type |
 | - | - | - |
-| members |  | MobyLinks |
+| members |  | mobylinks |
 
 ### Tie
 
@@ -70,7 +70,7 @@ This file was generated from instance_schema.wtf and is for version 23 of the in
 
 | Name | Description | Type |
 | - | - | - |
-| members |  | TieLinks |
+| members |  | tielinks |
 
 ### Shrub
 
@@ -92,7 +92,7 @@ This file was generated from instance_schema.wtf and is for version 23 of the in
 
 | Name | Description | Type |
 | - | - | - |
-| members |  | ShrubLinks |
+| members |  | shrublinks |
 
 ### DirLight
 
@@ -124,9 +124,7 @@ This file was generated from instance_schema.wtf and is for version 23 of the in
 | - | - | - |
 | hero_light |  | s32 |
 | music_track |  | s16 |
-| hero_colour_r |  | u8 |
-| hero_colour_g |  | u8 |
-| hero_colour_b |  | u8 |
+| hero_col |  | vec3 |
 | enable_reverb_params |  | bool |
 | reverb_type |  | u8 |
 | reverb_depth |  | s16 |
@@ -135,9 +133,7 @@ This file was generated from instance_schema.wtf and is for version 23 of the in
 | enable_fog_params |  | bool |
 | fog_near_intensity |  | u8 |
 | fog_far_intensity |  | u8 |
-| fog_r |  | u8 |
-| fog_g |  | u8 |
-| fog_b |  | u8 |
+| fog_col |  | vec3 |
 | fog_near_dist |  | s16 |
 | fog_far_dist |  | s16 |
 
@@ -149,13 +145,13 @@ This file was generated from instance_schema.wtf and is for version 23 of the in
 | Name | Description | Type |
 | - | - | - |
 | enable_hero |  | bool |
-| hero_colour_1 |  | vec3 |
-| hero_colour_2 |  | vec3 |
+| hero_col_1 |  | vec3 |
+| hero_col_2 |  | vec3 |
 | hero_light_1 |  | s32 |
 | hero_light_2 |  | s32 |
 | enable_fog |  | bool |
-| fog_colour_1 |  | vec3 |
-| fog_colour_2 |  | vec3 |
+| fog_col_1 |  | vec3 |
+| fog_col_2 |  | vec3 |
 | fog_near_dist_1 |  | f32 |
 | fog_near_intensity_1 |  | f32 |
 | fog_far_dist_1 |  | f32 |
@@ -212,11 +208,11 @@ This file was generated from instance_schema.wtf and is for version 23 of the in
 | Name | Description | Type |
 | - | - | - |
 | last_update_time |  | s32 |
-| paths |  | PathLinks |
-| cuboids |  | CuboidLinks |
-| spheres |  | SphereLinks |
-| cylinders |  | CylinderLinks |
-| negative_cuboids |  | CuboidLinks |
+| paths |  | pathlinks |
+| cuboids |  | cuboidlinks |
+| spheres |  | spherelinks |
+| cylinders |  | cylinderlinks |
+| negative_cuboids |  | cuboidlinks |
 
 ### SharedData
 

@@ -63,7 +63,7 @@ static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, 
 		return;
 	}
 	
-	auto stream = src.file().open_binary_file_for_reading(src.src(), time_dest);
+	auto stream = src.src().open_binary_file_for_reading(time_dest);
 	verify(stream.get(), "Failed to open '%s' for reading while packing binary asset '%s'.",
 		src.src().path.string().c_str(), src.absolute_link().to_string().c_str());
 	if(header_dest) {

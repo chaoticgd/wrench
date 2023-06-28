@@ -101,6 +101,14 @@ std::string AssetLink::to_string() const {
 	return str;
 }
 
+std::unique_ptr<InputStream> FileReference::open_binary_file_for_reading(fs::file_time_type* modified_time_dest) const {
+	return owner->open_binary_file_for_reading(*this, modified_time_dest);
+}
+
+std::string FileReference::read_text_file() const {
+	return owner->read_text_file(path);
+}
+
 std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs) {
 	std::vector<ColladaScene*> scenes;
 	for(size_t i = 0; i < refs.size(); i++) {
@@ -113,7 +121,7 @@ std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<Collad
 			}
 		}
 		if(unique) {
-			std::string xml = refs[i].owner->read_text_file(refs[i].path);
+			std::string xml = refs[i].read_text_file();
 			std::unique_ptr<ColladaScene>& owner = owners.emplace_back(std::make_unique<ColladaScene>(read_collada((char*) xml.data())));
 			scenes.emplace_back(owner.get());
 		} else {

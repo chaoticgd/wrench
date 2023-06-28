@@ -80,29 +80,18 @@ static void menu_bar() {
 	if(ImGui::BeginMainMenuBar()) {
 		bool open_error_popup = false;
 		static std::string error_message;
+		bool open_success_poopup = false;
+		static std::string success_message;
 		
 		if(ImGui::BeginMenu("File")) {
 			if(ImGui::MenuItem("Save")) {
 				if(BaseEditor* editor = g_app->get_editor()) {
 					try {
-						editor->save(fs::path());
-					} catch(SaveError& e) {
-						if(e.retry) {
-							nfdchar_t* path;
-							nfdresult_t result = NFD_SaveDialog("asset", nullptr, &path);
-							if(result == NFD_OKAY) {
-								try {
-									editor->save(path);
-								} catch(SaveError& e) {
-									error_message = e.message;
-									open_error_popup = true;
-								}
-								free(path);
-							}
-						} else {
-							error_message = e.message;
-							open_error_popup = true;
-						}
+						success_message = editor->save();
+						open_success_poopup = true;
+					} catch(RuntimeError& e) {
+						error_message = e.message;
+						open_error_popup = true;
 					}
 				} else {
 					error_message = "No editor open.";
@@ -144,6 +133,7 @@ static void menu_bar() {
 		
 		if(open_error_popup) {
 			ImGui::OpenPopup("Error");
+			open_error_popup = false;
 		}
 		
 		ImGui::SetNextWindowSize(ImVec2(300, 200));
@@ -151,6 +141,21 @@ static void menu_bar() {
 			ImGui::TextWrapped("%s", error_message.c_str());
 			if(ImGui::Button("Okay")) {
 				error_message.clear();
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
+		
+		if(open_success_poopup) {
+			ImGui::OpenPopup("Success");
+			open_success_poopup = false;
+		}
+		
+		ImGui::SetNextWindowSize(ImVec2(300, 200));
+		if(ImGui::BeginPopupModal("Success")) {
+			ImGui::TextWrapped("%s", success_message.c_str());
+			if(ImGui::Button("Okay")) {
+				success_message.clear();
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndPopup();
@@ -261,6 +266,9 @@ static void occlusion_things(Level* level) {
 	if(!occlusion_problem && !level) {
 		occlusion_problem = "No level loaded.";
 	}
+	if(!occlusion_problem && !level->level().parent()) {
+		occlusion_problem = "Level asset has no parent.";
+	}
 	if(!occlusion_problem && !level->level_wad().has_occlusion())  {
 		occlusion_problem = "Missing occlusion asset.";
 	}
@@ -277,7 +285,7 @@ static void occlusion_things(Level* level) {
 	if(ImGui::Button("Rebuild Occlusion##the_button") && !occlusion_problem) {
 		// Setup the file structure so that the new occlusion file can be
 		// written out in place of the old one.
-		if(&level->level_wad().get_occlusion().bank() != g_app->mod_bank && level->level().parent()) {
+		if(&level->level_wad().get_occlusion().bank() != g_app->mod_bank) {
 			s32 level_id = level->level_wad().id();
 			std::string path = generate_asset_path<LevelAsset>("levels", "level", level_id, *level->level().parent());
 			OcclusionAsset& old_occl = level->level_wad().get_occlusion();
@@ -288,9 +296,9 @@ static void occlusion_things(Level* level) {
 			OcclusionAsset& new_occl = occlusion_file.asset_from_link(OcclusionAsset::ASSET_TYPE, link).as<OcclusionAsset>();
 			
 			// Copy the old grid and mappings to the mod asset bank as placeholders.
-			std::string octants = old_occl.file().read_text_file(old_occl.octants().path);
-			std::unique_ptr<InputStream> grid_src = old_occl.file().open_binary_file_for_reading(old_occl.grid());
-			std::unique_ptr<InputStream> mappings_src = old_occl.file().open_binary_file_for_reading(old_occl.mappings());
+			std::string octants = old_occl.octants().read_text_file();
+			std::unique_ptr<InputStream> grid_src = old_occl.grid().open_binary_file_for_reading();
+			std::unique_ptr<InputStream> mappings_src = old_occl.mappings().open_binary_file_for_reading();
 			FileReference octants_ref = new_occl.file().write_text_file("occlusion_octants.csv", octants.c_str());
 			auto [grid_dest, grid_ref] = new_occl.file().open_binary_file_for_writing("occlusion_grid.bin");
 			auto [mappings_dest, mappings_ref] = new_occl.file().open_binary_file_for_writing("occlusion_mappings.bin");
@@ -397,8 +405,8 @@ static void create_dock_layout() {
 	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
 	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1.f, 1.f));
 
-	ImGuiID left_centre, right;
-	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &left_centre, &right);
+	ImGuiID right, left_centre;
+	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.5f, &right, &left_centre);
 	
 	ImGui::DockBuilderDockWindow("3D View", left_centre);
 	ImGui::DockBuilderDockWindow("Inspector", right);

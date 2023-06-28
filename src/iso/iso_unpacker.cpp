@@ -203,7 +203,7 @@ static std::string parse_system_cnf(BuildAsset& build, const std::string& src, c
 	
 	size_t ver_end = src.size();
 	for(size_t i = ver_pos; i < src.size(); i++) {
-		if(src[i] == ' ') {
+		if(src[i] == ' ' || src[i] == '\r') {
 			ver_end = i;
 			break;
 		}

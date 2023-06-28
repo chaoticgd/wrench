@@ -26,9 +26,7 @@
 packed_struct(RacEnvSamplePointPacked,
 	/* 0x00 */ Vec3f pos;
 	/* 0x0c */ f32 one;
-	/* 0x10 */ s32 hero_colour_r;
-	/* 0x14 */ s32 hero_colour_g;
-	/* 0x18 */ s32 hero_colour_b;
+	/* 0x10 */ Rgb96 hero_col;
 	/* 0x1c */ s32 hero_light;
 	/* 0x20 */ s32 reverb_depth;
 	/* 0x24 */ u8 reverb_type;
@@ -67,9 +65,7 @@ struct RacEnvSamplePointBlock {
 	}
 	
 	static void swap_env_params(EnvSamplePointInstance& l, RacEnvSamplePointPacked& r) {
-		SWAP_PACKED(l.hero_colour_r, r.hero_colour_r);
-		SWAP_PACKED(l.hero_colour_g, r.hero_colour_g);
-		SWAP_PACKED(l.hero_colour_b, r.hero_colour_b);
+		SWAP_COLOUR(l.hero_col, r.hero_col);
 		SWAP_PACKED(l.hero_light, r.hero_light);
 		SWAP_PACKED(l.reverb_depth, r.reverb_depth);
 		SWAP_PACKED(l.reverb_type, r.reverb_type);
@@ -90,16 +86,12 @@ packed_struct(GcUyaDlEnvSamplePointPacked,
 	/* 0x0c */ s16 music_track;
 	/* 0x0e */ u8 fog_near_intensity;
 	/* 0x0f */ u8 fog_far_intensity;
-	/* 0x10 */ u8 hero_colour_r;
-	/* 0x11 */ u8 hero_colour_g;
-	/* 0x12 */ u8 hero_colour_b;
+	/* 0x10 */ Rgb24 hero_col;
 	/* 0x13 */ u8 reverb_type;
 	/* 0x14 */ u8 reverb_delay;
 	/* 0x15 */ u8 reverb_feedback;
 	/* 0x16 */ u8 enable_reverb_params;
-	/* 0x17 */ u8 fog_r;
-	/* 0x18 */ u8 fog_g;
-	/* 0x19 */ u8 fog_b;
+	/* 0x17 */ Rgb24 fog_col;
 	/* 0x1a */ s16 fog_near_dist;
 	/* 0x1c */ s16 fog_far_dist;
 	/* 0x1e */ u16 unused_1e;
@@ -155,16 +147,12 @@ struct GcUyaDlEnvSamplePointBlock {
 		SWAP_PACKED(l.music_track, r.music_track);
 		SWAP_PACKED(l.fog_near_intensity, r.fog_near_intensity);
 		SWAP_PACKED(l.fog_far_intensity, r.fog_far_intensity);
-		SWAP_PACKED(l.hero_colour_r, r.hero_colour_r);
-		SWAP_PACKED(l.hero_colour_g, r.hero_colour_g);
-		SWAP_PACKED(l.hero_colour_b, r.hero_colour_b);
+		SWAP_COLOUR(l.hero_col, r.hero_col);
 		SWAP_PACKED(l.reverb_type, r.reverb_type);
 		SWAP_PACKED(l.reverb_delay, r.reverb_delay);
 		SWAP_PACKED(l.reverb_feedback, r.reverb_feedback);
 		SWAP_PACKED(l.enable_reverb_params, r.enable_reverb_params);
-		SWAP_PACKED(l.fog_r, r.fog_r);
-		SWAP_PACKED(l.fog_g, r.fog_g);
-		SWAP_PACKED(l.fog_b, r.fog_b);
+		SWAP_COLOUR(l.fog_col, r.fog_col);
 	}
 };
 
@@ -189,34 +177,35 @@ packed_struct(EnvTransitionPacked,
 )
 
 struct EnvTransitionBlock {
-	static void read(std::vector<EnvTransitionInstance>& dest, Buffer src, Game game) {
+	static void read(Gameplay& gameplay, Buffer src, Game game) {
 		TableHeader header = src.read<TableHeader>(0, "env transitions block header");
 		s64 ofs = 0x10;
-		auto bspheres = src.read_multiple<Vec4f>(ofs, header.count_1, "env transition bspheres");
 		ofs += header.count_1 * sizeof(Vec4f);
 		auto data = src.read_multiple<EnvTransitionPacked>(ofs, header.count_1, "env transitions");
-		dest.reserve(header.count_1);
+		gameplay.env_transitions.emplace();
+		gameplay.env_transitions->reserve(header.count_1);
 		for(s64 i = 0; i < header.count_1; i++) {
 			EnvTransitionPacked packed = data[i];
-			EnvTransitionInstance& inst = dest.emplace_back();
+			EnvTransitionInstance& inst = gameplay.env_transitions->emplace_back();
 			inst.set_id_value(i);
 			glm::mat4 inverse_matrix = packed.inverse_matrix.unpack();
 			glm::mat4 matrix = glm::inverse(inverse_matrix);
 			inst.transform().set_from_matrix(&matrix, &inverse_matrix);
-			inst.bounding_sphere() = bspheres[i].unpack();
 			inst.enable_hero = packed.flags & 1;
 			inst.enable_fog = (packed.flags & 2) >> 1;
 			swap_env_transition(inst, packed);
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<EnvTransitionInstance>& src, Game game) {
-		TableHeader header = {(s32) src.size()};
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
+		TableHeader header = {(s32) gameplay.env_transitions->size()};
 		dest.write(header);
-		for(const EnvTransitionInstance& inst : src) {
-			dest.write(Vec4f::pack(inst.bounding_sphere()));
+		for(const EnvTransitionInstance& inst : opt_iterator(gameplay.env_transitions)) {
+			const glm::mat4* cuboid = &inst.transform().matrix();
+			glm::vec4 bsphere = approximate_bounding_sphere(&cuboid, 1, nullptr, 0);
+			dest.write(Vec4f::pack(bsphere));
 		}
-		for(EnvTransitionInstance inst : src) {
+		for(EnvTransitionInstance inst : opt_iterator(gameplay.env_transitions)) {
 			EnvTransitionPacked packed = {};
 			packed.inverse_matrix = Mat4::pack(inst.transform().inverse_matrix());
 			packed.flags = inst.enable_hero | (inst.enable_fog << 1);
@@ -224,15 +213,17 @@ struct EnvTransitionBlock {
 			swap_env_transition(inst, packed);
 			dest.write(packed);
 		}
+		
+		return true;
 	}
 	
 	static void swap_env_transition(EnvTransitionInstance& l, EnvTransitionPacked& r) {
-		SWAP_COLOUR(l.hero_colour_1, r.hero_colour_1);
-		SWAP_COLOUR(l.hero_colour_2, r.hero_colour_2);
+		SWAP_COLOUR(l.hero_col_1, r.hero_colour_1);
+		SWAP_COLOUR(l.hero_col_2, r.hero_colour_2);
 		SWAP_PACKED(l.hero_light_1, r.hero_light_1);
 		SWAP_PACKED(l.hero_light_2, r.hero_light_2);
-		SWAP_COLOUR(l.fog_colour_1, r.fog_colour_1);
-		SWAP_COLOUR(l.fog_colour_2, r.fog_colour_2);
+		SWAP_COLOUR(l.fog_col_1, r.fog_colour_1);
+		SWAP_COLOUR(l.fog_col_2, r.fog_colour_2);
 		SWAP_PACKED(l.fog_near_dist_1, r.fog_near_dist_1);
 		SWAP_PACKED(l.fog_near_intensity_1, r.fog_near_intensity_1);
 		SWAP_PACKED(l.fog_far_dist_1, r.fog_far_dist_1);

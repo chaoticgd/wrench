@@ -83,7 +83,7 @@ static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHead
 static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
 static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config);
 static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
-static void unpack_missions(CollectionAsset& dest, InputStream& file, const MissionWadHeader& ranges, BuildConfig config);
+static void unpack_missions(LevelWadAsset& dest, InputStream& file, const MissionWadHeader& ranges, s32 core_moby_count, BuildConfig config);
 static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, BuildConfig config);
 template <typename PackerFunc>
 static SectorRange pack_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config, PackerFunc packer);
@@ -191,9 +191,9 @@ static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& hea
 	
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
 	SubInputStream data(src, header.data.bytes());
-	unpack_dl_level_data_wad(dest, data, config);
+	s32 core_moby_count = unpack_dl_level_data_wad(dest, data, config);
 	unpack_level_chunks(dest.chunks(), src, header.chunks, config);
-	unpack_missions(dest.missions(), src, header.missions, config);
+	unpack_missions(dest, src, header.missions, core_moby_count, config);
 }
 
 static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
@@ -209,7 +209,7 @@ static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, cons
 	header.data = pack_data_wad(dest, chunks, gameplay, src, config, [&](OutputStream& data_dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& data_src, BuildConfig data_config) {
 		pack_dl_level_data_wad(data_dest, chunks, compressed_art_instances, compressed_gameplay, gameplay, data_src, data_config);
 	});
-	verify_fatal(!compressed_gameplay.empty() && !compressed_art_instances.empty());
+	verify_fatal(g_asset_packer_dry_run || (!compressed_gameplay.empty() && !compressed_art_instances.empty()));
 	header.chunks = write_level_chunks(dest, chunks);
 	header.gameplay = write_section(dest, compressed_gameplay.data(), compressed_gameplay.size());
 	std::tie(header.missions, header.max_mission_sizes) = pack_missions(dest, src.get_missions(), config);
@@ -222,7 +222,8 @@ packed_struct(MissionHeader,
 	/* 0x8 */ ByteRange classes;
 )
 
-static void unpack_missions(CollectionAsset& dest, InputStream& file, const MissionWadHeader& ranges, BuildConfig config) {
+static void unpack_missions(LevelWadAsset& dest, InputStream& file, const MissionWadHeader& ranges, s32 core_moby_count, BuildConfig config) {
+	CollectionAsset& collection = dest.missions();
 	for(s32 i = 0; i < ARRAY_SIZE(ranges.data); i++) {
 		MissionHeader header = {};
 		if(!ranges.data[i].empty()) {
@@ -230,7 +231,7 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 		}
 		if(!header.instances.empty() || !header.classes.empty() || !ranges.sound_banks[i].empty()) {
 			std::string path = stringf("missions/%d/mission%d.asset", i, i);
-			MissionAsset& mission = dest.foreign_child<MissionAsset>(path, false, i);
+			MissionAsset& mission = collection.foreign_child<MissionAsset>(path, false, i);
 			
 			// Horrible hack: There are some mission instance files that look
 			// more like a gameplay core with empty help message sections, for
@@ -243,7 +244,11 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 			verify(instances.size() >= 4, "Bad mission instances file.");
 			if(*(s32*) instances.data() != 0x90) {
 				MemoryInputStream compressed_instances_stream(compressed_instances);
-				unpack_asset_impl(mission.instances<InstancesAsset>(), compressed_instances_stream, nullptr, config, FMT_INSTANCES_MISSION);
+				InstancesAsset& instances_asset = mission.instances<InstancesAsset>();
+				std::string hint = stringf("mission,%d", core_moby_count);
+				unpack_asset_impl(instances_asset, compressed_instances_stream, nullptr, config, hint.c_str());
+				ReferenceAsset& reference = instances_asset.child<ReferenceAsset>("core");
+				reference.set_asset(dest.get_gameplay().link_relative_to(dest));
 			} else {
 				MemoryInputStream instances_stream(instances);
 				unpack_asset_impl(mission.instances<BinaryAsset>(), instances_stream, nullptr, config, FMT_INSTANCES_MISSION);
@@ -341,6 +346,9 @@ static SectorRange pack_data_wad(OutputStream& dest, const std::vector<LevelChun
 }
 
 static SectorRange write_gameplay_section(OutputStream& dest, const Gameplay& gameplay, BuildConfig config) {
+	if(g_asset_packer_dry_run) {
+		return {0, 0};
+	}
 	std::vector<u8> buffer = write_gameplay(gameplay, config.game(), *gameplay_block_descriptions_from_game(config.game()));
 	std::vector<u8> compressed;
 	compress_wad(compressed, buffer, "gameplay", 8);

@@ -116,7 +116,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x28, bf<BinHelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
 	{0x2c, bf<BinHelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<InstanceBlock<DirLightInstance, DirectionalLightPacked>>(&Gameplay::dir_lights), "directional lights"},
-	{0x80, bf<EnvTransitionBlock>(&Gameplay::env_transitions), "env transitions"},
+	{0x80, {EnvTransitionBlock::read, EnvTransitionBlock::write}, "env transitions"},
 	{0x08, bf<InstanceBlock<CameraInstance, CameraPacked>>(&Gameplay::cameras), "cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x40, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
@@ -139,7 +139,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x84, {CamCollGridBlock::read, CamCollGridBlock::write}, "cam coll grid"},
 	{0x7c, bf<InstanceBlock<PointLightInstance, PointLightPacked>>(&Gameplay::point_lights), "point lights"},
 	{0x78, {PointLightGridBlock::read, PointLightGridBlock::write}, "point light grid"},
-	{0x74, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
+	{0x74, {GrindPathBlock::read, GrindPathBlock::write}, "grindpaths"},
 	{0x8c, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"},
 	{0x90, {nullptr, nullptr}, "pad"}
 };
@@ -156,7 +156,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x28, bf<BinHelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
 	{0x2c, bf<BinHelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<InstanceBlock<DirLightInstance, DirectionalLightPacked>>(&Gameplay::dir_lights), "directional lights"},
-	{0x84, bf<EnvTransitionBlock>(&Gameplay::env_transitions), "env transitions"},
+	{0x84, {EnvTransitionBlock::read, EnvTransitionBlock::write}, "env transitions"},
 	{0x08, bf<InstanceBlock<CameraInstance, CameraPacked>>(&Gameplay::cameras), "cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x48, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
@@ -181,8 +181,8 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x74, bf<InstanceBlock<PillInstance, ShapePacked>>(&Gameplay::pills), "pills"},
 	{0x88, {CamCollGridBlock::read, CamCollGridBlock::write}, "cam coll grid"},
 	{0x80, bf<GcUyaPointLightsBlock>(&Gameplay::point_lights), "point lights"},
-	{0x7c, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
-	{0x98, bf<AreasBlock>(&Gameplay::areas), "areas"},
+	{0x7c, {GrindPathBlock::read, GrindPathBlock::write}, "grindpaths"},
+	{0x98, {AreasBlock::read, AreasBlock::write}, "areas"},
 	{0x90, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"}
 };
 
@@ -214,8 +214,8 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x58, bf<InstanceBlock<PillInstance, ShapePacked>>(&Gameplay::pills), "pills"},
 	{0x6c, {CamCollGridBlock::read, CamCollGridBlock::write}, "cam coll grid"},
 	{0x64, bf<GcUyaPointLightsBlock>(&Gameplay::point_lights), "point lights"},
-	{0x60, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
-	{0x74, bf<AreasBlock>(&Gameplay::areas), "areas"},
+	{0x60, {GrindPathBlock::read, GrindPathBlock::write}, "grindpaths"},
+	{0x74, {AreasBlock::read, AreasBlock::write}, "areas"},
 	{0x68, {nullptr, nullptr}, "pad"}
 };
 

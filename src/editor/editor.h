@@ -31,7 +31,7 @@ public:
 	void undo();
 	void redo();
 	
-	virtual void save(const fs::path& path) = 0;
+	virtual std::string save() = 0;
 	
 protected:
 	struct UndoRedoCommand {
@@ -80,11 +80,6 @@ public:
 		_commands.emplace_back(std::move(cmd));
 		_command_past_last = _commands.size();
 	}
-};
-
-struct SaveError {
-	bool retry;
-	std::string message;
 };
 
 #endif

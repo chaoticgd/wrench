@@ -200,6 +200,18 @@ TEST_CASE("c++ parser" "[instancemgr]") {
 		}()
 	));
 	CHECK(test_parser(
+		"struct alignas(64) CharInABox { char c; };",
+		[]() {
+			CppType type(CPP_STRUCT_OR_UNION);
+			type.name = "CharInABox";
+			type.alignment = 64;
+			CppType& field = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			field.name = "c";
+			field.built_in = CPP_CHAR;
+			return type;
+		}()
+	));
+	CHECK(test_parser(
 		"enum Enum { A = 1, B = 2, C = 3 };",
 		[]() {
 			CppType type(CPP_ENUM);
@@ -220,6 +232,7 @@ static bool test_parser(const char* src, CppType&& expected) {
 	std::map<std::string, CppType> types;
 	parse_cpp_types(types, tokens);
 	if(types.size() != 1) {
+		UNSCOPED_INFO("types.size() != 1");
 		return false;
 	}
 	return compare_pvar_types(types.begin()->second, expected);

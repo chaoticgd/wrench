@@ -18,7 +18,10 @@
 
 #include "gameplay_convert.h"
 
+#include <instancemgr/level_settings.h>
+
 static void generate_psuedo_positions(Instances& instances);
+static void rewrite_links_to_indices(Instances& instances);
 
 void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, std::vector<u8>* occl_dest, std::vector<CppType>* types_dest, Gameplay& src, Game game) {
 	if(src.level_settings.has_value()) {
@@ -84,7 +87,7 @@ static void generate_psuedo_positions(Instances& instances) {
 		if(!group.members.empty()) {
 			glm::vec3 pos = {0.f, 0.f, 0.f};
 			s32 count = 0;
-			for(MobyLink link : group.members) {
+			for(mobylink link : group.members) {
 				MobyInstance* inst = instances.moby_instances.from_id(link.id);
 				if(inst) {
 					pos += inst->transform().pos();
@@ -102,7 +105,7 @@ static void generate_psuedo_positions(Instances& instances) {
 		if(!group.members.empty()) {
 			glm::vec3 pos = {0.f, 0.f, 0.f};
 			s32 count = 0;
-			for(TieLink link : group.members) {
+			for(tielink link : group.members) {
 				TieInstance* inst = instances.tie_instances.from_id(link.id);
 				if(inst) {
 					pos += inst->transform().pos();
@@ -120,7 +123,7 @@ static void generate_psuedo_positions(Instances& instances) {
 		if(!group.members.empty()) {
 			glm::vec3 pos = {0.f, 0.f, 0.f};
 			s32 count = 0;
-			for(ShrubLink link : group.members) {
+			for(shrublink link : group.members) {
 				ShrubInstance* inst = instances.shrub_instances.from_id(link.id);
 				if(inst) {
 					pos += inst->transform().pos();
@@ -137,7 +140,7 @@ static void generate_psuedo_positions(Instances& instances) {
 	for(AreaInstance& area : instances.areas) {
 		glm::vec3 pos = {0.f, 0.f, 0.f};
 		s32 count = 0;
-		for(PathLink link : area.paths) {
+		for(pathlink link : area.paths) {
 			PathInstance& path = instances.paths[link.id];
 			if(!path.spline().empty()) {
 				glm::vec3 path_pos = {0.f, 0.f, 0.f};
@@ -147,17 +150,17 @@ static void generate_psuedo_positions(Instances& instances) {
 				pos += path_pos * (1.f / (f32) path.spline().size());
 			}
 		}
-		for(CuboidLink link : area.cuboids) {
+		for(cuboidlink link : area.cuboids) {
 			CuboidInstance& inst = instances.cuboids[link.id];
 			pos += inst.transform().pos();
 			count++;
 		}
-		for(SphereLink link : area.spheres) {
+		for(spherelink link : area.spheres) {
 			SphereInstance& inst = instances.spheres[link.id];
 			pos += inst.transform().pos();
 			count++;
 		}
-		for(CylinderLink link : area.cylinders) {
+		for(cylinderlink link : area.cylinders) {
 			CylinderInstance& inst = instances.cylinders[link.id];
 			pos += inst.transform().pos();
 			count++;
@@ -172,6 +175,7 @@ static void generate_psuedo_positions(Instances& instances) {
 }
 
 void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, std::vector<u8>* occlusion_src, const std::map<std::string, CppType>& types_src) {
+	rewrite_links_to_indices(src);
 	build_pvars(dest, src, types_src);
 	
 	dest.level_settings = std::move(src.level_settings);
@@ -215,4 +219,88 @@ void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* he
 	if(occlusion_src && !occlusion_src->empty()) {
 		dest.occlusion = *occlusion_src;
 	}
+}
+
+static void rewrite_links_to_indices(Instances& instances) {
+	rewrite_level_settings_links(instances.level_settings, instances);
+	
+	for(MobyGroupInstance& inst : instances.moby_groups) {
+		std::string context = stringf("moby group %d", inst.id().value);
+		for(mobylink& link : inst.members) {
+			link.id = rewrite_link(link.id, INST_MOBY, instances, context.c_str());
+		}
+	}
+	
+	for(TieGroupInstance& inst : instances.tie_groups) {
+		std::string context = stringf("tie group %d", inst.id().value);
+		for(tielink& link : inst.members) {
+			link.id = rewrite_link(link.id, INST_TIE, instances, context.c_str());
+		}
+	}
+	
+	for(ShrubGroupInstance& inst : instances.shrub_groups) {
+		std::string context = stringf("shrub group %d", inst.id().value);
+		for(shrublink& link : inst.members) {
+			link.id = rewrite_link(link.id, INST_SHRUB, instances, context.c_str());
+		}
+	}
+	
+	for(AreaInstance& inst : instances.areas) {
+		std::string context = stringf("area %d", inst.id().value);
+		for(pathlink& link : inst.paths) link.id = rewrite_link(link.id, INST_PATH, instances, context.c_str());
+		for(cuboidlink& link : inst.cuboids) link.id = rewrite_link(link.id, INST_CUBOID, instances, context.c_str());
+		for(spherelink& link : inst.spheres) link.id = rewrite_link(link.id, INST_SPHERE, instances, context.c_str());
+		for(cylinderlink& link : inst.cylinders) link.id = rewrite_link(link.id, INST_CYLINDER, instances, context.c_str());
+		for(cuboidlink& link : inst.negative_cuboids) link.id = rewrite_link(link.id, INST_CUBOID, instances, context.c_str());
+	}
+}
+
+s32 rewrite_link(s32 id, const char* link_type_name, const Instances& instances, const char* context) {
+	if(strcmp(link_type_name, "missionlink") == 0) return id;
+	
+	#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
+		if(strcmp(link_type_name, #link_type) == 0) return rewrite_link(id, INST_##inst_type_uppercase, instances, context);
+	#define GENERATED_INSTANCE_MACRO_CALLS
+	#include "_generated_instance_types.inl"
+	#undef GENERATED_INSTANCE_MACRO_CALLS
+	#undef DEF_INSTANCE
+	
+	verify_not_reached("Failed to rewrite link %d in %s. Unknown type name '%s'.", id, context, link_type_name);
+}
+
+s32 rewrite_link(s32 id, InstanceType type, const Instances& instances, const char* context) {
+	if(id == -1) {
+		return -1;
+	}
+	
+	if(instances.core) {
+		if(type == INST_MOBY) {
+			s32 index = instances.moby_instances.id_to_index(id);
+			if(index == -1) {
+				index = instances.core->moby_instances.id_to_index(id);
+			} else {
+				index += instances.core->moby_instances.size();
+			}
+			verify(index > -1, "Failed to rewrite mobylink %d to index in %s.", id, context);
+			return index;
+		}
+	}
+	
+	const Instances* base_instances = instances.core ? instances.core : &instances;
+	
+	switch(type) {
+		#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
+			case INST_##inst_type_uppercase: { \
+				s32 index = base_instances->inst_variable.id_to_index(id); \
+				verify(index > -1, "Failed to rewrite %s %d to index in %s.", #link_type, id, context); \
+				return index; \
+			}
+		#define GENERATED_INSTANCE_MACRO_CALLS
+		#include "_generated_instance_types.inl"
+		#undef GENERATED_INSTANCE_MACRO_CALLS
+		#undef DEF_INSTANCE
+		default: {}
+	}
+	
+	verify_not_reached("Failed to rewrite link. Invalid instance type.");
 }

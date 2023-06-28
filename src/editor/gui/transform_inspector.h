@@ -16,13 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCHBUILD_LEVEL_INSTANCES_ASSET_H
-#define WRENCHBUILD_LEVEL_INSTANCES_ASSET_H
+#ifndef EDITOR_GUI_TRANSFORM_INSPECTOR_H
+#define EDITOR_GUI_TRANSFORM_INSPECTOR_H
 
-#include <instancemgr/gameplay_convert.h>
-#include <assetmgr/asset_types.h>
+#include <editor/app.h>
 
-s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint);
-Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, const std::map<std::string, CppType>& types_src, const BuildConfig& config, const char* hint);
+void transform_inspector(Level& lvl);
 
 #endif

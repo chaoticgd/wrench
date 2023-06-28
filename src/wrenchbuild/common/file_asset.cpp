@@ -50,7 +50,7 @@ static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs
 	}
 	
 	FileReference ref = src.src();
-	auto stream = src.file().open_binary_file_for_reading(src.src(), time_dest);
+	auto stream = ref.open_binary_file_for_reading(time_dest);
 	verify(stream.get(), "Failed to open file '%s' for reading.", ref.path.string().c_str());
 	Stream::copy(dest, *stream, stream->size());
 }

@@ -270,7 +270,7 @@ std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src) {
 	
 	// Read in the textures from disk.
 	for(FileReference& ref : refs) {
-		auto stream = ref.owner->open_binary_file_for_reading(ref);
+		auto stream = ref.open_binary_file_for_reading();
 		Opt<Texture> texture = read_png(*stream);
 		verify(texture.has_value(), "Failed to read sky texture.");
 		dest.textures.emplace_back(*texture);

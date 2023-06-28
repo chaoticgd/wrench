@@ -151,9 +151,8 @@ struct LevelSettingsBlock {
 				verify(src.rac3_third_part.has_value(), "Missing rac3_third_part in level settings block.");
 				dest.write(*src.rac3_third_part);
 			} else if(game == Game::DL) {
-				verify(src.third_part.has_value(), "Missing third_part in level settings block.");
-				dest.write((s32) src.third_part->size());
-				if(src.third_part->size() > 0) {
+				dest.write((s32) opt_size(src.third_part));
+				if(opt_size(src.third_part) > 0) {
 					dest.write_multiple(*src.third_part);
 					verify(src.reward_stats.has_value(), "Missing fourth_part in level settings block.");
 					dest.write(*src.reward_stats);
@@ -385,15 +384,16 @@ packed_struct(GrindPathData,
 )
 
 struct GrindPathBlock {
-	static void read(std::vector<GrindPathInstance>& dest, Buffer src, Game game) {
+	static void read(Gameplay& gameplay, Buffer src, Game game) {
 		auto& header = src.read<PathBlockHeader>(0, "spline block header");
 		auto grindpaths = src.read_multiple<GrindPathData>(0x10, header.spline_count, "grindrail data");
 		s64 offsets_pos = 0x10 + header.spline_count * sizeof(GrindPathData);
 		auto splines = read_splines(src.subbuf(offsets_pos), header.spline_count, header.data_offset - offsets_pos);
+		gameplay.grind_paths.emplace();
+		gameplay.grind_paths->reserve(header.spline_count);
 		for(s64 i = 0; i < header.spline_count; i++) {
-			GrindPathInstance& inst = dest.emplace_back();
+			GrindPathInstance& inst = gameplay.grind_paths->emplace_back();
 			inst.set_id_value(i);
-			inst.bounding_sphere() = grindpaths[i].bounding_sphere.unpack();
 			inst.unknown_4 = grindpaths[i].unknown_4;
 			inst.wrap = grindpaths[i].wrap;
 			inst.inactive = grindpaths[i].inactive;
@@ -401,12 +401,17 @@ struct GrindPathBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<GrindPathInstance>& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
 		s64 header_ofs = dest.alloc<PathBlockHeader>();
 		std::vector<std::vector<glm::vec4>> splines;
-		for(const GrindPathInstance& inst : src) {
+		for(const GrindPathInstance& inst : opt_iterator(gameplay.grind_paths)) {
+			std::pair<const glm::vec4*, size_t> spline = {
+				inst.spline().data(),
+				inst.spline().size()
+			};
+			
 			GrindPathData packed = {};
-			packed.bounding_sphere = Vec4f::pack(inst.bounding_sphere());
+			packed.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(nullptr, 0, &spline, 1));
 			packed.unknown_4 = inst.unknown_4;
 			packed.wrap = inst.wrap;
 			packed.inactive = inst.inactive;
@@ -414,11 +419,13 @@ struct GrindPathBlock {
 			splines.emplace_back(inst.spline());
 		}
 		PathBlockHeader header = {};
-		header.spline_count = src.size();
+		header.spline_count = gameplay.grind_paths->size();
 		s32 abs_data_offset = write_splines(dest, splines);
 		header.data_offset = abs_data_offset - header_ofs;
 		header.data_size = dest.tell() - abs_data_offset;
 		dest.write(header_ofs, header);
+		
+		return true;
 	}
 };
 
@@ -472,15 +479,16 @@ enum AreaPart {
 };
 
 struct AreasBlock {
-	static void read(std::vector<AreaInstance>& dest, Buffer src, Game game) {
+	static void read(Gameplay& gameplay, Buffer src, Game game) {
 		src = src.subbuf(4); // Skip past size field.
 		auto header = src.read<AreasHeader>(0, "area list block header");
 		auto table = src.read_multiple<GameplayAreaPacked>(sizeof(AreasHeader), header.area_count, "area list table");
+		gameplay.areas.emplace();
+		gameplay.areas->reserve(table.size());
 		for(s32 i = 0; i < (s32) table.size(); i++) {
 			const GameplayAreaPacked& packed = table[i];
-			AreaInstance& inst = dest.emplace_back();
+			AreaInstance& inst = gameplay.areas->emplace_back();
 			inst.set_id_value(i);
-			inst.bounding_sphere() = packed.bounding_sphere.unpack();
 			inst.last_update_time = packed.last_update_time;
 			
 			s32 paths_ofs = header.part_offsets[AREA_PART_PATHS] + packed.relative_part_offsets[AREA_PART_PATHS];
@@ -515,57 +523,70 @@ struct AreasBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<AreaInstance>& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
 		s64 size_ofs = dest.alloc<s32>();
 		s64 header_ofs = dest.alloc<AreasHeader>();
-		s64 table_ofs = dest.alloc_multiple<GameplayAreaPacked>(src.size());
+		s64 table_ofs = dest.alloc_multiple<GameplayAreaPacked>(opt_size(gameplay.areas));
 		
 		std::vector<GameplayAreaPacked> table;
 		std::vector<s32> links[5];
 		
-		for(const AreaInstance& inst : src) {
+		for(const AreaInstance& inst : opt_iterator(gameplay.areas)) {
 			GameplayAreaPacked& packed = table.emplace_back();
-			packed.bounding_sphere = Vec4f::pack(inst.bounding_sphere());
 			packed.last_update_time = inst.last_update_time;
+			
+			std::vector<const glm::mat4*> cuboids;
+			std::vector<std::pair<const glm::vec4*, size_t>> splines;
 			
 			packed.relative_part_offsets[AREA_PART_PATHS] = (s32) !inst.paths.empty()
 				? (links[AREA_PART_PATHS].size() * 4) : 0;
 			packed.part_counts[AREA_PART_PATHS] = (s32) inst.paths.size();
-			for(PathLink link : inst.paths) {
+			for(pathlink link : inst.paths) {
 				links[AREA_PART_PATHS].emplace_back(link.id);
+				verify(gameplay.paths.has_value(), "Path referenced, but there is no path block.");
+				const PathInstance& path = (*gameplay.paths).at(link.id);
+				splines.emplace_back(path.spline().data(), path.spline().size());
 			}
 			
 			packed.relative_part_offsets[AREA_PART_CUBOIDS] = (s32) !inst.cuboids.empty()
 				? (links[AREA_PART_CUBOIDS].size() * 4) : 0;
 			packed.part_counts[AREA_PART_CUBOIDS] = (s32) inst.cuboids.size();
-			for(CuboidLink link : inst.cuboids) {
+			for(cuboidlink link : inst.cuboids) {
 				links[AREA_PART_CUBOIDS].emplace_back(link.id);
+				verify(gameplay.cuboids.has_value(), "Cuboid referenced, but there is no cuboid block.");
+				cuboids.emplace_back(&(*gameplay.cuboids).at(link.id).transform().matrix());
 			}
 			
 			packed.relative_part_offsets[AREA_PART_SPHERES] = (s32) !inst.spheres.empty()
 				? (links[AREA_PART_SPHERES].size() * 4) : 0;
 			packed.part_counts[AREA_PART_SPHERES] = (s32) inst.spheres.size();
-			for(SphereLink link : inst.spheres) {
+			for(spherelink link : inst.spheres) {
 				links[AREA_PART_SPHERES].emplace_back(link.id);
+				verify(gameplay.spheres.has_value(), "Spheres referenced, but there is no spheres block.");
+				cuboids.emplace_back(&(*gameplay.spheres).at(link.id).transform().matrix());
 			}
 			
 			packed.relative_part_offsets[AREA_PART_CYLINDERS] = (s32) !inst.cylinders.empty()
 				? (links[AREA_PART_CYLINDERS].size() * 4) : 0;
 			packed.part_counts[AREA_PART_CYLINDERS] = (s32) inst.cylinders.size();
-			for(CylinderLink link : inst.cylinders) {
+			for(cylinderlink link : inst.cylinders) {
 				links[AREA_PART_CYLINDERS].emplace_back(link.id);
+				verify(gameplay.cylinders.has_value(), "Cylinders referenced, but there is no cylinder block.");
+				cuboids.emplace_back(&(*gameplay.cylinders).at(link.id).transform().matrix());
 			}
 			
 			packed.relative_part_offsets[AREA_PART_NEGATIVE_CUBOIDS] = (s32) !inst.negative_cuboids.empty()
 				? (links[AREA_PART_NEGATIVE_CUBOIDS].size() * 4) : 0;
 			packed.part_counts[AREA_PART_NEGATIVE_CUBOIDS] = (s32) inst.negative_cuboids.size();
-			for(CuboidLink link : inst.negative_cuboids) {
+			for(cuboidlink link : inst.negative_cuboids) {
 				links[AREA_PART_NEGATIVE_CUBOIDS].emplace_back(link.id);
 			}
+			
+			packed.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(cuboids.data(), cuboids.size(), splines.data(), splines.size()));
 		}
 		
 		AreasHeader header = {};
-		header.area_count = (s32) src.size();
+		header.area_count = (s32) opt_size(gameplay.areas);
 		
 		if(!links[AREA_PART_PATHS].empty()) {
 			header.part_offsets[AREA_PART_PATHS] = (s32) (dest.tell() - header_ofs);
@@ -591,6 +612,8 @@ struct AreasBlock {
 		dest.write(size_ofs, dest.tell() - header_ofs);
 		dest.write(header_ofs, header);
 		dest.write_multiple(table_ofs, table);
+		
+		return true;
 	}
 };
 

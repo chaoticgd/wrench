@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 23
+format_version: 24
 
 // *****************************************************************************
 
@@ -1881,6 +1881,13 @@ AssetType Instances {
 		games: [1 2 3 4]
 	}
 	
+	Child core {
+		desc: "For Deadlocked mission instance assets, this should be a reference to the gameplay core file. Otherwise, this should be omitted."
+		allowed_types: ["Instances"]
+		required: false
+		games: [4]
+	}
+	
 	Hint gameplay {
 		syntax: "gameplay"
 		example: "gameplay"
@@ -1894,8 +1901,8 @@ AssetType Instances {
 	}
 	
 	Hint mission {
-		syntax: "mission"
-		example: "mission"
-		desc: "A Deadlocked mission instances file."
+		syntax: "mission,<core moby count>"
+		example: "mission,123"
+		desc: "A Deadlocked mission instances file. For unpacking operations the core moby count needs to be equal to the number of moby instances in the gameplay core file. For packing operations this value can be omitted."
 	}
 }

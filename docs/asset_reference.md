@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from asset_schema.wtf and is for version 23 of the asset format.
+This file was generated from asset_schema.wtf and is for version 24 of the asset format.
 
 ## Index
 
@@ -1213,7 +1213,10 @@ The instances.
 
 *Children*
 
-No children.
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
+| core | For Deadlocked mission instance assets, this should be a reference to the gameplay core file. Otherwise, this should be omitted. | Instances | No | DL |
+
 
 *Hints*
 
@@ -1221,4 +1224,4 @@ No children.
 | - | - | - |
 | `gameplay` | `gameplay` | A gameplay file. |
 | `art` | `art` | A Deadlocked art instances file. |
-| `mission` | `mission` | A Deadlocked mission instances file. |
+| `mission,<core moby count>` | `mission,123` | A Deadlocked mission instances file. For unpacking operations the core moby count needs to be equal to the number of moby instances in the gameplay core file. For packing operations this value can be omitted. |

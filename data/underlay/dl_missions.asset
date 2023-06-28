@@ -1,0 +1,8 @@
+// These missions are unused and contain broken moby links.
+Mission dl.levels.8.level.missions.8 { strongly_deleted: true }
+Mission dl.levels.15.level.missions.26 { strongly_deleted: true }
+Mission dl.levels.35.level.missions.26 { strongly_deleted: true }
+Mission dl.levels.48.level.missions.0 { strongly_deleted: true }
+Mission dl.levels.48.level.missions.1 { strongly_deleted: true }
+Mission dl.levels.48.level.missions.2 { strongly_deleted: true }
+Mission dl.levels.48.level.missions.3 { strongly_deleted: true }

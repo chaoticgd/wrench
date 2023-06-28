@@ -20,6 +20,7 @@
 
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include <math.h>
 #include <instancemgr/wtf_glue.h>
 #include <instancemgr/instances.h>
 
@@ -69,15 +70,27 @@ void TransformComponent::set_from_matrix(const glm::mat4* new_matrix, const glm:
 	_scale = (scale[0] + scale[1] + scale[2]) / 3.f;
 }
 
+static f32 constrain_angle(f32 angle) {
+	if(angle > -WRENCH_PI && angle < WRENCH_PI) {
+		return angle;
+	}
+	return std::remainder(angle, 2 * WRENCH_PI);
+}
+
 void TransformComponent::set_from_pos_rot_scale(const glm::vec3& pos, const glm::vec3& rot, f32 scale) {
+	glm::vec3 rot_wrapped;
+	for(s32 i = 0; i < 3; i++) {
+		rot_wrapped[i] = constrain_angle(rot[i]);
+	}
+	
 	_matrix = glm::mat4(1.f);
 	_matrix = glm::translate(_matrix, pos);
 	_matrix = glm::scale(_matrix, glm::vec3(scale));
-	_matrix = glm::rotate(_matrix, rot.z, glm::vec3(0.f, 0.f, 1.f));
-	_matrix = glm::rotate(_matrix, rot.y, glm::vec3(0.f, 1.f, 0.f));
-	_matrix = glm::rotate(_matrix, rot.x, glm::vec3(1.f, 0.f, 0.f));
+	_matrix = glm::rotate(_matrix, rot_wrapped.z, glm::vec3(0.f, 0.f, 1.f));
+	_matrix = glm::rotate(_matrix, rot_wrapped.y, glm::vec3(0.f, 1.f, 0.f));
+	_matrix = glm::rotate(_matrix, rot_wrapped.x, glm::vec3(1.f, 0.f, 0.f));
 	_inverse_matrix = glm::inverse(_matrix);
-	_rot = rot;
+	_rot = rot_wrapped;
 	_scale = scale;
 }
 
@@ -218,18 +231,18 @@ void PvarComponent::read(const WtfNode* src) {
 		}
 	}
 	
-	std::sort(BEGIN_END(pointers));
-	
 	validate();
 }
 
 void PvarComponent::validate() const {
-	// Validate order and uniqueness (this is important for undo/redo integrity).
+	// Validate uniqueness (this is important for undo/redo integrity).
+	std::vector<PvarPointer> pointers_copy = pointers;
+	std::sort(BEGIN_END(pointers_copy));
 	s32 last_offset = -1;
-	for(size_t i = 0; i < pointers.size(); i++) {
-		verify_fatal(pointers[i].offset > -1);
-		verify_fatal(last_offset == -1 || last_offset < pointers[i].offset);
-		last_offset = pointers[i].offset;
+	for(size_t i = 0; i < pointers_copy.size(); i++) {
+		verify_fatal(pointers_copy[i].offset > -1);
+		verify_fatal(last_offset == -1 || last_offset < pointers_copy[i].offset);
+		last_offset = pointers_copy[i].offset;
 	}
 }
 
@@ -320,16 +333,6 @@ std::vector<glm::vec4>& Instance::spline() {
 	return _spline;
 }
 
-const glm::vec4& Instance::bounding_sphere() const {
-	verify_fatal(_components_mask & COM_BOUNDING_SPHERE);
-	return _bounding_sphere;
-}
-
-glm::vec4& Instance::bounding_sphere() {
-	verify_fatal(_components_mask & COM_BOUNDING_SPHERE);
-	return _bounding_sphere;
-}
-
 const CameraCollisionParams& Instance::camera_collision() const {
 	verify_fatal(_components_mask & COM_CAMERA_COLLISION);
 	return _camera_collision;
@@ -377,10 +380,6 @@ void Instance::read_common(const WtfNode* src) {
 			points.emplace_back(glm::vec4(vector[0], vector[1], vector[2], vector[3]));
 		}
 	}
-	
-	if(has_component(COM_BOUNDING_SPHERE)) {
-		read_inst_field(bounding_sphere(), src, "bsphere");
-	}
 }
 
 void Instance::begin_write(WtfWriter* dest) const {
@@ -414,10 +413,6 @@ void Instance::begin_write(WtfWriter* dest) const {
 		}
 		wtf_end_array(dest);
 		wtf_end_attribute(dest);
-	}
-	
-	if(has_component(COM_BOUNDING_SPHERE)) {
-		write_inst_field(dest, "bsphere", bounding_sphere());
 	}
 }
 

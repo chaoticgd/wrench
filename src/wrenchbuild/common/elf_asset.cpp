@@ -107,7 +107,7 @@ static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildCon
 	
 	bool convert_to_ratchet_executable = strcmp(next_hint(&hint), "ratchetexecutable") == 0;
 	
-	auto stream = src.file().open_binary_file_for_reading(src.src());
+	auto stream = src.src().open_binary_file_for_reading();
 	verify(stream.get(), "Cannot open ELF file '%s' for reading.", src.src().path.string().c_str());
 	
 	if(convert_to_ratchet_executable) {

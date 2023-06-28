@@ -61,7 +61,7 @@ static void pack_collision_asset(OutputStream& dest, const CollisionAsset& src, 
 	}
 	
 	const MeshAsset& mesh = src.get_mesh();
-	std::string xml = mesh.file().read_text_file(mesh.src().path);;
+	std::string xml = mesh.src().read_text_file();
 	ColladaScene scene = read_collada((char*) xml.data());
 	
 	src.get_materials().for_each_logical_child_of_type<CollisionMaterialAsset>([&](const CollisionMaterialAsset& asset) {

@@ -126,7 +126,7 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_materials, 
 		s32 i = 0;
 		for(; i < (s32) material_set.textures.size(); i++) {
 			FileReference& texture = material_set.textures[i];
-			auto stream = texture.owner->open_binary_file_for_reading(texture);
+			auto stream = texture.open_binary_file_for_reading();
 			shared.textures.emplace_back(LevelTexture{read_png(*stream)});
 		}
 	}
@@ -139,7 +139,7 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_materials, 
 		for(s32 i = 0; i < 16; i++) {
 			if(textures.has_child(i)) {
 				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
-				auto stream = asset.file().open_binary_file_for_reading(asset.src());
+				auto stream = asset.src().open_binary_file_for_reading();
 				bool stashed = cls.stash_textures(false);
 				shared.textures.emplace_back(LevelTexture{read_png(*stream), stashed});
 			} else {
@@ -160,7 +160,7 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_materials, 
 		s32 i = 0;
 		for(; i < (s32) material_set.textures.size(); i++) {
 			FileReference& texture = material_set.textures[i];
-			auto stream = texture.owner->open_binary_file_for_reading(texture);
+			auto stream = texture.open_binary_file_for_reading();
 			shared.textures.emplace_back(LevelTexture{read_png(*stream)});
 		}
 		for(; i < 16; i++) {
@@ -180,7 +180,7 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_materials, 
 		s32 i = 0;
 		for(; i < (s32) material_set.textures.size(); i++) {
 			FileReference& texture = material_set.textures[i];
-			auto stream = texture.owner->open_binary_file_for_reading(texture);
+			auto stream = texture.open_binary_file_for_reading();
 			shared.textures.emplace_back(LevelTexture{read_png(*stream)});
 		}
 		for(; i < 16; i++) {
@@ -389,7 +389,7 @@ std::tuple<ArrayRange, std::vector<u8>, s32> pack_particle_textures(OutputStream
 			for(s32 j = 0; j < 1024; j++) {
 				if(particle.has_child(j)) {
 					const TextureAsset& asset = particle.get_child(j).as<TextureAsset>();
-					auto stream = asset.file().open_binary_file_for_reading(asset.src());
+					auto stream = asset.src().open_binary_file_for_reading();
 					Opt<Texture> texture = read_png(*stream);
 					if(texture.has_value()) {
 						if(game == Game::DL) {
@@ -545,7 +545,7 @@ std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& 
 			break;
 		}
 		
-		auto stream = asset->file().open_binary_file_for_reading(asset->src());
+		auto stream = asset->src().open_binary_file_for_reading();
 		Opt<Texture> texture = read_png(*stream);
 		if(texture.has_value()) {
 			if(game == Game::DL) {

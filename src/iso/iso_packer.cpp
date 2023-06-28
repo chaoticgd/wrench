@@ -27,7 +27,7 @@ static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game gam
 static LevelInfo enumerate_level(const LevelAsset& level, Game game);
 static IsoDirectory enumerate_files(const Asset& files);
 static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir);
-static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build);
+static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build, Game game);
 static IsoFileRecord pack_boot_elf(OutputStream& iso, const Asset& boot_elf, BuildConfig config, AssetPackerFunc pack);
 static std::string get_boot_elf_path(const Asset& boot_elf);
 static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, BuildConfig config, AssetPackerFunc pack);
@@ -92,7 +92,7 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	}
 	
 	// SYSTEM.CNF must be written out at sector 1000 (the game hardcodes this).
-	IsoFileRecord system_cnf_record = pack_system_cnf(iso, src);
+	IsoFileRecord system_cnf_record = pack_system_cnf(iso, src, config.game());
 	
 	// Then the table of contents at sector 1001 (also hardcoded).
 	IsoFileRecord toc_record;
@@ -160,7 +160,7 @@ static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, BuildConfi
 		}
 		asset = &build.get_ps2_logo_pal();
 	}
-	auto png = asset->file().open_binary_file_for_reading(asset->src());
+	auto png = asset->src().open_binary_file_for_reading();
 	
 	Opt<Texture> texture = read_png(*png);
 	verify(texture.has_value(), "Build has bad ps2_logo.");
@@ -354,22 +354,35 @@ static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_
 	}
 }
 
-static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build) {
+static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build, Game game) {
 	std::string path = get_boot_elf_path(build.get_boot_elf());
 	for(char& c : path) c = toupper(c);
 	
 	std::string system_cnf;
 	system_cnf += "BOOT2 = cdrom0:\\";
 	system_cnf += path;
-	system_cnf += ";1 \r\nVER = ";
+	system_cnf += ";1";
+	if(game != Game::RAC) {
+		system_cnf += " ";
+	}
+	system_cnf += "\r\nVER = ";
 	system_cnf += build.version();
-	system_cnf += " \r\nVMODE = ";
+	if(game != Game::RAC) {
+		system_cnf += " ";
+	}
+	system_cnf += "\r\nVMODE = ";
 	if(build.region() != "eu") {
 		system_cnf += "NTSC";
 	} else {
 		system_cnf += "PAL";
 	}
-	system_cnf += " \r\n";
+	if(game != Game::RAC) {
+		system_cnf += " ";
+	}
+	system_cnf += "\r\n";
+	if(game == Game::RAC) {
+		system_cnf += "\r\n";
+	}
 	
 	iso.pad(SECTOR_SIZE, 0);
 	

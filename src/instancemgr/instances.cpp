@@ -23,7 +23,7 @@
 
 Instance* Instances::from_id(InstanceId id) {
 	switch(id.type) {
-		#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable) \
+		#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
 			case INST_##inst_type_uppercase: return inst_variable.from_id(id.value);
 		#define GENERATED_INSTANCE_MACRO_CALLS
 		#include "_generated_instance_types.inl"

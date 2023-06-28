@@ -22,9 +22,9 @@
 #include <imgui.h>
 
 #include <editor/app.h>
+#include <editor/gui/transform_inspector.h>
 #include <editor/gui/pvar_inspector.h>
 
-static const s32 MAX_LANES = 4;
 struct InspectorFieldFuncs {
 	s32 lane_count;
 	std::function<bool(Instance& lhs, Instance& rhs, s32 lane)> compare;
@@ -70,7 +70,6 @@ template <typename Value, typename ThisInstance>
 static InspectorGetterSetter<Value> adapt_member_pointer(Value ThisInstance::*member_pointer);
 
 static float calc_remaining_item_width();
-static bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count);
 static std::array<std::string, MAX_LANES> vec4_to_strings(glm::vec4 vec, bool values_equal[MAX_LANES]);
 static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed);
 template <typename Scalar>
@@ -91,7 +90,6 @@ void inspector() {
 	
 	static const std::vector<InspectorField> fields = {
 		{COM_DRAW_DISTANCE   , INST_NONE          , "Draw Dist", scalar_funcs(adapt_reference_member_function<f32>(&Instance::draw_distance))},
-		{COM_BOUNDING_SPHERE , INST_NONE          , "Bsphere", vec4_funcs(adapt_reference_member_function<glm::vec4>(&Instance::bounding_sphere))},
 		{COM_CAMERA_COLLISION, INST_NONE          , "Cam Coll", camera_collision_funcs()},
 		// Moby
 		{COM_NONE            , INST_MOBY          , "Mission", scalar_funcs(adapt_member_pointer(&MobyInstance::mission))},
@@ -125,9 +123,7 @@ void inspector() {
 		// EnvSamplePoint
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Hero Light", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::hero_light))},
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Music Track", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::music_track))},
-		{COM_NONE            , INST_ENVSAMPLEPOINT, "Hero Colour R", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::hero_colour_r))},
-		{COM_NONE            , INST_ENVSAMPLEPOINT, "Hero Colour G", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::hero_colour_g))},
-		{COM_NONE            , INST_ENVSAMPLEPOINT, "Hero Colour B", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::hero_colour_b))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Hero Colour", vec3_funcs(adapt_member_pointer(&EnvSamplePointInstance::hero_col))},
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Enable Reverb Params", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::enable_reverb_params))},
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Reverb Type", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::reverb_type))},
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Reverb Depth", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::reverb_depth))},
@@ -135,13 +131,13 @@ void inspector() {
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Reverb Feedback", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::reverb_feedback))},
 		// EnvTransition
 		{COM_NONE            , INST_ENVTRANSITION , "Enable Hero", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::enable_hero))},
-		{COM_NONE            , INST_ENVTRANSITION , "Hero Colour 1", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::hero_colour_1))},
-		{COM_NONE            , INST_ENVTRANSITION , "Hero Colour 2", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::hero_colour_2))},
+		{COM_NONE            , INST_ENVTRANSITION , "Hero Colour 1", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::hero_col_1))},
+		{COM_NONE            , INST_ENVTRANSITION , "Hero Colour 2", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::hero_col_2))},
 		{COM_NONE            , INST_ENVTRANSITION , "Hero Light 1", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::hero_light_1))},
 		{COM_NONE            , INST_ENVTRANSITION , "Hero Light 2", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::hero_light_2))},
 		{COM_NONE            , INST_ENVTRANSITION , "Enable Fog", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::enable_fog))},
-		{COM_NONE            , INST_ENVTRANSITION , "Fog Colour 1", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_colour_1))},
-		{COM_NONE            , INST_ENVTRANSITION , "Fog Colour 2", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_colour_2))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Colour 1", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_col_1))},
+		{COM_NONE            , INST_ENVTRANSITION , "Fog Colour 2", vec3_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_col_2))},
 		{COM_NONE            , INST_ENVTRANSITION , "Fog Near Dist 1", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_near_dist_1))},
 		{COM_NONE            , INST_ENVTRANSITION , "Fog Near Intensity 1", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_near_intensity_1))},
 		{COM_NONE            , INST_ENVTRANSITION , "Fog Far Dist 1", scalar_funcs(adapt_member_pointer(&EnvTransitionInstance::fog_far_dist_1))},
@@ -191,9 +187,7 @@ void inspector() {
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Enable Fog Params", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::enable_fog_params))},
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Near Intensity", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_near_intensity))},
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Far Intensity", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_far_intensity))},
-		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog R", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_r))},
-		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog G", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_g))},
-		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog B", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_b))},
+		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Colour", vec3_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_col))},
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Near Dist", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_near_dist))},
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Far Dist", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_far_dist))},
 	};
@@ -208,6 +202,9 @@ void inspector() {
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
+	
+	transform_inspector(lvl);
+	
 	if(ImGui::CollapsingHeader("Attributes")) {
 		if(ImGui::BeginTable("inspector", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
 			ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
@@ -225,6 +222,7 @@ void inspector() {
 			ImGui::EndTable();
 		}
 	}
+	
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleColor();
@@ -613,7 +611,7 @@ static float calc_remaining_item_width() {
 	return ImGui::GetWindowSize().x - ImGui::GetCursorPos().x - 16.f;
 }
 
-static bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count) {
+bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count) {
 	for(s32 lane = 0; lane < MAX_LANES; lane++) {
 		changed[lane] = false;
 	}

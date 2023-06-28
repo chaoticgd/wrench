@@ -16,13 +16,14 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 23
+format_version: 24
 
 InstanceType Moby {
 	desc: "Moving, interactive, or otherwise dynamic objects with an associated update function."
 	components: "COM_TRANSFORM | COM_CLASS | COM_PVARS | COM_DRAW_DISTANCE | COM_COLOUR"
 	transform_mode: "POSITION_ROTATION_SCALE"
 	variable: "moby_instances"
+	link_type: "mobylink"
 	
 	s8 mission {}
 	s32 uid {}
@@ -61,15 +62,17 @@ InstanceType MobyGroup {
 	components: "COM_TRANSFORM"
 	transform_mode: "POSITION"
 	variable: "moby_groups"
+	link_type: "grouplink"
 	
-	MobyLinks members {}
+	mobylinks members {}
 }
 
 InstanceType Tie {
 	desc: "Large static objects."
-	components: "COM_TRANSFORM | COM_CLASS |COM_DRAW_DISTANCE"
+	components: "COM_TRANSFORM | COM_CLASS | COM_DRAW_DISTANCE"
 	transform_mode: "MATRIX"
 	variable: "tie_instances"
+	link_type: "tielink"
 	
 	s32 occlusion_index {}
 	s32 directional_lights {}
@@ -82,15 +85,17 @@ InstanceType TieGroup {
 	components: "COM_TRANSFORM"
 	transform_mode: "POSITION"
 	variable: "tie_groups"
+	link_type: "tiegrouplink"
 	
-	TieLinks members {}
+	tielinks members {}
 }
 
 InstanceType Shrub {
 	desc: "Small static objects with only a single LOD level and optionally a billboard."
-	components: "COM_TRANSFORM | COM_CLASS |COM_DRAW_DISTANCE | COM_COLOUR"
+	components: "COM_TRANSFORM | COM_CLASS | COM_DRAW_DISTANCE | COM_COLOUR"
 	transform_mode: "MATRIX"
 	variable: "shrub_instances"
+	link_type: "shrublink"
 	
 	s32 unknown_5c {}
 	s32 dir_lights {}
@@ -104,14 +109,16 @@ InstanceType ShrubGroup {
 	components: "COM_TRANSFORM"
 	transform_mode: "POSITION"
 	variable: "shrub_groups"
+	link_type: "shrubgrouplink"
 	
-	ShrubLinks members {}
+	shrublinks members {}
 }
 
 InstanceType DirLight {
 	desc: "A directional light. This is the main type of light."
 	components: "COM_NONE"
 	variable: "dir_lights"
+	link_type: "dirlightlink"
 	
 	vec4 col_a {}
 	vec4 dir_a {}
@@ -124,6 +131,7 @@ InstanceType PointLight {
 	components: "COM_TRANSFORM | COM_COLOUR"
 	transform_mode: "POSITION"
 	variable: "point_lights"
+	link_type: "pointlightlink"
 	
 	f32 radius {}
 }
@@ -133,12 +141,11 @@ InstanceType EnvSamplePoint {
 	components: "COM_TRANSFORM"
 	transform_mode: "POSITION"
 	variable: "env_sample_points"
+	link_type: "envsamplepointlink"
 	
 	s32 hero_light {}
 	s16 music_track {}
-	u8 hero_colour_r {}
-	u8 hero_colour_g {}
-	u8 hero_colour_b {}
+	vec3 hero_col {}
 	
 	bool enable_reverb_params {}
 	u8 reverb_type {}
@@ -149,27 +156,26 @@ InstanceType EnvSamplePoint {
 	bool enable_fog_params {}
 	u8 fog_near_intensity {}
 	u8 fog_far_intensity {}
-	u8 fog_r {}
-	u8 fog_g {}
-	u8 fog_b {}
+	vec3 fog_col {}
 	s16 fog_near_dist {}
 	s16 fog_far_dist {}
 }
 
 InstanceType EnvTransition {
 	desc: "A volume in which there is a transition in lighting and fogging e.g. a doorway."
-	components: "COM_TRANSFORM | COM_BOUNDING_SPHERE"
+	components: "COM_TRANSFORM"
 	transform_mode: "MATRIX_INVERSE"
 	variable: "env_transitions"
+	link_type: "envtransitionlink"
 	
 	bool enable_hero {}
-	vec3 hero_colour_1 {}
-	vec3 hero_colour_2 {}
+	vec3 hero_col_1 {}
+	vec3 hero_col_2 {}
 	s32 hero_light_1 {}
 	s32 hero_light_2 {}
 	bool enable_fog {}
-	vec3 fog_colour_1 {}
-	vec3 fog_colour_2 {}
+	vec3 fog_col_1 {}
+	vec3 fog_col_2 {}
 	f32 fog_near_dist_1 {}
 	f32 fog_near_intensity_1 {}
 	f32 fog_far_dist_1 {}
@@ -185,6 +191,7 @@ InstanceType Cuboid {
 	components: "COM_TRANSFORM | COM_CAMERA_COLLISION"
 	transform_mode: "MATRIX_INVERSE_ROTATION"
 	variable: "cuboids"
+	link_type: "cuboidlink"
 }
 
 InstanceType Sphere {
@@ -192,6 +199,7 @@ InstanceType Sphere {
 	components: "COM_TRANSFORM | COM_CAMERA_COLLISION"
 	transform_mode: "MATRIX_INVERSE_ROTATION"
 	variable: "spheres"
+	link_type: "spherelink"
 }
 
 InstanceType Cylinder {
@@ -199,6 +207,7 @@ InstanceType Cylinder {
 	components: "COM_TRANSFORM | COM_CAMERA_COLLISION"
 	transform_mode: "MATRIX_INVERSE_ROTATION"
 	variable: "cylinders"
+	link_type: "cylinderlink"
 }
 
 InstanceType Pill {
@@ -206,6 +215,7 @@ InstanceType Pill {
 	components: "COM_TRANSFORM | COM_CAMERA_COLLISION"
 	transform_mode: "MATRIX_INVERSE_ROTATION"
 	variable: "pills"
+	link_type: "pilllink"
 }
 
 InstanceType Camera {
@@ -213,13 +223,15 @@ InstanceType Camera {
 	components: "COM_TRANSFORM | COM_CLASS |COM_PVARS"
 	transform_mode: "POSITION_ROTATION"
 	variable: "cameras"
+	link_type: "cameralink"
 }
 
 InstanceType Sound {
 	desc: "A sound instance."
-	components: "COM_TRANSFORM | COM_CLASS |COM_PVARS"
+	components: "COM_TRANSFORM | COM_CLASS | COM_PVARS"
 	transform_mode: "MATRIX_INVERSE_ROTATION"
 	variable: "sound_instances"
+	link_type: "soundlink"
 	
 	s16 m_class {}
 	f32 range {}
@@ -229,12 +241,14 @@ InstanceType Path {
 	desc: "A spline."
 	components: "COM_SPLINE"
 	variable: "paths"
+	link_type: "pathlink"
 }
 
 InstanceType GrindPath {
 	desc: "A spline used for generating a grind rail."
-	components: "COM_SPLINE | COM_BOUNDING_SPHERE"
+	components: "COM_SPLINE"
 	variable: "grind_paths"
+	link_type: "grindlink"
 	
 	s32 unknown_4 {}
 	s32 wrap {}
@@ -243,20 +257,22 @@ InstanceType GrindPath {
 
 InstanceType Area {
 	desc: "A volume composed of multiple smaller volumes."
-	components: "COM_TRANSFORM | COM_BOUNDING_SPHERE"
+	components: "COM_TRANSFORM"
 	transform_mode: "POSITION"
 	variable: "areas"
+	link_type: "arealink"
 	
 	s32 last_update_time {}
-	PathLinks paths {}
-	CuboidLinks cuboids {}
-	SphereLinks spheres {}
-	CylinderLinks cylinders {}
-	CuboidLinks negative_cuboids {}
+	pathlinks paths {}
+	cuboidlinks cuboids {}
+	spherelinks spheres {}
+	cylinderlinks cylinders {}
+	cuboidlinks negative_cuboids {}
 }
 
 InstanceType SharedData {
 	desc: "A container for data shared between multiple moby, camera or sound instances. Referenced via pvars. Shared data pvars cannot contain pointers to other shared data instances."
 	components: "COM_PVARS"
 	variable: "shared_data"
+	link_type: "shareddatalink"
 }
