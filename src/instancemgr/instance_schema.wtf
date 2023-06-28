@@ -62,7 +62,7 @@ InstanceType MobyGroup {
 	components: "COM_TRANSFORM"
 	transform_mode: "POSITION"
 	variable: "moby_groups"
-	link_type: "mobygrouplink"
+	link_type: "grouplink"
 	
 	mobylinks members {}
 }
@@ -248,7 +248,7 @@ InstanceType GrindPath {
 	desc: "A spline used for generating a grind rail."
 	components: "COM_SPLINE"
 	variable: "grind_paths"
-	link_type: "grindpathlink"
+	link_type: "grindlink"
 	
 	s32 unknown_4 {}
 	s32 wrap {}

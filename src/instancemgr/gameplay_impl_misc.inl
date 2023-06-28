@@ -151,9 +151,8 @@ struct LevelSettingsBlock {
 				verify(src.rac3_third_part.has_value(), "Missing rac3_third_part in level settings block.");
 				dest.write(*src.rac3_third_part);
 			} else if(game == Game::DL) {
-				verify(src.third_part.has_value(), "Missing third_part in level settings block.");
-				dest.write((s32) src.third_part->size());
-				if(src.third_part->size() > 0) {
+				dest.write((s32) opt_size(src.third_part));
+				if(opt_size(src.third_part) > 0) {
 					dest.write_multiple(*src.third_part);
 					verify(src.reward_stats.has_value(), "Missing fourth_part in level settings block.");
 					dest.write(*src.reward_stats);
