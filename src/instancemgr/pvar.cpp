@@ -470,7 +470,7 @@ static void generate_other_pvar_types(std::vector<CppType>& dest, const std::map
 	}
 }
 
-static void rewrite_pvar_links(std::vector<u8>& data, const CppType& type, s32 offset, const std::map<std::string, CppType>& types, const Instances& instances);
+static void rewrite_pvar_links(std::vector<u8>& data, const CppType& type, s32 offset, const std::map<std::string, CppType>& types, const Instances& instances, const char* context);
 static void enumerate_moby_links(std::vector<PvarFixupEntry>& dest, const CppType& type, s32 offset, s32 pvar_index, const std::map<std::string, CppType>& types);
 
 void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::string, CppType>& types_src) {
@@ -511,7 +511,8 @@ void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::strin
 		// HACK: This check is only here because the it's failing for moby class
 		// 3107 in Deadlocked.
 		if(align32(type.size, 16) <= pvars.size()) {
-			rewrite_pvar_links(pvars, type, 0, types_src, src);
+			std::string context = stringf("pvar type %s", type.name.c_str());
+			rewrite_pvar_links(pvars, type, 0, types_src, src, context.c_str());
 			
 			inst.pvars().temp_pvar_index = (s32) dest.pvar_table->size();
 			PvarTableEntry& entry = dest.pvar_table->emplace_back();
@@ -566,18 +567,18 @@ void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::strin
 	}
 }
 
-static void rewrite_pvar_links(std::vector<u8>& data, const CppType& type, s32 offset, const std::map<std::string, CppType>& types, const Instances& instances) {
+static void rewrite_pvar_links(std::vector<u8>& data, const CppType& type, s32 offset, const std::map<std::string, CppType>& types, const Instances& instances, const char* context) {
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
 			for(s32 i = 0; i < type.array.element_count; i++) {
-				rewrite_pvar_links(data, *type.array.element_type, offset + i * type.array.element_type->size, types, instances);
+				rewrite_pvar_links(data, *type.array.element_type, offset + i * type.array.element_type->size, types, instances, context);
 			}
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
 			if(!type.struct_or_union.is_union) {
 				for(const CppType& field : type.struct_or_union.fields) {
-					rewrite_pvar_links(data, field, offset + field.offset, types, instances);
+					rewrite_pvar_links(data, field, offset + field.offset, types, instances, context);
 				}
 			}
 			break;
@@ -586,11 +587,11 @@ static void rewrite_pvar_links(std::vector<u8>& data, const CppType& type, s32 o
 			if(type.type_name.string.ends_with("link")) {
 				verify(type.size == 4 && offset + 4 <= data.size(), "Size error rewriting link.");
 				s32* link = (s32*) (data.data() + offset); 
-				*link = rewrite_link(*link, type.type_name.string.c_str(), instances);
+				*link = rewrite_link(*link, type.type_name.string.c_str(), instances, context);
 			} else {
 				auto iter = types.find(type.type_name.string);
 				verify(iter != types.end(), "Failed to lookup type '%s'.", type.type_name.string.c_str());
-				rewrite_pvar_links(data, iter->second, offset, types, instances);
+				rewrite_pvar_links(data, iter->second, offset, types, instances, context);
 			}
 			break;
 		}

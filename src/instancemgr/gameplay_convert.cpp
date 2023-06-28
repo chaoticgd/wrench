@@ -225,46 +225,50 @@ static void rewrite_links_to_indices(Instances& instances) {
 	rewrite_level_settings_links(instances.level_settings, instances);
 	
 	for(MobyGroupInstance& inst : instances.moby_groups) {
+		std::string context = stringf("moby group %d", inst.id().value);
 		for(mobylink& link : inst.members) {
-			link.id = rewrite_link(link.id, INST_MOBY, instances);
+			link.id = rewrite_link(link.id, INST_MOBY, instances, context.c_str());
 		}
 	}
 	
 	for(TieGroupInstance& inst : instances.tie_groups) {
+		std::string context = stringf("tie group %d", inst.id().value);
 		for(tielink& link : inst.members) {
-			link.id = rewrite_link(link.id, INST_TIE, instances);
+			link.id = rewrite_link(link.id, INST_TIE, instances, context.c_str());
 		}
 	}
 	
 	for(ShrubGroupInstance& inst : instances.shrub_groups) {
+		std::string context = stringf("shrub group %d", inst.id().value);
 		for(shrublink& link : inst.members) {
-			link.id = rewrite_link(link.id, INST_SHRUB, instances);
+			link.id = rewrite_link(link.id, INST_SHRUB, instances, context.c_str());
 		}
 	}
 	
 	for(AreaInstance& inst : instances.areas) {
-		for(pathlink& link : inst.paths) link.id = rewrite_link(link.id, INST_PATH, instances);
-		for(cuboidlink& link : inst.cuboids) link.id = rewrite_link(link.id, INST_CUBOID, instances);
-		for(spherelink& link : inst.spheres) link.id = rewrite_link(link.id, INST_SPHERE, instances);
-		for(cylinderlink& link : inst.cylinders) link.id = rewrite_link(link.id, INST_CYLINDER, instances);
-		for(cuboidlink& link : inst.negative_cuboids) link.id = rewrite_link(link.id, INST_CUBOID, instances);
+		std::string context = stringf("area %d", inst.id().value);
+		for(pathlink& link : inst.paths) link.id = rewrite_link(link.id, INST_PATH, instances, context.c_str());
+		for(cuboidlink& link : inst.cuboids) link.id = rewrite_link(link.id, INST_CUBOID, instances, context.c_str());
+		for(spherelink& link : inst.spheres) link.id = rewrite_link(link.id, INST_SPHERE, instances, context.c_str());
+		for(cylinderlink& link : inst.cylinders) link.id = rewrite_link(link.id, INST_CYLINDER, instances, context.c_str());
+		for(cuboidlink& link : inst.negative_cuboids) link.id = rewrite_link(link.id, INST_CUBOID, instances, context.c_str());
 	}
 }
 
-s32 rewrite_link(s32 id, const char* link_type_name, const Instances& instances) {
+s32 rewrite_link(s32 id, const char* link_type_name, const Instances& instances, const char* context) {
 	if(strcmp(link_type_name, "missionlink") == 0) return id;
 	
 	#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
-		if(strcmp(link_type_name, #link_type) == 0) return rewrite_link(id, INST_##inst_type_uppercase, instances);
+		if(strcmp(link_type_name, #link_type) == 0) return rewrite_link(id, INST_##inst_type_uppercase, instances, context);
 	#define GENERATED_INSTANCE_MACRO_CALLS
 	#include "_generated_instance_types.inl"
 	#undef GENERATED_INSTANCE_MACRO_CALLS
 	#undef DEF_INSTANCE
 	
-	verify_not_reached("Failed to rewrite link %d. Unknown type name '%s'.", id, link_type_name);
+	verify_not_reached("Failed to rewrite link %d in %s. Unknown type name '%s'.", id, context, link_type_name);
 }
 
-s32 rewrite_link(s32 id, InstanceType type, const Instances& instances) {
+s32 rewrite_link(s32 id, InstanceType type, const Instances& instances, const char* context) {
 	if(id == -1) {
 		return -1;
 	}
@@ -277,7 +281,7 @@ s32 rewrite_link(s32 id, InstanceType type, const Instances& instances) {
 			} else {
 				index += instances.core->moby_instances.size();
 			}
-			verify(index > -1, "Failed to rewrite mobylink %d to index.", id);
+			verify(index > -1, "Failed to rewrite mobylink %d to index in %s.", id, context);
 			return index;
 		}
 	}
@@ -288,7 +292,7 @@ s32 rewrite_link(s32 id, InstanceType type, const Instances& instances) {
 		#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
 			case INST_##inst_type_uppercase: { \
 				s32 index = base_instances->inst_variable.id_to_index(id); \
-				verify(index > -1, "Failed to rewrite %s %d to index.", #link_type, id); \
+				verify(index > -1, "Failed to rewrite %s %d to index in %s.", #link_type, id, context); \
 				return index; \
 			}
 		#define GENERATED_INSTANCE_MACRO_CALLS
