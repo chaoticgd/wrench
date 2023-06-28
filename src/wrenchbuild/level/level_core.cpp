@@ -208,8 +208,10 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	}
 	
 	if(src.has_occlusion()) {
-		const Asset& occlusion_asset = src.get_occlusion();
-		header.occlusion = pack_asset<ByteRange>(data, occlusion_asset, config, 0x40).offset;
+		const OcclusionAsset& occlusion_asset = src.get_occlusion();
+		if(occlusion_asset.has_grid()) {
+			header.occlusion = pack_asset<ByteRange>(data, occlusion_asset, config, 0x40).offset;
+		}
 	}
 	if(src.has_sky()) {
 		header.sky = pack_asset<ByteRange>(data, src.get_sky(), config, 0x40).offset;
