@@ -405,8 +405,8 @@ static void create_dock_layout() {
 	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
 	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1.f, 1.f));
 
-	ImGuiID left_centre, right;
-	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &left_centre, &right);
+	ImGuiID right, left_centre;
+	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.5f, &right, &left_centre);
 	
 	ImGui::DockBuilderDockWindow("3D View", left_centre);
 	ImGui::DockBuilderDockWindow("Inspector", right);
