@@ -27,8 +27,11 @@ static std::string find_wad(const fs::path& directory, const char* file_name) {
 	if(fs::exists(directory/".."/"data"/file_name)) {
 		return (directory/".."/"data"/file_name).string();
 	}
+	if(fs::exists(directory/".."/".."/"data"/file_name)) {
+		return (directory/".."/".."/"data"/file_name).string();
+	}
 	if(fs::exists(directory/".."/"share"/"wrench"/file_name)) {
 		return (directory/".."/"share"/"wrench"/file_name).string();
 	}
-	verify_not_reached("Failed to find '%s'.", file_name);
+	verify_not_reached_fatal("Failed to load WAD.");
 }
