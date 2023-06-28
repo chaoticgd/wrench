@@ -23,8 +23,9 @@
 
 static void recurse(Asset& asset, AssetSelector& state);
 static std::string get_display_name(Asset& asset);
+static size_t compare_asset_links_numerically(const std::pair<std::string, Asset*>& lhs, const std::pair<std::string, Asset*>& rhs);
 
-static std::vector<Asset*> assets;
+static std::vector<std::pair<std::string, Asset*>> assets;
 
 Asset* asset_selector(const char* label, const char* preview_value, AssetSelector& state, AssetForest& forest) {
 	Asset* selected = nullptr;
@@ -35,10 +36,11 @@ Asset* asset_selector(const char* label, const char* preview_value, AssetSelecto
 			if(Asset* root = forest.any_root()) {
 				recurse(*root, state);
 			}
+			std::sort(BEGIN_END(assets), compare_asset_links_numerically);
 			open_last_frame = true;
 		}
-		for(Asset* asset : assets) {
-			if(ImGui::Selectable(get_display_name(*asset).c_str())) {
+		for(auto [link, asset] : assets) {
+			if(ImGui::Selectable(link.c_str())) {
 				selected = asset;
 			}
 		}
@@ -51,7 +53,7 @@ Asset* asset_selector(const char* label, const char* preview_value, AssetSelecto
 
 static void recurse(Asset& asset, AssetSelector& state) {
 	if(asset.logical_type() == state.required_type) {
-		assets.push_back(&asset.highest_precedence());
+		assets.emplace_back(get_display_name(asset), &asset);
 		if(state.no_recurse) {
 			return;
 		}
@@ -70,4 +72,35 @@ static std::string get_display_name(Asset& asset) {
 		}
 	}
 	return link;
+}
+
+static size_t compare_asset_links_numerically(const std::pair<std::string, Asset*>& lhs, const std::pair<std::string, Asset*>& rhs) {
+	const std::string& l = lhs.first;
+	const std::string& r = rhs.first;
+	size_t i = 0, j = 0;
+	while(i < l.size() && j < r.size()) {
+		if(isdigit(l[i]) && isdigit(r[j])) {
+			size_t start_i = i;
+			size_t start_j = j;
+			do {
+				i++;
+			} while(l[i] >= '0' && l[i] <= '9');
+			do {
+				j++;
+			} while(r[j] >= '0' && r[j] <= '9');
+			if(i - start_i != j - start_j) {
+				return i - start_i < j - start_j;
+			}
+			for(size_t k = 0; k < i - start_i; k++) {
+				if(l[start_i + k] != r[start_j + k]) {
+					return l[start_i + k] < r[start_j + k];
+				}
+			}
+		} else if(l[i] != r[j]) {
+			return l[i] < r[j];
+		} else {
+			i++; j++;
+		}
+	}
+	return l.size() < r.size();
 }
