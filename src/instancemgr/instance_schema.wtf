@@ -92,7 +92,7 @@ InstanceType TieGroup {
 
 InstanceType Shrub {
 	desc: "Small static objects with only a single LOD level and optionally a billboard."
-	components: "COM_TRANSFORM | COM_CLASS |COM_DRAW_DISTANCE | COM_COLOUR"
+	components: "COM_TRANSFORM | COM_CLASS | COM_DRAW_DISTANCE | COM_COLOUR"
 	transform_mode: "MATRIX"
 	variable: "shrub_instances"
 	link_type: "shrublink"
@@ -145,9 +145,7 @@ InstanceType EnvSamplePoint {
 	
 	s32 hero_light {}
 	s16 music_track {}
-	u8 hero_colour_r {}
-	u8 hero_colour_g {}
-	u8 hero_colour_b {}
+	vec3 hero_col {}
 	
 	bool enable_reverb_params {}
 	u8 reverb_type {}
@@ -158,9 +156,7 @@ InstanceType EnvSamplePoint {
 	bool enable_fog_params {}
 	u8 fog_near_intensity {}
 	u8 fog_far_intensity {}
-	u8 fog_r {}
-	u8 fog_g {}
-	u8 fog_b {}
+	vec3 fog_col {}
 	s16 fog_near_dist {}
 	s16 fog_far_dist {}
 }
@@ -173,13 +169,13 @@ InstanceType EnvTransition {
 	link_type: "envtransitionlink"
 	
 	bool enable_hero {}
-	vec3 hero_colour_1 {}
-	vec3 hero_colour_2 {}
+	vec3 hero_col_1 {}
+	vec3 hero_col_2 {}
 	s32 hero_light_1 {}
 	s32 hero_light_2 {}
 	bool enable_fog {}
-	vec3 fog_colour_1 {}
-	vec3 fog_colour_2 {}
+	vec3 fog_col_1 {}
+	vec3 fog_col_2 {}
 	f32 fog_near_dist_1 {}
 	f32 fog_near_intensity_1 {}
 	f32 fog_far_dist_1 {}
@@ -232,7 +228,7 @@ InstanceType Camera {
 
 InstanceType Sound {
 	desc: "A sound instance."
-	components: "COM_TRANSFORM | COM_CLASS |COM_PVARS"
+	components: "COM_TRANSFORM | COM_CLASS | COM_PVARS"
 	transform_mode: "MATRIX_INVERSE_ROTATION"
 	variable: "sound_instances"
 	link_type: "soundlink"

@@ -26,9 +26,7 @@
 packed_struct(RacEnvSamplePointPacked,
 	/* 0x00 */ Vec3f pos;
 	/* 0x0c */ f32 one;
-	/* 0x10 */ s32 hero_colour_r;
-	/* 0x14 */ s32 hero_colour_g;
-	/* 0x18 */ s32 hero_colour_b;
+	/* 0x10 */ Rgb96 hero_col;
 	/* 0x1c */ s32 hero_light;
 	/* 0x20 */ s32 reverb_depth;
 	/* 0x24 */ u8 reverb_type;
@@ -67,9 +65,7 @@ struct RacEnvSamplePointBlock {
 	}
 	
 	static void swap_env_params(EnvSamplePointInstance& l, RacEnvSamplePointPacked& r) {
-		SWAP_PACKED(l.hero_colour_r, r.hero_colour_r);
-		SWAP_PACKED(l.hero_colour_g, r.hero_colour_g);
-		SWAP_PACKED(l.hero_colour_b, r.hero_colour_b);
+		SWAP_COLOUR(l.hero_col, r.hero_col);
 		SWAP_PACKED(l.hero_light, r.hero_light);
 		SWAP_PACKED(l.reverb_depth, r.reverb_depth);
 		SWAP_PACKED(l.reverb_type, r.reverb_type);
@@ -90,16 +86,12 @@ packed_struct(GcUyaDlEnvSamplePointPacked,
 	/* 0x0c */ s16 music_track;
 	/* 0x0e */ u8 fog_near_intensity;
 	/* 0x0f */ u8 fog_far_intensity;
-	/* 0x10 */ u8 hero_colour_r;
-	/* 0x11 */ u8 hero_colour_g;
-	/* 0x12 */ u8 hero_colour_b;
+	/* 0x10 */ Rgb24 hero_col;
 	/* 0x13 */ u8 reverb_type;
 	/* 0x14 */ u8 reverb_delay;
 	/* 0x15 */ u8 reverb_feedback;
 	/* 0x16 */ u8 enable_reverb_params;
-	/* 0x17 */ u8 fog_r;
-	/* 0x18 */ u8 fog_g;
-	/* 0x19 */ u8 fog_b;
+	/* 0x17 */ Rgb24 fog_col;
 	/* 0x1a */ s16 fog_near_dist;
 	/* 0x1c */ s16 fog_far_dist;
 	/* 0x1e */ u16 unused_1e;
@@ -155,16 +147,12 @@ struct GcUyaDlEnvSamplePointBlock {
 		SWAP_PACKED(l.music_track, r.music_track);
 		SWAP_PACKED(l.fog_near_intensity, r.fog_near_intensity);
 		SWAP_PACKED(l.fog_far_intensity, r.fog_far_intensity);
-		SWAP_PACKED(l.hero_colour_r, r.hero_colour_r);
-		SWAP_PACKED(l.hero_colour_g, r.hero_colour_g);
-		SWAP_PACKED(l.hero_colour_b, r.hero_colour_b);
+		SWAP_COLOUR(l.hero_col, r.hero_col);
 		SWAP_PACKED(l.reverb_type, r.reverb_type);
 		SWAP_PACKED(l.reverb_delay, r.reverb_delay);
 		SWAP_PACKED(l.reverb_feedback, r.reverb_feedback);
 		SWAP_PACKED(l.enable_reverb_params, r.enable_reverb_params);
-		SWAP_PACKED(l.fog_r, r.fog_r);
-		SWAP_PACKED(l.fog_g, r.fog_g);
-		SWAP_PACKED(l.fog_b, r.fog_b);
+		SWAP_COLOUR(l.fog_col, r.fog_col);
 	}
 };
 
@@ -230,12 +218,12 @@ struct EnvTransitionBlock {
 	}
 	
 	static void swap_env_transition(EnvTransitionInstance& l, EnvTransitionPacked& r) {
-		SWAP_COLOUR(l.hero_colour_1, r.hero_colour_1);
-		SWAP_COLOUR(l.hero_colour_2, r.hero_colour_2);
+		SWAP_COLOUR(l.hero_col_1, r.hero_colour_1);
+		SWAP_COLOUR(l.hero_col_2, r.hero_colour_2);
 		SWAP_PACKED(l.hero_light_1, r.hero_light_1);
 		SWAP_PACKED(l.hero_light_2, r.hero_light_2);
-		SWAP_COLOUR(l.fog_colour_1, r.fog_colour_1);
-		SWAP_COLOUR(l.fog_colour_2, r.fog_colour_2);
+		SWAP_COLOUR(l.fog_col_1, r.fog_colour_1);
+		SWAP_COLOUR(l.fog_col_2, r.fog_colour_2);
 		SWAP_PACKED(l.fog_near_dist_1, r.fog_near_dist_1);
 		SWAP_PACKED(l.fog_near_intensity_1, r.fog_near_intensity_1);
 		SWAP_PACKED(l.fog_far_dist_1, r.fog_far_dist_1);

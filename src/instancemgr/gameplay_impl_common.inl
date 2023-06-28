@@ -84,6 +84,12 @@ static void swap_position_rotation_scale(Instance& instance, Packed& packed) {
 	packed.scale = scale;
 }
 
+packed_struct(Rgb24,
+	/* 0x0 */ u8 r;
+	/* 0x1 */ u8 g;
+	/* 0x2 */ u8 b;
+)
+
 packed_struct(Rgb32,
 	/* 0x0 */ u8 r;
 	/* 0x1 */ u8 g;
