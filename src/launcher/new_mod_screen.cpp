@@ -71,7 +71,9 @@ bool new_mod_screen() {
 				stream.open(path/"gameinfo.txt");
 				stream.write_n((u8*) text.data(), text.size());
 				
-				open_in_file_manager(path.string().c_str());
+				if(open_folder) {
+					open_in_file_manager(path.string().c_str());
+				}
 				
 				mods_folder = 0;
 				folder = "";
