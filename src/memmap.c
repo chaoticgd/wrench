@@ -73,7 +73,7 @@ static const char** SEGMENT_LABELS[GAME_COUNT] = {
 	NULL, RAC2_SEGMENT_LABELS, RAC3_SEGMENT_LABELS, DL_SEGMENT_LABELS
 };
 
-int main(int argc, char** argv) {
+int wrenchmain(int argc, char** argv) {
 	if(argc != 2) {
 		fprintf(stderr, "usage: %s path/to/eeMemory.bin\n", argv[0]);
 		fprintf(stderr, "Supports R&C1, R&C2, R&C3 and Deadlocked.\n");

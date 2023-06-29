@@ -24,7 +24,7 @@
 
 #include <platform/fileio.h>
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	size_t retval;
 
 	if(argc <= 3) {

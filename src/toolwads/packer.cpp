@@ -35,7 +35,7 @@ static s32 parse_positive_embedded_int(const char* str);
 
 std::string build_dir;
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	if(argc != 2) {
 		if(argc != 0) {
 			fprintf(stderr, "usage: %s <build dir>\n", argv[0]);

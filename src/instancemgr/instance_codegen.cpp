@@ -36,7 +36,7 @@ static void out(const char* format, ...);
 
 static WrenchFileHandle* out_handle = NULL;
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	assert(argc == 3);
 	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
 	if(!file) {
@@ -96,6 +96,8 @@ int main(int argc, char** argv) {
 	generate_instance_type_to_string_func(root);
 	out("");
 	out("#endif");
+	
+	return 0;
 }
 
 static void generate_instance_macro_calls(WtfNode* root) {

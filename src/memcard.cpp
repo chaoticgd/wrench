@@ -93,7 +93,7 @@ static std::string error_message;
 static memory_card::SaveGame save;
 static bool raw_mode = false;
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	WadPaths wads = find_wads(argv[0]);
 	g_guiwad.open(wads.gui);
 	
@@ -121,6 +121,7 @@ int main(int argc, char** argv) {
 		frame++;
 	}
 	gui::shutdown(window);
+	return 0;
 }
 
 static void update_gui(f32 delta_time) {

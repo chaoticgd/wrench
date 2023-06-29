@@ -59,7 +59,7 @@ static Instances load_instances(const Asset& src, Game game);
 static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel& level);
 static s32 chunk_index_from_position(const glm::vec3& point, const Instances& instances);
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	if(argc != 4) {
 		fprintf(stderr, "usage: %s <game path> <mod path> <asset link of LevelWad asset>\n", (argc > 0) ? argv[0] : "wrenchvis");
 		return 1;
@@ -98,6 +98,7 @@ int main(int argc, char** argv) {
 		stop_stdout_flusher_thread();
 		throw;
 	}
+	return 0;
 }
 
 static std::vector<OcclChunk> load_chunks(const CollectionAsset& collection, Game game) {

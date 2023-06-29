@@ -23,7 +23,7 @@
 #include <core/vif.h>
 #include <core/filesystem.h>
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	if(argc != 3) {
 		fprintf(stderr, "usage: %s <input file> <offset>", (argc > 0) ? argv[0] : "vif");
 		return 1;
@@ -45,4 +45,5 @@ int main(int argc, char** argv) {
 			command_list = read_vif_command_list(Buffer(data).subbuf(offset + packet.offset + 4, SIZE_MAX));
 		}
 	}
+	return 0;
 }

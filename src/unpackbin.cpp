@@ -22,7 +22,7 @@
 
 static std::vector<u8> extract_file(std::vector<u8>& file);
 
-int main(int argc, const char** argv) {
+extern "C" int wrenchmain(int argc, const char** argv) {
 	if(argc != 3) {
 		fprintf(stderr, "usage: %s <input file> <output file>\n", (argc > 0) ? argv[0] : "unpackbin");
 		return 1;

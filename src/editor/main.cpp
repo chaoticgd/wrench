@@ -33,7 +33,7 @@ static void update(f32 delta_time);
 static void update_camera(app* a);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	if(argc != 3) {
 		fprintf(stderr, "usage: %s <game path> <mod path>\n", argv[0]);
 		return 1;
@@ -56,6 +56,8 @@ int main(int argc, char** argv) {
 	GLFWwindow* window = gui::startup("Wrench Editor", 1280, 720, true, &callbacks);
 	run_wrench(window, wads, game_path, mod_path);
 	gui::shutdown(window);
+	
+	return 0;
 }
 
 

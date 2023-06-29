@@ -25,7 +25,7 @@ using Json = nlohmann::ordered_json;
 static Json node_to_json(WtfNode* node);
 static Json attribute_to_json(WtfAttribute* attribute);
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	if(argc != 3) {
 		fprintf(stderr, "usage: %s <input .asset file> <output .json file>\n", argv[0]);
 		return 1;
@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
 	write_file("/", argv[2], Buffer(output), "w");
 	
 	wtf_free(root);
+	return 0;
 }
 
 static Json node_to_json(WtfNode* node) {

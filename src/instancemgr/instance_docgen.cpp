@@ -31,7 +31,7 @@ static void out(const char* format, ...);
 
 static WrenchFileHandle* out_handle = NULL;
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	assert(argc == 3);
 	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
 	if(!file) {
@@ -86,6 +86,8 @@ int main(int argc, char** argv) {
 		}
 		out("");
 	}
+	
+	return 0;
 }
 
 static void out(const char* format, ...) {

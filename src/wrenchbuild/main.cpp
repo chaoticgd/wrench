@@ -89,7 +89,7 @@ static void print_version();
 
 #define require_args(arg_count) verify(argc == arg_count, "Incorrect number of arguments.");
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	try {
 		int exit_code = wrenchbuild(argc, argv);
 		stop_stdout_flusher_thread();
@@ -102,6 +102,7 @@ int main(int argc, char** argv) {
 		stop_stdout_flusher_thread();
 		throw;
 	}
+	return 0;
 }
 
 static int wrenchbuild(int argc, char** argv) {

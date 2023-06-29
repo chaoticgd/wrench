@@ -45,7 +45,7 @@ static void out(const char* format, ...);
 static FILE* out_file = NULL;
 static WrenchFileHandle* out_handle = NULL;
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	assert(argc == 2 || argc == 3);
 	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
 	if(!file) {
@@ -87,9 +87,11 @@ int main(int argc, char** argv) {
 	
 	wtf_free(root);
 
-	if (out_handle != NULL) {
+	if(out_handle != NULL) {
 		file_close(out_handle);
 	}
+	
+	return 0;
 }
 
 static void write_index(const WtfNode* root) {

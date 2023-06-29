@@ -43,7 +43,7 @@ static Texture load_image_from_launcher_wad(SectorRange range);
 
 static WadPaths wad_paths;
 
-int main(int argc, char** argv) {
+extern "C" int wrenchmain(int argc, char** argv) {
 	g_launcher.mode = LauncherMode::DRAWING_GUI;
 	
 	wad_paths = find_wads(argv[0]);
@@ -100,6 +100,8 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
+	
+	return 0;
 }
 
 void update_gui(f32 delta_time) {
