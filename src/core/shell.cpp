@@ -218,11 +218,11 @@ void CommandThread::update_last_output_lines() {
 static void shell_exec_utf8(const char* str) {
 	int wide_char_count = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, str, -1, (LPWSTR) 0, 0);
 	if(wide_char_count == 0) return;
-	wchar_t* wide_string = malloc(wide_char_count * sizeof(WCHAR));
+	LPWSTR wide_string = (LPWSTR) malloc(wide_char_count * sizeof(WCHAR));
 	if(wide_string == nullptr) return;
 	int chars_written = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, str, -1, wide_string, wide_char_count);
 	if(chars_written != wide_char_count) return;
-	ShellExecuteW(nullptr, "open", wide_string, nullptr, nullptr, SW_SHOWDEFAULT);
+	ShellExecuteW(nullptr, L"open", wide_string, nullptr, nullptr, SW_SHOWDEFAULT);
 }
 #endif
 
