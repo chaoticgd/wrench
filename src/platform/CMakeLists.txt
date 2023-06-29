@@ -3,14 +3,14 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 if(WIN32)
-	set(WRENCH_FILEIO_SRC fileio_win.c)
-	set(WRENCH_PIPEIO_SRC pipeio_win.c)
+	add_library(wrenchplatform STATIC
+		fileio_win.c
+		pipeio_win.c
+		utf8.manifest
+	)
 else()
-	set(WRENCH_FILEIO_SRC fileio.c)
-	set(WRENCH_PIPEIO_SRC pipeio.c)
+	add_library(wrenchplatform STATIC
+		fileio.c
+		pipeio.c
+	)
 endif()
-
-add_library(wrenchplatform STATIC
-	${WRENCH_FILEIO_SRC}
-	${WRENCH_PIPEIO_SRC}
-)
