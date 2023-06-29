@@ -96,7 +96,7 @@ ChunkWadHeader write_level_chunks(OutputStream& dest, const std::vector<LevelChu
 					dest.pad(0x10, 0);
 					chunk_header.collision = (s32) dest.tell() - chunk_header_ofs;
 					std::vector<u8> compressed_collision;
-					compress_wad(compressed_collision, chunks[i].tfrags, "chunkcoll", 8);
+					compress_wad(compressed_collision, chunks[i].collision, "chunkcoll", 8);
 					dest.write_v(compressed_collision);
 				}
 				dest.write(chunk_header_ofs, chunk_header);
