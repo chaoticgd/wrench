@@ -59,6 +59,10 @@ set(ZLIB_FOUND TRUE)
 set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib ${CMAKE_BINARY_DIR}/thirdparty/zlib)
 # ZLIB_INCLUDE_DIRS is used by genout.cmake.in from libpng.
 set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/thirdparty/zlib ${CMAKE_BINARY_DIR}/thirdparty/zlib)
+set_target_properties(example minigzip PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+if(HAVE_OFF64_T)
+	set_target_properties(example64 minigzip64 PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+endif()
 if(WIN32)
 	# ZLIB_LIBRARY is used by libzip and must be set at configuration time hence
 	# we copy the library file into a fixed location.
