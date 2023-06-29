@@ -216,11 +216,30 @@ void CommandThread::update_last_output_lines() {
 
 s32 execute_command(s32 argc, const char** argv, bool blocking) {
 	verify_fatal(argc >= 1);
-
+	
 	std::string command_string = prepare_arguments(argc, argv);
-
+	
 	if(!blocking) {
+#ifdef _WIN32
+		STARTUPINFO startup_info;
+		memset(&startup_info, 0, sizeof(STARTUPINFOW));
+		
+		startup_info.cb = sizeof(STARTUPINFOW);
+		startup_info.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+		startup_info.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+		startup_info.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+		startup_info.dwFlags |= STARTF_USESTDHANDLES;
+		
+		PROCESS_INFORMATION process_info;
+		memset(&process_info, 0, sizeof(PROCESS_INFORMATION));
+		
+		if(CreateProcessA(NULL, (LPSTR) command_string.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &startup_info, &process_info)) {
+			CloseHandle(process_info.hProcess);
+			CloseHandle(process_info.hThread);
+		}
+#else
 		popen(command_string.c_str(), "r");
+#endif
 		return 0;
 	}
 

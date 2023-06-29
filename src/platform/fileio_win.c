@@ -113,7 +113,7 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 	int wide_string_size = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input_string, -1, (LPWSTR) 0, 0);
 	_fileio_verify(wide_string_size != 0,
 		(WrenchFileHandle*) 0,
-		"Failed to compute wide filename size. WinAPI Error Code: %lu.",
+		"MultiByteToWideChar: %lu.",
 		GetLastError());
 
 	struct _file_open_clear_list list = {.wide_string = NULL};
@@ -122,14 +122,14 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 	_fileio_verify_with_clear(list.wide_string != (LPWSTR) 0,
 		(WrenchFileHandle*) 0,
 		_file_open_clear(&list),
-		"Failed to allocate wide filename.");
+		"malloc");
 
 	int written_bytes =
 		MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input_string, -1, list.wide_string, wide_string_size);
 	_fileio_verify_with_clear(written_bytes != 0,
 		(WrenchFileHandle*) 0,
 		_file_open_clear(&list),
-		"Failed to convert filename. WinAPI Error Code: %lu.",
+		"MultiByteToWideChar: %lu.",
 		GetLastError());
 
 	HANDLE file_handle = CreateFileW(list.wide_string,
@@ -142,14 +142,14 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 	_fileio_verify_with_clear(file_handle != INVALID_HANDLE_VALUE,
 		(WrenchFileHandle*) 0,
 		_file_open_clear(&list),
-		"Failed to open file. WinAPI Error Code: %lu.",
+		"CreateFileW: %lu.",
 		GetLastError());
 
 	WrenchFileHandle* file = (WrenchFileHandle*) malloc(sizeof(WrenchFileHandle));
 	_fileio_verify_with_clear(file != (WrenchFileHandle*) 0,
 		(WrenchFileHandle*) 0,
 		_file_open_clear(&list),
-		"Failed to allocate WrenchFileHandle.");
+		"malloc");
 
 	file->file = file_handle;
 	file->may_flush = may_flush;
@@ -174,7 +174,7 @@ size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
 	DWORD _bytes_read;
 
 	BOOL success = ReadFile(file->file, (LPVOID) buffer, _num_bytes, (LPDWORD) &_bytes_read, (LPOVERLAPPED) 0);
-	_fileio_verify(success != 0, 0, "Failed to read from file. WinAPI Error Code: %lu.", GetLastError());
+	_fileio_verify(success != 0, 0, "ReadFile: %lu.", GetLastError());
 
 	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
@@ -295,7 +295,7 @@ int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin) {
 	_offset.QuadPart = offset;
 
 	BOOL success = SetFilePointerEx(file->file, _offset, (PLARGE_INTEGER) 0, _move_method);
-	_fileio_verify(success != 0, EOF, "Failed to seek file. WinAPI Error Code: %lu.", GetLastError());
+	_fileio_verify(success != 0, EOF, "SetFilePointerEx: %lu.", GetLastError());
 
 	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
@@ -309,7 +309,7 @@ size_t file_tell(WrenchFileHandle* file) {
 	_offset.QuadPart = 0;
 	LARGE_INTEGER _tell;
 	BOOL success = SetFilePointerEx(file->file, _offset, (PLARGE_INTEGER) &_tell, FILE_CURRENT);
-	_fileio_verify(success != 0, 0, "Failed to seek file. WinAPI Error Code: %lu.", GetLastError());
+	_fileio_verify(success != 0, 0, "SetFilePointerEx: %lu.", GetLastError());
 
 	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
@@ -325,7 +325,7 @@ size_t file_size(WrenchFileHandle* file) {
 
 	LARGE_INTEGER size;
 	BOOL success = GetFileSizeEx(file->file, &size);
-	_fileio_verify(success != 0, 0, "Failed to retrieve file size. WinAPI Error Code: %lu.", GetLastError());
+	_fileio_verify(success != 0, 0, "GetFileSizeEx: %lu.", GetLastError());
 
 	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
@@ -341,7 +341,7 @@ int file_flush(WrenchFileHandle* file) {
 	}
 
 	BOOL success = FlushFileBuffers(file->file);
-	_fileio_verify(success != 0, EOF, "Failed to flush the file buffers. WinAPI Error Code: %lu.", GetLastError());
+	_fileio_verify(success != 0, EOF, "FlushFileBuffers: %lu.", GetLastError());
 
 	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
@@ -354,7 +354,7 @@ int file_close(WrenchFileHandle* file) {
 
 	BOOL success = CloseHandle(file->file);
 	free(file);
-	_fileio_verify(success != 0, EOF, "Failed to close the file. WinAPI Error Code: %lu.", GetLastError());
+	_fileio_verify(success != 0, EOF, "CloseHandle: %lu.", GetLastError());
 
 	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
