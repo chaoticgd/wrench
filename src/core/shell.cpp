@@ -214,22 +214,38 @@ void CommandThread::update_last_output_lines() {
 	}
 }
 
+#ifdef _WIN32
+static void shell_exec_utf8(const char* str) {
+	int wide_char_count = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, str, -1, (LPWSTR) 0, 0);
+	if(wide_char_count == 0) return;
+	wchar_t* wide_string = malloc(wide_char_count * sizeof(WCHAR));
+	if(wide_string == nullptr) return;
+	int chars_written = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, str, -1, wide_string, wide_char_count);
+	if(chars_written != wide_char_count) return;
+	ShellExecuteW(nullptr, "open", wide_string, nullptr, nullptr, SW_SHOWDEFAULT);
+}
+#endif
+
 s32 execute_command(s32 argc, const char** argv, bool blocking) {
 	verify_fatal(argc >= 1);
 
 	std::string command_string = prepare_arguments(argc, argv);
 
 	if(!blocking) {
+#ifdef _WIN32
+		shell_exec_utf8(command_string.c_str());
+#else
 		popen(command_string.c_str(), "r");
+#endif
 		return 0;
 	}
-
+	
 	return system(command_string.c_str());
 }
 
 void open_in_file_manager(const char* path) {
 #ifdef _WIN32
-	ShellExecuteA(nullptr, "open", path, nullptr, nullptr, SW_SHOWDEFAULT);
+	shell_exec_utf8(path);
 #else
 	setenv("WRENCH_ARG_0", "xdg-open", 1);
 	setenv("WRENCH_ARG_1", path, 1);
@@ -237,6 +253,7 @@ void open_in_file_manager(const char* path) {
 #endif
 }
 
+#ifdef _WIN32
 // https://web.archive.org/web/20190109172835/https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
 static std::string argv_quote(const std::string& argument) {
 	std::string command;
@@ -267,6 +284,7 @@ static std::string argv_quote(const std::string& argument) {
 	}
 	return command;
 }
+#endif
 
 static std::string prepare_arguments(s32 argc, const char** argv) {
 	std::string command;
