@@ -23,7 +23,7 @@
 int wrenchmain(int argc, char** argv);
 
 int wmain(int argc, wchar_t** argv) {
-	char** utf8_argv = (char**) malloc((argc + 1) * sizeof(char));
+	char** utf8_argv = (char**) malloc((argc + 1) * sizeof(char*));
 	for(int i = 0; i < argc; i++) {
 		int bytes_needed = WideCharToMultiByte(CP_UTF8, 0, (LPCWCH) argv[i], -1, NULL, 0, NULL, NULL);
 		if(bytes_needed == 0) {
