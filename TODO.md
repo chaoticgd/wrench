@@ -19,8 +19,8 @@ In no particular order:
 	- ~~Generate new occlusion data during a build~~
 	- ~~Possibly use OpenGL in wrenchbuild to speed things up (should be faster than raycasting)~~
 - Gameplay Source Format
-	- Will probably be based on the Wrench Text Format
-	- System for editing/storing pvar data
+	- ~~Will probably be based on the Wrench Text Format~~
+	- ~~System for editing/storing pvar data~~
 - General Editor Improvements
 	- Transform tool, etc
 	- GUI for editing asset files
