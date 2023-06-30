@@ -91,6 +91,7 @@ void inspector() {
 	};
 	
 	static const std::vector<InspectorField> fields = {
+		{COM_COLOUR          , INST_NONE          , "Colour", vec3_funcs(adapt_reference_member_function<glm::vec3>(&Instance::colour))},
 		{COM_DRAW_DISTANCE   , INST_NONE          , "Draw Dist", scalar_funcs(adapt_reference_member_function<f32>(&Instance::draw_distance))},
 		{COM_CAMERA_COLLISION, INST_NONE          , "Cam Coll", camera_collision_funcs()},
 		// Moby
