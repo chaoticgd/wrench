@@ -201,19 +201,20 @@ static void menu_bar() {
 			}
 		}
 		
-		static gui::PackerParams params;
+		static gui::PackerParams pack_params;
 		std::vector<std::string>& game_builds = g_app->game_bank->game_info.builds;
 		std::vector<std::string>& mod_builds = g_app->mod_bank->game_info.builds;
 		
 		ImGui::SetNextItemWidth(200);
-		gui::build_settings(params, &game_builds, mod_builds, false); 
+		gui::build_settings(pack_params, &game_builds, mod_builds, false);
 		
 		static CommandThread pack_command;
 		static std::string iso_path;
 		if(ImGui::Button("Build & Run##the_button")) {
-			params.game_path = g_app->game_path;
-			params.mod_paths = {g_app->mod_path};
-			iso_path = gui::run_packer(params, pack_command);
+			pack_params.game_path = g_app->game_path;
+			pack_params.mod_paths = {g_app->mod_path};
+			pack_params.overlay_path = g_app->overlay_path;
+			iso_path = gui::run_packer(pack_params, pack_command);
 			ImGui::OpenPopup("Build & Run##the_popup");
 		}
 		

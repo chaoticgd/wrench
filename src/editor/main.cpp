@@ -69,6 +69,7 @@ static void run_wrench(GLFWwindow* window, const WadPaths& wad_paths, const std:
 	glfwSetKeyCallback(window, key_callback);
 	
 	a.game_path = game_path;
+	a.overlay_path = wad_paths.overlay;
 	a.mod_path = mod_path;
 	
 	// Load the underlay, and mark all underlay assets as weakly deleted so they
