@@ -18,7 +18,10 @@
 
 #include "wtf_writer.h"
 
+#include <math.h>
 #include <string.h>
+
+static void write_float(char dest[64], float f);
 
 struct WtfWriter {
 	std::string* dest;
@@ -102,8 +105,9 @@ void wtf_write_float(WtfWriter* ctx, float f) {
 		indent(ctx);
 	}
 	char string[64] = {0};
-	snprintf(string, 64, "%.9g\n", f);
+	write_float(string, f);
 	*ctx->dest += string;
+	*ctx->dest += '\n';
 }
 
 void wtf_write_boolean(WtfWriter* ctx, bool b) {
@@ -236,8 +240,22 @@ void wtf_write_floats(WtfWriter* ctx, const float* floats, int count) {
 	*ctx->dest += "[";
 	for(int i = 0; i < count; i++) {
 		char string[64] = {0};
-		snprintf(string, 64, "%.9g%s", floats[i], (i < count - 1) ? " " : "");
+		write_float(string, floats[i]);
 		*ctx->dest += string;
+		if(i < count - 1) {
+			*ctx->dest += " ";
+		}
 	}
 	*ctx->dest += "]\n";
+}
+
+static void write_float(char dest[64], float f) {
+	int classification = fpclassify(f);
+	if(classification == FP_NAN) {
+		snprintf(dest, 64, "nan");
+	} else if(classification == FP_INFINITE) {
+		snprintf(dest, 64, "inf");
+	} else {
+		snprintf(dest, 64, "%.9g", f);
+	}
 }
