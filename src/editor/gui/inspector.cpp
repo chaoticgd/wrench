@@ -25,6 +25,8 @@
 #include <editor/gui/transform_inspector.h>
 #include <editor/gui/pvar_inspector.h>
 
+static u32 get_invaliation_id(const Instances& instances);
+
 struct InspectorFieldFuncs {
 	s32 lane_count;
 	std::function<bool(Instance& lhs, Instance& rhs, s32 lane)> compare;
@@ -192,6 +194,8 @@ void inspector() {
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Far Dist", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_far_dist))},
 	};
 	
+	ImGui::PushID((int) get_invaliation_id(lvl.instances()));
+	
 	if(ImGui::BeginTable("header", 2)) {
 		ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed);
 		ImGui::TableSetupColumn("input", ImGuiTableColumnFlags_WidthStretch);
@@ -228,8 +232,30 @@ void inspector() {
 	ImGui::PopStyleColor();
 	
 	pvar_inspector(lvl);
+	
+	ImGui::PopID();
 }
 
+// This is needed so that when you switch objects imgui doesn't get confused
+// and use state related to one object for a different object. This probably
+// isn't perfect but should work in most cases.
+static u32 get_invaliation_id(const Instances& instances) {
+	static u32 id = 0;
+	static std::vector<bool> selected_back, selected_front;
+	// Determine which instances are selected.
+	selected_back.clear();
+	instances.for_each([&](const Instance& inst) {
+		selected_back.emplace_back(inst.selected);
+	});
+	if(selected_back != selected_front) {
+		id++;
+	}
+	// Swap the buffers.
+	std::vector<bool> temp = std::move(selected_back);
+	selected_back = std::move(selected_front);
+	selected_front = std::move(temp);
+	return id;
+}
 
 static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields) {
 	for(const InspectorField& field : fields) {
@@ -254,8 +280,10 @@ static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields) {
 			ImGui::Text("%s", field.name);
 			
 			ImGui::TableNextColumn();
+			ImGui::PushID((int) field.required_type);
 			ImGui::PushID(field.name);
 			field.funcs.draw(lvl, *first, values_equal);
+			ImGui::PopID();
 			ImGui::PopID();
 		}
 	}
