@@ -23,6 +23,7 @@
 
 // 'ello I'm the county pvar inspectah. I'm 'ere to inspect all yerr pvars.
 
-void pvar_inspector(Level& lvl);
+const CppType* get_pvar_type_for_selection(const Level& lvl);
+void pvar_inspector(Level& lvl, const CppType& pvar_type);
 
 #endif

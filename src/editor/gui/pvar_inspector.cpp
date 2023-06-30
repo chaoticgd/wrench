@@ -32,7 +32,6 @@ struct PvarInspectorState {
 	InstanceList<SharedDataInstance>* shared_data;
 };
 
-static const CppType* get_pvar_type(const Level& lvl);
 template <typename ThisInstance>
 const CppType* get_single_pvar_type(const InstanceList<ThisInstance>& instances, const std::map<s32, EditorClass>& classes);
 static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vector<InstanceId>& ids, const std::vector<std::vector<u8>*>& pvars);
@@ -43,83 +42,7 @@ static void generate_pointer_input(const CppType& type, const PvarInspectorState
 static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 size, const std::vector<InstanceId>& ids, const PvarPointer* new_pointer);
 static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type);
 
-void pvar_inspector(Level& lvl) {
-	const CppType* pvar_type = get_pvar_type(lvl);
-	if(!pvar_type) {
-		// No objects are selected, the selected objects have no pvars, or
-		// multiple different types of objects are selected.
-		return;
-	}
-	
-	if(ImGui::CollapsingHeader("Pvars")) {
-		ImGui::BeginChild("pvars");
-	
-		std::vector<InstanceId> ids;
-		std::vector<std::vector<u8>*> pvars;
-		std::vector<PvarPointer>* first_pointers = nullptr;
-		bool pointers_match = true;
-		lvl.instances().for_each_with(COM_PVARS, [&](Instance& inst) {
-			if(inst.selected) {
-				ids.emplace_back(inst.id());
-				pvars.emplace_back(&inst.pvars().data);
-				if(first_pointers) {
-					if(inst.pvars().pointers != *first_pointers) {
-						pointers_match = false;
-					}
-				} else {
-					first_pointers = &inst.pvars().pointers;
-				}
-			}
-		});
-		
-		if(!check_pvar_data_size(lvl, *pvar_type, ids, pvars)) {
-			// The pvar data size does not match the size of the C++ type, and the
-			// user has been prompted to fix the issue.
-			ImGui::EndChild();
-			return;
-		}
-		
-		// Determine which bits are equal for all selected objects.
-		std::vector<u8> diff(pvars[0]->size(), 0);
-		for(size_t i = 1; i < pvars.size(); i++) {
-			for(size_t j = 0; j < pvars[i]->size(); j++) {
-				diff[j] |= (*pvars[0])[j] ^ (*pvars[i])[j];
-			}
-		}
-		
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
-		ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
-		if(ImGui::BeginTable("pvar_table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
-			ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
-			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
-			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-			ImGui::TableHeadersRow();
-			
-			PvarInspectorState inspector;
-			inspector.lvl = &lvl;
-			inspector.root = pvar_type;
-			inspector.ids = &ids;
-			inspector.pvars = pvars[0];
-			inspector.diff = &diff;
-			inspector.pointers_match = pointers_match;
-			if(pointers_match) {
-				inspector.pointers = first_pointers;
-			}
-			inspector.shared_data = &lvl.instances().shared_data;
-			generate_rows(*pvar_type, pvar_type->name, inspector, -1, 0, 0, 0);
-			
-			ImGui::EndTable();
-		}
-		ImGui::PopStyleVar();
-		ImGui::PopStyleVar();
-		ImGui::PopStyleColor();
-		ImGui::EndChild();
-	}
-	
-}
-
-static const CppType* get_pvar_type(const Level& lvl) {
+const CppType* get_pvar_type_for_selection(const Level& lvl) {
 	s32 type = -1;
 	lvl.instances().for_each_with(COM_PVARS, [&](const Instance& inst) {
 		if(inst.selected && type != -2) {
@@ -176,6 +99,72 @@ const CppType* get_single_pvar_type(const InstanceList<ThisInstance>& instances,
 		}
 	}
 	return nullptr;
+}
+
+void pvar_inspector(Level& lvl, const CppType& pvar_type) {
+	ImGui::BeginChild("pvars");
+	
+	std::vector<InstanceId> ids;
+	std::vector<std::vector<u8>*> pvars;
+	std::vector<PvarPointer>* first_pointers = nullptr;
+	bool pointers_match = true;
+	lvl.instances().for_each_with(COM_PVARS, [&](Instance& inst) {
+		if(inst.selected) {
+			ids.emplace_back(inst.id());
+			pvars.emplace_back(&inst.pvars().data);
+			if(first_pointers) {
+				if(inst.pvars().pointers != *first_pointers) {
+					pointers_match = false;
+				}
+			} else {
+				first_pointers = &inst.pvars().pointers;
+			}
+		}
+	});
+	
+	if(!check_pvar_data_size(lvl, pvar_type, ids, pvars)) {
+		// The pvar data size does not match the size of the C++ type, and the
+		// user has been prompted to fix the issue.
+		ImGui::EndChild();
+		return;
+	}
+	
+	// Determine which bits are equal for all selected objects.
+	std::vector<u8> diff(pvars[0]->size(), 0);
+	for(size_t i = 1; i < pvars.size(); i++) {
+		for(size_t j = 0; j < pvars[i]->size(); j++) {
+			diff[j] |= (*pvars[0])[j] ^ (*pvars[i])[j];
+		}
+	}
+	
+	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
+	if(ImGui::BeginTable("pvar_table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
+		ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
+		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
+		ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+		ImGui::TableHeadersRow();
+		
+		PvarInspectorState inspector;
+		inspector.lvl = &lvl;
+		inspector.root = &pvar_type;
+		inspector.ids = &ids;
+		inspector.pvars = pvars[0];
+		inspector.diff = &diff;
+		inspector.pointers_match = pointers_match;
+		if(pointers_match) {
+			inspector.pointers = first_pointers;
+		}
+		inspector.shared_data = &lvl.instances().shared_data;
+		generate_rows(pvar_type, pvar_type.name, inspector, -1, 0, 0, 0);
+		
+		ImGui::EndTable();
+	}
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+	ImGui::EndChild();
 }
 
 struct ResizePvarInfo {

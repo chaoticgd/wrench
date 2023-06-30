@@ -195,14 +195,16 @@ void inspector() {
 		{COM_NONE            , INST_ENVSAMPLEPOINT, "Fog Far Dist", scalar_funcs(adapt_member_pointer(&EnvSamplePointInstance::fog_far_dist))},
 	};
 	
-	ImGui::PushID((int) get_invaliation_id(lvl.instances()));
+	int invalidation_id = (int) get_invaliation_id(lvl.instances());
 	
+	ImGui::PushID(invalidation_id);
 	if(ImGui::BeginTable("header", 2)) {
 		ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed);
 		ImGui::TableSetupColumn("input", ImGuiTableColumnFlags_WidthStretch);
 		draw_fields(lvl, header_fields);
 		ImGui::EndTable();
 	}
+	ImGui::PopID();
 	
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
@@ -211,6 +213,7 @@ void inspector() {
 	transform_inspector(lvl);
 	
 	if(ImGui::CollapsingHeader("Attributes")) {
+		ImGui::PushID(invalidation_id);
 		if(ImGui::BeginTable("inspector", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
 			ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("input", ImGuiTableColumnFlags_WidthStretch);
@@ -226,15 +229,19 @@ void inspector() {
 			}
 			ImGui::EndTable();
 		}
+		ImGui::PopID();
 	}
 	
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleColor();
 	
-	pvar_inspector(lvl);
-	
-	ImGui::PopID();
+	const CppType* pvar_type = get_pvar_type_for_selection(lvl);
+	if(pvar_type && ImGui::CollapsingHeader("Pvars")) {
+		ImGui::PushID(invalidation_id);
+		pvar_inspector(lvl, *pvar_type);
+		ImGui::PopID();
+	}
 }
 
 // This is needed so that when you switch objects imgui doesn't get confused
