@@ -144,7 +144,8 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
-| 24   | v0.4  | Instance IDs are now rewritten to indices while the gameplay/mission files are packed. Added core child to mission instances asset. All colours stored on instances are now vec3s. |
+| 25   | v0.4  | Added version_info nodes to the instances files containing information about the application writing out the file, and the format version. |
+| 24   |       | Instance IDs are now rewritten to indices while the gameplay/mission files are packed. Added core child to mission instances asset. All colours stored on instances are now vec3s. |
 | 23   |       | Added new relative_pvar_pointers attribute to instances that have a pvar component. |
 | 22   |       | Occlusion is now computed on demand instead of during a build. Occlusion assets now have grid and mapping attributes. |
 | 21   |       | Added new instances format. Added Instances asset type. Added the C++ parsing system and the overlay asset bank. |

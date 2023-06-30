@@ -18,6 +18,7 @@
 
 #include "instances_asset.h"
 
+#include <toolwads/wads.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
@@ -89,7 +90,13 @@ s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const 
 		occlusion_mappings = std::move(opt_iterator(gameplay.occlusion));
 	}
 	
-	std::string text = write_instances(instances);
+	const char* application_version;
+	if(strlen(wadinfo.build.version_string) != 0) {
+		application_version = wadinfo.build.version_string;
+	} else {
+		application_version = wadinfo.build.commit_string;
+	}
+	std::string text = write_instances(instances, "Wrench Build Tool", application_version);
 	FileReference ref = dest.file().write_text_file(stringf("%s.instances", type.c_str()), text.c_str());
 	dest.set_src(ref);
 	
@@ -265,7 +272,13 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	}
 	
 	// Write out instances file and read it back.
-	std::string instances_text = write_instances(instances_in);
+	const char* application_version;
+	if(strlen(wadinfo.build.version_string) != 0) {
+		application_version = wadinfo.build.version_string;
+	} else {
+		application_version = wadinfo.build.commit_string;
+	}
+	std::string instances_text = write_instances(instances_in, "Wrench Build Tool (Test)", application_version);
 	write_file("/tmp/instances.txt", instances_text);
 	Instances instances_out = read_instances(instances_text);
 	

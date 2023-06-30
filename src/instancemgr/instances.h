@@ -96,7 +96,7 @@ struct HelpMessages {
 };
 
 Instances read_instances(std::string& src);
-std::string write_instances(const Instances& src);
+std::string write_instances(const Instances& src, const char* application_name, const char* application_version);
 
 template <typename Callback, typename InstanceVec>
 static void for_each_instance_of_type_with(u32 required_components_mask, const InstanceVec& instances, Callback callback) {

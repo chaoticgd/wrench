@@ -21,6 +21,7 @@
 #include <core/png.h>
 #include <assetmgr/material_asset.h>
 #include <instancemgr/gameplay.h>
+#include <toolwads/wads.h>
 #include <gui/render_mesh.h>
 #include <editor/app.h>
 
@@ -237,7 +238,13 @@ std::string Level::save() {
 	}
 	
 	// Write out the gameplay.bin file.
-	std::string text = write_instances(_instances);
+	const char* application_version;
+	if(strlen(wadinfo.build.version_string) != 0) {
+		application_version = wadinfo.build.version_string;
+	} else {
+		application_version = wadinfo.build.commit_string;
+	}
+	std::string text = write_instances(_instances, "Wrench Editor", application_version);
 	FileReference ref = _instances_asset->file().write_text_file(gameplay_path, text.c_str());
 	_instances_asset->set_src(ref);
 	

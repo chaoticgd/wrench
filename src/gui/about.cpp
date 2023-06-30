@@ -89,23 +89,19 @@ static void about_wrench() {
 	ImGui::TextWrapped("Wrench is a set of modding tools for the Ratchet & Clank PS2 games.");
 	ImGui::NewLine();
 	// These numbers are extracted from the git tag at build time. See 'src/toolwads/'.
-	if(wadinfo.build.version_major > -1 && wadinfo.build.version_minor > -1) {
-		ImGui::TextWrapped("Release Version %hd.%hd", wadinfo.build.version_major, wadinfo.build.version_minor);
+	if(strlen(wadinfo.build.version_string) != 0) {
+		ImGui::TextWrapped("Release Version %s", wadinfo.build.version_string);
 	} else {
 		ImGui::TextWrapped("Development Version");
 	}
 	ImGui::NewLine();
-	u8* c = wadinfo.build.commit;
+	char* c = wadinfo.build.commit_string;
 	ImGui::AlignTextToFramePadding();
-	ImGui::TextWrapped("Built from git commit %02hhx%02hhx%02hhx%02hhx",
-		c[0], c[1], c[2], c[3]);
+	ImGui::TextWrapped("Built from git commit %c%c%c%c%c%c%c%c",
+		c[0],c[1], c[2], c[3], c[4], c[5], c[6], c[7]);
 	ImGui::SameLine();
 	if(ImGui::Button("Copy Full Hash")) {
-		char text[ARRAY_SIZE(wadinfo.build.commit) * 2 + 1] = {};
-		for(s32 i = 0; i < ARRAY_SIZE(wadinfo.build.commit); i++) {
-			snprintf(text + i * 2, 3, "%02x", wadinfo.build.commit[i]);
-		}
-		ImGui::SetClipboardText(text);
+		ImGui::SetClipboardText(c);
 	}
 }
 
