@@ -441,7 +441,9 @@ static InspectorFieldFuncs camera_collision_funcs() {
 		CameraCollisionParams first_params = first.camera_collision();
 		
 		bool changed = false;
+		ImGui::PopStyleColor();
 		changed |= ImGui::Checkbox("##cam_coll_enabled", &first_params.enabled);
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 		ImGui::SameLine();
 		ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
 		if(!first_params.enabled) {
@@ -485,7 +487,9 @@ static InspectorFieldFuncs moby_rooted_funcs() {
 		f32 rooted_distance = moby_first.rooted_distance;
 		
 		bool changed = false;
+		ImGui::PopStyleColor();
 		changed |= ImGui::Checkbox("##is_rooted", &is_rooted);
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 		ImGui::SameLine();
 		ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
 		if(!is_rooted) {
