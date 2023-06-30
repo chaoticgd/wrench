@@ -91,14 +91,15 @@ void inspector() {
 	};
 	
 	static const std::vector<InspectorField> fields = {
-		{COM_DRAW_DISTANCE   , INST_NONE          , "Draw Dist", scalar_funcs(adapt_reference_member_function<f32>(&Instance::draw_distance))},
+		{COM_COLOUR          , INST_NONE          , "Colour", vec3_funcs(adapt_reference_member_function<glm::vec3>(&Instance::colour))},
+		{COM_DRAW_DISTANCE   , INST_NONE          , "Draw Distance", scalar_funcs(adapt_reference_member_function<f32>(&Instance::draw_distance))},
 		{COM_CAMERA_COLLISION, INST_NONE          , "Cam Coll", camera_collision_funcs()},
 		// Moby
 		{COM_NONE            , INST_MOBY          , "Mission", scalar_funcs(adapt_member_pointer(&MobyInstance::mission))},
 		{COM_NONE            , INST_MOBY          , "UID", scalar_funcs(adapt_member_pointer(&MobyInstance::uid))},
 		{COM_NONE            , INST_MOBY          , "Bolts", scalar_funcs(adapt_member_pointer(&MobyInstance::bolts))},
 		{COM_NONE            , INST_MOBY          , "Class", scalar_funcs(adapt_reference_member_function<s32>(&MobyInstance::o_class))},
-		{COM_NONE            , INST_MOBY          , "Updt Dist", scalar_funcs(adapt_member_pointer(&MobyInstance::update_distance))},
+		{COM_NONE            , INST_MOBY          , "Update Distance", scalar_funcs(adapt_member_pointer(&MobyInstance::update_distance))},
 		{COM_NONE            , INST_MOBY          , "Rooted", moby_rooted_funcs()},
 		{COM_NONE            , INST_MOBY          , "Occlusion", scalar_funcs(adapt_member_pointer(&MobyInstance::occlusion))},
 		{COM_NONE            , INST_MOBY          , "Mode Bits", scalar_funcs(adapt_member_pointer(&MobyInstance::mode_bits))},
@@ -111,15 +112,15 @@ void inspector() {
 		// Shrub
 		{COM_NONE            , INST_SHRUB         , "Class", scalar_funcs(adapt_reference_member_function<s32>(&ShrubInstance::o_class))},
 		{COM_NONE            , INST_SHRUB         , "Unk 5c", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_5c))},
-		{COM_NONE            , INST_SHRUB         , "DirLights", scalar_funcs(adapt_member_pointer(&ShrubInstance::dir_lights))},
+		{COM_NONE            , INST_SHRUB         , "Dir Lights", scalar_funcs(adapt_member_pointer(&ShrubInstance::dir_lights))},
 		{COM_NONE            , INST_SHRUB         , "Unk 64", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_64))},
 		{COM_NONE            , INST_SHRUB         , "Unk 68", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_68))},
 		{COM_NONE            , INST_SHRUB         , "Unk 6c", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_6c))},
 		// DirLight
 		{COM_NONE            , INST_DIRLIGHT      , "Colour A", vec4_funcs(adapt_member_pointer(&DirLightInstance::col_a))},
-		{COM_NONE            , INST_DIRLIGHT      , "Dir A", vec4_funcs(adapt_member_pointer(&DirLightInstance::dir_a))},
+		{COM_NONE            , INST_DIRLIGHT      , "Direction A", vec4_funcs(adapt_member_pointer(&DirLightInstance::dir_a))},
 		{COM_NONE            , INST_DIRLIGHT      , "Colour B", vec4_funcs(adapt_member_pointer(&DirLightInstance::col_b))},
-		{COM_NONE            , INST_DIRLIGHT      , "Dir B", vec4_funcs(adapt_member_pointer(&DirLightInstance::dir_b))},
+		{COM_NONE            , INST_DIRLIGHT      , "Direction B", vec4_funcs(adapt_member_pointer(&DirLightInstance::dir_b))},
 		// PointLight
 		{COM_NONE            , INST_POINTLIGHT    , "Radius", scalar_funcs(adapt_member_pointer(&PointLightInstance::radius))},
 		// EnvSamplePoint
@@ -440,7 +441,9 @@ static InspectorFieldFuncs camera_collision_funcs() {
 		CameraCollisionParams first_params = first.camera_collision();
 		
 		bool changed = false;
+		ImGui::PopStyleColor();
 		changed |= ImGui::Checkbox("##cam_coll_enabled", &first_params.enabled);
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 		ImGui::SameLine();
 		ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
 		if(!first_params.enabled) {
@@ -484,7 +487,9 @@ static InspectorFieldFuncs moby_rooted_funcs() {
 		f32 rooted_distance = moby_first.rooted_distance;
 		
 		bool changed = false;
+		ImGui::PopStyleColor();
 		changed |= ImGui::Checkbox("##is_rooted", &is_rooted);
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 		ImGui::SameLine();
 		ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
 		if(!is_rooted) {
