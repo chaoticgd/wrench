@@ -51,6 +51,7 @@ public:
 	int window_width, window_height;
 	
 	std::string game_path;
+	std::string overlay_path;
 	std::string mod_path;
 	
 	AssetForest asset_forest;
