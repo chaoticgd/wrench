@@ -18,6 +18,8 @@ Changes:
 
 Bug fixes:
 - Fixed some issues with unpacking certain builds.
+- Improved handling of unicode in file paths on Windows.
+- A lot more.
 
 ## v0.3
 

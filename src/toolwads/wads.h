@@ -42,9 +42,12 @@ enum License {
 packed_struct(BuildWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
-	/* 0x08 */ s16 version_major;
-	/* 0x0a */ s16 version_minor;
-	/* 0x0c */ u8 commit[0x14];
+	/* 0x08 */ s32 version_major;
+	/* 0x0c */ s32 version_minor;
+	/* 0x10 */ s32 version_patch;
+	/* 0x14 */ char version_string[20];
+	/* 0x28 */ char commit_string[41];
+	/* 0x51 */ char pad[3];
 )
 
 packed_struct(GuiWadHeader,

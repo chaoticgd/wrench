@@ -132,9 +132,8 @@ static Mod* mod_list_window() {
 	ImGui::BeginChild("Mod List");
 	
 	char greeting[64];
-	BuildWadHeader& build = wadinfo.build;
-	if(build.version_major > -1 && build.version_minor > -1) {
-		snprintf(greeting, sizeof(greeting), "Wrench Modding Toolset v%hd.%hd", build.version_major, build.version_minor);
+	if(strlen(wadinfo.build.version_string) != 0) {
+		snprintf(greeting, sizeof(greeting), "Wrench Modding Toolset %s", wadinfo.build.version_string);
 	} else {
 		snprintf(greeting, sizeof(greeting), "Wrench Modding Toolset");
 	}

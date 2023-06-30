@@ -670,15 +670,12 @@ static void print_usage(bool developer_subcommands) {
 }
 
 static void print_version() {
-	if(wadinfo.build.version_major > -1 && wadinfo.build.version_major > -1) {
-		printf("Wrench Build Tool v%hd.%hd\n", wadinfo.build.version_major, wadinfo.build.version_minor);
+	if(strlen(wadinfo.build.version_string) != 0) {
+		printf("Wrench Build Tool %s\n", wadinfo.build.version_string);
 	} else {
 		printf("Wrench Build Tool (Development Version)\n");
 	}
-	printf("Built from git commit ");
-	for(s32 i = 0; i < ARRAY_SIZE(wadinfo.build.commit); i++) {
-		printf("%hhx", wadinfo.build.commit[i]);
-	}
+	printf("Built from git commit %s", wadinfo.build.commit_string);
 	printf("\n");
 }
 

@@ -72,9 +72,10 @@ static void pack_build_wad() {
 	// Default values for if the tag isn't valid.
 	header.version_major = -1;
 	header.version_minor = -1;
+	header.version_patch = -1;
 	
-	// Parse the version number from the git tag.
 	if(git_tag && git_tag[0] == 'v') {
+		// Parse the version number from the git tag.
 		const char* major_pos = git_tag + 1;
 		header.version_major = parse_positive_embedded_int(major_pos);
 		
@@ -86,23 +87,25 @@ static void pack_build_wad() {
 			minor_pos++;
 			header.version_minor = parse_positive_embedded_int(minor_pos);
 		}
+		
+		const char* patch_pos = minor_pos;
+		while(*patch_pos != '.' && *patch_pos != '\0') {
+			patch_pos++;
+		}
+		if(*patch_pos != '\0') {
+			patch_pos++;
+			header.version_patch = parse_positive_embedded_int(patch_pos);
+		}
+		
+		// Store the version string.
+		verify_fatal(strlen(git_tag) < 20);
+		strncpy(header.version_string, git_tag, sizeof(header.version_string));
 	}
 	
-	// Parse the git commit hash.
-	for(size_t i = 0; git_commit && i < std::min(strlen(git_commit), sizeof(header.commit) * 2); i++) {
-		u8 nibble = (u8) git_commit[i];
-		if(nibble >= '0' && nibble <= '9') {
-			nibble -= '0';
-		} else if(nibble >= 'a' && nibble <= 'f') {
-			nibble += 0xa - 'a';
-		} else {
-			break;
-		}
-		if(i % 2 == 0) {
-			header.commit[i / 2] = nibble << 4;
-		} else {
-			header.commit[i / 2] |= nibble;
-		}
+	// Store the git commit.
+	if(git_commit && strlen(git_commit) != 0) {
+		verify_fatal(strlen(git_commit) == 40);
+		strncpy(header.commit_string, git_commit, sizeof(header.commit_string));
 	}
 	
 	wad.write<BuildWadHeader>(0, header);

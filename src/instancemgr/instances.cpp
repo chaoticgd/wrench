@@ -94,10 +94,16 @@ Instances read_instances(std::string& src) {
 	return dest;
 }
 
-std::string write_instances(const Instances& src) {
+std::string write_instances(const Instances& src, const char* application_name, const char* application_version) {
 	std::string dest;
 	WtfWriter* ctx = wtf_begin_file(dest);
 	defer([&]() { wtf_end_file(ctx); });
+	
+	wtf_begin_node(ctx, nullptr, "version_info");
+	wtf_write_string_attribute(ctx, "application_name", application_name);
+	wtf_write_string_attribute(ctx, "application_version", application_version);
+	wtf_write_integer_attribute(ctx, "format_version", INSTANCE_FORMAT_VERSION);
+	wtf_end_node(ctx);
 	
 	wtf_begin_node(ctx, nullptr, "level_settings");
 	write_level_settings(ctx, src.level_settings);
