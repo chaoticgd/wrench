@@ -254,6 +254,7 @@ MobyClass rac.moby_classes.604   { category: "Gameplay"     name: "Sandmouse hou
 MobyClass rac.moby_classes.608   { category: "Gadget"       name: "Thrusterpack" }
 MobyClass rac.moby_classes.609   { category: "Gadget"       name: "Hyropack" }
 MobyClass rac.moby_classes.612   { category: "Enemies"      name: "Constructorbot" }
+MobyClass rac.moby_classes.613   { category: "Water"        name: "Water Current" }
 MobyClass rac.moby_classes.614   { category: "Gadget"       name: "Mapper" }
 MobyClass rac.moby_classes.615   { category: "Gameplay"     name: "Tresspasser Pad" }
 MobyClass rac.moby_classes.618   { category: "Gadget"       name: "Armor Magnetizer" }
