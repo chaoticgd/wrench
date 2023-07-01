@@ -216,11 +216,11 @@ MobyClass rac.moby_classes.494   { category: "Prop"         name: "Log Ship 1" }
 MobyClass rac.moby_classes.495   { category: "Prop"         name: "Log Ship 2" }
 MobyClass rac.moby_classes.498   { category: "Prop"         name: "Log Ship Carrier" }
 MobyClass rac.moby_classes.499   { category: "Unknown"      name: "Gun" }
-MobyClass rac.moby_classes.500   { category: "Breakables"   name: "Bolt Crate" }
-MobyClass rac.moby_classes.501   { category: "Breakables"   name: "Nanotech Crate" }
-MobyClass rac.moby_classes.502   { category: "Breakables"   name: "Metal Crate" }
-MobyClass rac.moby_classes.505   { category: "Breakables"   name: "Explosive Crate" }
-MobyClass rac.moby_classes.511   { category: "Breakables"   name: "Ammo Crate" }
+MobyClass rac.moby_classes.500   { category: "Gameplay"     name: "Bolt Crate" }
+MobyClass rac.moby_classes.501   { category: "Gameplay"     name: "Nanotech Crate" }
+MobyClass rac.moby_classes.502   { category: "Gameplay"     name: "Metal Crate" }
+MobyClass rac.moby_classes.505   { category: "Gameplay"     name: "Oom Oom Box" }
+MobyClass rac.moby_classes.511   { category: "Gameplay"     name: "Ammo Crate" }
 MobyClass rac.moby_classes.529   { category: "Prop"         name: "Purple Ship" }
 MobyClass rac.moby_classes.530   { category: "Prop"         name: "Veldin Ship" }
 MobyClass rac.moby_classes.531   { category: "Prop"         name: "Green Ship" }
