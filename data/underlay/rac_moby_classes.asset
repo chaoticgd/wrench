@@ -374,7 +374,7 @@ MobyClass rac.moby_classes.842   { category: "Gameplay"     name: "Broken Floor 
 MobyClass rac.moby_classes.844   { category: "Gameplay"     name: "Drain Cover" }
 MobyClass rac.moby_classes.846   { category: "Breakables"   name: "Pipe Mounted Grating" }
 MobyClass rac.moby_classes.849   { category: "Gadget"       name: "Suckcannon" }
-MobyClass rac.moby_classes.851   { category: "NPCs"         name: "Qwark" }
+MobyClass rac.moby_classes.851   { category: "NPCs"         name: "Qwark (Oltanis)" }
 MobyClass rac.moby_classes.854   { category: "Water"        name: "Ocean"       Texture editor_icon { src: "icons/ocean.png" strongly_deleted: false } }
 MobyClass rac.moby_classes.857   { category: "Gameplay"     name: "Gadgebot" }
 MobyClass rac.moby_classes.863   { category: "Enemies"      name: "Test Dummy Bomb Glove" }
