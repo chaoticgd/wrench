@@ -274,9 +274,14 @@ static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDu
 		case CPP_STRUCT_OR_UNION: {
 			const char* keyword = type.struct_or_union.is_union ? "union" : "struct";
 			if(context.depth == 1 && context.name) {
-				dest.writelf("%s %s {", keyword, context.name);
+				dest.writesf("%s %s {", keyword, context.name);
 			} else {
-				dest.writelf("%s {", keyword);
+				dest.writesf("%s {", keyword);
+			}
+			if(type.size > -1) {
+				dest.writelf(" // 0x%x", type.size);
+			} else {
+				dest.write<char>('\n');
 			}
 			context.indentation++;
 			for(const CppType& field : type.struct_or_union.fields) {
