@@ -123,7 +123,7 @@ MobyClass rac.moby_classes.287   { category: "Prop"         name: "Drill" }
 MobyClass rac.moby_classes.294   { category: "Enemies"      name: "Blarg Trooper" }
 MobyClass rac.moby_classes.295   { category: "Gameplay"     name: "Rocket" }
 MobyClass rac.moby_classes.296   { category: "Gameplay"     name: "Conveyor Belt" }
-MobyClass rac.moby_classes.298   { category: "NPCs"         name: "Fred" }
+MobyClass rac.moby_classes.298   { category: "NPCs"         name: "Fred (Pokitaru)" }
 MobyClass rac.moby_classes.302   { category: "Gameplay"     name: "Gadgebot Spawn Container" }
 MobyClass rac.moby_classes.303   { category: "Gameplay"     name: "Gadgebot Spawn Pad" }
 MobyClass rac.moby_classes.304   { category: "Prop"         name: "Gold Weapon Case" }
@@ -345,7 +345,7 @@ MobyClass rac.moby_classes.774   { category: "NPCs"         name: "The Plumber" 
 MobyClass rac.moby_classes.778   { category: "Prop"         name: "Pipe" }
 MobyClass rac.moby_classes.780   { category: "Gameplay"     name: "Bridge Platform" }
 MobyClass rac.moby_classes.781   { category: "Prop"         name: "Crane Top" }
-MobyClass rac.moby_classes.786   { category: "NPCs"         name: "Skidd's Agent" }
+MobyClass rac.moby_classes.786   { category: "NPCs"         name: "Skid's Agent" }
 MobyClass rac.moby_classes.788   { category: "NPCs"         name: "Skid McMarx" }
 MobyClass rac.moby_classes.789   { category: "Prop"         name: "Liftcar Pole" }
 MobyClass rac.moby_classes.790   { category: "Prop"         name: "Ship Rear" }
@@ -355,7 +355,7 @@ MobyClass rac.moby_classes.803   { category: "Gameplay"     name: "Swingshot Swi
 MobyClass rac.moby_classes.805   { category: "Gameplay"     name: "Spawn Point" }
 MobyClass rac.moby_classes.806   { category: "Gameplay"     name: "Nanotech Ball" }
 MobyClass rac.moby_classes.810   { category: "Gameplay"     name: "Floating Platform" }
-MobyClass rac.moby_classes.811   { category: "NPCs"         name: "Agnogg Buckwash" }
+MobyClass rac.moby_classes.811   { category: "NPCs"         name: "Mayor (Novalis)" }
 MobyClass rac.moby_classes.812   { category: "Prop"         name: "Box" }
 MobyClass rac.moby_classes.815   { category: "Prop"         name: "Beehive" }
 MobyClass rac.moby_classes.816   { category: "Vehicles"     name: "Taxi" }
