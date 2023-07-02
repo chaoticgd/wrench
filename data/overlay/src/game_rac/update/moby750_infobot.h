@@ -1,6 +1,6 @@
 #pragma wrench parser on
 
-struct update750 {
+struct update750 { // 0xd0
 	/* 0x00 */ int unknown_0;
 	/* 0x04 */ int levelId;
 	/* 0x08 */ int unknown_8;

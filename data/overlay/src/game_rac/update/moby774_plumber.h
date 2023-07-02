@@ -1,6 +1,6 @@
 #pragma wrench parser on
 
-struct update774 {
+struct update774 { // 0x1a0
 	/* 0x000 */ npcVars npcVars;
 	/* 0x040 */ mobylink infobot;
 	/* 0x044 */ int unknown_44;

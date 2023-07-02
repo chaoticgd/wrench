@@ -1,6 +1,6 @@
 #pragma wrench parser on
 
-struct update613 {
+struct update613 { // 0x30
 	/* 0x00 */ int unknown_0;
 	/* 0x04 */ int unknown_4;
 	/* 0x08 */ int unknown_8;

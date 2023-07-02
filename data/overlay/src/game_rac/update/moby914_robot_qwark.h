@@ -1,6 +1,6 @@
 #pragma wrench parser on
 
-struct update914 {
+struct update914 { // 0x50
 	/* 0x00 */ npcVars npcVars;
 	/* 0x40 */ int unknown_40;
 	/* 0x44 */ int unknown_44;

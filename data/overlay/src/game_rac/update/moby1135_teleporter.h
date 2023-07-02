@@ -1,6 +1,6 @@
 #pragma wrench parser on
 
-struct update1135 {
+struct update1135 { // 0x50
 	/* 0x00 */ mobylink destination;
 	/* 0x04 */ int unknown_4;
 	/* 0x08 */ int unknown_8;
