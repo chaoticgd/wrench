@@ -1,9 +1,9 @@
 #pragma wrench parser on
 
-struct update909 { // 0x1a0
+struct update851 { // 0x1a0
 	/* 0x000 */ npcVars npcVars;
 	/* 0x040 */ int unknown_40;
-	/* 0x044 */ int unknown_44;
+	/* 0x044 */ mobylink moby_44;
 	/* 0x048 */ int unknown_48;
 	/* 0x04c */ int unknown_4c;
 	/* 0x050 */ int unknown_50;
@@ -67,8 +67,8 @@ struct update909 { // 0x1a0
 	/* 0x138 */ int unknown_138;
 	/* 0x13c */ int unknown_13c;
 	/* 0x140 */ int unknown_140;
-	/* 0x144 */ mobylink moby_144;
-	/* 0x148 */ mobylink moby_148;
+	/* 0x144 */ int unknown_144;
+	/* 0x148 */ int unknown_148;
 	/* 0x14c */ int unknown_14c;
 	/* 0x150 */ int unknown_150;
 	/* 0x154 */ int unknown_154;

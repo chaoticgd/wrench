@@ -123,7 +123,7 @@ MobyClass rac.moby_classes.287   { category: "Prop"         name: "Drill" }
 MobyClass rac.moby_classes.294   { category: "Enemies"      name: "Blarg Trooper" }
 MobyClass rac.moby_classes.295   { category: "Gameplay"     name: "Rocket" }
 MobyClass rac.moby_classes.296   { category: "Gameplay"     name: "Conveyor Belt" }
-MobyClass rac.moby_classes.298   { category: "NPCs"         name: "Fred" }
+MobyClass rac.moby_classes.298   { category: "NPCs"         name: "Fred (Pokitaru)" }
 MobyClass rac.moby_classes.302   { category: "Gameplay"     name: "Gadgebot Spawn Container" }
 MobyClass rac.moby_classes.303   { category: "Gameplay"     name: "Gadgebot Spawn Pad" }
 MobyClass rac.moby_classes.304   { category: "Prop"         name: "Gold Weapon Case" }
@@ -216,11 +216,11 @@ MobyClass rac.moby_classes.494   { category: "Prop"         name: "Log Ship 1" }
 MobyClass rac.moby_classes.495   { category: "Prop"         name: "Log Ship 2" }
 MobyClass rac.moby_classes.498   { category: "Prop"         name: "Log Ship Carrier" }
 MobyClass rac.moby_classes.499   { category: "Unknown"      name: "Gun" }
-MobyClass rac.moby_classes.500   { category: "Breakables"   name: "Bolt Crate" }
-MobyClass rac.moby_classes.501   { category: "Breakables"   name: "Nanotech Crate" }
-MobyClass rac.moby_classes.502   { category: "Breakables"   name: "Metal Crate" }
-MobyClass rac.moby_classes.505   { category: "Breakables"   name: "Explosive Crate" }
-MobyClass rac.moby_classes.511   { category: "Breakables"   name: "Ammo Crate" }
+MobyClass rac.moby_classes.500   { category: "Gameplay"     name: "Bolt Crate" }
+MobyClass rac.moby_classes.501   { category: "Gameplay"     name: "Nanotech Crate" }
+MobyClass rac.moby_classes.502   { category: "Gameplay"     name: "Metal Crate" }
+MobyClass rac.moby_classes.505   { category: "Gameplay"     name: "Oom Oom Box" }
+MobyClass rac.moby_classes.511   { category: "Gameplay"     name: "Ammo Crate" }
 MobyClass rac.moby_classes.529   { category: "Prop"         name: "Purple Ship" }
 MobyClass rac.moby_classes.530   { category: "Prop"         name: "Veldin Ship" }
 MobyClass rac.moby_classes.531   { category: "Prop"         name: "Green Ship" }
@@ -254,6 +254,7 @@ MobyClass rac.moby_classes.604   { category: "Gameplay"     name: "Sandmouse hou
 MobyClass rac.moby_classes.608   { category: "Gadget"       name: "Thrusterpack" }
 MobyClass rac.moby_classes.609   { category: "Gadget"       name: "Hyropack" }
 MobyClass rac.moby_classes.612   { category: "Enemies"      name: "Constructorbot" }
+MobyClass rac.moby_classes.613   { category: "Water"        name: "Water Current" }
 MobyClass rac.moby_classes.614   { category: "Gadget"       name: "Mapper" }
 MobyClass rac.moby_classes.615   { category: "Gameplay"     name: "Tresspasser Pad" }
 MobyClass rac.moby_classes.618   { category: "Gadget"       name: "Armor Magnetizer" }
@@ -344,7 +345,7 @@ MobyClass rac.moby_classes.774   { category: "NPCs"         name: "The Plumber" 
 MobyClass rac.moby_classes.778   { category: "Prop"         name: "Pipe" }
 MobyClass rac.moby_classes.780   { category: "Gameplay"     name: "Bridge Platform" }
 MobyClass rac.moby_classes.781   { category: "Prop"         name: "Crane Top" }
-MobyClass rac.moby_classes.786   { category: "NPCs"         name: "Skidd's Agent" }
+MobyClass rac.moby_classes.786   { category: "NPCs"         name: "Skid's Agent" }
 MobyClass rac.moby_classes.788   { category: "NPCs"         name: "Skid McMarx" }
 MobyClass rac.moby_classes.789   { category: "Prop"         name: "Liftcar Pole" }
 MobyClass rac.moby_classes.790   { category: "Prop"         name: "Ship Rear" }
@@ -354,7 +355,7 @@ MobyClass rac.moby_classes.803   { category: "Gameplay"     name: "Swingshot Swi
 MobyClass rac.moby_classes.805   { category: "Gameplay"     name: "Spawn Point" }
 MobyClass rac.moby_classes.806   { category: "Gameplay"     name: "Nanotech Ball" }
 MobyClass rac.moby_classes.810   { category: "Gameplay"     name: "Floating Platform" }
-MobyClass rac.moby_classes.811   { category: "NPCs"         name: "Agnogg Buckwash" }
+MobyClass rac.moby_classes.811   { category: "NPCs"         name: "Mayor (Novalis)" }
 MobyClass rac.moby_classes.812   { category: "Prop"         name: "Box" }
 MobyClass rac.moby_classes.815   { category: "Prop"         name: "Beehive" }
 MobyClass rac.moby_classes.816   { category: "Vehicles"     name: "Taxi" }
@@ -373,7 +374,8 @@ MobyClass rac.moby_classes.842   { category: "Gameplay"     name: "Broken Floor 
 MobyClass rac.moby_classes.844   { category: "Gameplay"     name: "Drain Cover" }
 MobyClass rac.moby_classes.846   { category: "Breakables"   name: "Pipe Mounted Grating" }
 MobyClass rac.moby_classes.849   { category: "Gadget"       name: "Suckcannon" }
-MobyClass rac.moby_classes.851   { category: "NPCs"         name: "Qwark" }
+MobyClass rac.moby_classes.851   { category: "NPCs"         name: "Qwark (Oltanis)" }
+MobyClass rac.moby_classes.854   { category: "Water"        name: "Ocean"       Texture editor_icon { src: "icons/ocean.png" strongly_deleted: false } }
 MobyClass rac.moby_classes.857   { category: "Gameplay"     name: "Gadgebot" }
 MobyClass rac.moby_classes.863   { category: "Enemies"      name: "Test Dummy Bomb Glove" }
 MobyClass rac.moby_classes.865   { category: "Enemies"      name: "Medium Amoeboid" }

@@ -1,6 +1,6 @@
 #pragma wrench parser on
 
-struct update328 {
+struct update328 { // 0x190
 	/* 0x000 */ SubVars subVars;
 	/* 0x020 */ npcVars npcVars;
 	/* 0x060 */ int unknown_60;

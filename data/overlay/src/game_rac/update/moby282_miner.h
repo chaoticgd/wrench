@@ -1,15 +1,8 @@
 #pragma wrench parser on
 
-struct update909 { // 0x1a0
-	/* 0x000 */ npcVars npcVars;
-	/* 0x040 */ int unknown_40;
-	/* 0x044 */ int unknown_44;
-	/* 0x048 */ int unknown_48;
-	/* 0x04c */ int unknown_4c;
-	/* 0x050 */ int unknown_50;
-	/* 0x054 */ int unknown_54;
-	/* 0x058 */ int unknown_58;
-	/* 0x05c */ int unknown_5c;
+struct update282 {
+	/* 0x000 */ SubVars subVars;
+	/* 0x020 */ npcVars npcVars;
 	/* 0x060 */ int unknown_60;
 	/* 0x064 */ int unknown_64;
 	/* 0x068 */ int unknown_68;
@@ -67,8 +60,8 @@ struct update909 { // 0x1a0
 	/* 0x138 */ int unknown_138;
 	/* 0x13c */ int unknown_13c;
 	/* 0x140 */ int unknown_140;
-	/* 0x144 */ mobylink moby_144;
-	/* 0x148 */ mobylink moby_148;
+	/* 0x144 */ int unknown_144;
+	/* 0x148 */ int unknown_148;
 	/* 0x14c */ int unknown_14c;
 	/* 0x150 */ int unknown_150;
 	/* 0x154 */ int unknown_154;
@@ -86,8 +79,4 @@ struct update909 { // 0x1a0
 	/* 0x184 */ int unknown_184;
 	/* 0x188 */ int unknown_188;
 	/* 0x18c */ int unknown_18c;
-	/* 0x190 */ int unknown_190;
-	/* 0x194 */ int unknown_194;
-	/* 0x198 */ int unknown_198;
-	/* 0x19c */ int unknown_19c;
 };
