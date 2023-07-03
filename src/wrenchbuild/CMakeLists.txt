@@ -8,6 +8,7 @@ add_executable(wrenchbuild
 	asset_unpacker.cpp
 	asset_packer.cpp
 	release.cpp
+	instanced_collision_recovery.cpp
 	classes/moby_class.cpp
 	classes/shrub_class.cpp
 	classes/tie_class.cpp

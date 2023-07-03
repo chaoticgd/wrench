@@ -94,5 +94,6 @@ struct WtfWriter;
 LevelSettings read_level_settings(const WtfNode* node);
 void rewrite_level_settings_links(LevelSettings& settings, const Instances& instances);
 void write_level_settings(WtfWriter* ctx, const LevelSettings& settings);
+s32 chunk_index_from_position(const glm::vec3& point, const LevelSettings& level_settings);
 
 #endif

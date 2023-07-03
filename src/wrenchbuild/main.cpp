@@ -44,6 +44,7 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/release.h>
+#include <wrenchbuild/instanced_collision_recovery.h>
 
 enum ArgFlags : u32 {
 	ARG_INPUT_PATH = 1 << 0,
@@ -84,6 +85,7 @@ static void extract_moby(const fs::path& input_path, const fs::path& output_path
 static void extract_tie(const fs::path& input_path, const fs::path& output_path, Game game);
 static void extract_shrub(const fs::path& input_path, const fs::path& output_path);
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path);
+static void recover_instanced_collision_command(const fs::path& input_path, const fs::path& output_path);
 static void print_usage(bool developer_subcommands);
 static void print_version();
 
@@ -228,6 +230,12 @@ static int wrenchbuild(int argc, char** argv) {
 	if(mode == "extract_tfrags") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
 		extract_tfrags(args.input_paths[0], args.output_path, args.game);
+		return 0;
+	}
+	
+	if(mode == "recover_instanced_collision") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
+		recover_instanced_collision_command(args.input_paths[0], args.output_path);
 		return 0;
 	}
 	
@@ -574,6 +582,14 @@ static void unpack_collision(const fs::path& input_path, const fs::path& output_
 	bank.write();
 }
 
+
+static void recover_instanced_collision_command(const fs::path& input_path, const fs::path& output_path) {
+	AssetForest forest;
+	AssetBank& bank = forest.mount<LooseAssetBank>(input_path, false);
+	std::string game = game_to_string(bank.game_info.game.game);
+	recover_instanced_collision(bank.root()->get_child(game.c_str()).as<BuildAsset>(), output_path.string().c_str());
+}
+
 static void print_usage(bool developer_subcommands) {
 	puts("Wrench Build Tool -- https://github.com/chaoticgd/wrench");
 	puts("");
@@ -666,6 +682,8 @@ static void print_usage(bool developer_subcommands) {
 		puts(" extract_shrub <input path> -o <output path>");
 		puts("   Convert a packed shrub to a .dae file.");
 		puts("");
+		puts(" recover_instanced_collision <asset bank path> -o <output path>");
+		puts("   Recovers instanced collision meshes for all the ties and shrubs in an asset bank.");
 	}
 }
 
