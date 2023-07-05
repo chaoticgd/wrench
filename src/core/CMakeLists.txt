@@ -24,6 +24,7 @@ add_library(wrenchcore STATIC
 	elf.cpp
 	memory_card.cpp
 	stdout_thread.cpp
+	worker_thread.cpp
 	${CMAKE_SOURCE_DIR}/thirdparty/md5.cpp
 )
 target_link_libraries(wrenchcore wrenchwtf wrenchplatform)

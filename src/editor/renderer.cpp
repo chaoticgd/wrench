@@ -246,6 +246,23 @@ void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projecti
 	draw_icons(lvl, settings);
 }
 
+void draw_single_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& view, const glm::mat4& projection, GLenum mesh_mode) {
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
+	
+	set_shader(shaders.textured);
+	glUniformMatrix4fv(shaders.textured_view_matrix, 1, GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(shaders.textured_projection_matrix, 1, GL_FALSE, &projection[0][0]);
+	
+	glm::mat4 local_to_world(1.f);
+	draw_mesh(mesh, materials, local_to_world);
+}
+
 static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings) {
 	if(settings.draw_moby_instances) {
 		draw_mobies(lvl, lvl.instances().moby_instances, mesh_mode, GL_LINE);

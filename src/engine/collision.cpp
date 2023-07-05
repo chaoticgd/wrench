@@ -322,19 +322,8 @@ static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors) 
 	mesh.flags = MESH_HAS_QUADS;
 	Opt<size_t> submeshes[256];
 	
-	for(s32 i = 0; i < 256; i++) {
-		ColladaMaterial material;
-		material.name = stringf("col_%x", i);
-		material.surface.type = MaterialSurfaceType::COLOUR;
-		// From https://github.com/RatchetModding/replanetizer/blob/ada7ca73418d7b01cc70eec58a41238986b84112/LibReplanetizer/Models/Collision.cs#L26
-		// Colour different types of collision without knowing what they are.
-		material.surface.colour.r = ((i & 0x3) << 6) / 255.0;
-		material.surface.colour.g = ((i & 0xc) << 4) / 255.0;
-		material.surface.colour.b = (i & 0xf0) / 255.0;
-		material.surface.colour.a = 1.f;
-		material.collision_id = i;
-		scene.materials.emplace_back(std::move(material));
-	}
+	scene.materials = create_collision_materials();
+	
 	for(const auto& y_partitions : sectors.list) {
 		for(const auto& x_partitions : y_partitions.list) {
 			for(const CollisionSector& sector : x_partitions.list) {
@@ -364,6 +353,24 @@ static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors) 
 	scene.meshes[0] = deduplicate_faces(std::move(scene.meshes[0]));
 	
 	return scene;
+}
+
+std::vector<ColladaMaterial> create_collision_materials() {
+	std::vector<ColladaMaterial> materials;
+	materials.reserve(256);
+	for(s32 i = 0; i < 256; i++) {
+		ColladaMaterial& material = materials.emplace_back();
+		material.name = stringf("col_%x", i);
+		material.surface.type = MaterialSurfaceType::COLOUR;
+		// Colouring logic taken from Replanetizer:
+		// https://github.com/RatchetModding/replanetizer/blob/ada7ca73418d7b01cc70eec58a41238986b84112/LibReplanetizer/Models/Collision.cs#L26
+		material.surface.colour.r = ((i & 0x3) << 6) / 255.0;
+		material.surface.colour.g = ((i & 0xc) << 4) / 255.0;
+		material.surface.colour.b = (i & 0xf0) / 255.0;
+		material.surface.colour.a = 1.f;
+		material.collision_id = i;
+	}
+	return materials;
 }
 
 static CollisionSectors build_collision_sectors(const ColladaScene& scene, const std::string& name) {

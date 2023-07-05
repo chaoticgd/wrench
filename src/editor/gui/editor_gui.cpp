@@ -28,6 +28,8 @@
 #include <editor/gui/view_3d.h>
 #include <editor/gui/inspector.h>
 #include <editor/gui/asset_selector.h>
+#include <editor/gui/collision_fixer.h>
+#include <editor/gui/model_preview.h>
 
 struct Layout {
 	const char* name;
@@ -51,7 +53,8 @@ static bool layout_button(Layout& layout, size_t i);
 
 static Layout layouts[] = {
 	//{"Asset Browser", nullptr, nullptr, {}},
-	{"Level Editor", level_editor_menu_bar, tool_bar, {}}
+	{"Level Editor", level_editor_menu_bar, tool_bar, {"3D View", "Inspector"}},
+	{"Collision Fixer", nullptr, nullptr, {"Collision Fixer", "Model Preview##collision_fixer", "Collision Preview##collision_fixer"}}
 };
 static size_t selected_layout = 0;
 static ImRect available_rect;
@@ -382,17 +385,40 @@ static void begin_dock_space() {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
 
+static GLuint model_preview_texture;
+static GLuint collision_preview_texture;
+
 static void dockable_windows() {
+	dockable_window("Inspector", inspector);
+	dockable_window("Collision Fixer", collision_fixer);
+	
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	dockable_window("3D View", view_3d);
+	dockable_window("Model Preview##collision_fixer", []() {
+		CollisionFixerPreviews& prev = g_app->collision_fixer_previews;
+		model_preview(&model_preview_texture, prev.mesh, prev.materials, GL_FILL, prev.params);
+	});
+	dockable_window("Collision Preview##collision_fixer", []() {
+		CollisionFixerPreviews& prev = g_app->collision_fixer_previews;
+		model_preview(&collision_preview_texture, prev.collision_mesh, prev.collision_materials, GL_LINE, prev.params);
+	});
 	ImGui::PopStyleVar();
-	dockable_window("Inspector", inspector);
 }
 
 static void dockable_window(const char* window, void (*func)()) {
-	ImGui::Begin(window);
-	func();
-	ImGui::End();
+	Layout& layout = layouts[selected_layout];
+	bool visible = false;
+	for(const char* other_window : layout.visible_windows) {
+		if(strcmp(other_window, window) == 0) {
+			visible = true;
+			break;
+		}
+	}
+	if(visible) {
+		ImGui::Begin(window);
+		func();
+		ImGui::End();
+	}
 }
 
 static void end_dock_space() {
@@ -410,7 +436,15 @@ static void create_dock_layout() {
 	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.5f, &right, &left_centre);
 	
 	ImGui::DockBuilderDockWindow("3D View", left_centre);
-	ImGui::DockBuilderDockWindow("Inspector", right);
+	
+	ImGuiID right_top, right_bottom;
+	ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 0.5f, &right_top, &right_bottom);
+	
+	ImGui::DockBuilderDockWindow("Inspector", right_top);
+	
+	ImGui::DockBuilderDockWindow("Collision Fixer", left_centre);
+	ImGui::DockBuilderDockWindow("Model Preview##collision_fixer", right_top);
+	ImGui::DockBuilderDockWindow("Collision Preview##collision_fixer", right_bottom);
 
 	ImGui::DockBuilderFinish(dockspace_id);
 }

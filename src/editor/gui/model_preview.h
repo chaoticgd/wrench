@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,13 +16,17 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <assetmgr/asset.h>
+#ifndef EDITOR_GUI_MODEL_PREVIEW_H
+#define EDITOR_GUI_MODEL_PREVIEW_H
 
-struct AssetSelector {
-	AssetType required_type;
-	Opt<AssetType> omit_type;
-	bool no_recurse = true;
-	std::string filter;
+#include <gui/render_mesh.h>
+
+struct ModelPreviewParams {
+	glm::vec2 rot = {0.f, 0.f};
+	f32 zoom = 1.f;
+	f32 elevation = 0.f;
 };
 
-Asset* asset_selector(const char* label, const char* preview_value, AssetSelector& state, AssetForest& forest);
+void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<RenderMaterial>* materials, GLenum mesh_mode, ModelPreviewParams& params);
+
+#endif

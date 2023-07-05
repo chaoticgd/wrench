@@ -16,10 +16,20 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCHBUILD_INSTANCED_COLLISION_RECOVERY_H
-#define WRENCHBUILD_INSTANCED_COLLISION_RECOVERY_H
+#ifndef EDITOR_COLLISION_FIXER_H
+#define EDITOR_COLLISION_FIXER_H
 
-struct BuildAsset;
-void recover_instanced_collision(BuildAsset& build, const char* output_path);
+#include <gui/render_mesh.h>
+#include <editor/gui/model_preview.h>
+
+struct CollisionFixerPreviews {
+	RenderMesh* mesh = nullptr;
+	std::vector<RenderMaterial>* materials = nullptr;
+	RenderMesh* collision_mesh = nullptr;
+	std::vector<RenderMaterial>* collision_materials = nullptr;
+	ModelPreviewParams params;
+};
+
+void collision_fixer();
 
 #endif

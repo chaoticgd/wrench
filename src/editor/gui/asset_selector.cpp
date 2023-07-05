@@ -30,7 +30,7 @@ static std::vector<std::pair<std::string, Asset*>> assets;
 Asset* asset_selector(const char* label, const char* preview_value, AssetSelector& state, AssetForest& forest) {
 	Asset* selected = nullptr;
 	static bool open_last_frame = false;
-	if(ImGui::BeginCombo(label, preview_value)) {
+	if(ImGui::BeginCombo(label, preview_value, ImGuiComboFlags_HeightLargest)) {
 		if(!open_last_frame) {
 			assets.clear();
 			if(Asset* root = forest.any_root()) {
@@ -39,11 +39,22 @@ Asset* asset_selector(const char* label, const char* preview_value, AssetSelecto
 			std::sort(BEGIN_END(assets), compare_asset_links_numerically);
 			open_last_frame = true;
 		}
+		ImGui::SetNextItemWidth(-1.f);
+		if(ImGui::IsWindowFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)) {
+			ImGui::SetKeyboardFocusHere(0);
+		}
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
+		ImGui::InputText("##filter", &state.filter, ImGuiInputTextFlags_AutoSelectAll);
+		ImGui::PopStyleColor();
+		ImGui::Separator();
+		ImGui::BeginChild("##assets", ImVec2(-1, 400));
 		for(auto [link, asset] : assets) {
-			if(ImGui::Selectable(link.c_str())) {
+			if(strcasestr(link.c_str(), state.filter.c_str()) != NULL && ImGui::Selectable(link.c_str())) {
 				selected = asset;
+				ImGui::CloseCurrentPopup();
 			}
 		}
+		ImGui::EndChild();
 		ImGui::EndCombo();
 	} else {
 		open_last_frame = false;
@@ -52,6 +63,9 @@ Asset* asset_selector(const char* label, const char* preview_value, AssetSelecto
 }
 
 static void recurse(Asset& asset, AssetSelector& state) {
+	if(state.omit_type.has_value() && asset.logical_type() == *state.omit_type) {
+		return;
+	}
 	if(asset.logical_type() == state.required_type) {
 		assets.emplace_back(get_display_name(asset), &asset);
 		if(state.no_recurse) {
@@ -69,6 +83,24 @@ static std::string get_display_name(Asset& asset) {
 		LevelAsset& level = asset.as<LevelAsset>();
 		if(level.has_name()) {
 			return link + " " + level.name();
+		}
+	}
+	if(asset.logical_type() == MobyClassAsset::ASSET_TYPE) {
+		MobyClassAsset& moby = asset.as<MobyClassAsset>();
+		if(moby.has_name()) {
+			return link + " " + moby.name();
+		}
+	}
+	if(asset.logical_type() == TieClassAsset::ASSET_TYPE) {
+		TieClassAsset& tie = asset.as<TieClassAsset>();
+		if(tie.has_name()) {
+			return link + " " + tie.name();
+		}
+	}
+	if(asset.logical_type() == ShrubClassAsset::ASSET_TYPE) {
+		ShrubClassAsset& shrub = asset.as<ShrubClassAsset>();
+		if(shrub.has_name()) {
+			return link + " " + shrub.name();
 		}
 	}
 	return link;

@@ -9,11 +9,14 @@ add_executable(wrencheditor
 	renderer.cpp
 	level.cpp
 	editor.cpp
+	instanced_collision_recovery.cpp
 	gui/editor_gui.cpp
 	gui/view_3d.cpp
 	gui/inspector.cpp
 	gui/transform_inspector.cpp
 	gui/pvar_inspector.cpp
 	gui/asset_selector.cpp
+	gui/collision_fixer.cpp
+	gui/model_preview.cpp
 )
 target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr wrenchinstancemgr)

@@ -124,73 +124,17 @@ void Level::read(LevelAsset& asset, Game g) {
 	});
 	
 	level_wad().get_tie_classes().for_each_logical_child_of_type<TieClassAsset>([&](TieClassAsset& tie) {
-		if(!tie.has_editor_mesh()) {
-			return;
+		Opt<EditorClass> ec = load_tie_editor_class(tie);
+		if(ec.has_value()) {
+			tie_classes.emplace(tie.id(), std::move(*ec));
 		}
-		MeshAsset& asset = tie.get_editor_mesh();
-		std::string xml = asset.src().read_text_file();
-		ColladaScene scene = read_collada((char*) xml.data());
-		Mesh* mesh = scene.find_mesh(asset.name());
-		if(!mesh) {
-			return;
-		}
-		
-		MaterialSet material_set = read_material_assets(tie.get_materials());
-		map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
-		
-		std::vector<Texture> textures;
-		for(FileReference ref : material_set.textures) {
-			auto stream = ref.open_binary_file_for_reading();
-			verify(stream.get(), "Failed to open shrub texture file.");
-			Opt<Texture> texture = read_png(*stream.get());
-			verify(texture.has_value(), "Failed to read shrub texture.");
-			textures.emplace_back(*texture);
-		}
-		
-		EditorClass et;
-		et.mesh = *mesh;
-		et.render_mesh = upload_mesh(*mesh, true);
-		et.materials = upload_materials(scene.materials, textures);
-		tie_classes.emplace(tie.id(), std::move(et));
 	});
 	
 	level_wad().get_shrub_classes().for_each_logical_child_of_type<ShrubClassAsset>([&](ShrubClassAsset& shrub) {
-		if(!shrub.has_core()) {
-			return;
+		Opt<EditorClass> ec = load_shrub_editor_class(shrub);
+		if(ec.has_value()) {
+			shrub_classes.emplace(shrub.id(), std::move(*ec));
 		}
-		Asset& core_asset = shrub.get_core();
-		if(core_asset.logical_type() != ShrubClassCoreAsset::ASSET_TYPE) {
-			return;
-		}
-		ShrubClassCoreAsset& core = core_asset.as<ShrubClassCoreAsset>();
-		if(!core.has_mesh()) {
-			return;
-		}
-		MeshAsset& asset = core.get_mesh();
-		std::string xml = asset.src().read_text_file();
-		ColladaScene scene = read_collada((char*) xml.data());
-		Mesh* mesh = scene.find_mesh(asset.name());
-		if(!mesh) {
-			return;
-		}
-		
-		MaterialSet material_set = read_material_assets(shrub.get_materials());
-		map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
-		
-		std::vector<Texture> textures;
-		for(FileReference ref : material_set.textures) {
-			auto stream = ref.open_binary_file_for_reading();
-			verify(stream.get(), "Failed to open shrub texture file.");
-			Opt<Texture> texture = read_png(*stream.get());
-			verify(texture.has_value(), "Failed to read shrub texture.");
-			textures.emplace_back(*texture);
-		}
-		
-		EditorClass es;
-		es.mesh = *mesh;
-		es.render_mesh = upload_mesh(*mesh, true);
-		es.materials = upload_materials(scene.materials, textures);
-		shrub_classes.emplace(shrub.id(), std::move(es));
 	});
 	
 	for(s32 i = 0; i < 100; i++) {
@@ -270,4 +214,74 @@ Instances& Level::instances() {
 
 const Instances& Level::instances() const {
 	return _instances;
+}
+
+Opt<EditorClass> load_tie_editor_class(const TieClassAsset& tie) {
+	if(!tie.has_editor_mesh()) {
+		return std::nullopt;
+	}
+	const MeshAsset& asset = tie.get_editor_mesh();
+	std::string xml = asset.src().read_text_file();
+	ColladaScene scene = read_collada((char*) xml.data());
+	Mesh* mesh = scene.find_mesh(asset.name());
+	if(!mesh) {
+		return std::nullopt;
+	}
+	
+	MaterialSet material_set = read_material_assets(tie.get_materials());
+	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+	
+	std::vector<Texture> textures;
+	for(FileReference ref : material_set.textures) {
+		auto stream = ref.open_binary_file_for_reading();
+		verify(stream.get(), "Failed to open shrub texture file.");
+		Opt<Texture> texture = read_png(*stream.get());
+		verify(texture.has_value(), "Failed to read shrub texture.");
+		textures.emplace_back(*texture);
+	}
+	
+	EditorClass et;
+	et.mesh = *mesh;
+	et.render_mesh = upload_mesh(*mesh, true);
+	et.materials = upload_materials(scene.materials, textures);
+	return et;
+}
+
+Opt<EditorClass> load_shrub_editor_class(const ShrubClassAsset& shrub) {
+	if(!shrub.has_core()) {
+		return std::nullopt;
+	}
+	const Asset& core_asset = shrub.get_core();
+	if(core_asset.logical_type() != ShrubClassCoreAsset::ASSET_TYPE) {
+		return std::nullopt;
+	}
+	const ShrubClassCoreAsset& core = core_asset.as<ShrubClassCoreAsset>();
+	if(!core.has_mesh()) {
+		return std::nullopt;
+	}
+	const MeshAsset& asset = core.get_mesh();
+	std::string xml = asset.src().read_text_file();
+	ColladaScene scene = read_collada((char*) xml.data());
+	Mesh* mesh = scene.find_mesh(asset.name());
+	if(!mesh) {
+		return std::nullopt;
+	}
+	
+	MaterialSet material_set = read_material_assets(shrub.get_materials());
+	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+	
+	std::vector<Texture> textures;
+	for(FileReference ref : material_set.textures) {
+		auto stream = ref.open_binary_file_for_reading();
+		verify(stream.get(), "Failed to open shrub texture file.");
+		Opt<Texture> texture = read_png(*stream.get());
+		verify(texture.has_value(), "Failed to read shrub texture.");
+		textures.emplace_back(*texture);
+	}
+	
+	EditorClass ec;
+	ec.mesh = *mesh;
+	ec.render_mesh = upload_mesh(*mesh, true);
+	ec.materials = upload_materials(scene.materials, textures);
+	return ec;
 }
