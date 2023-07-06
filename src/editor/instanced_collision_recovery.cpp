@@ -18,6 +18,8 @@
 
 #include "instanced_collision_recovery.h"
 
+#include <engine/collision.h>
+
 std::vector<ColLevel> load_instance_collision_data(BuildAsset& build, std::function<bool()>&& check_is_still_running) {
 	std::vector<ColLevel> levels;
 	
@@ -123,18 +125,26 @@ struct ColVal {
 	s32 hits;
 };
 
-#define COL_QUANT_FACTOR 8.f
-
-Opt<Mesh> build_instanced_collision(s32 type, s32 o_class, const ColMappings& mappings, const std::vector<ColLevel>& levels, std::function<bool()>&& check_is_still_running) {
+Opt<ColladaScene> build_instanced_collision(s32 type, s32 o_class, const ColParams& params, const ColMappings& mappings, const std::vector<ColLevel>& levels, std::function<bool()>&& check_is_still_running) {
 	auto iter = mappings.classes[type].find(o_class);
 	if(iter == mappings.classes[type].end()) {
-		printf("lookuperr\n");
 		return std::nullopt;
 	}
 	const std::vector<ColInstanceMapping>& inst_mappings = iter->second;
 	
+	f32 quant_factor;
+	if(params.merge_dist != 0.f) {
+		quant_factor = 1.f / params.merge_dist;
+	} else {
+		quant_factor = 1.f;
+	}
+	
 	std::map<ColFace, ColVal> state;
 	
+	glm::vec3 bb_min = params.bounding_box_origin - params.bounding_box_size * 0.5f;
+	glm::vec3 bb_max = params.bounding_box_origin + params.bounding_box_size * 0.5f;
+	
+	// Count the number of occurences of each face.
 	for(s32 m = 0; m < (s32) inst_mappings.size(); m++) {
 		const ColInstanceMapping& mapping = inst_mappings[m];
 		const ColLevel& level = levels[mapping.level];
@@ -148,44 +158,52 @@ Opt<Mesh> build_instanced_collision(s32 type, s32 o_class, const ColMappings& ma
 				Face& face = submesh.faces[f];
 				ColFace key;
 				s32 faces[3] = {face.v0, face.v1, face.v2};
+				bool accept = false;
 				for(s32 v = 0; v < 3; v++) {
-					glm::vec3 local_pos = inst.inverse_matrix * glm::vec4(mesh.vertices[faces[v]].pos, 1.f);
-					key.verts[v].x = (s32) roundf(local_pos.x * COL_QUANT_FACTOR);
-					key.verts[v].y = (s32) roundf(local_pos.y * COL_QUANT_FACTOR);
-					key.verts[v].z = (s32) roundf(local_pos.z * COL_QUANT_FACTOR);
+					glm::vec3 pos = inst.inverse_matrix * glm::vec4(mesh.vertices[faces[v]].pos, 1.f);
+					key.verts[v].x = (s32) roundf(pos.x * quant_factor);
+					key.verts[v].y = (s32) roundf(pos.y * quant_factor);
+					key.verts[v].z = (s32) roundf(pos.z * quant_factor);
+					accept |= pos.x > bb_min.x && pos.y > bb_min.y && pos.z > bb_min.z
+						&& pos.x < bb_max.x && pos.y < bb_max.y && pos.z < bb_max.z;
 				}
 				if(face.v3 > -1) {
-					glm::vec3 local_pos = inst.inverse_matrix * glm::vec4(mesh.vertices[face.v3].pos, 1.f);
-					key.verts[3].x = (s32) roundf(local_pos.x * COL_QUANT_FACTOR);
-					key.verts[3].y = (s32) roundf(local_pos.y * COL_QUANT_FACTOR);
-					key.verts[3].z = (s32) roundf(local_pos.z * COL_QUANT_FACTOR);
+					glm::vec3 pos = inst.inverse_matrix * glm::vec4(mesh.vertices[face.v3].pos, 1.f);
+					key.verts[3].x = (s32) roundf(pos.x * quant_factor);
+					key.verts[3].y = (s32) roundf(pos.y * quant_factor);
+					key.verts[3].z = (s32) roundf(pos.z * quant_factor);
+					accept |= pos.x > bb_min.x && pos.y > bb_min.y && pos.z > bb_min.z
+						&& pos.x < bb_max.x && pos.y < bb_max.y && pos.z < bb_max.z;
 				}
-				auto iter = state.find(key);
-				if(iter == state.end()) {
-					ColVal val;
-					val.mapping = m;
-					val.submesh = s;
-					val.face = f;
-					val.hits = 1;
-					state.emplace(key, val);
-				} else {
-					iter->second.hits++;
+				if(!params.reject_faces_outside_bb || accept) {
+					auto iter = state.find(key);
+					if(iter == state.end()) {
+						ColVal val;
+						val.mapping = m;
+						val.submesh = s;
+						val.face = f;
+						val.hits = 1;
+						state.emplace(key, val);
+					} else {
+						iter->second.hits++;
+					}
 				}
 			}
 		}
 		if(!check_is_still_running()) {
-		printf("check_is_still_running\n");
 			return std::nullopt;
 		}
 	}
 	
-	Mesh mesh;
-	mesh.name = "temp";
+	// Create a mesh that 
+	ColladaScene scene;
+	Mesh& mesh = scene.meshes.emplace_back();
+	mesh.name = "collision";
 	mesh.flags |= MESH_HAS_QUADS;
 	SubMesh& sm = mesh.submeshes.emplace_back();
 	sm.material = 0;
 	for(auto& [key, value] : state) {
-		if(value.hits > 2) {
+		if(value.hits >= params.min_hits) {
 			const ColInstanceMapping& mapping = inst_mappings[value.mapping];
 			const ColLevel& level = levels[mapping.level];
 			const ColInstance& inst = level.instances[type][mapping.instance];
@@ -211,6 +229,33 @@ Opt<Mesh> build_instanced_collision(s32 type, s32 o_class, const ColMappings& ma
 			}
 		}
 	}
-		printf("good\n");
-	return mesh;
+	
+	// Deduplicate vertices.
+	std::vector<size_t> mapping(mesh.vertices.size());
+	for(size_t i = 0; i < mesh.vertices.size(); i++) {
+		mapping[i] = i;
+	}
+	for(size_t i = 0; i < mesh.vertices.size(); i++) {
+		for(size_t j = i + 1; j < mesh.vertices.size(); j++) {
+			glm::vec3 d = mesh.vertices[i].pos - mesh.vertices[j].pos;
+			if(d.x * d.x + d.y * d.y + d.z * d.z < params.merge_dist * params.merge_dist) {
+				mapping[j] = i;
+			}
+		}
+	}
+	for(SubMesh& submesh : mesh.submeshes) {
+		for(Face& face : submesh.faces) {
+			face.v0 = mapping.at(face.v0);
+			face.v1 = mapping.at(face.v1);
+			face.v2 = mapping.at(face.v2);
+			if(face.v3 > -1) {
+				face.v3 = mapping.at(face.v3);
+			}
+		}
+	}
+	
+	scene.meshes[0] = deduplicate_faces(std::move(mesh));
+	scene.materials = create_collision_materials();
+	
+	return scene;
 }

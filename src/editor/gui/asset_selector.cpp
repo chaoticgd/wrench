@@ -27,10 +27,11 @@ static size_t compare_asset_links_numerically(const std::pair<std::string, Asset
 
 static std::vector<std::pair<std::string, Asset*>> assets;
 
-Asset* asset_selector(const char* label, const char* preview_value, AssetSelector& state, AssetForest& forest) {
-	Asset* selected = nullptr;
+Asset* asset_selector(const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest) {
+	Asset* changed = nullptr;
 	static bool open_last_frame = false;
-	if(ImGui::BeginCombo(label, preview_value, ImGuiComboFlags_HeightLargest)) {
+	const char* preview = state.preview.empty() ? default_preview : state.preview.c_str();
+	if(ImGui::BeginCombo(label, preview, ImGuiComboFlags_HeightLargest)) {
 		if(!open_last_frame) {
 			assets.clear();
 			if(Asset* root = forest.any_root()) {
@@ -50,7 +51,9 @@ Asset* asset_selector(const char* label, const char* preview_value, AssetSelecto
 		ImGui::BeginChild("##assets", ImVec2(-1, 400));
 		for(auto [link, asset] : assets) {
 			if(strcasestr(link.c_str(), state.filter.c_str()) != NULL && ImGui::Selectable(link.c_str())) {
-				selected = asset;
+				changed = asset;
+				state.selected = asset;
+				state.preview = link;
 				ImGui::CloseCurrentPopup();
 			}
 		}
@@ -59,17 +62,20 @@ Asset* asset_selector(const char* label, const char* preview_value, AssetSelecto
 	} else {
 		open_last_frame = false;
 	}
-	return selected;
+	return changed;
 }
 
 static void recurse(Asset& asset, AssetSelector& state) {
 	if(state.omit_type.has_value() && asset.logical_type() == *state.omit_type) {
 		return;
 	}
-	if(asset.logical_type() == state.required_type) {
-		assets.emplace_back(get_display_name(asset), &asset);
-		if(state.no_recurse) {
-			return;
+	for(s32 i = 0; i < state.required_type_count; i++) {
+		if(asset.logical_type() == state.required_types[i]) {
+			assets.emplace_back(get_display_name(asset), &asset);
+			if(state.no_recurse) {
+				return;
+			}
+			break;
 		}
 	}
 	asset.for_each_logical_child([&](Asset& child) {

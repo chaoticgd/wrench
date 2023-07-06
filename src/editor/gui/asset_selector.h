@@ -19,10 +19,13 @@
 #include <assetmgr/asset.h>
 
 struct AssetSelector {
-	AssetType required_type;
+	s32 required_type_count = 0;
+	AssetType required_types[10];
 	Opt<AssetType> omit_type;
 	bool no_recurse = true;
 	std::string filter;
+	std::string preview;
+	Asset* selected = nullptr;
 };
 
-Asset* asset_selector(const char* label, const char* preview_value, AssetSelector& state, AssetForest& forest);
+Asset* asset_selector(const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest);

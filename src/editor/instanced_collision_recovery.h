@@ -53,8 +53,16 @@ struct ColMappings {
 	std::map<s32, std::vector<ColInstanceMapping>> classes[COL_INSTANCE_TYPE_COUNT];
 };
 
+struct ColParams {
+	s32 min_hits = 3;
+	f32 merge_dist = 0.25f;
+	bool reject_faces_outside_bb = true;
+	glm::vec3 bounding_box_origin;
+	glm::vec3 bounding_box_size;
+};
+
 std::vector<ColLevel> load_instance_collision_data(BuildAsset& build, std::function<bool()>&& check_is_still_running);
 ColMappings generate_instance_collision_mappings(const std::vector<ColLevel>& levels);
-Opt<Mesh> build_instanced_collision(s32 type, s32 o_class, const ColMappings& mappings, const std::vector<ColLevel>& levels, std::function<bool()>&& check_is_still_running);
+Opt<ColladaScene> build_instanced_collision(s32 type, s32 o_class, const ColParams& params, const ColMappings& mappings, const std::vector<ColLevel>& levels, std::function<bool()>&& check_is_still_running);
 
 #endif

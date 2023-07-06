@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -463,24 +463,5 @@ private:
 	
 	std::map<fs::path, std::vector<u8>> _files;
 };
-
-// Try to read the output path for an asset from the underlay.
-template <typename ClassAsset>
-std::string generate_asset_path(const char* directory, const char* type, s32 id, const Asset& parent) {
-	if(parent.has_child(id)) {
-		const ClassAsset* child = parent.get_child(id).maybe_as<ClassAsset>();
-		if(child && child->has_name() && !child->name().empty()) {
-			std::string name = to_snake_case(child->name().c_str());
-			if(child->has_category() && !child->category().empty()) {
-				std::string category = to_snake_case(child->category().c_str());
-				return stringf("%s/%s/%d_%s/%s_%s.asset", directory, category.c_str(), id, name.c_str(), type, name.c_str());
-			} else {
-				return stringf("%s/%d_%s/%s_%s.asset", directory, id, name.c_str(), type, name.c_str());
-			}
-		}
-	}
-	
-	return stringf("%s/unsorted/%d/%s_%d.asset", directory, id, type, id);
-}
 
 #endif

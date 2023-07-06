@@ -29,11 +29,34 @@ void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<Re
 	view_size.x -= ImGui::GetWindowContentRegionMin().x;
 	view_size.y -= ImGui::GetWindowContentRegionMin().y;
 	
-	glm::vec3 eye = glm::vec3((12.f * (2.f - params.zoom)), 0, 0);
+	glm::mat4 matrix(1.f);
+	matrix = glm::translate(matrix, params.bounding_box_origin);
+	matrix = glm::scale(matrix, params.bounding_box_size * 0.5f);
+	
+	f32 fov_y = 45.0f;
+	
+	// Get the largest dimension of the model.
+	f32 model_size = std::max({params.bounding_box_size.x, params.bounding_box_size.y, params.bounding_box_size.z});
+	
+	f32 tan = tanf(glm::radians(fov_y * 0.5f));
+	f32 focal_length = (view_size.y * 0.5f) / (tan == 0.f ? 1.f : tan);
+	
+	// Get a ratio of how wide the largest dimension of the model is compared to the render window width.
+	f32 zoom_ratio;
+	if(view_size.x < view_size.y) {
+		zoom_ratio = model_size / view_size.x;
+	} else { // Same as above, but use height if the render window is shorter than wide.
+		zoom_ratio = model_size / view_size.y;
+	}
+	
+	// Fit the camera to the model bounding box.
+	f32 camera_distance = focal_length * zoom_ratio;
+	
+	glm::vec3 eye = glm::vec3((camera_distance * (2.f - params.zoom * 1.9f)), 0, 0);
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0), glm::vec3(0, 1, 0));
 	glm::mat4 view_pitched = glm::rotate(view_fixed, params.rot.x, glm::vec3(0, 0, 1));
 	glm::mat4 view_yawed = glm::rotate(view_pitched, params.rot.y, glm::vec3(0, 1, 0));
-	glm::mat4 view = glm::translate(view_yawed * RATCHET_TO_OPENGL_MATRIX, -glm::vec3(0, 0, 2.f));
+	glm::mat4 view = glm::translate(view_yawed * RATCHET_TO_OPENGL_MATRIX, -params.bounding_box_origin);
 	glm::mat4 projection = compose_projection_matrix(view_size);
 	
 	render_to_texture(texture, view_size.x, view_size.y, [&]() {
@@ -42,7 +65,7 @@ void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<Re
 		glViewport(0, 0, view_size.x, view_size.y);
 		
 		if(mesh && materials) {
-			draw_single_mesh(*mesh, *materials, view, projection, mesh_mode);
+			draw_model_preview(*mesh, *materials, &matrix, view, projection, mesh_mode);
 		}
 	});
 	

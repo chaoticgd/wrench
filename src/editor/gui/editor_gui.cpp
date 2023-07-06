@@ -20,6 +20,7 @@
 #include "gui/commands.h"
 
 #include <nfd.h>
+#include <assetmgr/asset_path_gen.h>
 #include <gui/gui.h>
 #include <gui/config.h>
 #include <gui/build_settings.h>
@@ -253,7 +254,8 @@ static void level_editor_menu_bar() {
 	}
 	
 	static AssetSelector level_selector;
-	level_selector.required_type = LevelAsset::ASSET_TYPE;
+	level_selector.required_type_count = 1;
+	level_selector.required_types[0] = LevelAsset::ASSET_TYPE;
 	ImGui::SetNextItemWidth(200);
 	if(Asset* asset = asset_selector("##level_selector", preview_value, level_selector, g_app->asset_forest)) {
 		g_app->load_level(asset->as<LevelAsset>());
@@ -291,7 +293,7 @@ static void occlusion_things(Level* level) {
 		// written out in place of the old one.
 		if(&level->level_wad().get_occlusion().bank() != g_app->mod_bank) {
 			s32 level_id = level->level_wad().id();
-			std::string path = generate_asset_path<LevelAsset>("levels", "level", level_id, *level->level().parent());
+			std::string path = generate_level_asset_path(level_id, *level->level().parent());
 			OcclusionAsset& old_occl = level->level_wad().get_occlusion();
 			
 			// Create a new .asset file for the occlusion data.

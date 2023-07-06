@@ -19,6 +19,7 @@
 #include "level.h"
 
 #include <core/png.h>
+#include <assetmgr/asset_path_gen.h>
 #include <assetmgr/material_asset.h>
 #include <instancemgr/gameplay.h>
 #include <toolwads/wads.h>
@@ -163,7 +164,7 @@ std::string Level::save() {
 	// out in the new asset bank.
 	if(&_instances_asset->bank() != g_app->mod_bank && _instances_asset->parent()) {
 		s32 level_id = level_wad().id();
-		std::string path = generate_asset_path<LevelAsset>("levels", "level", level_id, *level().parent());
+		std::string path = generate_level_asset_path(level_id, *level().parent());
 		
 		AssetFile& instances_file = g_app->mod_bank->asset_file(path);
 		AssetLink link = level_wad().get_gameplay().absolute_link();
@@ -240,11 +241,11 @@ Opt<EditorClass> load_tie_editor_class(const TieClassAsset& tie) {
 		textures.emplace_back(*texture);
 	}
 	
-	EditorClass et;
-	et.mesh = *mesh;
-	et.render_mesh = upload_mesh(*mesh, true);
-	et.materials = upload_materials(scene.materials, textures);
-	return et;
+	EditorClass editor_tie;
+	editor_tie.mesh = std::move(*mesh);
+	editor_tie.render_mesh = upload_mesh(*editor_tie.mesh, true);
+	editor_tie.materials = upload_materials(scene.materials, textures);
+	return editor_tie;
 }
 
 Opt<EditorClass> load_shrub_editor_class(const ShrubClassAsset& shrub) {
@@ -279,9 +280,9 @@ Opt<EditorClass> load_shrub_editor_class(const ShrubClassAsset& shrub) {
 		textures.emplace_back(*texture);
 	}
 	
-	EditorClass ec;
-	ec.mesh = *mesh;
-	ec.render_mesh = upload_mesh(*mesh, true);
-	ec.materials = upload_materials(scene.materials, textures);
-	return ec;
+	EditorClass editor_shrub;
+	editor_shrub.mesh = std::move(*mesh);
+	editor_shrub.render_mesh = upload_mesh(*editor_shrub.mesh, true);
+	editor_shrub.materials = upload_materials(scene.materials, textures);
+	return editor_shrub;
 }

@@ -16,19 +16,16 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef EDITOR_GUI_MODEL_PREVIEW_H
-#define EDITOR_GUI_MODEL_PREVIEW_H
+#ifndef ASSETMGR_ASSET_PATH_GEN_H
+#define ASSETMGR_ASSET_PATH_GEN_H
 
-#include <gui/render_mesh.h>
+#include <assetmgr/asset_types.h>
 
-struct ModelPreviewParams {
-	glm::vec2 rot = {0.f, 0.f};
-	f32 zoom = 0.5f;
-	f32 elevation = 0.f;
-	glm::vec3 bounding_box_origin = {0.f, 0.f, 0.f};
-	glm::vec3 bounding_box_size = {0.f, 0.f, 0.f};
-};
-
-void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<RenderMaterial>* materials, GLenum mesh_mode, ModelPreviewParams& params);
+// Generate output paths for different types of asset based on the name and
+// category attributes pulled from the underlay and possibly mods.
+std::string generate_level_asset_path(s32 tag, const Asset& parent);
+std::string generate_moby_class_asset_path(s32 tag, const Asset& parent);
+std::string generate_tie_class_asset_path(s32 tag, const Asset& parent);
+std::string generate_shrub_class_asset_path(s32 tag, const Asset& parent);
 
 #endif
