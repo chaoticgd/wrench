@@ -36,7 +36,7 @@ Origin position of the previously mentioned bounding box.
 
 ### Bounding Box Size
 
-Size of the previously mentioned bounding.
+Size of the previously mentioned bounding box.
 
 ## Output
 

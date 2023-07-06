@@ -31,7 +31,7 @@ public:
 	bool interrupt();
 	void start(Game game, std::string game_bank_path, s32 type, s32 o_class, const ColParams& params);
 	void run();
-	void clear();
+	void reset();
 	
 	bool is_running();
 	const char* state_string();
@@ -164,6 +164,9 @@ void collision_fixer() {
 			collada_scene = std::move(*out);
 			verify_fatal(collada_scene.meshes.size() == 1);
 			collision_render_mesh = upload_mesh(collada_scene.meshes[0], true);
+			for(RenderSubMesh& submesh : collision_render_mesh.submeshes) {
+				submesh.material = 0;
+			}
 			Texture white = Texture::create_rgba(1, 1, {0xff, 0xff, 0xff, 0xff});
 			RenderMaterial mat = upload_material(Material{"", glm::vec4(1.f, 1.f, 1.f, 1.f)}, {white});
 			collision_materials.clear();
@@ -173,6 +176,10 @@ void collision_fixer() {
 			waiting_for_completion = false;
 		}
 	}
+}
+
+void shutdown_collision_fixer() {
+	fixer_thread.reset();
 }
 
 void CollisionFixerThread::start(Game game, std::string game_bank_path, s32 type, s32 o_class, const ColParams& params) {
@@ -247,10 +254,15 @@ void CollisionFixerThread::run() {
 	}
 }
 
-void CollisionFixerThread::clear() {
+void CollisionFixerThread::reset() {
+	thread.join();
 	game_bank_path.clear();
 	success = false;
 	scene = {};
+	loaded = false;
+	levels.clear();
+	mappings.classes[COL_TIE].clear();
+	mappings.classes[COL_SHRUB].clear();
 }
 
 Opt<ColladaScene> CollisionFixerThread::get_output() {

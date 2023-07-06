@@ -36,6 +36,7 @@ struct Layout {
 	const char* name;
 	void (*menu_bar_extras)();
 	void (*tool_bar)();
+	void (*shutdown)();
 	std::vector<const char*> visible_windows;
 	bool hovered = false;
 };
@@ -54,8 +55,8 @@ static bool layout_button(Layout& layout, size_t i);
 
 static Layout layouts[] = {
 	//{"Asset Browser", nullptr, nullptr, {}},
-	{"Level Editor", level_editor_menu_bar, tool_bar, {"3D View", "Inspector"}},
-	{"Collision Fixer", nullptr, nullptr, {"Collision Fixer", "Model Preview##collision_fixer", "Collision Preview##collision_fixer"}}
+	{"Level Editor", level_editor_menu_bar, tool_bar, nullptr, {"3D View", "Inspector"}},
+	{"Collision Fixer", nullptr, nullptr, shutdown_collision_fixer, {"Collision Fixer", "Model Preview##collision_fixer", "Collision Preview##collision_fixer"}}
 };
 static size_t selected_layout = 0;
 static ImRect available_rect;
@@ -78,6 +79,10 @@ void editor_gui() {
 	}
 	
 	end_dock_space();
+
+	if(g_app->last_frame && layouts[selected_layout].shutdown) {
+		layouts[selected_layout].shutdown();
+	}
 }
 
 static void menu_bar() {
@@ -200,7 +205,10 @@ static void menu_bar() {
 		
 		for(size_t i = 0; i < ARRAY_SIZE(layouts); i++) {
 			Layout& layout = layouts[i];
-			if(layout_button(layout, i)) {
+			if(layout_button(layout, i) && i != selected_layout) {
+				if(layouts[selected_layout].shutdown) {
+					layouts[selected_layout].shutdown();
+				}
 				selected_layout = i;
 			}
 		}

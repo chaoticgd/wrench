@@ -66,6 +66,7 @@ public:
 	CollisionFixerPreviews collision_fixer_previews;
 	
 	f32 delta_time = 0;
+	bool last_frame = false;
 	
 	Level* get_level();
 	const Level* get_level() const;

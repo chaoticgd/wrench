@@ -195,13 +195,12 @@ Opt<ColladaScene> build_instanced_collision(s32 type, s32 o_class, const ColPara
 		}
 	}
 	
-	// Create a mesh that 
+	// Generate the scene.
 	ColladaScene scene;
 	Mesh& mesh = scene.meshes.emplace_back();
 	mesh.name = "collision";
 	mesh.flags |= MESH_HAS_QUADS;
-	SubMesh& sm = mesh.submeshes.emplace_back();
-	sm.material = 0;
+	std::vector<s32> submesh_indices(256, -1);
 	for(auto& [key, value] : state) {
 		if(value.hits >= params.min_hits) {
 			const ColInstanceMapping& mapping = inst_mappings[value.mapping];
@@ -210,9 +209,14 @@ Opt<ColladaScene> build_instanced_collision(s32 type, s32 o_class, const ColPara
 			const Opt<ColChunk>& chunk = level.chunks[inst.chunk];
 			if(!chunk.has_value()) continue;
 			Mesh& mesh_src = *chunk->collision_mesh;
-			const SubMesh& sm_src = mesh_src.submeshes[value.submesh];
-			const Face& face_src = sm_src.faces[value.face];
-			Face& face_dest = sm.faces.emplace_back();
+			const SubMesh& submesh_src = mesh_src.submeshes[value.submesh];
+			const Face& face_src = submesh_src.faces[value.face];
+			if(submesh_indices.at(submesh_src.material) == -1) {
+				submesh_indices.at(submesh_src.material) = (s32) mesh.submeshes.size();
+				mesh.submeshes.emplace_back().material = submesh_src.material;
+			}
+			SubMesh& sm_dest = mesh.submeshes[submesh_indices.at(submesh_src.material)];
+			Face& face_dest = sm_dest.faces.emplace_back();
 			face_dest.v0 = (s32) mesh.vertices.size();
 			mesh.vertices.emplace_back(mesh_src.vertices.at(face_src.v0));
 			mesh.vertices.back().pos = inst.inverse_matrix * glm::vec4(mesh.vertices.back().pos, 1.f);
@@ -239,7 +243,9 @@ Opt<ColladaScene> build_instanced_collision(s32 type, s32 o_class, const ColPara
 		for(size_t j = i + 1; j < mesh.vertices.size(); j++) {
 			glm::vec3 d = mesh.vertices[i].pos - mesh.vertices[j].pos;
 			if(d.x * d.x + d.y * d.y + d.z * d.z < params.merge_dist * params.merge_dist) {
-				mapping[j] = i;
+				if(mapping[j] == j) {
+					mapping[j] = i;
+				}
 			}
 		}
 	}

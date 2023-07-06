@@ -31,5 +31,6 @@ struct CollisionFixerPreviews {
 };
 
 void collision_fixer();
+void shutdown_collision_fixer();
 
 #endif
