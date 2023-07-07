@@ -52,6 +52,7 @@ static InspectorFieldFuncs type_funcs();
 static InspectorFieldFuncs id_funcs();
 template <typename Value>
 static InspectorFieldFuncs scalar_funcs(InspectorGetterSetter<Value> getset);
+static InspectorFieldFuncs bool_funcs(InspectorGetterSetter<bool> getset);
 static InspectorFieldFuncs vec3_funcs(InspectorGetterSetter<glm::vec3> getset);
 static InspectorFieldFuncs vec4_funcs(InspectorGetterSetter<glm::vec4> getset);
 template <typename ThisInstance>
@@ -104,13 +105,13 @@ void inspector() {
 		{COM_NONE            , INST_MOBY          , "Occlusion", scalar_funcs(adapt_member_pointer(&MobyInstance::occlusion))},
 		{COM_NONE            , INST_MOBY          , "Mode Bits", scalar_funcs(adapt_member_pointer(&MobyInstance::mode_bits))},
 		{COM_NONE            , INST_MOBY          , "Light", foreign_id_funcs(INST_DIRLIGHT, &MobyInstance::light)},
-		{COM_NONE            , INST_MOBY          , "Static Collision", scalar_funcs(adapt_member_pointer(&MobyInstance::has_static_collision))},
+		{COM_NONE            , INST_MOBY          , "Static Collision", bool_funcs(adapt_member_pointer(&MobyInstance::has_static_collision))},
 		// Tie
 		{COM_NONE            , INST_TIE           , "Class", scalar_funcs(adapt_reference_member_function<s32>(&TieInstance::o_class))},
 		{COM_NONE            , INST_TIE           , "Occlusion", scalar_funcs(adapt_member_pointer(&TieInstance::occlusion_index))},
 		{COM_NONE            , INST_TIE           , "Light", foreign_id_funcs(INST_DIRLIGHT, &TieInstance::directional_lights)},
 		{COM_NONE            , INST_TIE           , "UID", scalar_funcs(adapt_member_pointer(&TieInstance::uid))},
-		{COM_NONE            , INST_TIE           , "Static Collision", scalar_funcs(adapt_member_pointer(&TieInstance::has_static_collision))},
+		{COM_NONE            , INST_TIE           , "Static Collision", bool_funcs(adapt_member_pointer(&TieInstance::has_static_collision))},
 		// Shrub
 		{COM_NONE            , INST_SHRUB         , "Class", scalar_funcs(adapt_reference_member_function<s32>(&ShrubInstance::o_class))},
 		{COM_NONE            , INST_SHRUB         , "Unk 5c", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_5c))},
@@ -118,7 +119,7 @@ void inspector() {
 		{COM_NONE            , INST_SHRUB         , "Unk 64", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_64))},
 		{COM_NONE            , INST_SHRUB         , "Unk 68", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_68))},
 		{COM_NONE            , INST_SHRUB         , "Unk 6c", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_6c))},
-		{COM_NONE            , INST_SHRUB         , "Static Collision", scalar_funcs(adapt_member_pointer(&ShrubInstance::has_static_collision))},
+		{COM_NONE            , INST_SHRUB         , "Static Collision", bool_funcs(adapt_member_pointer(&ShrubInstance::has_static_collision))},
 		// DirLight
 		{COM_NONE            , INST_DIRLIGHT      , "Colour A", vec4_funcs(adapt_member_pointer(&DirLightInstance::col_a))},
 		{COM_NONE            , INST_DIRLIGHT      , "Direction A", vec4_funcs(adapt_member_pointer(&DirLightInstance::dir_a))},
@@ -355,6 +356,22 @@ static InspectorFieldFuncs scalar_funcs(InspectorGetterSetter<Value> getset) {
 				std::array<bool, MAX_LANES> dummy;
 				apply_to_all_selected<0>(lvl, *new_value, dummy, getset);
 			}
+		}
+	};
+	return funcs;
+}
+
+static InspectorFieldFuncs bool_funcs(InspectorGetterSetter<bool> getset) {
+	InspectorFieldFuncs funcs;
+	funcs.lane_count = 1;
+	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32) {
+		return getset.get(lhs) == getset.get(rhs);
+	};
+	funcs.draw = [getset](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+		bool value = getset.get(first);
+		if(ImGui::Checkbox("##checkbox", &value)) {
+			std::array<bool, MAX_LANES> dummy;
+			apply_to_all_selected<0>(lvl, value, dummy, getset);
 		}
 	};
 	return funcs;
