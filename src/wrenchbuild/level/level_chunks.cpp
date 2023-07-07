@@ -21,6 +21,7 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/level/tfrags_asset.h>
+#include <wrenchbuild/level/collision_asset.h>
 
 packed_struct(ChunkHeader,
 	/* 0x0 */ s32 tfrags;
@@ -52,7 +53,8 @@ void unpack_level_chunks(CollectionAsset& dest, InputStream& file, const ChunkWa
 	}
 }
 
-std::vector<LevelChunk> load_level_chunks(const CollectionAsset& collection, BuildConfig config) {
+std::vector<LevelChunk> load_level_chunks(const LevelWadAsset& level_wad, const Gameplay& gameplay, BuildConfig config) {
+	const CollectionAsset& collection = level_wad.get_chunks();
 	std::vector<LevelChunk> chunks(3);
 	u16 next_occlusion_index = 0;
 	for(s32 i = 0; i < 3; i++) {
@@ -65,7 +67,12 @@ std::vector<LevelChunk> load_level_chunks(const CollectionAsset& collection, Bui
 			}
 			if(asset.has_collision()) {
 				MemoryOutputStream stream(chunks[i].collision);
-				pack_asset<ByteRange>(stream, asset.get_collision(), config, 0x10);
+				const Asset& collision_asset = asset.get_collision();
+				if(const CollisionAsset* collision = collision_asset.maybe_as<CollisionAsset>()) {
+					pack_level_collision(stream, *collision, &level_wad, &gameplay, i);
+				} else {
+					pack_asset<ByteRange>(stream, collision_asset, config, 0x10);
+				}
 			}
 			if(asset.has_sound_bank()) {
 				MemoryOutputStream stream(chunks[i].sound_bank);

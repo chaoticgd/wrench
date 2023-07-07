@@ -1462,8 +1462,8 @@ AssetType MobyClass {
 	}
 	
 	Child static_collision {
-		desc: "The collision mesh to be be built into the main static level collision."
-		allowed_types: ["Mesh"]
+		desc: "The collision to be be built into the main static level collision."
+		allowed_types: ["Collision"]
 		required: false
 		games: [1 2 3 4]
 	}
@@ -1556,8 +1556,8 @@ AssetType TieClass {
 	}
 	
 	Child static_collision {
-		desc: "The collision mesh to be be built into the main static level collision."
-		allowed_types: ["Mesh"]
+		desc: "The collision to be be built into the main static level collision."
+		allowed_types: ["Collision"]
 		required: false
 		games: [1 2 3 4]
 	}
@@ -1622,8 +1622,8 @@ AssetType ShrubClass {
 	}
 	
 	Child static_collision {
-		desc: "The collision mesh to be be built into the main static level collision."
-		allowed_types: ["Mesh"]
+		desc: "The collision to be be built into the main static level collision."
+		allowed_types: ["Collision"]
 		required: false
 		games: [1 2 3 4]
 	}

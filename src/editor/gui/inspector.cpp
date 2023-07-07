@@ -104,11 +104,13 @@ void inspector() {
 		{COM_NONE            , INST_MOBY          , "Occlusion", scalar_funcs(adapt_member_pointer(&MobyInstance::occlusion))},
 		{COM_NONE            , INST_MOBY          , "Mode Bits", scalar_funcs(adapt_member_pointer(&MobyInstance::mode_bits))},
 		{COM_NONE            , INST_MOBY          , "Light", foreign_id_funcs(INST_DIRLIGHT, &MobyInstance::light)},
+		{COM_NONE            , INST_MOBY          , "Static Collision", scalar_funcs(adapt_member_pointer(&MobyInstance::has_static_collision))},
 		// Tie
 		{COM_NONE            , INST_TIE           , "Class", scalar_funcs(adapt_reference_member_function<s32>(&TieInstance::o_class))},
 		{COM_NONE            , INST_TIE           , "Occlusion", scalar_funcs(adapt_member_pointer(&TieInstance::occlusion_index))},
 		{COM_NONE            , INST_TIE           , "Light", foreign_id_funcs(INST_DIRLIGHT, &TieInstance::directional_lights)},
 		{COM_NONE            , INST_TIE           , "UID", scalar_funcs(adapt_member_pointer(&TieInstance::uid))},
+		{COM_NONE            , INST_TIE           , "Static Collision", scalar_funcs(adapt_member_pointer(&TieInstance::has_static_collision))},
 		// Shrub
 		{COM_NONE            , INST_SHRUB         , "Class", scalar_funcs(adapt_reference_member_function<s32>(&ShrubInstance::o_class))},
 		{COM_NONE            , INST_SHRUB         , "Unk 5c", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_5c))},
@@ -116,6 +118,7 @@ void inspector() {
 		{COM_NONE            , INST_SHRUB         , "Unk 64", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_64))},
 		{COM_NONE            , INST_SHRUB         , "Unk 68", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_68))},
 		{COM_NONE            , INST_SHRUB         , "Unk 6c", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_6c))},
+		{COM_NONE            , INST_SHRUB         , "Static Collision", scalar_funcs(adapt_member_pointer(&ShrubInstance::has_static_collision))},
 		// DirLight
 		{COM_NONE            , INST_DIRLIGHT      , "Colour A", vec4_funcs(adapt_member_pointer(&DirLightInstance::col_a))},
 		{COM_NONE            , INST_DIRLIGHT      , "Direction A", vec4_funcs(adapt_member_pointer(&DirLightInstance::dir_a))},

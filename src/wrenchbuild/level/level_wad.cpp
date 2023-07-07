@@ -120,7 +120,7 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 	g_asset_packer_current_level_id = src.id();
 	
 	Gameplay gameplay = load_gameplay(src.get_gameplay(), &src, src.forest().types(), config, FMT_INSTANCES_GAMEPLAY);
-	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
+	std::vector<LevelChunk> chunks = load_level_chunks(src, gameplay, config);
 	
 	header.data = pack_data_wad_outer(dest, chunks, src, config, pack_rac_level_data_wad);
 	header.gameplay_ntsc = write_gameplay_section(dest, gameplay, config);
@@ -176,8 +176,8 @@ static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& heade
 	header.reverb = src.reverb();
 	g_asset_packer_current_level_id = src.id();
 	
-	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
 	Gameplay gameplay = load_gameplay(src.get_gameplay(), &src, src.forest().types(), config, FMT_INSTANCES_GAMEPLAY);
+	std::vector<LevelChunk> chunks = load_level_chunks(src, gameplay, config);
 	
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
 	header.data = pack_data_wad_outer(dest, chunks, src, config, pack_gc_uya_level_data_wad);
@@ -205,8 +205,8 @@ static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, cons
 	header.reverb = src.reverb();
 	g_asset_packer_current_level_id = src.id();
 	
-	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
 	Gameplay gameplay = load_gameplay(src.get_gameplay(), &src, src.forest().types(), config, FMT_INSTANCES_GAMEPLAY);
+	std::vector<LevelChunk> chunks = load_level_chunks(src, gameplay, config);
 	
 	std::vector<u8> compressed_art_instances, compressed_gameplay;
 	if(!g_asset_packer_dry_run) {

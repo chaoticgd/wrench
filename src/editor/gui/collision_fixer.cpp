@@ -401,6 +401,7 @@ static void write_instanced_collision(Asset& asset, const ColladaScene& collisio
 
 template <typename ThisAsset>
 static void write_instanced_collision_for_class_of_type(ThisAsset& asset, const ColladaScene& collision_scene) {
+	CollisionAsset* collision_asset;
 	if(&asset.bank() != g_app->mod_bank) {
 		AssetLink link = asset.absolute_link();
 		Asset* parent = asset.parent();
@@ -408,16 +409,22 @@ static void write_instanced_collision_for_class_of_type(ThisAsset& asset, const 
 		std::string path = generate_tie_class_asset_path(asset.id(), *parent);
 		AssetFile& new_file = g_app->mod_bank->asset_file(path);
 		ThisAsset& new_asset = new_file.asset_from_link(ThisAsset::ASSET_TYPE, link).template as<ThisAsset>();
-		MeshAsset& mesh_asset = new_asset.static_collision();
-		std::vector<u8> collada = write_collada(collision_scene);
-		mesh_asset.set_name("collision");
-		mesh_asset.set_src(mesh_asset.file().write_text_file("recovered_collision.dae", (char*) collada.data()));
-		new_file.write();
+		collision_asset = &new_asset.static_collision();
 	} else {
-		MeshAsset& mesh_asset = asset.static_collision();
-		std::vector<u8> collada = write_collada(collision_scene);
-		mesh_asset.set_name("collision");
-		mesh_asset.set_src(mesh_asset.file().write_text_file("recovered_collision.dae", (char*) collada.data()));
-		mesh_asset.file().write();
+		collision_asset = &asset.static_collision();
 	}
+	
+	MeshAsset& mesh_asset = collision_asset->mesh();
+	std::vector<u8> collada = write_collada(collision_scene);
+	mesh_asset.set_name("collision");
+	mesh_asset.set_src(mesh_asset.file().write_text_file("recovered_collision.dae", (char*) collada.data()));
+	
+	CollectionAsset& materials = collision_asset->materials();
+	for(const ColladaMaterial& material : collision_scene.materials) {
+		CollisionMaterialAsset& asset = materials.child<CollisionMaterialAsset>(material.name.c_str());
+		asset.set_name(material.name);
+		asset.set_id(material.collision_id);
+	}
+	
+	collision_asset->file().write();
 }
