@@ -71,7 +71,7 @@ void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfi
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 }
 
-void pack_rac_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config) {
+void pack_rac_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config) {
 	RacLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -79,7 +79,7 @@ void pack_rac_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& 
 	std::vector<u8> index;
 	std::vector<u8> data;
 	std::vector<u8> gs_ram;
-	pack_level_core(index, data, gs_ram, chunks, gameplay, src, config);
+	pack_level_core(index, data, gs_ram, chunks, src, config);
 	
 	header.overlay = pack_asset<ByteRange>(dest, src.get_overlay(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
 	header.sound_bank = pack_asset<ByteRange>(dest, src.get_sound_bank(), config, 0x40, FMT_NO_HINT, &empty);
@@ -103,7 +103,7 @@ void unpack_gc_uya_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildCo
 	unpack_compressed_asset(dest.transition_textures<CollectionAsset>(SWITCH_FILES), src, header.transition_textures, config, FMT_COLLECTION_PIF8);
 }
 
-void pack_gc_uya_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config) {
+void pack_gc_uya_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config) {
 	GcUyaLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -111,7 +111,7 @@ void pack_gc_uya_level_data_wad(OutputStream& dest, const std::vector<LevelChunk
 	std::vector<u8> index;
 	std::vector<u8> data;
 	std::vector<u8> gs_ram;
-	pack_level_core(index, data, gs_ram, chunks, gameplay, src, config);
+	pack_level_core(index, data, gs_ram, chunks, src, config);
 	
 	header.overlay = pack_asset<ByteRange>(dest, src.get_overlay(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
 	header.core_index = write_vector_of_bytes(dest, index);
@@ -146,7 +146,7 @@ s32 unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig 
 	return core_moby_count;
 }
 
-void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& compressed_art_instances, std::vector<u8>& compressed_gameplay, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config) {
+void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& art_instances, std::vector<u8>& gameplay, const LevelWadAsset& src, BuildConfig config) {
 	DlLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -154,7 +154,7 @@ void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& c
 	std::vector<u8> index;
 	std::vector<u8> data;
 	std::vector<u8> gs_ram;
-	pack_level_core(index, data, gs_ram, chunks, gameplay, src, config);
+	pack_level_core(index, data, gs_ram, chunks, src, config);
 	
 	header.moby8355_pvars = pack_asset<ByteRange>(dest, src.get_moby8355_pvars(), config, 0x40, FMT_NO_HINT, &empty);
 	header.overlay = pack_asset<ByteRange>(dest, src.get_overlay(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
@@ -163,16 +163,10 @@ void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& c
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);
 	pack_compressed_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, "hud_bank");
 	header.core_data = write_vector_of_bytes(dest, data);
+
 	
-	if(!g_asset_packer_dry_run) {
-		std::vector<u8> art_instances_buffer = write_gameplay(gameplay, config.game(), DL_ART_INSTANCE_BLOCKS);
-		compress_wad(compressed_art_instances, art_instances_buffer, "artinsts", 8);
-		header.art_instances = write_vector_of_bytes(dest, compressed_art_instances);
-		
-		std::vector<u8> gameplay_buffer = write_gameplay(gameplay, config.game(), DL_GAMEPLAY_CORE_BLOCKS);
-		compress_wad(compressed_gameplay, gameplay_buffer, "artinsts", 8);
-		header.gameplay_core = write_vector_of_bytes(dest, compressed_gameplay);
-	}
+	header.art_instances = write_vector_of_bytes(dest, art_instances);
+		header.gameplay_core = write_vector_of_bytes(dest, gameplay);
 	
 	header.global_nav_data = pack_compressed_asset<ByteRange>(dest, src.get_global_nav_data(), config, 0x40, "globalnav");
 	

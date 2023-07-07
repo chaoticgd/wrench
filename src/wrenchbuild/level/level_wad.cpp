@@ -86,9 +86,10 @@ static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, cons
 static void unpack_missions(LevelWadAsset& dest, InputStream& file, const MissionWadHeader& ranges, s32 core_moby_count, BuildConfig config);
 static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, BuildConfig config);
 template <typename PackerFunc>
-static SectorRange pack_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config, PackerFunc packer);
+static SectorRange pack_data_wad_outer(OutputStream& dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config, PackerFunc packer);
+static SectorRange pack_dl_data_wad_outer(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& art_instances, std::vector<u8>& gameplay, const LevelWadAsset& src, BuildConfig config);
 static SectorRange write_gameplay_section(OutputStream& dest, const Gameplay& gameplay, BuildConfig config);
-static SectorRange write_occlusion_copy(OutputStream& dest, const Gameplay& gameplay, Game game);
+static SectorRange write_occlusion_copy(OutputStream& dest, const OcclusionAsset& occlusion, Game game);
 static SectorRange write_section(OutputStream& dest, const u8* src, s64 size);
 
 on_load(Level, []() {
@@ -118,14 +119,15 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 	header.id = src.id();
 	g_asset_packer_current_level_id = src.id();
 	
+	Gameplay gameplay = load_gameplay(src.get_gameplay(), &src, src.forest().types(), config, FMT_INSTANCES_GAMEPLAY);
 	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
 	
-	Gameplay gameplay = load_gameplay(src.get_gameplay(), &src, src.forest().types(), config, FMT_INSTANCES_GAMEPLAY);
-	
-	header.data = pack_data_wad(dest, chunks, gameplay, src, config, pack_rac_level_data_wad);
+	header.data = pack_data_wad_outer(dest, chunks, src, config, pack_rac_level_data_wad);
 	header.gameplay_ntsc = write_gameplay_section(dest, gameplay, config);
 	header.gameplay_pal = header.gameplay_ntsc; // TODO: Pack and write out separate files.
-	header.occlusion = write_occlusion_copy(dest, gameplay, config.game());
+	if(src.has_occlusion()) {
+		header.occlusion = write_occlusion_copy(dest, src.get_occlusion(), config.game());
+	}
 }
 
 static void unpack_gc_68_level_wad(LevelWadAsset& dest, const GcLevelWadHeader68& header, InputStream& src, BuildConfig config) {
@@ -178,9 +180,11 @@ static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& heade
 	Gameplay gameplay = load_gameplay(src.get_gameplay(), &src, src.forest().types(), config, FMT_INSTANCES_GAMEPLAY);
 	
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
-	header.data = pack_data_wad(dest, chunks, gameplay, src, config, pack_gc_uya_level_data_wad);
+	header.data = pack_data_wad_outer(dest, chunks, src, config, pack_gc_uya_level_data_wad);
 	header.gameplay = write_gameplay_section(dest, gameplay, config);
-	header.occlusion = write_occlusion_copy(dest, gameplay, config.game());
+	if(src.has_occlusion()) {
+		header.occlusion = write_occlusion_copy(dest, src.get_occlusion(), config.game());
+	}
 	header.chunks = write_level_chunks(dest, chunks);
 }
 
@@ -204,11 +208,17 @@ static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, cons
 	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
 	Gameplay gameplay = load_gameplay(src.get_gameplay(), &src, src.forest().types(), config, FMT_INSTANCES_GAMEPLAY);
 	
-	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
 	std::vector<u8> compressed_art_instances, compressed_gameplay;
-	header.data = pack_data_wad(dest, chunks, gameplay, src, config, [&](OutputStream& data_dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& data_src, BuildConfig data_config) {
-		pack_dl_level_data_wad(data_dest, chunks, compressed_art_instances, compressed_gameplay, gameplay, data_src, data_config);
-	});
+	if(!g_asset_packer_dry_run) {
+		std::vector<u8> art_instances_buffer = write_gameplay(gameplay, config.game(), DL_ART_INSTANCE_BLOCKS);
+		compress_wad(compressed_art_instances, art_instances_buffer, "artinsts", 8);
+		
+		std::vector<u8> gameplay_buffer = write_gameplay(gameplay, config.game(), DL_GAMEPLAY_CORE_BLOCKS);
+		compress_wad(compressed_gameplay, gameplay_buffer, "artinsts", 8);
+	}
+	
+	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
+	header.data = pack_dl_data_wad_outer(dest, chunks, compressed_art_instances, compressed_gameplay, src, config);
 	verify_fatal(g_asset_packer_dry_run || (!compressed_gameplay.empty() && !compressed_art_instances.empty()));
 	header.chunks = write_level_chunks(dest, chunks);
 	header.gameplay = write_section(dest, compressed_gameplay.data(), compressed_gameplay.size());
@@ -335,12 +345,22 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 }
 
 template <typename PackerFunc>
-static SectorRange pack_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config, PackerFunc packer) {
+static SectorRange pack_data_wad_outer(OutputStream& dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config, PackerFunc packer) {
 	SectorRange range;
 	dest.pad(SECTOR_SIZE, 0);
 	range.offset.sectors = dest.tell() / SECTOR_SIZE;
 	SubOutputStream data_dest(dest, dest.tell());
-	packer(data_dest, chunks, gameplay, src, config);
+	packer(data_dest, chunks, src, config);
+	range.size = Sector32::size_from_bytes(data_dest.tell());
+	return range;
+}
+
+static SectorRange pack_dl_data_wad_outer(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& art_instances, std::vector<u8>& gameplay, const LevelWadAsset& src, BuildConfig config) {
+	SectorRange range;
+	dest.pad(SECTOR_SIZE, 0);
+	range.offset.sectors = dest.tell() / SECTOR_SIZE;
+	SubOutputStream data_dest(dest, dest.tell());
+	pack_dl_level_data_wad(dest, chunks, art_instances, gameplay, src, config);
 	range.size = Sector32::size_from_bytes(data_dest.tell());
 	return range;
 }
@@ -356,11 +376,12 @@ static SectorRange write_gameplay_section(OutputStream& dest, const Gameplay& ga
 	return write_section(dest, compressed.data(), compressed.size());
 }
 
-static SectorRange write_occlusion_copy(OutputStream& dest, const Gameplay& gameplay, Game game) {
+static SectorRange write_occlusion_copy(OutputStream& dest, const OcclusionAsset& occlusion, Game game) {
 	if(g_asset_packer_dry_run) {
 		return {0, 0};
 	}
-	std::vector<u8> buffer = write_occlusion_mappings(gameplay, game);
+	std::unique_ptr<InputStream> stream = occlusion.mappings().open_binary_file_for_reading();
+	std::vector<u8> buffer = stream->read_multiple<u8>(stream->size());
 	return write_section(dest, buffer.data(), buffer.size());
 }
 
