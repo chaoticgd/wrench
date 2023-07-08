@@ -103,6 +103,9 @@ static void run_wrench(GLFWwindow* window, const WadPaths& wad_paths, const std:
 		gui::run_frame(window, update);
 	}
 	
+	a.last_frame = true;
+	gui::run_frame(window, update);
+	
 	shutdown_renderer();
 }
 

@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,16 +16,21 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <assetmgr/asset.h>
+#ifndef EDITOR_COLLISION_FIXER_H
+#define EDITOR_COLLISION_FIXER_H
 
-struct AssetSelector {
-	s32 required_type_count = 0;
-	AssetType required_types[10];
-	Opt<AssetType> omit_type;
-	bool no_recurse = true;
-	std::string filter;
-	std::string preview;
-	Asset* selected = nullptr;
+#include <gui/render_mesh.h>
+#include <editor/gui/model_preview.h>
+
+struct CollisionFixerPreviews {
+	RenderMesh* mesh = nullptr;
+	std::vector<RenderMaterial>* materials = nullptr;
+	RenderMesh* collision_mesh = nullptr;
+	std::vector<RenderMaterial>* collision_materials = nullptr;
+	ModelPreviewParams params;
 };
 
-Asset* asset_selector(const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest);
+void collision_fixer();
+void shutdown_collision_fixer();
+
+#endif

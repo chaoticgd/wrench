@@ -20,6 +20,7 @@
 #include "gui/commands.h"
 
 #include <nfd.h>
+#include <assetmgr/asset_path_gen.h>
 #include <gui/gui.h>
 #include <gui/config.h>
 #include <gui/build_settings.h>
@@ -28,11 +29,14 @@
 #include <editor/gui/view_3d.h>
 #include <editor/gui/inspector.h>
 #include <editor/gui/asset_selector.h>
+#include <editor/gui/collision_fixer.h>
+#include <editor/gui/model_preview.h>
 
 struct Layout {
 	const char* name;
 	void (*menu_bar_extras)();
 	void (*tool_bar)();
+	void (*shutdown)();
 	std::vector<const char*> visible_windows;
 	bool hovered = false;
 };
@@ -51,7 +55,8 @@ static bool layout_button(Layout& layout, size_t i);
 
 static Layout layouts[] = {
 	//{"Asset Browser", nullptr, nullptr, {}},
-	{"Level Editor", level_editor_menu_bar, tool_bar, {}}
+	{"Level Editor", level_editor_menu_bar, tool_bar, nullptr, {"3D View", "Inspector"}},
+	{"Collision Fixer", nullptr, nullptr, shutdown_collision_fixer, {"Collision Fixer", "Model Preview##collision_fixer", "Collision Preview##collision_fixer"}}
 };
 static size_t selected_layout = 0;
 static ImRect available_rect;
@@ -74,6 +79,10 @@ void editor_gui() {
 	}
 	
 	end_dock_space();
+
+	if(g_app->last_frame && layouts[selected_layout].shutdown) {
+		layouts[selected_layout].shutdown();
+	}
 }
 
 static void menu_bar() {
@@ -196,7 +205,10 @@ static void menu_bar() {
 		
 		for(size_t i = 0; i < ARRAY_SIZE(layouts); i++) {
 			Layout& layout = layouts[i];
-			if(layout_button(layout, i)) {
+			if(layout_button(layout, i) && i != selected_layout) {
+				if(layouts[selected_layout].shutdown) {
+					layouts[selected_layout].shutdown();
+				}
 				selected_layout = i;
 			}
 		}
@@ -250,7 +262,8 @@ static void level_editor_menu_bar() {
 	}
 	
 	static AssetSelector level_selector;
-	level_selector.required_type = LevelAsset::ASSET_TYPE;
+	level_selector.required_type_count = 1;
+	level_selector.required_types[0] = LevelAsset::ASSET_TYPE;
 	ImGui::SetNextItemWidth(200);
 	if(Asset* asset = asset_selector("##level_selector", preview_value, level_selector, g_app->asset_forest)) {
 		g_app->load_level(asset->as<LevelAsset>());
@@ -288,7 +301,7 @@ static void occlusion_things(Level* level) {
 		// written out in place of the old one.
 		if(&level->level_wad().get_occlusion().bank() != g_app->mod_bank) {
 			s32 level_id = level->level_wad().id();
-			std::string path = generate_asset_path<LevelAsset>("levels", "level", level_id, *level->level().parent());
+			std::string path = generate_level_asset_path(level_id, *level->level().parent());
 			OcclusionAsset& old_occl = level->level_wad().get_occlusion();
 			
 			// Create a new .asset file for the occlusion data.
@@ -382,17 +395,40 @@ static void begin_dock_space() {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
 
+static GLuint model_preview_texture;
+static GLuint collision_preview_texture;
+
 static void dockable_windows() {
+	dockable_window("Inspector", inspector);
+	dockable_window("Collision Fixer", collision_fixer);
+	
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	dockable_window("3D View", view_3d);
+	dockable_window("Model Preview##collision_fixer", []() {
+		CollisionFixerPreviews& prev = g_app->collision_fixer_previews;
+		model_preview(&model_preview_texture, prev.mesh, prev.materials, false, prev.params);
+	});
+	dockable_window("Collision Preview##collision_fixer", []() {
+		CollisionFixerPreviews& prev = g_app->collision_fixer_previews;
+		model_preview(&collision_preview_texture, prev.collision_mesh, prev.collision_materials, true, prev.params);
+	});
 	ImGui::PopStyleVar();
-	dockable_window("Inspector", inspector);
 }
 
 static void dockable_window(const char* window, void (*func)()) {
-	ImGui::Begin(window);
-	func();
-	ImGui::End();
+	Layout& layout = layouts[selected_layout];
+	bool visible = false;
+	for(const char* other_window : layout.visible_windows) {
+		if(strcmp(other_window, window) == 0) {
+			visible = true;
+			break;
+		}
+	}
+	if(visible) {
+		ImGui::Begin(window);
+		func();
+		ImGui::End();
+	}
 }
 
 static void end_dock_space() {
@@ -410,7 +446,15 @@ static void create_dock_layout() {
 	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.5f, &right, &left_centre);
 	
 	ImGui::DockBuilderDockWindow("3D View", left_centre);
-	ImGui::DockBuilderDockWindow("Inspector", right);
+	
+	ImGuiID right_top, right_bottom;
+	ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 0.5f, &right_top, &right_bottom);
+	
+	ImGui::DockBuilderDockWindow("Inspector", right_top);
+	
+	ImGui::DockBuilderDockWindow("Collision Fixer", left_centre);
+	ImGui::DockBuilderDockWindow("Model Preview##collision_fixer", right_top);
+	ImGui::DockBuilderDockWindow("Collision Preview##collision_fixer", right_bottom);
 
 	ImGui::DockBuilderFinish(dockspace_id);
 }

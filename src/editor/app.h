@@ -34,6 +34,7 @@
 #include <editor/tools.h>
 #include <editor/renderer.h>
 #include <editor/fs_includes.h>
+#include <editor/gui/collision_fixer.h>
 
 struct GLFWwindow;
 
@@ -62,8 +63,10 @@ public:
 	Game game = Game::UNKNOWN;
 	
 	RenderSettings render_settings;
+	CollisionFixerPreviews collision_fixer_previews;
 	
 	f32 delta_time = 0;
+	bool last_frame = false;
 	
 	Level* get_level();
 	const Level* get_level() const;

@@ -19,6 +19,7 @@
 #include "level.h"
 
 #include <core/png.h>
+#include <assetmgr/asset_path_gen.h>
 #include <assetmgr/material_asset.h>
 #include <instancemgr/gameplay.h>
 #include <toolwads/wads.h>
@@ -124,73 +125,17 @@ void Level::read(LevelAsset& asset, Game g) {
 	});
 	
 	level_wad().get_tie_classes().for_each_logical_child_of_type<TieClassAsset>([&](TieClassAsset& tie) {
-		if(!tie.has_editor_mesh()) {
-			return;
+		Opt<EditorClass> ec = load_tie_editor_class(tie);
+		if(ec.has_value()) {
+			tie_classes.emplace(tie.id(), std::move(*ec));
 		}
-		MeshAsset& asset = tie.get_editor_mesh();
-		std::string xml = asset.src().read_text_file();
-		ColladaScene scene = read_collada((char*) xml.data());
-		Mesh* mesh = scene.find_mesh(asset.name());
-		if(!mesh) {
-			return;
-		}
-		
-		MaterialSet material_set = read_material_assets(tie.get_materials());
-		map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
-		
-		std::vector<Texture> textures;
-		for(FileReference ref : material_set.textures) {
-			auto stream = ref.open_binary_file_for_reading();
-			verify(stream.get(), "Failed to open shrub texture file.");
-			Opt<Texture> texture = read_png(*stream.get());
-			verify(texture.has_value(), "Failed to read shrub texture.");
-			textures.emplace_back(*texture);
-		}
-		
-		EditorClass et;
-		et.mesh = *mesh;
-		et.render_mesh = upload_mesh(*mesh, true);
-		et.materials = upload_materials(scene.materials, textures);
-		tie_classes.emplace(tie.id(), std::move(et));
 	});
 	
 	level_wad().get_shrub_classes().for_each_logical_child_of_type<ShrubClassAsset>([&](ShrubClassAsset& shrub) {
-		if(!shrub.has_core()) {
-			return;
+		Opt<EditorClass> ec = load_shrub_editor_class(shrub);
+		if(ec.has_value()) {
+			shrub_classes.emplace(shrub.id(), std::move(*ec));
 		}
-		Asset& core_asset = shrub.get_core();
-		if(core_asset.logical_type() != ShrubClassCoreAsset::ASSET_TYPE) {
-			return;
-		}
-		ShrubClassCoreAsset& core = core_asset.as<ShrubClassCoreAsset>();
-		if(!core.has_mesh()) {
-			return;
-		}
-		MeshAsset& asset = core.get_mesh();
-		std::string xml = asset.src().read_text_file();
-		ColladaScene scene = read_collada((char*) xml.data());
-		Mesh* mesh = scene.find_mesh(asset.name());
-		if(!mesh) {
-			return;
-		}
-		
-		MaterialSet material_set = read_material_assets(shrub.get_materials());
-		map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
-		
-		std::vector<Texture> textures;
-		for(FileReference ref : material_set.textures) {
-			auto stream = ref.open_binary_file_for_reading();
-			verify(stream.get(), "Failed to open shrub texture file.");
-			Opt<Texture> texture = read_png(*stream.get());
-			verify(texture.has_value(), "Failed to read shrub texture.");
-			textures.emplace_back(*texture);
-		}
-		
-		EditorClass es;
-		es.mesh = *mesh;
-		es.render_mesh = upload_mesh(*mesh, true);
-		es.materials = upload_materials(scene.materials, textures);
-		shrub_classes.emplace(shrub.id(), std::move(es));
 	});
 	
 	for(s32 i = 0; i < 100; i++) {
@@ -219,7 +164,7 @@ std::string Level::save() {
 	// out in the new asset bank.
 	if(&_instances_asset->bank() != g_app->mod_bank && _instances_asset->parent()) {
 		s32 level_id = level_wad().id();
-		std::string path = generate_asset_path<LevelAsset>("levels", "level", level_id, *level().parent());
+		std::string path = generate_level_asset_path(level_id, *level().parent());
 		
 		AssetFile& instances_file = g_app->mod_bank->asset_file(path);
 		AssetLink link = level_wad().get_gameplay().absolute_link();
@@ -270,4 +215,74 @@ Instances& Level::instances() {
 
 const Instances& Level::instances() const {
 	return _instances;
+}
+
+Opt<EditorClass> load_tie_editor_class(const TieClassAsset& tie) {
+	if(!tie.has_editor_mesh()) {
+		return std::nullopt;
+	}
+	const MeshAsset& asset = tie.get_editor_mesh();
+	std::string xml = asset.src().read_text_file();
+	ColladaScene scene = read_collada((char*) xml.data());
+	Mesh* mesh = scene.find_mesh(asset.name());
+	if(!mesh) {
+		return std::nullopt;
+	}
+	
+	MaterialSet material_set = read_material_assets(tie.get_materials());
+	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+	
+	std::vector<Texture> textures;
+	for(FileReference ref : material_set.textures) {
+		auto stream = ref.open_binary_file_for_reading();
+		verify(stream.get(), "Failed to open shrub texture file.");
+		Opt<Texture> texture = read_png(*stream.get());
+		verify(texture.has_value(), "Failed to read shrub texture.");
+		textures.emplace_back(*texture);
+	}
+	
+	EditorClass editor_tie;
+	editor_tie.mesh = std::move(*mesh);
+	editor_tie.render_mesh = upload_mesh(*editor_tie.mesh, true);
+	editor_tie.materials = upload_materials(scene.materials, textures);
+	return editor_tie;
+}
+
+Opt<EditorClass> load_shrub_editor_class(const ShrubClassAsset& shrub) {
+	if(!shrub.has_core()) {
+		return std::nullopt;
+	}
+	const Asset& core_asset = shrub.get_core();
+	if(core_asset.logical_type() != ShrubClassCoreAsset::ASSET_TYPE) {
+		return std::nullopt;
+	}
+	const ShrubClassCoreAsset& core = core_asset.as<ShrubClassCoreAsset>();
+	if(!core.has_mesh()) {
+		return std::nullopt;
+	}
+	const MeshAsset& asset = core.get_mesh();
+	std::string xml = asset.src().read_text_file();
+	ColladaScene scene = read_collada((char*) xml.data());
+	Mesh* mesh = scene.find_mesh(asset.name());
+	if(!mesh) {
+		return std::nullopt;
+	}
+	
+	MaterialSet material_set = read_material_assets(shrub.get_materials());
+	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+	
+	std::vector<Texture> textures;
+	for(FileReference ref : material_set.textures) {
+		auto stream = ref.open_binary_file_for_reading();
+		verify(stream.get(), "Failed to open shrub texture file.");
+		Opt<Texture> texture = read_png(*stream.get());
+		verify(texture.has_value(), "Failed to read shrub texture.");
+		textures.emplace_back(*texture);
+	}
+	
+	EditorClass editor_shrub;
+	editor_shrub.mesh = std::move(*mesh);
+	editor_shrub.render_mesh = upload_mesh(*editor_shrub.mesh, true);
+	editor_shrub.materials = upload_materials(scene.materials, textures);
+	return editor_shrub;
 }

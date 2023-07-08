@@ -24,5 +24,6 @@
 
 ColladaScene read_collision(Buffer src);
 void write_collision(OutBuffer dest, const ColladaScene& scene, const std::string& name);
+std::vector<ColladaMaterial> create_collision_materials();
 
 #endif

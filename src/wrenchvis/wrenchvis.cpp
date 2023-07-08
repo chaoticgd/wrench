@@ -57,7 +57,6 @@ static std::map<s32, Mesh> load_moby_classes(const CollectionAsset& collection);
 static std::map<s32, Mesh> load_tie_classes(const CollectionAsset& collection);
 static Instances load_instances(const Asset& src, Game game);
 static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel& level);
-static s32 chunk_index_from_position(const glm::vec3& point, const Instances& instances);
 
 int main(int argc, char** argv) {
 	if(argc != 4) {
@@ -178,7 +177,7 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 			octant.y * 4.f,
 			octant.z * 4.f
 		};
-		octant.chunk = chunk_index_from_position(point, level.instances);
+		octant.chunk = chunk_index_from_position(point, level.instances.level_settings);
 	}
 	
 	// Plug in all the inputs the visibility algorithm needs.
@@ -221,7 +220,7 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 		VisInstance& vis_instance = input.instances[VIS_TIE].emplace_back();
 		vis_instance.mesh = index->second;
 		vis_instance.matrix = instance.transform().matrix();
-		vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), level.instances);
+		vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), level.instances.level_settings);
 	}
 	
 	std::map<s32, s32> moby_class_to_index;
@@ -236,7 +235,7 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 				VisInstance& vis_instance = input.instances[VIS_MOBY].emplace_back();
 				vis_instance.mesh = index->second;
 				vis_instance.matrix = instance.transform().matrix();
-				vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), level.instances);
+				vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), level.instances.level_settings);
 			}
 		}
 	}
@@ -299,23 +298,4 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 		
 		moby_instance_index++;
 	}
-}
-
-static s32 chunk_index_from_position(const glm::vec3& point, const Instances& instances) {
-	const LevelSettings& level_settings = instances.level_settings;
-	if(!level_settings.chunk_planes.empty()) {
-		glm::vec3 plane_1_point = level_settings.chunk_planes[0].point;
-		glm::vec3 plane_1_normal = level_settings.chunk_planes[0].normal;
-		if(glm::dot(plane_1_normal, point - plane_1_point) > 0.f) {
-			return 1;
-		}
-		if(level_settings.chunk_planes.size() > 1) {
-			glm::vec3 plane_2_point = level_settings.chunk_planes[1].point;
-			glm::vec3 plane_2_normal = level_settings.chunk_planes[1].normal;
-			if(glm::dot(plane_2_normal, point - plane_2_point) > 0.f) {
-				return 2;
-			}
-		}
-	}
-	return 0;
 }

@@ -22,6 +22,7 @@
 #include <core/mesh.h>
 #include <core/stream.h>
 #include <assetmgr/asset_types.h>
+#include <instancemgr/gameplay.h>
 
 packed_struct(ChunkWadHeader,
 	/* 0x00 */ SectorRange chunks[3];
@@ -36,7 +37,7 @@ struct LevelChunk {
 };
 
 void unpack_level_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, BuildConfig config);
-std::vector<LevelChunk> load_level_chunks(const CollectionAsset& collection, BuildConfig config);
+std::vector<LevelChunk> load_level_chunks(const LevelWadAsset& level_wad, const Gameplay& gameplay, BuildConfig config);
 ChunkWadHeader write_level_chunks(OutputStream& dest, const std::vector<LevelChunk>& chunks);
 
 #endif

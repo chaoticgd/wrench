@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5
+
+- Added a collision conversion tool to recover instanced collision for ties and shrubs semi-automatically.
+
 ## v0.4
 
 New features:

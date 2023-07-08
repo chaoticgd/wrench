@@ -40,7 +40,7 @@ static void draw_icons(Level& lvl, const RenderSettings& settings);
 static void draw_moby_icons(Level& lvl, InstanceList<MobyInstance>& instances);
 static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
 static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
-static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_world);
+static void draw_mesh(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, const glm::mat4& local_to_world);
 static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
 static Mesh create_fill_cube();
 static Mesh create_line_cube();
@@ -197,12 +197,12 @@ void draw_level(Level& lvl, const glm::mat4& view, const glm::mat4& projection, 
 	for(const EditorChunk& chunk : lvl.chunks) {
 		if(settings.draw_tfrags) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			draw_mesh(chunk.tfrags, lvl.tfrag_materials, glm::mat4(1.f));
+			draw_mesh(chunk.tfrags, lvl.tfrag_materials.data(), lvl.tfrag_materials.size(), glm::mat4(1.f));
 		}
 		if(settings.draw_collision) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			for(const RenderMesh& mesh : chunk.collision) {
-				draw_mesh(mesh, chunk.collision_materials, glm::mat4(1.f));
+				draw_mesh(mesh, chunk.collision_materials.data(), chunk.collision_materials.size(), glm::mat4(1.f));
 			}
 		}
 	}
@@ -244,6 +244,35 @@ void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projecti
 	glUniformMatrix4fv(shaders.pickframe_icons_projection_matrix, 1, GL_FALSE, &projection[0][0]);
 	
 	draw_icons(lvl, settings);
+}
+
+void draw_model_preview(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4* bb, const glm::mat4& view, const glm::mat4& projection, bool wireframe) {
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	glm::mat4 local_to_world(1.f);
+	
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	set_shader(shaders.textured);
+	glUniformMatrix4fv(shaders.textured_view_matrix, 1, GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(shaders.textured_projection_matrix, 1, GL_FALSE, &projection[0][0]);
+	draw_mesh(mesh, materials.data(), materials.size(), local_to_world);
+	
+	if(wireframe) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		set_shader(shaders.selection);
+		glUniformMatrix4fv(shaders.selection_view_matrix, 1, GL_FALSE, &view[0][0]);
+		glUniformMatrix4fv(shaders.selection_projection_matrix, 1, GL_FALSE, &projection[0][0]);
+		draw_mesh(mesh, materials.data(), materials.size(), local_to_world);
+	}
+	
+	if(bb) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		draw_mesh(line_cube, &white, 1, *bb);
+	}
 }
 
 static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings) {
@@ -596,15 +625,16 @@ static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_begin,
 	draw_mesh_instanced(quad, &instance_icons[type], 1, inst_buffer, inst_begin, inst_count);
 }
 
-static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_world) {
+static void draw_mesh(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, const glm::mat4& local_to_world) {
 	auto inst = InstanceData(local_to_world, {}, {});
+	inst.colour = glm::vec4(1.f, 1.f, 1.f, 1.f);
 	
 	GlBuffer inst_buffer;
 	glGenBuffers(1, &inst_buffer.id);
 	glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(inst), &inst, GL_STATIC_DRAW);
 	
-	draw_mesh_instanced(mesh, materials.data(), materials.size(), inst_buffer.id, 0, 1);
+	draw_mesh_instanced(mesh, mats, mat_count, inst_buffer.id, 0, 1);
 }
 
 static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, GLuint inst_buffer, size_t inst_begin, size_t inst_count) {

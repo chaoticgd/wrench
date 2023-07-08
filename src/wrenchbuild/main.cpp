@@ -665,7 +665,6 @@ static void print_usage(bool developer_subcommands) {
 		puts("");
 		puts(" extract_shrub <input path> -o <output path>");
 		puts("   Convert a packed shrub to a .dae file.");
-		puts("");
 	}
 }
 

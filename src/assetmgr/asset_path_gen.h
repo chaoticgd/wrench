@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,16 +16,16 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <assetmgr/asset.h>
+#ifndef ASSETMGR_ASSET_PATH_GEN_H
+#define ASSETMGR_ASSET_PATH_GEN_H
 
-struct AssetSelector {
-	s32 required_type_count = 0;
-	AssetType required_types[10];
-	Opt<AssetType> omit_type;
-	bool no_recurse = true;
-	std::string filter;
-	std::string preview;
-	Asset* selected = nullptr;
-};
+#include <assetmgr/asset_types.h>
 
-Asset* asset_selector(const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest);
+// Generate output paths for different types of asset based on the name and
+// category attributes pulled from the underlay and possibly mods.
+std::string generate_level_asset_path(s32 tag, const Asset& parent);
+std::string generate_moby_class_asset_path(s32 tag, const Asset& parent);
+std::string generate_tie_class_asset_path(s32 tag, const Asset& parent);
+std::string generate_shrub_class_asset_path(s32 tag, const Asset& parent);
+
+#endif

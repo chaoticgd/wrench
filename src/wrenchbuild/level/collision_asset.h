@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,16 +16,15 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <assetmgr/asset.h>
+#ifndef WRENCHBUILD_LEVEL_COLLISION_ASSET_H
+#define WRENCHBUILD_LEVEL_COLLISION_ASSET_H
 
-struct AssetSelector {
-	s32 required_type_count = 0;
-	AssetType required_types[10];
-	Opt<AssetType> omit_type;
-	bool no_recurse = true;
-	std::string filter;
-	std::string preview;
-	Asset* selected = nullptr;
-};
+#include <core/collada.h>
+#include <engine/collision.h>
+#include <instancemgr/gameplay.h>
+#include <wrenchbuild/asset_unpacker.h>
+#include <wrenchbuild/asset_packer.h>
 
-Asset* asset_selector(const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest);
+void pack_level_collision(OutputStream& dest, const CollisionAsset& src, const LevelWadAsset* level_wad, const Gameplay* gameplay, s32 chunk);
+
+#endif

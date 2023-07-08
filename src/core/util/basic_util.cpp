@@ -103,3 +103,20 @@ s64 align64(s64 value, s64 alignment) {
 	}
 	return value;
 }
+
+bool find_case_insensitive_substring(const char* haystack, const char* needle) {
+	size_t haystack_size = strlen(haystack);
+	size_t needle_size = strlen(needle);
+	for(size_t i = 0; i < haystack_size - needle_size + 1; i++) {
+		size_t j;
+		for(j = 0; j < needle_size; j++) {
+			if(toupper(needle[j]) != toupper(haystack[i + j])) {
+				break;
+			}
+		}
+		if(j == needle_size) {
+			return true;
+		}
+	}
+	return false;
+}

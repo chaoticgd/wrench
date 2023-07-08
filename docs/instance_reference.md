@@ -1,6 +1,6 @@
 # Instance Reference
 
-This file was generated from instance_schema.wtf and is for version 25 of the instance format.
+This file was generated from instance_schema.wtf and is for version 26 of the instance format.
 
 ## Instances
 
@@ -41,6 +41,7 @@ This file was generated from instance_schema.wtf and is for version 25 of the in
 | rac23_unknown_3c |  | s32 |
 | rac23_unknown_4c |  | s32 |
 | rac23_unknown_84 |  | s32 |
+| has_static_collision |  | bool |
 
 ### MobyGroup
 
@@ -62,6 +63,7 @@ This file was generated from instance_schema.wtf and is for version 25 of the in
 | directional_lights |  | s32 |
 | uid |  | s32 |
 | ambient_rgbas |  | bytes |
+| has_static_collision |  | bool |
 
 ### TieGroup
 
@@ -84,6 +86,7 @@ This file was generated from instance_schema.wtf and is for version 25 of the in
 | unknown_64 |  | s32 |
 | unknown_68 |  | s32 |
 | unknown_6c |  | s32 |
+| has_static_collision |  | bool |
 
 ### ShrubGroup
 

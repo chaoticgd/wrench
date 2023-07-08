@@ -27,6 +27,7 @@ Features currently include:
 - Level Editor
 	- View unpacked levels.
 	- Move objects and modify their attributes (including pvars).
+	- **New in v0.5!** Recover instanced collision for ties and shrubs.
 - **New in v0.4!** Memory Card Editor
 	- Only works properly on Deadlocked saves. Experimental.
 - Asset System

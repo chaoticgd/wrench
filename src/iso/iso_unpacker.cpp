@@ -21,6 +21,7 @@
 #include <algorithm>
 
 #include <core/png.h>
+#include <assetmgr/asset_path_gen.h>
 #include <iso/iso_filesystem.h>
 #include <iso/wad_identifier.h>
 
@@ -255,7 +256,7 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 			verify_fatal(level.level->header.size() >= 0xc);
 			s32 id = *(s32*) &level.level->header[8];
 			
-			std::string path = generate_asset_path<LevelAsset>("levels", "level", id, levels);
+			std::string path = generate_level_asset_path(id, levels);
 			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(path, true, id);
 			level_asset.set_index(i);
 			

@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 25
+format_version: 26
 
 // *****************************************************************************
 
@@ -1461,6 +1461,13 @@ AssetType MobyClass {
 		}
 	}
 	
+	Child static_collision {
+		desc: "The collision to be be built into the main static level collision."
+		allowed_types: ["Collision"]
+		required: false
+		games: [1 2 3 4]
+	}
+	
 	Child editor_mesh {
 		desc: "The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies."
 		allowed_types: ["Mesh"]
@@ -1538,13 +1545,6 @@ AssetType TieClass {
 		allowed_types: ["TieClassCore" "Binary"]
 	}
 	
-	Child editor_mesh {
-		desc: "The mesh shown in the editor. We're using this as a hack since we haven't got the tie exporter working."
-		allowed_types: ["Mesh"]
-		required: false
-		games: [1 2 3 4]
-	}
-	
 	Child materials {
 		desc: "The materials used by this class."
 		allowed_types: ["Collection"]
@@ -1553,6 +1553,20 @@ AssetType TieClass {
 		Child child {
 			allowed_types: ["Material"]
 		}
+	}
+	
+	Child static_collision {
+		desc: "The collision to be be built into the main static level collision."
+		allowed_types: ["Collision"]
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	Child editor_mesh {
+		desc: "The mesh shown in the editor. We're using this as a hack since we haven't got the tie exporter working."
+		allowed_types: ["Mesh"]
+		required: false
+		games: [1 2 3 4]
 	}
 }
 
@@ -1605,6 +1619,13 @@ AssetType ShrubClass {
 		Child child {
 			allowed_types: ["Material"]
 		}
+	}
+	
+	Child static_collision {
+		desc: "The collision to be be built into the main static level collision."
+		allowed_types: ["Collision"]
+		required: false
+		games: [1 2 3 4]
 	}
 }
 

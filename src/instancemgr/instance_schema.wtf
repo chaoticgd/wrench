@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 25
+format_version: 26
 
 InstanceType Moby {
 	desc: "Moving, interactive, or otherwise dynamic objects with an associated update function."
@@ -55,6 +55,8 @@ InstanceType Moby {
 	s32 rac23_unknown_3c {}
 	s32 rac23_unknown_4c {}
 	s32 rac23_unknown_84 {}
+	
+	bool has_static_collision {}
 }
 
 InstanceType MobyGroup {
@@ -78,6 +80,8 @@ InstanceType Tie {
 	s32 directional_lights {}
 	s32 uid {}
 	bytes ambient_rgbas {}
+	
+	bool has_static_collision {}
 }
 
 InstanceType TieGroup {
@@ -102,6 +106,8 @@ InstanceType Shrub {
 	s32 unknown_64 {}
 	s32 unknown_68 {}
 	s32 unknown_6c {}
+	
+	bool has_static_collision {}
 }
 
 InstanceType ShrubGroup {
