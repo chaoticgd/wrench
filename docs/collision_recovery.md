@@ -8,7 +8,7 @@ Only the assets from the base game are used for this process, so if you're reach
 
 ## Algorithm
 
-For each instance in each level of the specified type and class we transform every vertex of every face in world-space collision mesh using the inverse model matrix of said instance, and we count how many faces match between the different instances. If the specified threshold is reached, the face is included.
+For each instance in each level of the specified type and class we transform every vertex of every face in the relevant world-space collision mesh using the inverse model matrix of said instance, and we count how many faces match between the different instances. If the specified threshold is reached, the face is included.
 
 Additionally, we merge vertices that are close together (see below) and reject any faces outside of a bounding box which by default is generated from the regular mesh of the specified tie or shrub class.
 
@@ -24,7 +24,7 @@ The minimum number of instances for which a face must exist for it to be include
 
 ### Merge Distance
 
-Two vertices that are closer together than the merge distance will be treated as the same vertex. This is correct for quantization artifacts introduced by how the game stores the world-space collision meshes.
+Two vertices that are closer together than the merge distance will be treated as the same vertex. This is to correct for quantization artifacts introduced by how the game stores the world-space collision meshes.
 
 ### Reject Faces Outside BB
 
