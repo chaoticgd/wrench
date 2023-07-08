@@ -406,11 +406,11 @@ static void dockable_windows() {
 	dockable_window("3D View", view_3d);
 	dockable_window("Model Preview##collision_fixer", []() {
 		CollisionFixerPreviews& prev = g_app->collision_fixer_previews;
-		model_preview(&model_preview_texture, prev.mesh, prev.materials, GL_FILL, prev.params);
+		model_preview(&model_preview_texture, prev.mesh, prev.materials, false, prev.params);
 	});
 	dockable_window("Collision Preview##collision_fixer", []() {
 		CollisionFixerPreviews& prev = g_app->collision_fixer_previews;
-		model_preview(&collision_preview_texture, prev.collision_mesh, prev.collision_materials, GL_LINE, prev.params);
+		model_preview(&collision_preview_texture, prev.collision_mesh, prev.collision_materials, true, prev.params);
 	});
 	ImGui::PopStyleVar();
 }

@@ -291,6 +291,7 @@ public:
 	SETUP_MEMORY_ZONE(MEMORY_ZONE_ASSET_SYSTEM)
 	
 	Asset& root();
+	std::string path() const;
 	
 	void write() const;
 	

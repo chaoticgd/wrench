@@ -78,9 +78,9 @@ static ColParams params;
 
 static std::tuple<s32, s32, Asset*> class_selector();
 static void generate_bounding_box(const Mesh& mesh);
-static void write_instanced_collision(Asset& asset, const ColladaScene& collision_scene);
+static std::string write_instanced_collision(Asset& asset, const ColladaScene& collision_scene);
 template <typename ThisAsset>
-static void write_instanced_collision_for_class_of_type(ThisAsset& asset, const ColladaScene& collision_scene);
+static std::string write_instanced_collision_for_class_of_type(ThisAsset& asset, const ColladaScene& collision_scene);
 
 static void row(const char* name) {
 	ImGui::TableNextRow();
@@ -113,7 +113,7 @@ void collision_fixer() {
 		}
 		
 		row("Threshold");
-		params_modified |= ImGui::SliderInt("##threshold", &params.min_hits, 2, 10);
+		params_modified |= ImGui::SliderInt("##threshold", &params.min_hits, 1, 10);
 		row("Merge Distance");
 		params_modified |= ImGui::SliderFloat("##merge_dist", &params.merge_dist, 0.01f, 1.f, "%.2f");
 		row("Reject Faces Outside BB");
@@ -142,11 +142,23 @@ void collision_fixer() {
 	ImGui::PopStyleColor();
 	
 	static ColladaScene collada_scene;
+	static std::string popup_message;
 	if(asset && ImGui::Button("Write Collision Mesh")) {
-		write_instanced_collision(*asset, collada_scene);
+		popup_message = write_instanced_collision(*asset, collada_scene);
+		ImGui::OpenPopup("Collision Written");
 	}
 	
-	ImGui::Text("Thread State: %s", fixer_thread.state_string());
+	ImGui::SetNextWindowSize(ImVec2(300, 200));
+	if(ImGui::BeginPopupModal("Collision Written")) {
+		ImGui::TextWrapped("%s", popup_message.c_str());
+		if(ImGui::Button("Okay")) {
+			popup_message.clear();
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+	
+	ImGui::Text("Thread Status: %s", fixer_thread.state_string());
 	
 	static bool has_run = false;
 	static bool waiting_for_completion = false;
@@ -164,13 +176,7 @@ void collision_fixer() {
 			collada_scene = std::move(*out);
 			verify_fatal(collada_scene.meshes.size() == 1);
 			collision_render_mesh = upload_mesh(collada_scene.meshes[0], true);
-			for(RenderSubMesh& submesh : collision_render_mesh.submeshes) {
-				submesh.material = 0;
-			}
-			Texture white = Texture::create_rgba(1, 1, {0xff, 0xff, 0xff, 0xff});
-			RenderMaterial mat = upload_material(Material{"", glm::vec4(1.f, 1.f, 1.f, 1.f)}, {white});
-			collision_materials.clear();
-			collision_materials.emplace_back(std::move(mat));
+			collision_materials = upload_materials(collada_scene.materials, {});
 			g_app->collision_fixer_previews.collision_mesh = &collision_render_mesh;
 			g_app->collision_fixer_previews.collision_materials = &collision_materials;
 			waiting_for_completion = false;
@@ -180,6 +186,13 @@ void collision_fixer() {
 
 void shutdown_collision_fixer() {
 	fixer_thread.reset();
+	preview_class.mesh.reset();
+	preview_class.render_mesh.reset();
+	preview_class.materials.clear();
+	collision_render_mesh = {};
+	collision_materials.clear();
+	g_app->collision_fixer_previews.collision_mesh = nullptr;
+	g_app->collision_fixer_previews.collision_materials = nullptr;
 }
 
 void CollisionFixerThread::start(Game game, std::string game_bank_path, s32 type, s32 o_class, const ColParams& params) {
@@ -255,7 +268,9 @@ void CollisionFixerThread::run() {
 }
 
 void CollisionFixerThread::reset() {
-	thread.join();
+	if(thread.joinable()) {
+		thread.join();
+	}
 	game_bank_path.clear();
 	success = false;
 	scene = {};
@@ -300,7 +315,9 @@ bool CollisionFixerThread::interrupt() {
 	}
 
 	// Wait for the thread to terminate.
-	thread.join();
+	if(thread.joinable()) {
+		thread.join();
+	}
 	
 	return true;
 }
@@ -388,19 +405,25 @@ static void generate_bounding_box(const Mesh& mesh) {
 	params.bounding_box_size = (max - min) * 2.f;
 }
 
-static void write_instanced_collision(Asset& asset, const ColladaScene& collision_scene) {
+static std::string write_instanced_collision(Asset& asset, const ColladaScene& collision_scene) {
+	std::string message;
+	
 	AssetType type = asset.logical_type();
 	verify_fatal(type == TieClassAsset::ASSET_TYPE || type == ShrubClassAsset::ASSET_TYPE);
 	
 	if(type == TieClassAsset::ASSET_TYPE) {
-		write_instanced_collision_for_class_of_type<TieClassAsset>(asset.as<TieClassAsset>(), collision_scene);
+		message += write_instanced_collision_for_class_of_type<TieClassAsset>(asset.as<TieClassAsset>(), collision_scene);
 	} else if(type == ShrubClassAsset::ASSET_TYPE) {
-		write_instanced_collision_for_class_of_type<ShrubClassAsset>(asset.as<ShrubClassAsset>(), collision_scene);
+		message += write_instanced_collision_for_class_of_type<ShrubClassAsset>(asset.as<ShrubClassAsset>(), collision_scene);
 	}
+	
+	return message;
 }
 
 template <typename ThisAsset>
-static void write_instanced_collision_for_class_of_type(ThisAsset& asset, const ColladaScene& collision_scene) {
+static std::string write_instanced_collision_for_class_of_type(ThisAsset& asset, const ColladaScene& collision_scene) {
+	std::string message;
+	
 	CollisionAsset* collision_asset;
 	if(&asset.bank() != g_app->mod_bank) {
 		AssetLink link = asset.absolute_link();
@@ -417,7 +440,9 @@ static void write_instanced_collision_for_class_of_type(ThisAsset& asset, const 
 	MeshAsset& mesh_asset = collision_asset->mesh();
 	std::vector<u8> collada = write_collada(collision_scene);
 	mesh_asset.set_name("collision");
-	mesh_asset.set_src(mesh_asset.file().write_text_file("recovered_collision.dae", (char*) collada.data()));
+	FileReference src = mesh_asset.file().write_text_file("recovered_collision.dae", (char*) collada.data());
+	mesh_asset.set_src(src);
+	message += stringf("Written file: %s\n", src.path.string().c_str());
 	
 	CollectionAsset& materials = collision_asset->materials();
 	for(const ColladaMaterial& material : collision_scene.materials) {
@@ -427,4 +452,7 @@ static void write_instanced_collision_for_class_of_type(ThisAsset& asset, const 
 	}
 	
 	collision_asset->file().write();
+	message += stringf("Written file: %s\n", collision_asset->file().path().c_str());
+	
+	return message;
 }

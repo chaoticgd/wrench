@@ -455,6 +455,10 @@ Asset& AssetFile::root() {
 	return *_root.get();
 }
 
+std::string AssetFile::path() const {
+	return (_relative_directory/_file_name).string();
+}
+
 void AssetFile::write() const {
 	std::string dest;
 	WtfWriter* ctx = wtf_begin_file(dest);

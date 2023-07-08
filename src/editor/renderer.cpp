@@ -246,21 +246,28 @@ void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projecti
 	draw_icons(lvl, settings);
 }
 
-void draw_model_preview(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4* bb, const glm::mat4& view, const glm::mat4& projection, GLenum mesh_mode) {
+void draw_model_preview(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4* bb, const glm::mat4& view, const glm::mat4& projection, bool wireframe) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
-	glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
+	glm::mat4 local_to_world(1.f);
 	
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	set_shader(shaders.textured);
 	glUniformMatrix4fv(shaders.textured_view_matrix, 1, GL_FALSE, &view[0][0]);
 	glUniformMatrix4fv(shaders.textured_projection_matrix, 1, GL_FALSE, &projection[0][0]);
-	
-	glm::mat4 local_to_world(1.f);
 	draw_mesh(mesh, materials.data(), materials.size(), local_to_world);
+	
+	if(wireframe) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		set_shader(shaders.selection);
+		glUniformMatrix4fv(shaders.selection_view_matrix, 1, GL_FALSE, &view[0][0]);
+		glUniformMatrix4fv(shaders.selection_projection_matrix, 1, GL_FALSE, &projection[0][0]);
+		draw_mesh(mesh, materials.data(), materials.size(), local_to_world);
+	}
 	
 	if(bb) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -620,6 +627,7 @@ static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_begin,
 
 static void draw_mesh(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, const glm::mat4& local_to_world) {
 	auto inst = InstanceData(local_to_world, {}, {});
+	inst.colour = glm::vec4(1.f, 1.f, 1.f, 1.f);
 	
 	GlBuffer inst_buffer;
 	glGenBuffers(1, &inst_buffer.id);

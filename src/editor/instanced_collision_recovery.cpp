@@ -211,12 +211,16 @@ Opt<ColladaScene> build_instanced_collision(s32 type, s32 o_class, const ColPara
 			Mesh& mesh_src = *chunk->collision_mesh;
 			const SubMesh& submesh_src = mesh_src.submeshes[value.submesh];
 			const Face& face_src = submesh_src.faces[value.face];
+			if(submesh_src.material < 0 || submesh_src.material > 255) {
+				fprintf(stderr, "Invalid source texture index.\n");
+				return std::nullopt;
+			}
 			if(submesh_indices.at(submesh_src.material) == -1) {
 				submesh_indices.at(submesh_src.material) = (s32) mesh.submeshes.size();
 				mesh.submeshes.emplace_back().material = submesh_src.material;
 			}
-			SubMesh& sm_dest = mesh.submeshes[submesh_indices.at(submesh_src.material)];
-			Face& face_dest = sm_dest.faces.emplace_back();
+			SubMesh& submesh_dest = mesh.submeshes[submesh_indices.at(submesh_src.material)];
+			Face& face_dest = submesh_dest.faces.emplace_back();
 			face_dest.v0 = (s32) mesh.vertices.size();
 			mesh.vertices.emplace_back(mesh_src.vertices.at(face_src.v0));
 			mesh.vertices.back().pos = inst.inverse_matrix * glm::vec4(mesh.vertices.back().pos, 1.f);
