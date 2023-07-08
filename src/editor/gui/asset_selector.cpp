@@ -50,7 +50,7 @@ Asset* asset_selector(const char* label, const char* default_preview, AssetSelec
 		ImGui::Separator();
 		ImGui::BeginChild("##assets", ImVec2(-1, 400));
 		for(auto [link, asset] : assets) {
-			if(strcasestr(link.c_str(), state.filter.c_str()) != NULL && ImGui::Selectable(link.c_str())) {
+			if(find_case_insensitive_substring(link.c_str(), state.filter.c_str()) && ImGui::Selectable(link.c_str())) {
 				changed = asset;
 				state.selected = asset;
 				state.preview = link;
