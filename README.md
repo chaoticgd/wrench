@@ -26,8 +26,9 @@ Features currently include:
 	- Pack/unpack everything else as binary files.
 - Level Editor
 	- View unpacked levels.
-	- Move objects and modify their attributes (including pvars).
+	- Inspect objects and modify their attributes (including pvars).
 	- **New in v0.5!** Recover instanced collision for ties and shrubs.
+	- **New in v0.5!** Translate, rotate and scale objects using 3D transformation gizmos.
 - **New in v0.4!** Memory Card Editor
 	- Only works properly on Deadlocked saves. Experimental.
 - Asset System

@@ -42,10 +42,6 @@ class app {
 public:
 	app() {}
 	
-	std::vector<std::unique_ptr<Tool>> tools;
-	std::size_t active_tool_index = 0;
-	Tool& active_tool() { return *tools.at(active_tool_index).get(); }
-	
 	glm::vec2 mouse_last { 0, 0 };
 
 	GLFWwindow* glfw_window;

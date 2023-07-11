@@ -65,6 +65,7 @@ static const gui::Page LICENSE_PAGES[] = {
 	{"GLAD", gen_license_page<LICENSE_GLAD>()},
 	{"GLFW", gen_license_page<LICENSE_GLFW>()},
 	{"GLM", gen_license_page<LICENSE_GLM>()},
+	{"ImGuizmo", gen_license_page<LICENSE_IMGUIZMO>()},
 	{"libpng", gen_license_page<LICENSE_LIBPNG>()},
 	{"libzip", gen_license_page<LICENSE_LIBZIP>()},
 	{"nativefiledialog", gen_license_page<LICENSE_NATIVEFILEDIALOG>()},
@@ -125,6 +126,7 @@ static void about_libraries() {
 		"glad: https://github.com/Dav1dde/glad\n"
 		"glfw: https://www.glfw.org/\n"
 		"glm: https://github.com/g-truc/glm\n"
+		"ImGuizmo: https://github.com/CedricGuillemet/ImGuizmo\n"
 		"libpng: http://www.libpng.org/pub/png/libpng.html\n"
 		"libzip: https://libzip.org/\n"
 		"nativefiledialog: https://github.com/mlabbe/nativefiledialog\n"

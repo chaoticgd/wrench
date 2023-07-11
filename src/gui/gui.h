@@ -54,10 +54,10 @@ struct GlBuffer {
 	GlBuffer() {}
 	GlBuffer(const GlBuffer&) = delete;
 	GlBuffer(GlBuffer&& rhs) : id(rhs.id) { rhs.id = 0; }
-	~GlBuffer() { if(id != 0) glDeleteBuffers(1, &id); }
-	GLuint& operator()() { return id; }
-	const GLuint& operator()() const { return id; }
-	GlBuffer& operator=(GlBuffer&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
+	~GlBuffer() { destroy(); }
+	GlBuffer& operator=(const GlBuffer& rhs) = delete;
+	GlBuffer& operator=(GlBuffer&& rhs) { destroy(); id = rhs.id; rhs.id = 0; return *this; }
+	void destroy() { if(id != 0) { glDeleteBuffers(1, &id); id = 0; } }
 };
 
 struct GlTexture {
@@ -65,10 +65,9 @@ struct GlTexture {
 	GlTexture() {}
 	GlTexture(const GlTexture&) = delete;
 	GlTexture(GlTexture&& rhs) : id(rhs.id) { rhs.id = 0; }
-	~GlTexture() { if(id != 0) glDeleteTextures(1, &id); }
-	GLuint& operator()() { return id; }
-	const GLuint& operator()() const { return id; }
-	GlTexture& operator=(GlTexture&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
+	~GlTexture() { destroy(); }
+	GlTexture& operator=(const GlTexture& rhs) = delete;
+	GlTexture& operator=(GlTexture&& rhs) { destroy(); id = rhs.id; rhs.id = 0; return *this; }
 	void upload(const u8* data, s32 width, s32 height);
 	void destroy() { if(id != 0) { glDeleteTextures(1, &id); id = 0; } }
 };

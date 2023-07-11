@@ -134,6 +134,7 @@ static void pack_gui_wad() {
 	header.license_text[LICENSE_RAPIDXML] = pack_file(wad, "data/licenses/rapidxml.txt");
 	header.license_text[LICENSE_ZLIB] = pack_file(wad, "data/licenses/zlib.txt");
 	header.license_text[LICENSE_LIBZIP] = pack_file(wad, "data/licenses/libzip.txt");
+	header.license_text[LICENSE_IMGUIZMO] = pack_file(wad, "data/licenses/imguizmo.txt");
 	
 	header.fonts[0] = pack_file(wad, "data/gui/Barlow-Regular.ttf");
 	header.fonts[1] = pack_file(wad, "data/gui/Barlow-Italic.ttf");

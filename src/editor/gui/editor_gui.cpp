@@ -26,6 +26,7 @@
 #include <gui/build_settings.h>
 #include <gui/command_output.h>
 #include <editor/app.h>
+#include <editor/tools.h>
 #include <editor/gui/view_3d.h>
 #include <editor/gui/inspector.h>
 #include <editor/gui/asset_selector.h>
@@ -352,21 +353,40 @@ static void tool_bar() {
 		ImGuiWindowFlags_NoMove);
 	ImGui::PopStyleVar();
 	
-	for(std::size_t i = 0; i < g_app->tools.size(); i++) {
-		bool active = i == g_app->active_tool_index;
+	static std::vector<GlTexture> icon_textures(g_tool_count);
+	static bool icons_loaded = false;
+	
+	if(!icons_loaded) {
+		for(s32 i = 0; i < g_tool_count; i++) {
+			icon_textures[i] = load_icon(i);
+		}
+		icons_loaded = true;
+	}
+	
+	for(s32 i = 0; i < g_tool_count; i++) {
+		bool active = i == g_active_tool;
 		if(!active) {
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		}
 
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) g_app->tools[i]->icon(), ImVec2(32*g_config.ui.scale, 32*g_config.ui.scale),
-						ImVec2(0, 0), ImVec2(1, 1), -1);
+			(void*) (intptr_t) icon_textures[i].id,
+			ImVec2(32 * g_config.ui.scale, 32 * g_config.ui.scale),
+			ImVec2(0, 0),
+			ImVec2(1, 1),
+			-1);
 		if(!active) {
 			ImGui::PopStyleColor();
 		}
 		if(clicked) {
-			g_app->active_tool_index = i;
+			g_tools[g_active_tool]->funcs.deactivate();
+			g_active_tool = i;
+			g_tools[g_active_tool]->funcs.activate();
 		}
+	}
+	
+	if(g_app->last_frame) {
+		icon_textures.clear();
 	}
 	
 	available_rect.Min.x += ImGui::GetWindowSize().x;
