@@ -2206,10 +2206,11 @@ namespace ImGuizmo
       scale[2] = mat.v.dir.Length();
 
       mat.OrthoNormalize();
-
-      rotation[0] = RAD2DEG * atan2f(mat.m[1][2], mat.m[2][2]);
-      rotation[1] = RAD2DEG * atan2f(-mat.m[0][2], sqrtf(mat.m[1][2] * mat.m[1][2] + mat.m[2][2] * mat.m[2][2]));
-      rotation[2] = RAD2DEG * atan2f(mat.m[0][1], mat.m[0][0]);
+      
+      // wrench: output radians
+      rotation[0] = atan2f(mat.m[1][2], mat.m[2][2]);
+      rotation[1] = atan2f(-mat.m[0][2], sqrtf(mat.m[1][2] * mat.m[1][2] + mat.m[2][2] * mat.m[2][2]));
+      rotation[2] = atan2f(mat.m[0][1], mat.m[0][0]);
 
       translation[0] = mat.v.position.x;
       translation[1] = mat.v.position.y;

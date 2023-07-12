@@ -43,7 +43,6 @@ struct GizmoTransformInfo {
 };
 
 struct GizmoTransformCommand {
-	glm::mat4 base_matrix;
 	std::vector<GizmoTransformInfo> instances;
 };
 
@@ -54,6 +53,8 @@ enum TransformState {
 	TS_END
 };
 
+static glm::vec3 origin_position;
+static glm::mat4 gizmo_matrix;
 static GizmoTransformCommand command;
 static TransformState state;
 
@@ -78,8 +79,6 @@ static void update() {
 	
 	Level& lvl = *g_app->get_level();
 	
-	static glm::mat4 mtx(0.f);
-	
 	static glm::mat4 RATCHET_TO_IMGUIZMO = {
 		0.f, 0.f, 1.f, 0.f,
 		1.f, 0.f, 0.f, 0.f,
@@ -89,7 +88,16 @@ static void update() {
 	
 	glm::mat4 v = RATCHET_TO_IMGUIZMO * g_app->render_settings.view_ratchet;
 	glm::mat4 p = g_app->render_settings.projection;
-	ImGuizmo::Manipulate(&v[0][0], &p[0][0], ImGuizmo::TRANSLATE | ImGuizmo::ROTATE | ImGuizmo::SCALE, ImGuizmo::WORLD, &command.base_matrix[0][0]);
+	
+	ImGuizmo::Manipulate(&v[0][0], &p[0][0], ImGuizmo::TRANSLATE | ImGuizmo::ROTATE | ImGuizmo::SCALE, ImGuizmo::WORLD, &gizmo_matrix[0][0]);
+	
+	glm::mat4 difference = gizmo_matrix;
+	difference[3].x -= origin_position.x;
+	difference[3].y -= origin_position.y;
+	difference[3].z -= origin_position.z;
+	
+	glm::vec3 translation, rotation, scale;
+	ImGuizmo::DecomposeMatrixToComponents(&difference[0][0], &translation[0], &rotation[0], &scale[0]);
 	
 	static bool was_dragging = false;
 	bool is_dragging = ImGuizmo::IsUsing();
@@ -110,31 +118,43 @@ static void update() {
 	
 	switch(state) {
 		case TS_INACTIVE: {
-			command.base_matrix = glm::mat4(0.f);
+			origin_position = glm::vec3(1.f);
 			f32 count = 0.f;
 			lvl.instances().for_each_with(COM_TRANSFORM, [&](Instance& inst) {
 				if(inst.selected) {
-					command.base_matrix += inst.transform().matrix();
+					origin_position += inst.transform().pos();
 					count++;
 				}
 			});
-			command.base_matrix /= count;
+			if(count > 0.f) {
+				origin_position /= count;
+			}
+			gizmo_matrix = glm::mat4(1.f);
+			gizmo_matrix[3] = glm::vec4(origin_position, 1.f);
 			break;
 		}
 		case TS_BEGIN: {
 			command.instances.clear();
-			glm::mat4 inverse_base = glm::inverse(command.base_matrix);
 			lvl.instances().for_each_with(COM_TRANSFORM, [&](Instance& inst) {
 				if(inst.selected) {
 					GizmoTransformInfo& info = command.instances.emplace_back();
 					info.id = inst.id();
-					info.inst_matrix = inst.transform().matrix() * inverse_base;
+					info.inst_matrix = inst.transform().matrix();
 					info.old_transform = inst.transform();
 				}
 			});
 			break;
 		}
 		case TS_DRAGGING: {
+			for(GizmoTransformInfo& info : command.instances) {
+				glm::mat4 t1 = glm::translate(glm::mat4(1.f), translation - origin_position);
+				glm::mat4 s = glm::scale(glm::mat4(1.f), scale);
+				glm::mat4 rz = glm::rotate(glm::mat4(1.f), rotation.z, glm::vec3(0.f, 0.f, 1.f));
+				glm::mat4 ry = glm::rotate(glm::mat4(1.f), rotation.y, glm::vec3(0.f, 1.f, 0.f));
+				glm::mat4 rx = glm::rotate(glm::mat4(1.f), rotation.x, glm::vec3(1.f, 0.f, 0.f));
+				glm::mat4 t2 = glm::translate(glm::mat4(1.f), origin_position);
+				info.inst_matrix = t2 * rx * ry * rz * s * t1 * info.old_transform.matrix();
+			}
 			break;
 		}
 		case TS_END: {
@@ -156,7 +176,7 @@ static void draw() {
 	static std::vector<std::pair<InstanceId, glm::mat4>> instances;
 	instances.clear();
 	for(const GizmoTransformInfo& info : command.instances) {
-		instances.emplace_back(info.id, info.inst_matrix * command.base_matrix);
+		instances.emplace_back(info.id, info.inst_matrix);
 	}
 
 	draw_drag_preview(*lvl, instances, g_app->render_settings);
@@ -168,8 +188,7 @@ static void push_gizmo_transform_command(Level& lvl, GizmoTransformCommand& comm
 			for(const GizmoTransformInfo& info : command.instances) {
 				Instance* inst = lvl.instances().from_id(info.id);
 				verify_fatal(inst);
-				glm::mat4 matrix = info.inst_matrix * command.base_matrix;
-				inst->transform().set_from_matrix(&matrix);
+				inst->transform().set_from_matrix(&info.inst_matrix);
 			}
 		},
 		[](Level& lvl, GizmoTransformCommand& command) {

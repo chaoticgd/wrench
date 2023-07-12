@@ -2,8 +2,8 @@
 
 ## v0.5
 
-- Added a collision conversion tool to recover instanced collision for ties and shrubs semi-automatically.
-- Added proper 3D transformation gizmos for translation, rotation and scaling.
+- Added a collision fixer tool in the editor to recover instanced collision for ties and shrubs semi-automatically.
+- Added proper 3D transformation gizmos in the editor for translation, rotation and scaling.
 
 ## v0.4
 
