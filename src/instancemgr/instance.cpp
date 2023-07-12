@@ -18,9 +18,10 @@
 
 #include "instance.h"
 
-#include <glm/gtx/matrix_decompose.hpp>
-
 #include <math.h>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/transform.hpp>
+
 #include <instancemgr/wtf_glue.h>
 #include <instancemgr/instances.h>
 
@@ -44,30 +45,75 @@ const f32& TransformComponent::scale() const {
 	return _scale;
 }
 
+static void decompose_matrix(glm::mat4& matrix, glm::vec3& pos, glm::vec3& rot, glm::vec3& scale) {
+	scale[0] = glm::length(matrix[0]);
+	scale[1] = glm::length(matrix[1]);
+	scale[2] = glm::length(matrix[2]);
+	
+	matrix[0] = glm::normalize(matrix[0]);
+	matrix[1] = glm::normalize(matrix[1]);
+	matrix[2] = glm::normalize(matrix[2]);
+	
+	rot[0] = atan2f(matrix[1][2], matrix[2][2]);
+	rot[1] = atan2f(-matrix[0][2], sqrtf(matrix[1][2] * matrix[1][2] + matrix[2][2] * matrix[2][2]));
+	rot[2] = atan2f(matrix[0][1], matrix[0][0]);
+	
+	pos[0] = matrix[3].x;
+	pos[1] = matrix[3].y;
+	pos[2] = matrix[3].z;
+}
+
 void TransformComponent::set_from_matrix(const glm::mat4* new_matrix, const glm::mat4* new_inverse_matrix, const glm::vec3* new_rot) {
+	glm::mat4 temp_matrix;
 	verify_fatal(new_matrix || new_inverse_matrix);
 	if(new_matrix) {
-		_matrix = *new_matrix;
+		temp_matrix = *new_matrix;
 	} else {
-		_matrix = glm::inverse(*new_inverse_matrix);
+		temp_matrix = glm::inverse(*new_inverse_matrix);
 	}
-	if(new_inverse_matrix) {
-		_inverse_matrix = *new_inverse_matrix;
-	} else {
-		_inverse_matrix = glm::inverse(*new_matrix);
+	switch(_mode) {
+		case TransformMode::NONE: {
+			break;
+		}
+		case TransformMode::MATRIX:
+		case TransformMode::MATRIX_INVERSE:
+		case TransformMode::MATRIX_AND_INVERSE:
+		case TransformMode::MATRIX_INVERSE_ROTATION: {
+			_matrix = temp_matrix;
+			if(new_inverse_matrix) {
+				_inverse_matrix = *new_inverse_matrix;
+			} else {
+				_inverse_matrix = glm::inverse(*new_matrix);
+			}
+			glm::vec3 p, r, s;
+			decompose_matrix(temp_matrix, p, r, s);
+			if(new_rot) {
+				_rot = *new_rot;
+			} else {
+				_rot = r;
+			}
+			_scale = (s[0] + s[1] + s[2]) / 3.f;
+			break;
+		}
+		case TransformMode::POSITION: {
+			glm::vec3 p, r, s;
+			decompose_matrix(temp_matrix, p, r, s);
+			set_from_pos_rot_scale(p, glm::vec3(0.f, 0.f, 0.f), 1.f);
+			break;
+		}
+		case TransformMode::POSITION_ROTATION: {
+			glm::vec3 p, r, s;
+			decompose_matrix(temp_matrix, p, r, s);
+			set_from_pos_rot_scale(p, new_rot ? *new_rot : r, 1.f);
+			break;
+		}
+		case TransformMode::POSITION_ROTATION_SCALE: {
+			glm::vec3 p, r, s;
+			decompose_matrix(temp_matrix, p, r, s);
+			set_from_pos_rot_scale(p, new_rot ? *new_rot : r, (s[0] + s[1] + s[2]) / 3.f);
+			break;
+		}
 	}
-	glm::vec3 scale = {0.f, 0.f, 0.f};
-	glm::quat orientation = {0.f, 0.f, 0.f, 0.f};
-	glm::vec3 translation = {0.f, 0.f, 0.f};
-	glm::vec3 skew = {0.f, 0.f, 0.f};
-	glm::vec4 perspective = {0.f, 0.f, 0.f, 0.f};
-	glm::decompose(_matrix, scale, orientation, translation, skew, perspective);
-	if(new_rot) {
-		_rot = *new_rot;
-	} else {
-		_rot = glm::eulerAngles(orientation);
-	}
-	_scale = (scale[0] + scale[1] + scale[2]) / 3.f;
 }
 
 static f32 constrain_angle(f32 angle) {
