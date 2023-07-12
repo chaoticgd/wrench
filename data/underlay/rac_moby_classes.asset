@@ -375,7 +375,7 @@ MobyClass rac.moby_classes.844   { category: "Gameplay"     name: "Drain Cover" 
 MobyClass rac.moby_classes.846   { category: "Breakables"   name: "Pipe Mounted Grating" }
 MobyClass rac.moby_classes.849   { category: "Gadget"       name: "Suckcannon" }
 MobyClass rac.moby_classes.851   { category: "NPCs"         name: "Qwark (Oltanis)" }
-MobyClass rac.moby_classes.854   { category: "Water"        name: "Ocean"       Texture editor_icon { src: "icons/ocean.png" strongly_deleted: false } }
+MobyClass rac.moby_classes.854   { category: "Water"        name: "Ocean (Aridia)"        Texture editor_icon { src: "icons/ocean.png" strongly_deleted: false } }
 MobyClass rac.moby_classes.857   { category: "Gameplay"     name: "Gadgebot" }
 MobyClass rac.moby_classes.863   { category: "Enemies"      name: "Test Dummy Bomb Glove" }
 MobyClass rac.moby_classes.865   { category: "Enemies"      name: "Medium Amoeboid" }
@@ -384,6 +384,7 @@ MobyClass rac.moby_classes.868   { category: "Gameplay"     name: "Moving Platfo
 MobyClass rac.moby_classes.871   { category: "Gameplay"     name: "Boltcrate (Possibly for Metal Detector)" }
 MobyClass rac.moby_classes.876   { category: "Enemies"      name: "Test Dummy Pyrocitor" }
 MobyClass rac.moby_classes.877   { category: "Gameplay"     name: "Elevator with Button" }
+MobyClass rac.moby_classes.879   { category: "Water"        name: "Ocean (Rilgar)"        Texture editor_icon { src: "icons/ocean.png" strongly_deleted: false } }
 MobyClass rac.moby_classes.882   { category: "Enemies"      name: "Bomb" }
 MobyClass rac.moby_classes.883   { category: "Prop"         name: "Train Carriage" }
 MobyClass rac.moby_classes.884   { category: "Enemies"      name: "Test Dummy Walloper" }
@@ -434,6 +435,7 @@ MobyClass rac.moby_classes.1007  { category: "Gameplay"     name: "Camera Object
 MobyClass rac.moby_classes.1012  { category: "Vehicles"     name: "Taxi" }
 MobyClass rac.moby_classes.1015  { category: "Gameplay"     name: "Door" }
 MobyClass rac.moby_classes.1016  { category: "Gadget"       name: "Hydrodisplacer" }
+MobyClass rac.moby_classes.1018  { category: "Water"        name: "Ocean (Umbris)"        Texture editor_icon { src: "icons/ocean.png" strongly_deleted: false } }
 MobyClass rac.moby_classes.1023  { category: "Enemies"      name: "Blarg Paratrooper" }
 MobyClass rac.moby_classes.1025  { category: "Enemies"      name: "Blarg Gun" }
 MobyClass rac.moby_classes.1031  { category: "Gameplay"     name: "Button" }
@@ -461,6 +463,7 @@ MobyClass rac.moby_classes.1105  { category: "NPCs"         name: "Fred" }
 MobyClass rac.moby_classes.1106  { category: "Bosses"       name: "Snagglebeast" }
 MobyClass rac.moby_classes.1109  { category: "Vehicles"     name: "Shuttle" }
 MobyClass rac.moby_classes.1110  { category: "Enemies"      name: "Homing Mine" }
+MobyClass rac.moby_classes.1111  { category: "Water"        name: "Ocean (Pokitaru)"      Texture editor_icon { src: "icons/ocean.png" strongly_deleted: false } }
 MobyClass rac.moby_classes.1112  { category: "Enemies"      name: "Mine" }
 MobyClass rac.moby_classes.1117  { category: "Gameplay"     name: "Platform" }
 MobyClass rac.moby_classes.1118  { category: "Gameplay"     name: "Red Button" }
