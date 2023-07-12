@@ -81,7 +81,7 @@ void prepare_frame(Level& lvl);
 void draw_level(Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings);
 void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings);
 void draw_model_preview(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4* bb, const glm::mat4& view, const glm::mat4& projection, bool wireframe);
-void draw_drag_preview(Level& lvl, const std::vector<std::pair<InstanceId, glm::mat4>>& instances, const RenderSettings& settings);
+void draw_drag_ghosts(Level& lvl, const std::vector<InstanceId>& ids, const RenderSettings& settings);
 
 glm::mat4 compose_view_matrix(const glm::vec3& cam_pos, const glm::vec2& cam_rot);
 glm::mat4 compose_projection_matrix(const ImVec2& view_size);

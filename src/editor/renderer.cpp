@@ -74,7 +74,7 @@ static GLuint pill_inst_buffer = 0;
 static GLuint camera_inst_buffer = 0;
 static GLuint sound_inst_buffer = 0;
 static GLuint area_inst_buffer = 0;
-static GlBuffer preview_inst_buffer;
+static GlBuffer ghost_inst_buffer;
 static GLuint program = 0;
 
 void init_renderer() {
@@ -122,7 +122,7 @@ void shutdown_renderer() {
 		instance_icons[i].texture.destroy();
 	}
 	
-	preview_inst_buffer.destroy();
+	ghost_inst_buffer.destroy();
 }
 
 void prepare_frame(Level& lvl) {
@@ -157,8 +157,13 @@ static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstan
 	inst_data.clear();
 	inst_data.reserve(insts.size());
 	for(const ThisInstance& inst : insts) {
-		glm::mat4 mat = inst.transform().matrix();
-		inst_data.emplace_back(mat, inst_colour(inst), encode_inst_id(inst.id()));
+		glm::mat4 matrix;
+		if(inst.is_dragging) {
+			matrix = inst.drag_preview_matrix;
+		} else {
+			matrix = inst.transform().matrix();
+		}
+		inst_data.emplace_back(matrix, inst_colour(inst), encode_inst_id(inst.id()));
 	}
 	
 	glDeleteBuffers(1, &buffer);
@@ -278,18 +283,21 @@ void draw_model_preview(const RenderMesh& mesh, const std::vector<RenderMaterial
 	}
 }
 
-void draw_drag_preview(Level& lvl, const std::vector<std::pair<InstanceId, glm::mat4>>& instances, const RenderSettings& settings) {
+void draw_drag_ghosts(Level& lvl, const std::vector<InstanceId>& ids, const RenderSettings& settings) {
 	// Prepare matrices to upload.
 	static std::vector<InstanceData> inst_data;
 	inst_data.clear();
-	for(const auto& [id, matrix] : instances) {
-		inst_data.emplace_back(matrix, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(0.f, 0.f, 0.f, 0.f));
+	for(const InstanceId& id : ids) {
+		Instance* inst = lvl.instances().from_id(id);
+		if(inst && inst->has_component(COM_TRANSFORM)) {
+			inst_data.emplace_back(inst->transform().matrix(), glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(0.f, 0.f, 0.f, 0.f));
+		}
 	}
 	
 	// Upload matrices.
-	glDeleteBuffers(1, &preview_inst_buffer.id);
-	glGenBuffers(1, &preview_inst_buffer.id);
-	glBindBuffer(GL_ARRAY_BUFFER, preview_inst_buffer.id);
+	glDeleteBuffers(1, &ghost_inst_buffer.id);
+	glGenBuffers(1, &ghost_inst_buffer.id);
+	glBindBuffer(GL_ARRAY_BUFFER, ghost_inst_buffer.id);
 	size_t inst_buffer_size = inst_data.size() * sizeof(InstanceData);
 	glBufferData(GL_ARRAY_BUFFER, inst_buffer_size, inst_data.data(), GL_STATIC_DRAW);
 	
@@ -299,19 +307,18 @@ void draw_drag_preview(Level& lvl, const std::vector<std::pair<InstanceId, glm::
 	glUniformMatrix4fv(shaders.selection_projection_matrix, 1, GL_FALSE, &settings.projection[0][0]);
 	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glDisable(GL_DEPTH_TEST);
 	
 	// Draw wireframes.
 	static std::vector<const Instance*> inst_ptrs;
-	for(size_t i = 0; i < instances.size();) {
-		InstanceId first_id = instances[i].first;
+	for(size_t i = 0; i < ids.size();) {
+		InstanceId first_id = ids[i];
 		const Instance* first_inst = lvl.instances().from_id(first_id);
 		InstanceType first_type = first_inst->type();
 		verify_fatal(first_inst);
 		inst_ptrs.emplace_back(first_inst);
 		size_t j;
-		for(j = i + 1; j < instances.size(); j++) {
-			InstanceId id = instances[j].first;
+		for(j = i + 1; j < ids.size(); j++) {
+			InstanceId id = ids[j];
 			const Instance* inst = lvl.instances().from_id(id);
 			InstanceType type = inst->type();
 			if(type != first_type || (((type == INST_MOBY || type == INST_TIE || type == INST_SHRUB) && inst->o_class() == first_inst->o_class()))) {
@@ -325,32 +332,30 @@ void draw_drag_preview(Level& lvl, const std::vector<std::pair<InstanceId, glm::
 			auto iter = lvl.moby_classes.find(first_inst->o_class());
 			if(iter != lvl.moby_classes.end() && iter->second.render_mesh.has_value()) {
 				EditorClass& ec = iter->second;
-				draw_mesh_instanced(*ec.render_mesh, ec.materials.data(), ec.materials.size(), preview_inst_buffer.id, i, count);
+				draw_mesh_instanced(*ec.render_mesh, ec.materials.data(), ec.materials.size(), ghost_inst_buffer.id, i, count);
 				drawn = true;
 			}
 		} else if(first_type == INST_TIE) {
 			auto iter = lvl.tie_classes.find(first_inst->o_class());
 			if(iter != lvl.tie_classes.end() && iter->second.render_mesh.has_value()) {
 				EditorClass& ec = iter->second;
-				draw_mesh_instanced(*ec.render_mesh, ec.materials.data(), ec.materials.size(), preview_inst_buffer.id, i, count);
+				draw_mesh_instanced(*ec.render_mesh, ec.materials.data(), ec.materials.size(), ghost_inst_buffer.id, i, count);
 				drawn = true;
 			}
 		} else if(first_type == INST_SHRUB) {
 			auto iter = lvl.shrub_classes.find(first_inst->o_class());
 			if(iter != lvl.shrub_classes.end() && iter->second.render_mesh.has_value()) {
 				EditorClass& ec = iter->second;
-				draw_mesh_instanced(*ec.render_mesh, ec.materials.data(), ec.materials.size(), preview_inst_buffer.id, i, count);
+				draw_mesh_instanced(*ec.render_mesh, ec.materials.data(), ec.materials.size(), ghost_inst_buffer.id, i, count);
 				drawn = true;
 			}
 		}
 		if(!drawn) {
-			draw_cube_instanced(GL_LINE, white, preview_inst_buffer.id, i, count);
+			draw_cube_instanced(GL_LINE, white, ghost_inst_buffer.id, i, count);
 		}
 		inst_ptrs.clear();
 		i = j;
 	}
-	
-	glEnable(GL_DEPTH_TEST);
 }
 
 static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings) {

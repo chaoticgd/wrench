@@ -67,6 +67,12 @@ static void activate() {
 static void deactivate() {
 	command = {};
 	state = TS_INACTIVE;
+	
+	Level& lvl = *g_app->get_level();
+	
+	lvl.instances().for_each([&](Instance& inst) {
+		inst.is_dragging = false;
+	});
 }
 
 static void update() {
@@ -118,7 +124,7 @@ static void update() {
 	
 	switch(state) {
 		case TS_INACTIVE: {
-			origin_position = glm::vec3(1.f);
+			origin_position = glm::vec3(0.f, 0.f, 0.f);
 			f32 count = 0.f;
 			lvl.instances().for_each_with(COM_TRANSFORM, [&](Instance& inst) {
 				if(inst.selected) {
@@ -154,12 +160,21 @@ static void update() {
 				glm::mat4 rx = glm::rotate(glm::mat4(1.f), rotation.x, glm::vec3(1.f, 0.f, 0.f));
 				glm::mat4 t2 = glm::translate(glm::mat4(1.f), origin_position);
 				info.inst_matrix = t2 * rx * ry * rz * s * t1 * info.old_transform.matrix();
+				
+				Instance* inst = lvl.instances().from_id(info.id);
+				if(inst) {
+					inst->is_dragging = true;
+					inst->drag_preview_matrix = info.inst_matrix;
+				}
 			}
 			break;
 		}
 		case TS_END: {
 			push_gizmo_transform_command(lvl, command);
 			command = {};
+			lvl.instances().for_each([&](Instance& inst) {
+				inst.is_dragging = false;
+			});
 			break;
 		}
 	}
@@ -173,13 +188,13 @@ static void draw() {
 	Level* lvl = g_app->get_level();
 	verify_fatal(lvl);
 	
-	static std::vector<std::pair<InstanceId, glm::mat4>> instances;
+	static std::vector<InstanceId> instances;
 	instances.clear();
 	for(const GizmoTransformInfo& info : command.instances) {
-		instances.emplace_back(info.id, info.inst_matrix);
+		instances.emplace_back(info.id);
 	}
 
-	draw_drag_preview(*lvl, instances, g_app->render_settings);
+	draw_drag_ghosts(*lvl, instances, g_app->render_settings);
 }
 
 static void push_gizmo_transform_command(Level& lvl, GizmoTransformCommand& command) {

@@ -1394,7 +1394,7 @@ namespace ImGuizmo
 
             float d = sqrtf(ImLengthSqr(dir));
             dir /= d; // Normalize
-            dir *= 12.0f; // wrench: arrow size
+            dir *= 11.0f; // wrench: arrow size
 
             ImVec2 ortogonalDir(dir.y, -dir.x); // Perpendicular vector
             ImVec2 a(worldDirSSpace + dir);
