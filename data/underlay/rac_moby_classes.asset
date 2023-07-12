@@ -456,7 +456,7 @@ MobyClass rac.moby_classes.1060  { category: "Unknown"      name: "Red Orb" }
 MobyClass rac.moby_classes.1068  { category: "Enemies"      name: "Blarg Space Commando" }
 MobyClass rac.moby_classes.1071  { category: "Prop"         name: "Qwark Statue" }
 MobyClass rac.moby_classes.1075  { category: "Vehicles"     name: "Pokitaru Boat" }
-MobyClass rac.moby_classes.1099  { category: "Gameplay"     name: "Quark's Trailer" }
+MobyClass rac.moby_classes.1099  { category: "Prop"         name: "Qwark's Trailer" }
 MobyClass rac.moby_classes.1101  { category: "Gameplay"     name: "Upper Door" }
 MobyClass rac.moby_classes.1102  { category: "Gameplay"     name: "Lower Door" }
 MobyClass rac.moby_classes.1105  { category: "NPCs"         name: "Fred" }
