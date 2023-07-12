@@ -18,5 +18,8 @@ add_executable(wrencheditor
 	gui/asset_selector.cpp
 	gui/collision_fixer.cpp
 	gui/model_preview.cpp
+	tools/picker_tool.cpp
+	tools/selection_tool.cpp
+	tools/transform_tool.cpp
 )
 target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr wrenchinstancemgr)

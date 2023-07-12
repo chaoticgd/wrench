@@ -29,9 +29,9 @@ static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstan
 static glm::vec4 inst_colour(const Instance& inst);
 static glm::vec4 encode_inst_id(InstanceId id);
 static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings);
-static void draw_mobies(Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
-static void draw_ties(Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
-static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
+static void draw_moby_instances(Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
+static void draw_tie_instances(Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
+static void draw_shrub_instances(Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_selected_shrub_normals(Level& lvl);
 static void draw_selected_moby_normals(Level& lvl);
 template <typename ThisPath>
@@ -74,6 +74,7 @@ static GLuint pill_inst_buffer = 0;
 static GLuint camera_inst_buffer = 0;
 static GLuint sound_inst_buffer = 0;
 static GLuint area_inst_buffer = 0;
+static GlBuffer ghost_inst_buffer;
 static GLuint program = 0;
 
 void init_renderer() {
@@ -120,6 +121,8 @@ void shutdown_renderer() {
 	for(s32 i = 0; i < ARRAY_SIZE(wadinfo.editor.instance_3d_view_icons); i++) {
 		instance_icons[i].texture.destroy();
 	}
+	
+	ghost_inst_buffer.destroy();
 }
 
 void prepare_frame(Level& lvl) {
@@ -154,8 +157,13 @@ static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstan
 	inst_data.clear();
 	inst_data.reserve(insts.size());
 	for(const ThisInstance& inst : insts) {
-		glm::mat4 mat = inst.transform().matrix();
-		inst_data.emplace_back(mat, inst_colour(inst), encode_inst_id(inst.id()));
+		glm::mat4 matrix;
+		if(inst.is_dragging) {
+			matrix = inst.drag_preview_matrix;
+		} else {
+			matrix = inst.transform().matrix();
+		}
+		inst_data.emplace_back(matrix, inst_colour(inst), encode_inst_id(inst.id()));
 	}
 	
 	glDeleteBuffers(1, &buffer);
@@ -275,9 +283,84 @@ void draw_model_preview(const RenderMesh& mesh, const std::vector<RenderMaterial
 	}
 }
 
+void draw_drag_ghosts(Level& lvl, const std::vector<InstanceId>& ids, const RenderSettings& settings) {
+	// Prepare matrices to upload.
+	static std::vector<InstanceData> inst_data;
+	inst_data.clear();
+	for(const InstanceId& id : ids) {
+		Instance* inst = lvl.instances().from_id(id);
+		if(inst && inst->has_component(COM_TRANSFORM)) {
+			inst_data.emplace_back(inst->transform().matrix(), glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(0.f, 0.f, 0.f, 0.f));
+		}
+	}
+	
+	// Upload matrices.
+	glDeleteBuffers(1, &ghost_inst_buffer.id);
+	glGenBuffers(1, &ghost_inst_buffer.id);
+	glBindBuffer(GL_ARRAY_BUFFER, ghost_inst_buffer.id);
+	size_t inst_buffer_size = inst_data.size() * sizeof(InstanceData);
+	glBufferData(GL_ARRAY_BUFFER, inst_buffer_size, inst_data.data(), GL_STATIC_DRAW);
+	
+	// Prepare for drawing.
+	set_shader(shaders.selection);
+	glUniformMatrix4fv(shaders.selection_view_matrix, 1, GL_FALSE, &settings.view_gl[0][0]);
+	glUniformMatrix4fv(shaders.selection_projection_matrix, 1, GL_FALSE, &settings.projection[0][0]);
+	
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	
+	// Draw wireframes.
+	static std::vector<const Instance*> inst_ptrs;
+	for(size_t i = 0; i < ids.size();) {
+		InstanceId first_id = ids[i];
+		const Instance* first_inst = lvl.instances().from_id(first_id);
+		InstanceType first_type = first_inst->type();
+		verify_fatal(first_inst);
+		inst_ptrs.emplace_back(first_inst);
+		size_t j;
+		for(j = i + 1; j < ids.size(); j++) {
+			InstanceId id = ids[j];
+			const Instance* inst = lvl.instances().from_id(id);
+			InstanceType type = inst->type();
+			if(type != first_type || (((type == INST_MOBY || type == INST_TIE || type == INST_SHRUB) && inst->o_class() == first_inst->o_class()))) {
+				break;
+			}
+			inst_ptrs.emplace_back(inst);
+		}
+		size_t count = j - i;
+		bool drawn = false;
+		if(first_type == INST_MOBY) {
+			auto iter = lvl.moby_classes.find(first_inst->o_class());
+			if(iter != lvl.moby_classes.end() && iter->second.render_mesh.has_value()) {
+				EditorClass& ec = iter->second;
+				draw_mesh_instanced(*ec.render_mesh, ec.materials.data(), ec.materials.size(), ghost_inst_buffer.id, i, count);
+				drawn = true;
+			}
+		} else if(first_type == INST_TIE) {
+			auto iter = lvl.tie_classes.find(first_inst->o_class());
+			if(iter != lvl.tie_classes.end() && iter->second.render_mesh.has_value()) {
+				EditorClass& ec = iter->second;
+				draw_mesh_instanced(*ec.render_mesh, ec.materials.data(), ec.materials.size(), ghost_inst_buffer.id, i, count);
+				drawn = true;
+			}
+		} else if(first_type == INST_SHRUB) {
+			auto iter = lvl.shrub_classes.find(first_inst->o_class());
+			if(iter != lvl.shrub_classes.end() && iter->second.render_mesh.has_value()) {
+				EditorClass& ec = iter->second;
+				draw_mesh_instanced(*ec.render_mesh, ec.materials.data(), ec.materials.size(), ghost_inst_buffer.id, i, count);
+				drawn = true;
+			}
+		}
+		if(!drawn) {
+			draw_cube_instanced(GL_LINE, white, ghost_inst_buffer.id, i, count);
+		}
+		inst_ptrs.clear();
+		i = j;
+	}
+}
+
 static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings) {
 	if(settings.draw_moby_instances) {
-		draw_mobies(lvl, lvl.instances().moby_instances, mesh_mode, GL_LINE);
+		draw_moby_instances(lvl, lvl.instances().moby_instances, mesh_mode, GL_LINE);
 	}
 	
 	if(settings.draw_moby_groups && draw_wireframes) {
@@ -285,7 +368,7 @@ static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, c
 	}
 	
 	if(settings.draw_tie_instances) {
-		draw_ties(lvl, lvl.instances().tie_instances, mesh_mode, GL_LINE);
+		draw_tie_instances(lvl, lvl.instances().tie_instances, mesh_mode, GL_LINE);
 	}
 	
 	if(settings.draw_tie_groups && draw_wireframes) {
@@ -293,7 +376,7 @@ static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, c
 	}
 	
 	if(settings.draw_shrub_instances) {
-		draw_shrubs(lvl, lvl.instances().shrub_instances, mesh_mode, GL_LINE);
+		draw_shrub_instances(lvl, lvl.instances().shrub_instances, mesh_mode, GL_LINE);
 	}
 	
 	if(settings.draw_shrub_groups && draw_wireframes) {
@@ -349,7 +432,7 @@ static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, c
 	}
 }
 
-static void draw_mobies(Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+static void draw_moby_instances(Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
 	if(instances.size() < 1) {
 		return;
 	}
@@ -373,7 +456,7 @@ static void draw_mobies(Level& lvl, InstanceList<MobyInstance>& instances, GLenu
 	}
 }
 
-static void draw_ties(Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+static void draw_tie_instances(Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
 	if(instances.size() < 1) {
 		return;
 	}
@@ -397,7 +480,7 @@ static void draw_ties(Level& lvl, const InstanceList<TieInstance>& instances, GL
 	}
 }
 
-static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+static void draw_shrub_instances(Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
 	if(instances.size() < 1) {
 		return;
 	}
@@ -730,10 +813,10 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 }
 
 glm::mat4 compose_view_matrix(const glm::vec3& cam_pos, const glm::vec2& cam_rot) {
-	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), cam_rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
-	glm::mat4 yaw = glm::rotate(glm::mat4(1.0f), cam_rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), cam_rot.x, glm::vec3(0.0f, -1.0f, 0.0f));
+	glm::mat4 yaw = glm::rotate(glm::mat4(1.0f), cam_rot.y, glm::vec3(0.0f, 0.0f, 1.0f));
 	glm::mat4 translate = glm::translate(glm::mat4(1.0f), -cam_pos);
-	return pitch * yaw * RATCHET_TO_OPENGL_MATRIX * translate;
+	return pitch * yaw * translate;
 }
 
 glm::mat4 compose_projection_matrix(const ImVec2& view_size) {

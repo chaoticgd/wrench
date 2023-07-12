@@ -17,4 +17,4 @@ add_library(wrenchgui STATIC
 target_include_directories(wrenchgui PUBLIC ${CMAKE_SOURCE_DIR}/thirdparty/imgui)
 target_include_directories(wrenchgui PUBLIC ${CMAKE_SOURCE_DIR}/thirdparty/nativefiledialog/src/include)
 target_link_libraries(wrenchgui wrenchcore wrenchengine wadinfo)
-target_link_libraries(wrenchgui glfw glm glad imgui nativefiledialog)
+target_link_libraries(wrenchgui glfw glm glad imgui nativefiledialog imguizmo)

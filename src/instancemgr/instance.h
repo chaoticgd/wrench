@@ -148,6 +148,8 @@ struct Instance {
 	bool has_component(InstanceComponent component) const { return (_components_mask & component) == component; }
 	bool selected = false;
 	bool referenced_by_selected = false;
+	bool is_dragging = false;
+	glm::mat4 drag_preview_matrix = glm::mat4(1.f);
 	
 	const TransformComponent& transform() const;
 	TransformComponent& transform();

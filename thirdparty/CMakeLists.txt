@@ -99,3 +99,8 @@ endif()
 
 # Catch2
 add_subdirectory(catch2)
+
+# ImGuizmo
+add_library(imguizmo STATIC
+	imguizmo/ImGuizmo.cpp
+)

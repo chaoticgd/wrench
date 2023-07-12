@@ -20,6 +20,7 @@
 
 #include <chrono>
 #include <imgui/backends/imgui_impl_glfw.h>
+#include <imguizmo/ImGuizmo.h>
 #include <engine/compression.h>
 
 namespace gui {
@@ -89,6 +90,7 @@ void run_frame(GLFWwindow* window, void (*update_func)(f32)) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 	
 	update_func(delta_time);
 	

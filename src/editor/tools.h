@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,57 +16,30 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TOOLS_H
-#define TOOLS_H
+#ifndef EDITOR_TOOLS_H
+#define EDITOR_TOOLS_H
 
-#include <gui/gui.h>
-#include "gui/imgui_includes.h"
+#include <core/util.h>
 
-struct app;
-struct Level;
+typedef void ToolActivateFunc();
+typedef void ToolUpdateFunc();
+typedef void ToolDrawFunc();
+typedef void ToolDeactivateFunc();
 
-class Tool {
-public:
-	virtual ~Tool() {}
-
-	GlTexture icon;
-	
-	virtual void draw(app& a, const glm::mat4& view, const glm::mat4& projection) = 0;
+struct ToolFuncs {
+	ToolActivateFunc* activate;
+	ToolDeactivateFunc* deactivate;
+	ToolUpdateFunc* update;
+	ToolDrawFunc* draw;
 };
 
-std::vector<std::unique_ptr<Tool>> enumerate_tools();
-
-class PickerTool : public Tool {
-public:
-	PickerTool();
-
-	void draw(app& a, const glm::mat4& view, const glm::mat4& projection) override;
-
-private:
-	// Allows the user to select an object by clicking on it. See:
-	// https://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/
-	void pick_object(app& a, const glm::mat4& view, const glm::mat4& projection, ImVec2 position);
+struct ToolInfo {
+	const char* name;
+	ToolFuncs funcs;
 };
 
-class SelectionTool : public Tool {
-public:
-	SelectionTool();
-
-	void draw(app& a, const glm::mat4& view, const glm::mat4& projection) override;
-
-private:
-	bool _selecting = false;
-	ImVec2 _selection_begin { 0, 0 };
-};
-
-class TranslateTool : public Tool {
-public:
-	TranslateTool();
-
-	void draw(app& a, const glm::mat4& view, const glm::mat4& projection) override;
-
-private:
-	glm::vec3 _displacement = {0, 0, 0};
-};
+extern ToolInfo* g_tools[];
+extern s32 g_tool_count;
+extern s32 g_active_tool;
 
 #endif

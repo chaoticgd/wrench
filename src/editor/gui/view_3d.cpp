@@ -45,8 +45,9 @@ void view_3d() {
 	
 	auto& cam_pos = a.render_settings.camera_position;
 	auto& cam_rot = a.render_settings.camera_rotation;
-	glm::mat4 view = compose_view_matrix(cam_pos, cam_rot);
-	glm::mat4 projection = compose_projection_matrix(*view_size);
+	a.render_settings.view_ratchet = compose_view_matrix(cam_pos, cam_rot);
+	a.render_settings.view_gl = RATCHET_TO_OPENGL_MATRIX * a.render_settings.view_ratchet;
+	a.render_settings.projection = compose_projection_matrix(*view_size);
 	prepare_frame(*lvl);
 	
 	render_to_texture(&frame_buffer_texture, view_size->x, view_size->y, [&]() {
@@ -54,15 +55,14 @@ void view_3d() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glViewport(0, 0, view_size->x, view_size->y);
 		
-		draw_level(*lvl, view, projection, a.render_settings);
+		draw_level(*lvl, a.render_settings.view_gl, a.render_settings.projection, a.render_settings);
 		
-		ImGuiContext& g = *GImGui;
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, g.Style.WindowPadding * 2.0f);
-		a.active_tool().draw(a, view, projection);
-		ImGui::PopStyleVar();
+		g_tools[g_active_tool]->funcs.draw();
 	});
 	
 	ImGui::Image((void*) (intptr_t) frame_buffer_texture, *view_size);
+	
+	g_tools[g_active_tool]->funcs.update();
 }
 
 static void enumerate_instances_referenced_by_selected(Instances& instances) {

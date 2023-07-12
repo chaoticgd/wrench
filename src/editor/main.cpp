@@ -97,7 +97,7 @@ static void run_wrench(GLFWwindow* window, const WadPaths& wad_paths, const std:
 	
 	init_renderer();
 	
-	a.tools = enumerate_tools();
+	g_tools[g_active_tool]->funcs.activate();
 	
 	while(!glfwWindowShouldClose(a.glfw_window)) {
 		gui::run_frame(window, update);
@@ -105,6 +105,8 @@ static void run_wrench(GLFWwindow* window, const WadPaths& wad_paths, const std:
 	
 	a.last_frame = true;
 	gui::run_frame(window, update);
+	
+	g_tools[g_active_tool]->funcs.deactivate();
 	
 	shutdown_renderer();
 }
