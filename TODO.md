@@ -22,7 +22,8 @@ In no particular order:
 	- ~~Will probably be based on the Wrench Text Format~~
 	- ~~System for editing/storing pvar data~~
 - General Editor Improvements
-	- Transform tool, etc
+	- ~~Transform tool~~
+	- Tools for adding/removing instances
 	- GUI for editing asset files
 		- Should make use of the asset schema
 - Audio Packing/Unpacking
@@ -50,6 +51,6 @@ In no particular order:
 	- Determine memory map during build
 		- Error out if the files are too big to work
 - Collsion System
-	- Recover instanced collision
+	- ~~Recover instanced collision~~
 - Level Packing
 	- ~~Don't unpack the tfrag block for chunk 0 twice~~
