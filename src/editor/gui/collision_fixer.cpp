@@ -113,7 +113,10 @@ void collision_fixer() {
 		}
 		
 		row("Threshold");
-		params_modified |= ImGui::SliderInt("##threshold", &params.min_hits, 1, 10);
+		static bool extend_threshold_range = false;
+		params_modified |= ImGui::SliderInt("##threshold", &params.min_hits, 1, extend_threshold_range ? 100 : 10);
+		row("Extend Threshold Range");
+		ImGui::Checkbox("##extend_threshold_range", &extend_threshold_range);
 		row("Merge Distance");
 		params_modified |= ImGui::SliderFloat("##merge_dist", &params.merge_dist, 0.01f, 1.f, "%.2f");
 		row("Reject Faces Outside BB");
