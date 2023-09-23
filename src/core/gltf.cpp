@@ -201,7 +201,7 @@ static void get_vec(Opt<T>& dest, const Json& src, const char* property) {
 template <typename T>
 static void set_vec(Json& dest, const char* property, const Opt<T>& value) {
 	if(value.has_value()) {
-		Json& array = dest["property"];
+		Json& array = dest[property];
 		array = Json::array();
 		for(s32 i = 0; i < T::length(); i++) {
 			array.emplace_back((*value)[i]);
@@ -433,26 +433,34 @@ static Material read_material(const Json& src) {
 	Material dest;
 	get_opt(dest.name, src, "name");
 	if(src.contains("pbrMetallicRoughness")) {
-		read_object(dest.pbr_metallic_roughness, src, "pbrMetallicRoughness", read_material_pbr_metallic_roughness);
+		dest.pbr_metallic_roughness.emplace();
+		read_object(*dest.pbr_metallic_roughness, src, "pbrMetallicRoughness", read_material_pbr_metallic_roughness);
 	}
 	return dest;
 }
 
 static Json write_material(const Material& src) {
 	Json dest = Json::object();
-	write_object(dest, "pbrMetallicRoughness", src.pbr_metallic_roughness, write_material_pbr_metallic_roughness);
+	if(src.pbr_metallic_roughness.has_value()) {
+		write_object(dest, "pbrMetallicRoughness", *src.pbr_metallic_roughness, write_material_pbr_metallic_roughness);
+	}
 	return dest;
 }
 
 static MaterialPbrMetallicRoughness read_material_pbr_metallic_roughness(const Json& src) {
 	MaterialPbrMetallicRoughness dest;
-	read_object(dest.base_color_texture, src, "baseColorTexture", read_texture_info);
+	if(src.contains("baseColorTexture")) {
+		dest.base_color_texture.emplace();
+		read_object(*dest.base_color_texture, src, "baseColorTexture", read_texture_info);
+	}
 	return dest;
 }
 
 static Json write_material_pbr_metallic_roughness(const MaterialPbrMetallicRoughness& src) {
 	Json dest = Json::object();
-	write_object(dest, "baseColorTexture", src.base_color_texture, write_texture_info);
+	if(src.base_color_texture.has_value()) {
+		write_object(dest, "baseColorTexture", *src.base_color_texture, write_texture_info);
+	}
 	return dest;
 }
 

@@ -75,7 +75,7 @@ struct TextureInfo {
 
 struct MaterialPbrMetallicRoughness {
 	// unimplemented: baseColorFactor
-	TextureInfo base_color_texture;
+	Opt<TextureInfo> base_color_texture;
 	// unimplemented: metallicFactor
 	// unimplemented: roughnessFactor
 	// unimplemented: metallicRoughnessTexture
@@ -83,7 +83,7 @@ struct MaterialPbrMetallicRoughness {
 
 struct Material {
 	Opt<std::string> name;
-	MaterialPbrMetallicRoughness pbr_metallic_roughness;
+	Opt<MaterialPbrMetallicRoughness> pbr_metallic_roughness;
 	// unimplemented: normalTexture
 	// unimplemented: occlusionTexture
 	// unimplemented: emissiveTexture
