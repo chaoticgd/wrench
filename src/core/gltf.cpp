@@ -303,8 +303,8 @@ static Asset read_asset(const Json& src) {
 	Asset dest;
 	get_opt(dest.copyright, src, "copyright");
 	get_opt(dest.generator, src, "generator");
-	get_req(dest.version, src, "version");
 	get_opt(dest.min_version, src, "minVersion");
+	get_req(dest.version, src, "version");
 	return dest;
 }
 
@@ -312,64 +312,64 @@ static Json write_asset(const Asset& src) {
 	Json dest = Json::object();
 	set_opt(dest, "copyright", src.copyright);
 	set_opt(dest, "generator", src.generator);
-	set_req(dest, "version", src.version);
 	set_opt(dest, "minVersion", src.min_version);
+	set_req(dest, "version", src.version);
 	return dest;
 }
 
 static Scene read_scene(const Json& src) {
 	Scene dest;
-	get_array(dest.nodes, src, "nodes");
 	get_opt(dest.name, src, "name");
+	get_array(dest.nodes, src, "nodes");
 	return dest;
 }
 
 static Json write_scene(const Scene& src) {
 	Json dest = Json::object();
-	set_array(dest, "nodes", src.nodes);
 	set_opt(dest, "name", src.name);
+	set_array(dest, "nodes", src.nodes);
 	return dest;
 }
 
 static Node read_node(const Json& src) {
 	Node dest;
 	get_array(dest.children, src, "children");
-	get_opt(dest.skin, src, "skin");
 	get_mat(dest.matrix, src, "matrix");
 	get_opt(dest.mesh, src, "mesh");
+	get_opt(dest.name, src, "name");
 	get_vec(dest.rotation, src, "rotation");
 	get_vec(dest.scale, src, "scale");
+	get_opt(dest.skin, src, "skin");
 	get_vec(dest.translation, src, "translation");
-	get_opt(dest.name, src, "name");
 	return dest;
 }
 
 static Json write_node(const Node& src) {
 	Json dest = Json::object();
 	set_array(dest, "children", src.children);
-	set_opt(dest, "skin", src.skin);
 	set_mat(dest, "matrix", src.matrix);
 	set_opt(dest, "mesh", src.mesh);
+	set_opt(dest, "name", src.name);
 	set_vec(dest, "rotation", src.rotation);
 	set_vec(dest, "scale", src.scale);
+	set_opt(dest, "skin", src.skin);
 	set_vec(dest, "translation", src.translation);
-	set_opt(dest, "name", src.name);
 	return dest;
 }
 
 static Animation read_animation(const Json& src) {
 	Animation dest;
 	dest.channel = read_animation_channel(src["channel"]);
-	dest.sampler = read_animation_sampler(src["sampler"]);
 	get_opt(dest.name, src, "name");
+	dest.sampler = read_animation_sampler(src["sampler"]);
 	return dest;
 }
 
 static Json write_animation(const Animation& src) {
 	Json dest = Json::object();
 	dest["channel"] = write_animation_channel(src.channel);
-	dest["sampler"] = write_animation_sampler(src.sampler);
 	set_opt(dest, "name", src.name);
+	dest["sampler"] = write_animation_sampler(src.sampler);
 	return dest;
 }
 
@@ -458,15 +458,15 @@ static Json write_texture_info(const TextureInfo& src) {
 
 static Mesh read_mesh(const Json& src) {
 	Mesh dest;
-	read_array(dest.primitives, src, "primitives", read_mesh_primitive);
 	get_opt(dest.name, src, "name");
+	read_array(dest.primitives, src, "primitives", read_mesh_primitive);
 	return dest;
 }
 
 static Json write_mesh(const Mesh& src) {
 	Json dest = Json::object();
-	write_array(dest, src.primitives, "primitives", write_mesh_primitive);
 	set_opt(dest, "name", src.name);
+	write_array(dest, src.primitives, "primitives", write_mesh_primitive);
 	return dest;
 }
 
@@ -497,53 +497,53 @@ static Json write_mesh_primitive(const MeshPrimitive& src) {
 
 static Texture read_texture(const Json& src) {
 	Texture dest;
+	get_opt(dest.name, src, "name");
 	get_opt(dest.sampler, src, "sampler");
 	get_opt(dest.source, src, "source");
-	get_opt(dest.name, src, "name");
 	return dest;
 }
 
 static Json write_texture(const Texture& src) {
 	Json dest = Json::object();
+	set_opt(dest, "name", src.name);
 	set_opt(dest, "sampler", src.sampler);
 	set_opt(dest, "source", src.source);
-	set_opt(dest, "name", src.name);
 	return dest;
 }
 
 static Image read_image(const Json& src) {
 	Image dest;
-	get_opt(dest.uri, src, "uri");
-	get_opt(dest.mime_type, src, "mimeType");
 	get_opt(dest.buffer_view, src, "bufferView");
+	get_opt(dest.mime_type, src, "mimeType");
 	get_opt(dest.name, src, "name");
+	get_opt(dest.uri, src, "uri");
 	return dest;
 }
 
 static Json write_image(const Image& src) {
 	Json dest = Json::object();
-	set_opt(dest, "uri", src.uri);
-	set_opt(dest, "mimeType", src.mime_type);
 	set_opt(dest, "bufferView", src.buffer_view);
+	set_opt(dest, "mimeType", src.mime_type);
 	set_opt(dest, "name", src.name);
+	set_opt(dest, "uri", src.uri);
 	return dest;
 }
 
 static Skin read_skin(const Json& src) {
 	Skin dest;
 	get_opt(dest.inverse_bind_matrices, src, "inverseBindMatrices");
-	get_opt(dest.skeleton, src, "skeleton");
 	get_array(dest.joints, src, "joints");
 	get_opt(dest.name, src, "name");
+	get_opt(dest.skeleton, src, "skeleton");
 	return dest;
 }
 
 static Json write_skin(const Skin& src) {
 	Json dest = Json::object();
 	set_opt(dest, "inverseBindMatrices", src.inverse_bind_matrices);
-	set_opt(dest, "skeleton", src.skeleton);
 	set_array(dest, "joints", src.joints);
 	set_opt(dest, "name", src.name);
+	set_opt(dest, "skeleton", src.skeleton);
 	return dest;
 }
 
@@ -552,12 +552,12 @@ static Accessor read_accessor(const Json& src) {
 	get_opt(dest.buffer_view, src, "bufferView");
 	get_opt(dest.byte_offset, src, "bufferOffset");
 	get_req(dest.component_type, src, "componentType");
-	get_opt(dest.normalized, src, "normalized");
 	get_req(dest.count, src, "count");
-	get_req(dest.type, src, "type");
 	get_array(dest.max, src, "max");
 	get_array(dest.min, src, "min");
 	get_opt(dest.name, src, "name");
+	get_opt(dest.normalized, src, "normalized");
+	get_req(dest.type, src, "type");
 	return dest;
 }
 
@@ -566,34 +566,34 @@ static Json write_accessor(const Accessor& src) {
 	set_opt(dest, "bufferView", src.buffer_view);
 	set_opt(dest, "bufferOffset", src.byte_offset);
 	set_req(dest, "componentType", src.component_type);
-	set_opt(dest, "normalized", src.normalized);
 	set_req(dest, "count", src.count);
-	set_req(dest, "type", src.type);
 	set_array(dest, "max", src.max);
 	set_array(dest, "min", src.min);
 	set_opt(dest, "name", src.name);
+	set_opt(dest, "normalized", src.normalized);
+	set_req(dest, "type", src.type);
 	return dest;
 }
 
 static BufferView read_buffer_view(const Json& src) {
 	BufferView dest;
 	get_req(dest.buffer, src, "buffer");
-	get_opt(dest.byte_offset, src, "byteOffset");
 	get_req(dest.byte_length, src, "byteLength");
+	get_opt(dest.byte_offset, src, "byteOffset");
 	get_opt(dest.byte_stride, src, "byteStride");
-	get_opt(dest.target, src, "target");
 	get_opt(dest.name, src, "name");
+	get_opt(dest.target, src, "target");
 	return dest;
 }
 
 static Json write_buffer_view(const BufferView& src) {
 	Json dest = Json::object();
 	set_req(dest, "buffer", src.buffer);
-	set_opt(dest, "byteOffset", src.byte_offset);
 	set_req(dest, "byteLength", src.byte_length);
+	set_opt(dest, "byteOffset", src.byte_offset);
 	set_opt(dest, "byteStride", src.byte_stride);
-	set_opt(dest, "target", src.target);
 	set_opt(dest, "name", src.name);
+	set_opt(dest, "target", src.target);
 	return dest;
 }
 
@@ -601,9 +601,9 @@ static Sampler read_sampler(const Json& src) {
 	Sampler dest;
 	get_opt(dest.mag_filter, src, "magFilter");
 	get_opt(dest.min_filter, src, "minFilter");
+	get_opt(dest.name, src, "name");
 	get_opt(dest.wrap_s, src, "wrapS");
 	get_opt(dest.wrap_t, src, "wrapT");
-	get_opt(dest.name, src, "name");
 	return dest;
 }
 
@@ -611,25 +611,25 @@ static Json write_sampler(const Sampler& src) {
 	Json dest = Json::object();
 	set_opt(dest, "magFilter", src.mag_filter);
 	set_opt(dest, "minFilter", src.min_filter);
+	set_opt(dest, "name", src.name);
 	set_opt(dest, "wrapS", src.wrap_s);
 	set_opt(dest, "wrapT", src.wrap_t);
-	set_opt(dest, "name", src.name);
 	return dest;
 }
 
 static Buffer read_buffer(const Json& src) {
 	Buffer dest;
-	get_opt(dest.uri, src, "uri");
 	get_req(dest.byte_length, src, "byteLength");
 	get_opt(dest.name, src, "name");
+	get_opt(dest.uri, src, "uri");
 	return dest;
 }
 
 static Json write_buffer(const Buffer& src) {
 	Json dest = Json::object();
-	set_opt(dest, "uri", src.uri);
 	set_req(dest, "byteLength", src.byte_length);
 	set_opt(dest, "name", src.name);
+	set_opt(dest, "uri", src.uri);
 	return dest;
 }
 
