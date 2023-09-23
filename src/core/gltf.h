@@ -63,8 +63,8 @@ struct AnimationSampler {
 };
 
 struct Animation {
-	AnimationChannel channel;
-	AnimationSampler sampler;
+	std::vector<AnimationChannel> channels;
+	std::vector<AnimationSampler> samplers;
 	Opt<std::string> name;
 };
 

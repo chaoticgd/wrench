@@ -49,7 +49,7 @@ static Json write_animation(const Animation& src);
 static AnimationChannel read_animation_channel(const Json& src);
 static Json write_animation_channel(const AnimationChannel& src);
 static AnimationChannelTarget read_animation_channel_target(const Json& src);
-static Json read_animation_channel_target(const AnimationChannelTarget& src);
+static Json write_animation_channel_target(const AnimationChannelTarget& src);
 static AnimationSampler read_animation_sampler(const Json& src);
 static Json write_animation_sampler(const AnimationSampler& src);
 static Material read_material(const Json& src);
@@ -235,6 +235,18 @@ static void set_mat(Json& dest, const char* property, const Opt<T>& value) {
 	}
 }
 
+template <typename Object, typename ReadFunc>
+static void read_object(Object& dest, const Json& src, const char* property, ReadFunc read_func) {
+	auto iter = src.find(property);
+	verify(iter != src.end(), "Missing property '%s'.", property);
+	dest = read_func(*iter);
+}
+
+template <typename Object, typename WriteFunc>
+static void write_object(Json& dest, const char* property, const Object& src, WriteFunc write_func) {
+	dest.emplace(property, write_func(src));
+}
+
 template <typename Element, typename ReadFunc>
 static void read_array(std::vector<Element>& dest, const Json& src, const char* property, ReadFunc read_func) {
 	auto iter = src.find(property);
@@ -246,7 +258,7 @@ static void read_array(std::vector<Element>& dest, const Json& src, const char* 
 }
 
 template <typename Element, typename WriteFunc>
-static void write_array(Json& dest, const std::vector<Element>& src, const char* property, WriteFunc write_func) {
+static void write_array(Json& dest, const char* property, const std::vector<Element>& src, WriteFunc write_func) {
 	if(!src.empty()) {
 		Json& array = dest[property];
 		array = Json::array();
@@ -258,7 +270,7 @@ static void write_array(Json& dest, const std::vector<Element>& src, const char*
 
 static ModelFile read_gltf(const Json& src) {
 	ModelFile dest;
-	dest.asset = read_asset(src["asset"]);
+	read_object(dest.asset, src, "asset", read_asset);
 	get_array(dest.extensions_used, src, "extensionsUsed");
 	get_array(dest.extensions_required, src, "extensionsRequired");
 	get_opt(dest.scene, src, "scene");
@@ -280,22 +292,22 @@ static ModelFile read_gltf(const Json& src) {
 static Json write_gltf(const ModelFile& src) {
 	// The order of properties here is the same as for the Blender exporter.
 	Json dest = Json::object();
-	dest["asset"] = write_asset(src.asset);
+	write_object(dest, "asset", src.asset, write_asset);
 	set_array(dest, "extensionsUsed", src.extensions_used);
 	set_array(dest, "extensionsRequired", src.extensions_required);
 	set_opt(dest, "scene", src.scene);
-	write_array(dest, src.scenes, "scenes", write_scene);
-	write_array(dest, src.nodes, "nodes", write_node);
-	write_array(dest, src.animations, "animations", write_animation);
-	write_array(dest, src.materials, "materials", write_material);
-	write_array(dest, src.meshes, "meshes", write_mesh);
-	write_array(dest, src.textures, "textures", write_texture);
-	write_array(dest, src.images, "images", write_image);
-	write_array(dest, src.skins, "skins", write_skin);
-	write_array(dest, src.accessors, "accessors", write_accessor);
-	write_array(dest, src.buffer_views, "bufferViews", write_buffer_view);
-	write_array(dest, src.samplers, "samplers", write_sampler);
-	write_array(dest, src.buffers, "buffers", write_buffer);
+	write_array(dest, "scenes", src.scenes, write_scene);
+	write_array(dest, "nodes", src.nodes, write_node);
+	write_array(dest, "animations", src.animations, write_animation);
+	write_array(dest, "materials", src.materials, write_material);
+	write_array(dest, "meshes", src.meshes, write_mesh);
+	write_array(dest, "textures", src.textures, write_texture);
+	write_array(dest, "images", src.images, write_image);
+	write_array(dest, "skins", src.skins, write_skin);
+	write_array(dest, "accessors", src.accessors, write_accessor);
+	write_array(dest, "bufferViews", src.buffer_views, write_buffer_view);
+	write_array(dest, "samplers", src.samplers, write_sampler);
+	write_array(dest, "buffers", src.buffers, write_buffer);
 	return dest;
 }
 
@@ -359,31 +371,31 @@ static Json write_node(const Node& src) {
 
 static Animation read_animation(const Json& src) {
 	Animation dest;
-	dest.channel = read_animation_channel(src["channel"]);
+	read_array(dest.channels, src, "channels", read_animation_channel);
 	get_opt(dest.name, src, "name");
-	dest.sampler = read_animation_sampler(src["sampler"]);
+	read_array(dest.samplers, src, "samplers", read_animation_sampler);
 	return dest;
 }
 
 static Json write_animation(const Animation& src) {
 	Json dest = Json::object();
-	dest["channel"] = write_animation_channel(src.channel);
+	write_array(dest, "channels", src.channels, write_animation_channel);
 	set_opt(dest, "name", src.name);
-	dest["sampler"] = write_animation_sampler(src.sampler);
+	write_array(dest, "samplers", src.samplers, write_animation_sampler);
 	return dest;
 }
 
 static AnimationChannel read_animation_channel(const Json& src) {
 	AnimationChannel dest;
 	get_req(dest.sampler, src, "sampler");
-	dest.target = read_animation_channel_target(src["target"]);
+	read_object(dest.target, src, "target", read_animation_channel_target);
 	return dest;
 }
 
 static Json write_animation_channel(const AnimationChannel& src) {
 	Json dest = Json::object();
 	set_req(dest, "sampler", src.sampler);
-	dest["target"] = read_animation_channel_target(src.target);
+	write_object(dest, "target", src.target, write_animation_channel_target);
 	return dest;
 }
 
@@ -394,7 +406,7 @@ static AnimationChannelTarget read_animation_channel_target(const Json& src) {
 	return dest;
 
 }
-static Json read_animation_channel_target(const AnimationChannelTarget& src) {
+static Json write_animation_channel_target(const AnimationChannelTarget& src) {
 	Json dest = Json::object();
 	set_opt(dest, "node", src.node);
 	set_req(dest, "path", src.path);
@@ -420,25 +432,27 @@ static Json write_animation_sampler(const AnimationSampler& src) {
 static Material read_material(const Json& src) {
 	Material dest;
 	get_opt(dest.name, src, "name");
-	dest.pbr_metallic_roughness = read_material_pbr_metallic_roughness(src["pbrMetallicRoughness"]);
+	if(src.contains("pbrMetallicRoughness")) {
+		read_object(dest.pbr_metallic_roughness, src, "pbrMetallicRoughness", read_material_pbr_metallic_roughness);
+	}
 	return dest;
 }
 
 static Json write_material(const Material& src) {
 	Json dest = Json::object();
-	dest["pbrMetallicRoughness"] = write_material_pbr_metallic_roughness(src.pbr_metallic_roughness);
+	write_object(dest, "pbrMetallicRoughness", src.pbr_metallic_roughness, write_material_pbr_metallic_roughness);
 	return dest;
 }
 
 static MaterialPbrMetallicRoughness read_material_pbr_metallic_roughness(const Json& src) {
 	MaterialPbrMetallicRoughness dest;
-	dest.base_color_texture = read_texture_info(src["baseColorTexture"]);
+	read_object(dest.base_color_texture, src, "baseColorTexture", read_texture_info);
 	return dest;
 }
 
 static Json write_material_pbr_metallic_roughness(const MaterialPbrMetallicRoughness& src) {
 	Json dest = Json::object();
-	dest["baseColorTexture"] = write_texture_info(src.base_color_texture);
+	write_object(dest, "baseColorTexture", src.base_color_texture, write_texture_info);
 	return dest;
 }
 
@@ -466,14 +480,14 @@ static Mesh read_mesh(const Json& src) {
 static Json write_mesh(const Mesh& src) {
 	Json dest = Json::object();
 	set_opt(dest, "name", src.name);
-	write_array(dest, src.primitives, "primitives", write_mesh_primitive);
+	write_array(dest, "primitives", src.primitives, write_mesh_primitive);
 	return dest;
 }
 
 
 static MeshPrimitive read_mesh_primitive(const Json& src) {
 	MeshPrimitive dest;
-	for(auto& [name, index] : src["attributes"].items()) {
+	for(auto& [name, index] : src.at("attributes").items()) {
 		dest.attributes.emplace_back(name, index);
 	}
 	get_opt(dest.indices, src, "indices");
