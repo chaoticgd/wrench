@@ -134,8 +134,8 @@ struct Accessor {
 	Opt<bool> normalized;
 	s32 count;
 	std::string type;
-	std::vector<s32> max;
-	std::vector<s32> min;
+	std::vector<f32> max;
+	std::vector<f32> min;
 	// unimplemented: sparse
 	Opt<std::string> name;
 };
