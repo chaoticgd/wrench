@@ -19,68 +19,30 @@
 #include <core/buffer.h>
 #include <core/mesh.h>
 
-// TODO: Move elsewhere.
-struct Error {
-	const char* message;
-	s32 line;
-};
-template <typename Value>
-struct Result {
-	Value value;
-	Error* error;
-};
-inline Error* result_failure(s32 line, const char* format, ...) {
-	va_list args;
-	va_start(args, format);
-	
-	static char message[16 * 1024];
-	vsnprintf(message, 16 * 1024, format, args);
-	
-	// Copy it just in case one of the variadic arguments is a pointer to the
-	// last error message.
-	static char message_copy[16 * 1024];
-	strncpy(message_copy, message, sizeof(message_copy));
-	message_copy[sizeof(message_copy) - 1] = '\0';
-	
-	static Error error;
-	error.message = message_copy;
-	error.line = line;
-	
-	return &error;
-}
-#define RESULT_FAILURE(...) {{}, result_failure(__LINE__, __VA_ARGS__)};
-#define RESULT_SUCCESS(value) {value, nullptr}
-#define RESULT_PROPAGATE(result) {{}, result.error}
-
 namespace GLTF {
 
-struct AccessorSparseIndices {
-	s32 buffer_view;
-	Opt<s32> byte_offset;
-	s32 component_type;
+struct Asset {
+	Opt<std::string> copyright;
+	Opt<std::string> generator;
+	std::string version;
+	Opt<std::string> min_version;
 };
 
-struct AcessorSparseValues {
-	s32 buffer_view;
-	Opt<s32> byte_offset;
+struct Scene {
+	std::vector<s32> nodes;
+	Opt<std::string> name;
 };
 
-struct AccessorSparse {
-	s32 count;
-	AccessorSparseIndices indices;
-	AcessorSparseValues values;
-};
-
-struct Accessor {
-	Opt<s32> buffer_view;
-	Opt<s32> byte_offset;
-	s32 component_type;
-	Opt<bool> normalized;
-	s32 count;
-	std::string type;
-	Opt<s32> max;
-	Opt<s32> min;
-	Opt<AccessorSparse> sparse;
+struct Node {
+	// unimplemented: camera
+	std::vector<s32> children;
+	Opt<s32> skin;
+	Opt<glm::mat4> matrix;
+	Opt<s32> mesh;
+	Opt<glm::vec4> rotation;
+	Opt<glm::vec3> scale;
+	Opt<glm::vec3> translation;
+	// unimplemented: weights
 	Opt<std::string> name;
 };
 
@@ -106,38 +68,22 @@ struct Animation {
 	Opt<std::string> name;
 };
 
-struct Asset {
-	Opt<std::string> copyright;
-	Opt<std::string> generator;
-	std::string version;
-	Opt<std::string> min_version;
+struct TextureInfo {
+	s32 index;
+	Opt<s32> tex_coord;
 };
 
-struct Buffer {
-	Opt<std::string> uri;
-	s32 byte_length;
-	Opt<std::string> name;
-};
-
-struct BufferView {
-	s32 buffer;
-	Opt<s32> byte_offset;
-	s32 byte_length;
-	Opt<s32> byte_stride;
-	Opt<s32> target;
-	Opt<std::string> name;
-};
-
-struct Image {
-	Opt<std::string> uri;
-	Opt<std::string> mime_type;
-	Opt<std::string> buffer_view;
-	Opt<std::string> name;
+struct MaterialPbrMetallicRoughness {
+	// unimplemented: baseColorFactor
+	TextureInfo base_color_texture;
+	// unimplemented: metallicFactor
+	// unimplemented: roughnessFactor
+	// unimplemented: metallicRoughnessTexture
 };
 
 struct Material {
 	Opt<std::string> name;
-	// unimplemented: pbrMetallicRoughness
+	MaterialPbrMetallicRoughness pbr_metallic_roughness;
 	// unimplemented: normalTexture
 	// unimplemented: occlusionTexture
 	// unimplemented: emissiveTexture
@@ -161,16 +107,45 @@ struct Mesh {
 	Opt<std::string> name;
 };
 
-struct Node {
-	// unimplemented: camera
-	Opt<std::vector<s32>> children;
-	Opt<s32> skin;
-	glm::mat4 matrix;
-	s32 mesh;
-	Opt<glm::vec4> rotation;
-	Opt<glm::vec3> scale;
-	Opt<glm::vec3> translation;
-	// unimplemented: weights
+struct Texture {
+	Opt<s32> sampler;
+	Opt<s32> source;
+	Opt<std::string> name;
+};
+
+struct Image {
+	Opt<std::string> uri;
+	Opt<std::string> mime_type;
+	Opt<std::string> buffer_view;
+	Opt<std::string> name;
+};
+
+struct Skin {
+	Opt<s32> inverse_bind_matrices;
+	Opt<s32> skeleton;
+	std::vector<s32> joints;
+	Opt<std::string> name;
+};
+
+struct Accessor {
+	Opt<s32> buffer_view;
+	Opt<s32> byte_offset;
+	s32 component_type;
+	Opt<bool> normalized;
+	s32 count;
+	std::string type;
+	std::vector<s32> max;
+	std::vector<s32> min;
+	// unimplemented: sparse
+	Opt<std::string> name;
+};
+
+struct BufferView {
+	s32 buffer;
+	Opt<s32> byte_offset;
+	s32 byte_length;
+	Opt<s32> byte_stride;
+	Opt<s32> target;
 	Opt<std::string> name;
 };
 
@@ -182,46 +157,37 @@ struct Sampler {
 	Opt<std::string> name;
 };
 
-struct Scene {
-	Opt<std::vector<s32>> nodes;
-	Opt<std::string> name;
-};
-
-struct Skin {
-	Opt<s32> inverse_bind_matrices;
-	Opt<s32> skeleton;
-	std::vector<s32> joints;
-	Opt<std::string> name;
-};
-
-struct Texture {
-	Opt<s32> sampler;
-	Opt<s32> source;
+struct Buffer {
+	Opt<std::string> uri;
+	s32 byte_length;
 	Opt<std::string> name;
 };
 
 struct ModelFile {
-	Opt<std::vector<std::string>> extensions_used;
-	Opt<std::vector<std::string>> extensions_required;
-	std::vector<Accessor> accessors;
-	std::vector<Animation> animations;
 	Asset asset;
-	std::vector<Buffer> buffers;
-	std::vector<BufferView> buffer_views;
+	std::vector<std::string> extensions_used;
+	std::vector<std::string> extensions_required;
+	// unimplemented: extensions
+	// unimplemented: extras
+	Opt<s32> scene;
+	std::vector<Scene> scenes;
+	std::vector<Node> nodes;
 	// unimplemented: cameras
-	std::vector<Image> images;
+	std::vector<Animation> animations;
 	std::vector<Material> materials;
 	std::vector<Mesh> meshes;
-	std::vector<Node> nodes;
-	std::vector<Sampler> samplers;
-	std::vector<Scene> scenes;
-	std::vector<Skin> skins;
 	std::vector<Texture> textures;
+	std::vector<Image> images;
+	std::vector<Skin> skins;
+	std::vector<Accessor> accessors;
+	std::vector<BufferView> buffer_views;
+	std::vector<Sampler> samplers;
+	std::vector<Buffer> buffers;
 	
 	std::vector<u8> bin_data;
 };
 
-Result<ModelFile> read_glb(::Buffer src);
+ModelFile read_glb(::Buffer src);
 void write_glb(OutBuffer dest, const ModelFile& gltf);
 
 }

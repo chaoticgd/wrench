@@ -4,11 +4,7 @@
 
 TEST_CASE("read/write suzanne model", "[gltf]") {
 	std::vector<u8> in = read_file("test/data/suzanne.glb");
-	auto [model, error] = GLTF::read_glb(in);
-	if(error) {
-		fprintf(stderr, "read_glb: %s\n", error->message);
-	}
-	REQUIRE(!error);
+	auto model = GLTF::read_glb(in);
 	std::vector<u8> out;
 	GLTF::write_glb(out, model);
 	write_file("/tmp/out.glb", out);
