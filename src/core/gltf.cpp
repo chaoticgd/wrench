@@ -34,10 +34,25 @@ packed_struct(GLBChunk,
 	u32 type;
 )
 
+struct GLTFBufferView {
+	s32 buffer;
+	Opt<s32> byte_offset;
+	s32 byte_length;
+	Opt<s32> byte_stride;
+	Opt<s32> target;
+	Opt<std::string> name;
+};
+
+struct GLTFBuffer {
+	Opt<std::string> uri;
+	s32 byte_length;
+	Opt<std::string> name;
+};
+
 #define FOURCC(string) ((string)[0] | (string)[1] << 8 | (string)[2] << 16 | (string)[3] << 24)
 
-static ModelFile read_gltf(const Json& src);
-static Json write_gltf(const ModelFile& src);
+static ModelFile read_gltf(const Json& src, Buffer bin_chunk);
+static Json write_gltf(const ModelFile& src, OutBuffer bin_chunk);
 static Asset read_asset(const Json& src);
 static Json write_asset(const Asset& src);
 static Scene read_scene(const Json& src);
@@ -68,19 +83,24 @@ static Image read_image(const Json& src);
 static Json write_image(const Image& src);
 static Skin read_skin(const Json& src);
 static Json write_skin(const Skin& src);
-static Accessor read_accessor(const Json& src);
-static Json write_accessor(const Accessor& src);
-static BufferView read_buffer_view(const Json& src);
-static Json write_buffer_view(const BufferView& src);
+static Accessor read_accessor(const Json& src, std::vector<GLTFBufferView>& buffer_views, Buffer bin_chunk);
+static Json write_accessor(const Accessor& src, std::vector<GLTFBufferView>& buffer_views, OutBuffer bin_chunk);
+static GLTFBufferView read_buffer_view(const Json& src);
+static Json write_buffer_view(const GLTFBufferView& src);
 static Sampler read_sampler(const Json& src);
 static Json write_sampler(const Sampler& src);
-static Buffer read_buffer(const Json& src);
-static Json write_buffer(const Buffer& src);
+static GLTFBuffer read_buffer(const Json& src);
+static Json write_buffer(const GLTFBuffer& src);
 
 static const char* mesh_primitive_attribute_semantic_to_string(MeshPrimitiveAttributeSemantic semantic);
 static Opt<MeshPrimitiveAttributeSemantic> mesh_primitive_attribute_semantic_from_string(const char* string);
+static const char* accessor_type_to_string(AccessorType type);
+static Opt<AccessorType> accessor_type_from_string(const char* string);
+static s32 accessor_attribute_size(const Accessor& accessor);
+static s32 accessor_component_size(AccessorComponentType component_type);
+static s32 accessor_component_count(AccessorType type);
 
-ModelFile read_glb(::Buffer src) {
+ModelFile read_glb(Buffer src) {
 	const GLBHeader& header = src.read<GLBHeader>(0);
 	
 	// The format is made up of a stream of chunks. Find them.
@@ -106,24 +126,22 @@ ModelFile read_glb(::Buffer src) {
 	ModelFile gltf;
 	try {
 		auto json = Json::parse(src.lo + json_offset, src.lo + json_offset + json_size);
-		gltf = read_gltf(json);
+		gltf = read_gltf(json, src.subbuf(bin_offset, bin_size));
 	} catch(Json::exception& e) {
 		verify_not_reached("%s", e.what());
 	}
-	
-	// Copy the data in the BIN chunk.
-	gltf.bin_data = src.read_bytes(bin_offset, bin_size, "bin chunk");
 	
 	return gltf;
 }
 
 void write_glb(OutBuffer dest, const ModelFile& gltf) {
-	Json root = write_gltf(gltf);
+	std::vector<u8> bin_chunk;
+	Json root = write_gltf(gltf, bin_chunk);
 	
 	std::string json = root.dump();
 	
 	json.resize(align64(json.size(), 4), ' ');
-	size_t padded_binary_size = align64(gltf.bin_data.size(), 4);
+	size_t padded_binary_size = align64(bin_chunk.size(), 4);
 	
 	GLBHeader header;
 	header.magic = FOURCC("glTF");
@@ -141,8 +159,8 @@ void write_glb(OutBuffer dest, const ModelFile& gltf) {
 	binary_header.length = padded_binary_size;
 	binary_header.type = FOURCC("BIN\00");
 	dest.write(binary_header);
-	dest.write_multiple(gltf.bin_data);
-	for(size_t i = gltf.bin_data.size(); (i % 4) != 0; i++) {
+	dest.write_multiple(bin_chunk);
+	for(size_t i = bin_chunk.size(); (i % 4) != 0; i++) {
 		dest.write<u8>(0);
 	}
 }
@@ -250,28 +268,35 @@ static void write_object(Json& dest, const char* property, const Object& src, Wr
 	dest.emplace(property, write_func(src));
 }
 
-template <typename Element, typename ReadFunc>
-static void read_array(std::vector<Element>& dest, const Json& src, const char* property, ReadFunc read_func) {
+template <typename Element, typename ReadFunc, typename... Args>
+static void read_array(std::vector<Element>& dest, const Json& src, const char* property, ReadFunc read_func, Args&... args) {
 	auto iter = src.find(property);
 	if(iter != src.end()) {
 		for(const Json& element : *iter) {
-			dest.emplace_back(read_func(element));
+			dest.emplace_back(read_func(element, args...));
 		}
 	}
 }
 
-template <typename Element, typename WriteFunc>
-static void write_array(Json& dest, const char* property, const std::vector<Element>& src, WriteFunc write_func) {
+template <typename Element, typename WriteFunc, typename... Args>
+static void write_array(Json& dest, const char* property, const std::vector<Element>& src, WriteFunc write_func, Args&... args) {
 	if(!src.empty()) {
 		Json& array = dest[property];
 		array = Json::array();
 		for(const Element& element : src) {
-			array.emplace_back(write_func(element));
+			array.emplace_back(write_func(element, args...));
 		}
 	}
 }
 
-static ModelFile read_gltf(const Json& src) {
+static ModelFile read_gltf(const Json& src, Buffer bin_chunk) {
+	std::vector<GLTFBufferView> buffer_views;
+	read_array(buffer_views, src, "bufferViews", read_buffer_view);
+	
+	std::vector<GLTFBuffer> buffers;
+	read_array(buffers, src, "buffers", read_buffer);
+	verify(buffers.size() <= 1, "GLB file has more than one buffer.");
+	
 	ModelFile dest;
 	read_object(dest.asset, src, "asset", read_asset);
 	get_array(dest.extensions_used, src, "extensionsUsed");
@@ -285,14 +310,14 @@ static ModelFile read_gltf(const Json& src) {
 	read_array(dest.textures, src, "textures", read_texture);
 	read_array(dest.images, src, "images", read_image);
 	read_array(dest.skins, src, "skins", read_skin);
-	read_array(dest.accessors, src, "accessors", read_accessor);
-	read_array(dest.buffer_views, src, "bufferViews", read_buffer_view);
+	read_array(dest.accessors, src, "accessors", read_accessor, buffer_views, bin_chunk);
 	read_array(dest.samplers, src, "samplers", read_sampler);
-	read_array(dest.buffers, src, "buffers", read_buffer);
 	return dest;
 }
 
-static Json write_gltf(const ModelFile& src) {
+static Json write_gltf(const ModelFile& src, OutBuffer bin_chunk) {
+	std::vector<GLTFBufferView> buffer_views;
+	
 	// The order of properties here is the same as for the Blender exporter.
 	Json dest = Json::object();
 	write_object(dest, "asset", src.asset, write_asset);
@@ -307,10 +332,11 @@ static Json write_gltf(const ModelFile& src) {
 	write_array(dest, "textures", src.textures, write_texture);
 	write_array(dest, "images", src.images, write_image);
 	write_array(dest, "skins", src.skins, write_skin);
-	write_array(dest, "accessors", src.accessors, write_accessor);
-	write_array(dest, "bufferViews", src.buffer_views, write_buffer_view);
+	write_array(dest, "accessors", src.accessors, write_accessor, buffer_views, bin_chunk);
+	write_array(dest, "bufferViews", buffer_views, write_buffer_view);
 	write_array(dest, "samplers", src.samplers, write_sampler);
-	write_array(dest, "buffers", src.buffers, write_buffer);
+	std::vector<GLTFBuffer> gltf_buffers {{std::nullopt, (s32) bin_chunk.tell(), std::nullopt}};
+	write_array(dest, "buffers", gltf_buffers, write_buffer);
 	return dest;
 }
 
@@ -577,36 +603,75 @@ static Json write_skin(const Skin& src) {
 	return dest;
 }
 
-static Accessor read_accessor(const Json& src) {
+static Accessor read_accessor(const Json& src, std::vector<GLTFBufferView>& buffer_views, Buffer bin_chunk) {
+	Opt<s32> buffer_view_index;
+	get_opt(buffer_view_index, src, "bufferView");
+	verify(buffer_view_index.has_value(), "Accessor without a buffer view (unimplemented).");
+	verify(*buffer_view_index >= 0 && *buffer_view_index < buffer_views.size(), "Accessor has invalid buffer view index.");
+	
+	Opt<s32> byte_offset;
+	get_opt(byte_offset, src, "byteOffset");
+	if(!byte_offset.has_value()) {
+		byte_offset = 0;
+	}
+	
 	Accessor dest;
-	get_opt(dest.buffer_view, src, "bufferView");
-	get_opt(dest.byte_offset, src, "bufferOffset");
 	get_req(dest.component_type, src, "componentType");
 	get_req(dest.count, src, "count");
 	get_array(dest.max, src, "max");
 	get_array(dest.min, src, "min");
 	get_opt(dest.name, src, "name");
 	get_opt(dest.normalized, src, "normalized");
-	get_req(dest.type, src, "type");
+	std::string type_string;
+	get_req(type_string, src, "type");
+	Opt<AccessorType> type = accessor_type_from_string(type_string.c_str());
+	verify(type.has_value(), "Accessor has unknown type '%s'.", type_string.c_str());
+	dest.type = *type;
+	
+	s32 attribute_size = accessor_attribute_size(dest);
+	dest.bytes.resize(dest.count * attribute_size);
+	
+	GLTFBufferView& buffer_view = buffer_views.at(*buffer_view_index);
+	s32 byte_stride = buffer_view.byte_stride.has_value() ? *buffer_view.byte_stride : attribute_size;
+	verify(buffer_view.buffer == 0, "GLB file has more than one buffer.");
+	verify(buffer_view.byte_offset.has_value(), "Buffer view without a byte offset.");
+	
+	for(s32 i = 0; i < dest.count; i++) {
+		s32 source_offset = *buffer_view.byte_offset + i * byte_stride + *byte_offset;
+		verify(source_offset >= 0 && source_offset + attribute_size <= bin_chunk.size(), "Buffer view out of range.");
+		memcpy(dest.bytes.data() + i * attribute_size, bin_chunk.lo + source_offset, attribute_size);
+	}
+	
+	if(buffer_view.target.has_value()) dest.target = (BufferViewTarget) *buffer_view.target;
+	
 	return dest;
 }
 
-static Json write_accessor(const Accessor& src) {
+static Json write_accessor(const Accessor& src, std::vector<GLTFBufferView>& buffer_views, OutBuffer bin_chunk) {
 	Json dest = Json::object();
-	set_opt(dest, "bufferView", src.buffer_view);
-	set_opt(dest, "bufferOffset", src.byte_offset);
+	set_opt(dest, "bufferView", Opt<s32>((s32) buffer_views.size()));
+	// byteOffset
 	set_req(dest, "componentType", src.component_type);
 	set_req(dest, "count", src.count);
 	set_array(dest, "max", src.max);
 	set_array(dest, "min", src.min);
 	set_opt(dest, "name", src.name);
 	set_opt(dest, "normalized", src.normalized);
-	set_req(dest, "type", src.type);
+	set_req(dest, "type", accessor_type_to_string(src.type));
+	
+	GLTFBufferView& buffer_view = buffer_views.emplace_back();
+	buffer_view.buffer = 0;
+	buffer_view.byte_offset = (s32) bin_chunk.tell();
+	buffer_view.byte_length = (s32) src.bytes.size();
+	if(src.target.has_value()) buffer_view.target = (s32) *src.target;
+	
+	bin_chunk.write_multiple(src.bytes);
+	
 	return dest;
 }
 
-static BufferView read_buffer_view(const Json& src) {
-	BufferView dest;
+static GLTFBufferView read_buffer_view(const Json& src) {
+	GLTFBufferView dest;
 	get_req(dest.buffer, src, "buffer");
 	get_req(dest.byte_length, src, "byteLength");
 	get_opt(dest.byte_offset, src, "byteOffset");
@@ -616,7 +681,7 @@ static BufferView read_buffer_view(const Json& src) {
 	return dest;
 }
 
-static Json write_buffer_view(const BufferView& src) {
+static Json write_buffer_view(const GLTFBufferView& src) {
 	Json dest = Json::object();
 	set_req(dest, "buffer", src.buffer);
 	set_req(dest, "byteLength", src.byte_length);
@@ -647,15 +712,15 @@ static Json write_sampler(const Sampler& src) {
 	return dest;
 }
 
-static Buffer read_buffer(const Json& src) {
-	Buffer dest;
+static GLTFBuffer read_buffer(const Json& src) {
+	GLTFBuffer dest;
 	get_req(dest.byte_length, src, "byteLength");
 	get_opt(dest.name, src, "name");
 	get_opt(dest.uri, src, "uri");
 	return dest;
 }
 
-static Json write_buffer(const Buffer& src) {
+static Json write_buffer(const GLTFBuffer& src) {
 	Json dest = Json::object();
 	set_req(dest, "byteLength", src.byte_length);
 	set_opt(dest, "name", src.name);
@@ -685,6 +750,59 @@ static Opt<MeshPrimitiveAttributeSemantic> mesh_primitive_attribute_semantic_fro
 	if(strcmp(string, "JOINTS_0") == 0) return JOINTS_0;
 	if(strcmp(string, "WEIGHTS_0") == 0) return WEIGHTS_0;
 	return std::nullopt;
+}
+
+static const char* accessor_type_to_string(AccessorType type) {
+	switch(type) {
+		case SCALAR: return "SCALAR";
+		case VEC2: return "VEC2";
+		case VEC3: return "VEC3";
+		case VEC4: return "VEC4";
+		case MAT2: return "MAT2";
+		case MAT3: return "MAT3";
+		case MAT4: return "MAT4";
+	}
+	return "";
+}
+
+static Opt<AccessorType> accessor_type_from_string(const char* string) {
+	if(strcmp(string, "SCALAR") == 0) return SCALAR;
+	if(strcmp(string, "VEC2") == 0) return VEC2;
+	if(strcmp(string, "VEC3") == 0) return VEC3;
+	if(strcmp(string, "VEC4") == 0) return VEC4;
+	if(strcmp(string, "MAT2") == 0) return MAT2;
+	if(strcmp(string, "MAT3") == 0) return MAT3;
+	if(strcmp(string, "MAT4") == 0) return MAT4;
+	return std::nullopt;
+}
+
+static s32 accessor_attribute_size(const Accessor& accessor) {
+	return accessor_component_size(accessor.component_type) * accessor_component_count(accessor.type);
+}
+
+static s32 accessor_component_size(AccessorComponentType component_type) {
+	switch(component_type) {
+		case SIGNED_BYTE: return 1;
+		case UNSIGNED_BYTE: return 1;
+		case SIGNED_SHORT: return 2;
+		case UNSIGNED_SHORT: return 2;
+		case UNSIGNED_INT: return 4;
+		case FLOAT: return 4;
+	}
+	return 0;
+}
+
+static s32 accessor_component_count(AccessorType type) {
+	switch(type) {
+		case SCALAR: return 1;
+		case VEC2: return 2;
+		case VEC3: return 3;
+		case VEC4: return 4;
+		case MAT2: return 4;
+		case MAT3: return 9;
+		case MAT4: return 16;
+	}
+	return 0;
 }
 
 }

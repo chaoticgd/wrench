@@ -142,26 +142,41 @@ struct Skin {
 	Opt<std::string> name;
 };
 
+enum AccessorComponentType {
+	SIGNED_BYTE = 5120,
+	UNSIGNED_BYTE = 5121,
+	SIGNED_SHORT = 5122,
+	UNSIGNED_SHORT = 5123,
+	UNSIGNED_INT= 5125,
+	FLOAT = 5126
+};
+
+enum AccessorType {
+	SCALAR,
+	VEC2,
+	VEC3,
+	VEC4,
+	MAT2,
+	MAT3,
+	MAT4
+};
+
+enum BufferViewTarget {
+	ARRAY_BUFFER = 34962,
+	ELEMENT_ARRAY_BUFFER = 34963
+};
+
 struct Accessor {
-	Opt<s32> buffer_view;
-	Opt<s32> byte_offset;
-	s32 component_type;
+	std::vector<u8> bytes;
+	AccessorComponentType component_type;
 	Opt<bool> normalized;
 	s32 count;
-	std::string type;
+	AccessorType type;
 	std::vector<f32> max;
 	std::vector<f32> min;
 	// unimplemented: sparse
 	Opt<std::string> name;
-};
-
-struct BufferView {
-	s32 buffer;
-	Opt<s32> byte_offset;
-	s32 byte_length;
-	Opt<s32> byte_stride;
-	Opt<s32> target;
-	Opt<std::string> name;
+	Opt<BufferViewTarget> target;
 };
 
 struct Sampler {
@@ -169,12 +184,6 @@ struct Sampler {
 	Opt<s32> min_filter;
 	Opt<s32> wrap_s;
 	Opt<s32> wrap_t;
-	Opt<std::string> name;
-};
-
-struct Buffer {
-	Opt<std::string> uri;
-	s32 byte_length;
 	Opt<std::string> name;
 };
 
@@ -195,14 +204,10 @@ struct ModelFile {
 	std::vector<Image> images;
 	std::vector<Skin> skins;
 	std::vector<Accessor> accessors;
-	std::vector<BufferView> buffer_views;
 	std::vector<Sampler> samplers;
-	std::vector<Buffer> buffers;
-	
-	std::vector<u8> bin_data;
 };
 
-ModelFile read_glb(::Buffer src);
+ModelFile read_glb(Buffer src);
 void write_glb(OutBuffer dest, const ModelFile& gltf);
 
 }

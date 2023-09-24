@@ -4,7 +4,7 @@
 
 static bool test_model_file(const char* path, bool print_diff);
 
-TEST_CASE("read/write suzanne model", "[gltf]") {
+TEST_CASE("read/write sample models", "[gltf]") {
 	CHECK(test_model_file("test/data/suzanne.glb", true));
 	test_model_file("test/data/rigged_figure.glb", false);
 }
@@ -14,5 +14,6 @@ static bool test_model_file(const char* path, bool print_diff) {
 	auto model = GLTF::read_glb(in);
 	std::vector<u8> out;
 	GLTF::write_glb(out, model);
+	write_file("/tmp/outfile.glb", out);
 	return diff_buffers(in, out, 0, DIFF_REST_OF_BUFFER, print_diff, nullptr);
 }
