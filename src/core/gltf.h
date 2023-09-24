@@ -93,8 +93,23 @@ struct Material {
 	// unimplemented: doubleSided
 };
 
+enum MeshPrimitiveAttributeSemantic {
+	POSITION,
+	NORMAL,
+	TANGENT,
+	TEXCOORD_0,
+	COLOR_0,
+	JOINTS_0,
+	WEIGHTS_0
+};
+
+struct MeshPrimitiveAttribute {
+	MeshPrimitiveAttributeSemantic semantic;
+	s32 accessor;
+};
+
 struct MeshPrimitive {
-	std::vector<std::pair<std::string, s32>> attributes;
+	std::vector<MeshPrimitiveAttribute> attributes;
 	Opt<s32> indices;
 	Opt<s32> material;
 	Opt<s32> mode;

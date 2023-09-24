@@ -77,6 +77,9 @@ static Json write_sampler(const Sampler& src);
 static Buffer read_buffer(const Json& src);
 static Json write_buffer(const Buffer& src);
 
+static const char* mesh_primitive_attribute_semantic_to_string(MeshPrimitiveAttributeSemantic semantic);
+static Opt<MeshPrimitiveAttributeSemantic> mesh_primitive_attribute_semantic_from_string(const char* string);
+
 ModelFile read_glb(::Buffer src) {
 	const GLBHeader& header = src.read<GLBHeader>(0);
 	
@@ -495,8 +498,13 @@ static Json write_mesh(const Mesh& src) {
 
 static MeshPrimitive read_mesh_primitive(const Json& src) {
 	MeshPrimitive dest;
-	for(auto& [name, index] : src.at("attributes").items()) {
-		dest.attributes.emplace_back(name, index);
+	for(auto& [string, accessor] : src.at("attributes").items()) {
+		Opt<MeshPrimitiveAttributeSemantic> semantic = mesh_primitive_attribute_semantic_from_string(string.c_str());
+		if(semantic.has_value()) {
+			MeshPrimitiveAttribute& attribute = dest.attributes.emplace_back();
+			attribute.semantic = *semantic;
+			attribute.accessor = accessor;
+		}
 	}
 	get_opt(dest.indices, src, "indices");
 	get_opt(dest.material, src, "material");
@@ -508,8 +516,8 @@ static Json write_mesh_primitive(const MeshPrimitive& src) {
 	Json dest = Json::object();
 	Json& attributes = dest["attributes"];
 	attributes = Json::object();
-	for(auto& [name, index] : src.attributes) {
-		attributes.emplace(name, index);
+	for(auto& [semantic, accessor] : src.attributes) {
+		attributes.emplace(mesh_primitive_attribute_semantic_to_string(semantic), accessor);
 	}
 	set_opt(dest, "indices", src.indices);
 	set_opt(dest, "material", src.material);
@@ -653,6 +661,30 @@ static Json write_buffer(const Buffer& src) {
 	set_opt(dest, "name", src.name);
 	set_opt(dest, "uri", src.uri);
 	return dest;
+}
+
+static const char* mesh_primitive_attribute_semantic_to_string(MeshPrimitiveAttributeSemantic semantic) {
+	switch(semantic) {
+		case POSITION: return "POSITION";
+		case NORMAL: return "NORMAL";
+		case TANGENT: return "TANGENT";
+		case TEXCOORD_0: return "TEXCOORD_0";
+		case COLOR_0: return "COLOR_0";
+		case JOINTS_0: return "JOINTS_0";
+		case WEIGHTS_0: return "WEIGHTS_0";
+	}
+	return "";
+}
+
+static Opt<MeshPrimitiveAttributeSemantic> mesh_primitive_attribute_semantic_from_string(const char* string) {
+	if(strcmp(string, "POSITION") == 0) return POSITION;
+	if(strcmp(string, "NORMAL") == 0) return NORMAL;
+	if(strcmp(string, "TANGENT") == 0) return TANGENT;
+	if(strcmp(string, "TEXCOORD_0") == 0) return TEXCOORD_0;
+	if(strcmp(string, "COLOR_0") == 0) return COLOR_0;
+	if(strcmp(string, "JOINTS_0") == 0) return JOINTS_0;
+	if(strcmp(string, "WEIGHTS_0") == 0) return WEIGHTS_0;
+	return std::nullopt;
 }
 
 }
