@@ -46,26 +46,21 @@ struct Node {
 	Opt<std::string> name;
 };
 
-struct AnimationChannelTarget {
-	Opt<s32> node;
-	std::string path;
+struct AnimationAttributes {
+	glm::vec3 translation = {0.f, 0.f, 0.f};
+	glm::vec4 rotation = {0.f, 0.f, 0.f, 0.f};
+	glm::vec3 scale = {0.f, 0.f, 0.f};
 };
 
-struct AnimationChannel {
-	s32 sampler;
-	AnimationChannelTarget target;
-};
-
-struct AnimationSampler {
-	s32 input;
-	Opt<std::string> interpolation;
-	s32 output;
+struct AnimationChannelGroup {
+	s32 node;
+	std::vector<AnimationAttributes> frames;
 };
 
 struct Animation {
-	std::vector<AnimationChannel> channels;
-	std::vector<AnimationSampler> samplers;
 	Opt<std::string> name;
+	std::vector<AnimationChannelGroup> channel_groups;
+	std::vector<f32> sampler_input;
 };
 
 struct TextureInfo {
@@ -93,24 +88,19 @@ struct Material {
 	// unimplemented: doubleSided
 };
 
-enum MeshPrimitiveAttributeSemantic {
-	POSITION,
-	NORMAL,
-	TANGENT,
-	TEXCOORD_0,
-	COLOR_0,
-	JOINTS_0,
-	WEIGHTS_0
-};
-
-struct MeshPrimitiveAttribute {
-	MeshPrimitiveAttributeSemantic semantic;
-	s32 accessor;
+enum MeshPrimitiveAttribute {
+	POSITION = 1 << 0,
+	TEXCOORD_0 = 1 << 1,
+	NORMAL = 1 << 2,
+	COLOR_0 = 1 << 3,
+	JOINTS_0 = 1 << 4,
+	WEIGHTS_0 = 1 << 5
 };
 
 struct MeshPrimitive {
-	std::vector<MeshPrimitiveAttribute> attributes;
-	Opt<s32> indices;
+	std::vector<Vertex> vertices;
+	u32 attributes_bitfield = 0;
+	std::vector<u32> indices;
 	Opt<s32> material;
 	Opt<s32> mode;
 	// unimplemented: targets
@@ -136,47 +126,10 @@ struct Image {
 };
 
 struct Skin {
-	Opt<s32> inverse_bind_matrices;
+	std::vector<glm::mat4> inverse_bind_matrices;
 	Opt<s32> skeleton;
 	std::vector<s32> joints;
 	Opt<std::string> name;
-};
-
-enum AccessorComponentType {
-	SIGNED_BYTE = 5120,
-	UNSIGNED_BYTE = 5121,
-	SIGNED_SHORT = 5122,
-	UNSIGNED_SHORT = 5123,
-	UNSIGNED_INT= 5125,
-	FLOAT = 5126
-};
-
-enum AccessorType {
-	SCALAR,
-	VEC2,
-	VEC3,
-	VEC4,
-	MAT2,
-	MAT3,
-	MAT4
-};
-
-enum BufferViewTarget {
-	ARRAY_BUFFER = 34962,
-	ELEMENT_ARRAY_BUFFER = 34963
-};
-
-struct Accessor {
-	std::vector<u8> bytes;
-	AccessorComponentType component_type;
-	Opt<bool> normalized;
-	s32 count;
-	AccessorType type;
-	std::vector<f32> max;
-	std::vector<f32> min;
-	// unimplemented: sparse
-	Opt<std::string> name;
-	Opt<BufferViewTarget> target;
 };
 
 struct Sampler {
@@ -203,7 +156,6 @@ struct ModelFile {
 	std::vector<Texture> textures;
 	std::vector<Image> images;
 	std::vector<Skin> skins;
-	std::vector<Accessor> accessors;
 	std::vector<Sampler> samplers;
 };
 
