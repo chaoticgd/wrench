@@ -24,6 +24,7 @@
 #include <glm/glm.hpp>
 
 #include <wtf/wtf.h>
+#include <core/gltf.h>
 #include <core/util.h>
 #include <core/stream.h>
 #include <core/collada.h>
@@ -83,6 +84,7 @@ struct FileReference {
 };
 
 std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs);
+std::vector<GLTF::ModelFile*> read_glb_files(std::vector<std::unique_ptr<GLTF::ModelFile>>& owners, std::vector<FileReference> refs);
 
 enum AssetAccessorMode {
 	DO_NOT_SWITCH_FILES,

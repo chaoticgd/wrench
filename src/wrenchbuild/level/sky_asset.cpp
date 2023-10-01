@@ -21,6 +21,7 @@
 #include <core/png.h>
 #include <core/collada.h>
 #include <engine/sky.h>
+#include <toolwads/wads.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
@@ -29,7 +30,7 @@
 
 static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config);
 static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config);
-static void unpack_sky_textures(ColladaScene& scene, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky);
+static void unpack_sky_textures(GLTF::ModelFile& gltf, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky);
 static std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src);
 static bool test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 
@@ -62,16 +63,31 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	
 	CollectionAsset& shells = dest.shells();
 	
-	ColladaScene scene;
-	unpack_sky_textures(scene, dest.fx(), dest.materials(), sky);
+	const char* application_version;
+	if(strlen(wadinfo.build.version_string) > 0) {
+		application_version = wadinfo.build.version_string;
+	} else {
+		application_version = wadinfo.build.commit_string;
+	}
+	std::string generator = stringf("Wrench Build Tool %s", application_version);
+	auto [gltf, scene] = GLTF::create_default_scene(generator.c_str());
+	unpack_sky_textures(gltf, dest.fx(), dest.materials(), sky);
 	
 	// Copy all the meshes into the scene.
 	for(size_t i = 0; i < sky.shells.size(); i++) {
 #ifdef SEPERATE_SKY_CLUSTERS
 		SkyShell& shell = sky.shells[i];
 		for(size_t j = 0; j < shell.clusters.size(); j++) {
-			shell.clusters[j].name = stringf("shell%d_cluster%d", i, j);
-			scene.meshes.emplace_back(std::move(shell.clusters[j]));
+			std::string name = stringf("shell%d_cluster%d", i, j);
+			
+			scene->nodes.emplace_back((s32) gltf.nodes.size());
+			
+			GLTF::Node& node = gltf.nodes.emplace_back();
+			node.name = name;
+			node.mesh = (s32) gltf.meshes.size();
+			
+			shell.clusters[j].name = name;
+			gltf.meshes.emplace_back(std::move(shell.clusters[j]));
 		}
 #else
 		u32 flags = MESH_HAS_VERTEX_COLOURS | MESH_HAS_TEX_COORDS;
@@ -80,21 +96,20 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 #endif
 	}
 	
-	// Convert from texture indices to material indices.
-	for(Mesh& mesh : scene.meshes) {
-		for(SubMesh& submesh : mesh.submeshes) {
-			if(submesh.material > -1) {
-				submesh.material += 1 - (s32) sky.fx.size();
+	for(GLTF::Mesh& mesh : gltf.meshes) {
+		for(GLTF::MeshPrimitive& primitive : mesh.primitives) {
+			if(primitive.material.has_value()) {
+				*primitive.material -= sky.fx.size();
 			} else {
-				submesh.material = 0;
+				primitive.material = (s32) sky.texture_mappings.size() - sky.fx.size();
 			}
 		}
 	}
 	
-	// Write out the COLLADA file.
-	std::vector<u8> collada = write_collada(scene);
-	auto [stream, ref] = dest.file().open_binary_file_for_writing("mesh.dae");
-	stream->write_v(collada);
+	// Write out the GLB file.
+	std::vector<u8> glb = GLTF::write_glb(gltf);
+	auto [stream, ref] = dest.file().open_binary_file_for_writing("mesh.glb");
+	stream->write_v(glb);
 	
 	// Create the assets for the shells and clusters.
 	for(size_t i = 0; i < sky.shells.size(); i++) {
@@ -158,8 +173,8 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	});
 	
 	// Read all the referenced meshes, avoiding duplicated work where possible.
-	std::vector<std::unique_ptr<ColladaScene>> owners;
-	std::vector<ColladaScene*> scenes = read_collada_files(owners, refs);
+	std::vector<std::unique_ptr<GLTF::ModelFile>> owners;
+	std::vector<GLTF::ModelFile*> gltfs = read_glb_files(owners, refs);
 	
 	// Setup all the textures.
 	std::map<std::string, s32> material_to_texture = pack_sky_textures(sky, src);
@@ -169,18 +184,19 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	src.get_shells().for_each_logical_child_of_type<SkyShellAsset>([&](const SkyShellAsset& shell_asset) {
 		shell_asset.get_mesh().for_each_logical_child_of_type<MeshAsset>([&](const MeshAsset& asset) {
 			std::string name = asset.name();
-			ColladaScene& scene = *scenes.at(i++);
-			Mesh* mesh_ptr = scene.find_mesh(name);
+			GLTF::ModelFile& gltf = *gltfs.at(i++);
+			GLTF::Mesh* mesh_ptr = GLTF::lookup_mesh(gltf, name.c_str());
 			verify(mesh_ptr, "Cannot find mesh '%s'.", name.c_str());
-			Mesh mesh = *mesh_ptr;
-			for(SubMesh& submesh : mesh.submeshes) {
-				if(submesh.material > -1) {
-					std::string& material_name = scene.materials.at(submesh.material).name;
-					auto mapping = material_to_texture.find(material_name);
+			GLTF::Mesh mesh = *mesh_ptr;
+			for(GLTF::MeshPrimitive& primitive : mesh.primitives) {
+				if(primitive.material.has_value()) {
+					Opt<std::string>& material_name = gltf.materials.at(*primitive.material).name;
+					verify(material_name.has_value(), "Material %d has no name.\n", *primitive.material);
+					auto mapping = material_to_texture.find(*material_name);
 					if(mapping != material_to_texture.end()) {
-						submesh.material = mapping->second;
+						primitive.material = mapping->second;
 					} else {
-						submesh.material = -1;
+						primitive.material = std::nullopt;
 					}
 				}
 			}
@@ -194,41 +210,56 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	dest.write_v(buffer);
 }
 
-static void unpack_sky_textures(ColladaScene& scene, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky) {
+static void unpack_sky_textures(GLTF::ModelFile& gltf, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky) {
 	std::vector<FileReference> texture_refs;
 	
 	// Write out the textures.
 	for(s32 i = 0; i < (s32) sky.textures.size(); i++) {
 		auto [stream, ref] = materials.file().open_binary_file_for_writing(stringf("%d.png", i));
 		write_png(*stream, sky.textures[i]);
-		scene.texture_paths.emplace_back(ref.path.string());
+		GLTF::Image& image = gltf.images.emplace_back();
+		image.uri = ref.path.string();
+		image.mime_type = "image/png";
 		texture_refs.emplace_back(std::move(ref));
 	}
 	
-	// Create the placeholder material for untextured shells.
-	ColladaMaterial& gouraud = scene.materials.emplace_back();
-	gouraud.name = "gouraud";
-	gouraud.surface = MaterialSurface(glm::vec4(1.f, 0.f, 1.f, 1.f));
-	
-	MaterialAsset& gouraud_asset = materials.child<MaterialAsset>("gouraud");
-	gouraud_asset.set_name("gouraud");
-	
-	// Create fx texture assets.
 	for(s32 i = 0; i < (s32) sky.fx.size(); i++) {
 		TextureAsset& texture = fx.child<TextureAsset>(i);
-		texture.set_src(texture_refs.at(sky.texture_mappings.at(sky.fx[i])));
+		texture.set_src(texture_refs.at(sky.texture_mappings.at(i)));
 	}
 	
 	// Create shell material assets.
 	for(s32 i = (s32) sky.fx.size(); i < (s32) sky.texture_mappings.size(); i++) {
-		ColladaMaterial& mat = scene.materials.emplace_back();
-		mat.name = stringf("material_%d", i - (s32) sky.fx.size());
-		mat.surface = MaterialSurface(sky.texture_mappings[i]);
+		GLTF::Material& material = gltf.materials.emplace_back();
+		material.name = stringf("material_%d", i - (s32) sky.fx.size());
+		material.pbr_metallic_roughness.emplace();
+		material.pbr_metallic_roughness->base_color_texture.emplace();
+		material.pbr_metallic_roughness->base_color_texture->index = (s32) gltf.textures.size();
+		material.alpha_mode = GLTF::BLEND;
+		material.double_sided = true;
+		
+		GLTF::Texture& texture = gltf.textures.emplace_back();
+		texture.source = sky.texture_mappings[i];
 		
 		MaterialAsset& asset = materials.child<MaterialAsset>(i);
-		asset.set_name(mat.name);
+		asset.set_name(*material.name);
 		asset.diffuse().set_src(texture_refs.at(sky.texture_mappings[i]));
 	}
+	
+	// Create the placeholder material for untextured shells.
+	GLTF::Material& gouraud = gltf.materials.emplace_back();
+	gouraud.name = "gouraud";
+	gouraud.pbr_metallic_roughness.emplace();
+	gouraud.pbr_metallic_roughness->base_color_factor.emplace();
+	gouraud.pbr_metallic_roughness->base_color_factor->r = sky.colour.r / 255.f;
+	gouraud.pbr_metallic_roughness->base_color_factor->g = sky.colour.g / 255.f;
+	gouraud.pbr_metallic_roughness->base_color_factor->b = sky.colour.b / 255.f;
+	gouraud.pbr_metallic_roughness->base_color_factor->a = sky.colour.a / 255.f;
+	gouraud.alpha_mode = GLTF::BLEND;
+	gouraud.double_sided = true;
+	
+	MaterialAsset& gouraud_asset = materials.child<MaterialAsset>("gouraud");
+	gouraud_asset.set_name("gouraud");
 }
 
 struct TextureLoad {

@@ -20,7 +20,7 @@ Features currently include:
 	- Unpack tie meshes as COLLADA files.
 	- Pack/unpack collision meshes as COLLADA files.
 	- Pack/unpack shrub meshes as COLLADA files.
-	- Pack/unpack sky meshes as COLLADA files.
+	- Pack/unpack sky models as binary glTF files\*.
 	- Pack/unpack textures as PNG files.
 	- **New in v0.4!** Pack/unpack packed executables and level overlays as ELF files.
 	- Pack/unpack everything else as binary files.
@@ -40,6 +40,8 @@ Features currently include:
 - **New in v0.4!** Visibility Tool
 	- Rebuild occlusion data for levels on demand.
 	- Implemented as an OpenGL renderer.
+
+\* In version 0.4 or lower COLLADA was used instead.
 
 ## Screenshots
 

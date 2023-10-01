@@ -21,17 +21,16 @@
 
 #include <tuple>
 
+#include <core/gltf.h>
 #include <core/buffer.h>
-#include <core/collada.h>
 #include <core/texture.h>
 #include <core/build_config.h>
 #include <engine/basic_types.h>
 
 struct SkyShell {
 	// The material field in these meshes is actually the texture header index
-	// which is -1 for untextured meshes. These have to be rewritten before
-	// being passed to the COLLADA exporter.
-	std::vector<Mesh> clusters;
+	// which is std::nullopt for untextured meshes.
+	std::vector<GLTF::Mesh> clusters;
 	bool textured = false;
 	bool bloom = false;
 	glm::vec3 rotation = {0.f, 0.f, 0.f};
@@ -115,11 +114,11 @@ packed_struct(SkyTexCoord,
 
 packed_struct(SkyFace,
 	/* 0x0 */ u8 indices[3];
-	/* 0x3 */ s8 texture;
+	/* 0x3 */ u8 texture;
 )
 
 Sky read_sky(Buffer src, Game game, f32 framerate);
 void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate);
-std::vector<Mesh> generate_clusters(const Mesh& mesh);
+std::vector<GLTF::Mesh> generate_clusters(const GLTF::Mesh& mesh);
 
 #endif

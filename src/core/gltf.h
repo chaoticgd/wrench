@@ -16,6 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef CORE_GLTF_H
+#define CORE_GLTF_H
+
 #include <core/buffer.h>
 #include <core/mesh.h>
 
@@ -69,11 +72,17 @@ struct TextureInfo {
 };
 
 struct MaterialPbrMetallicRoughness {
-	// unimplemented: baseColorFactor
+	Opt<glm::vec4> base_color_factor;
 	Opt<TextureInfo> base_color_texture;
 	// unimplemented: metallicFactor
 	// unimplemented: roughnessFactor
 	// unimplemented: metallicRoughnessTexture
+};
+
+enum MaterialAlphaMode {
+	OPAQUE,
+	MASK,
+	BLEND
 };
 
 struct Material {
@@ -83,9 +92,9 @@ struct Material {
 	// unimplemented: occlusionTexture
 	// unimplemented: emissiveTexture
 	// unimplemented: emissiveFactor
-	// unimplemented: alphaMode
+	Opt<MaterialAlphaMode> alpha_mode;
 	// unimplemented: alphaCutoff
-	// unimplemented: doubleSided
+	Opt<bool> double_sided;
 };
 
 enum MeshPrimitiveAttribute {
@@ -151,15 +160,31 @@ struct ModelFile {
 	std::vector<Node> nodes;
 	// unimplemented: cameras
 	std::vector<Animation> animations;
-	std::vector<Material> materials;
 	std::vector<Mesh> meshes;
+	std::vector<Material> materials;
 	std::vector<Texture> textures;
 	std::vector<Image> images;
-	std::vector<Skin> skins;
 	std::vector<Sampler> samplers;
+	std::vector<Skin> skins;
 };
 
+struct DefaultScene {
+	ModelFile gltf;
+	Scene* scene;
+};
+
+// Create a model file with a single scene, node, and mesh in it.
+DefaultScene create_default_scene(const char* generator);
+
+GLTF::Mesh* lookup_mesh(GLTF::ModelFile& gltf, const char* name);
+GLTF::Material* lookup_material(GLTF::ModelFile& gltf, const char* name);
+
+// Parse a .glb file from memory.
 ModelFile read_glb(Buffer src);
-void write_glb(OutBuffer dest, const ModelFile& gltf);
+
+// Create a .glb file in memory.
+std::vector<u8> write_glb(const ModelFile& gltf);
 
 }
+
+#endif

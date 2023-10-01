@@ -2,6 +2,7 @@
 
 ## v0.5
 
+- Use glTF (.glb) to store the sky models instead of COLLADA.
 - Added a collision fixer tool in the editor to recover instanced collision for ties and shrubs semi-automatically.
 - Added proper 3D transformation gizmos in the editor for translation, rotation and scaling.
 

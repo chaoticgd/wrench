@@ -194,9 +194,38 @@ static void write_array(Json& dest, const char* property, const std::vector<Elem
 static Opt<MeshPrimitiveAttribute> mesh_primitive_attribute_from_string(const char* string);
 static const char* accessor_type_to_string(AccessorType type);
 static Opt<AccessorType> accessor_type_from_string(const char* string);
+static const char* material_alpha_mode_to_string(MaterialAlphaMode alpha_mode);
+static Opt<MaterialAlphaMode> material_alpha_mode_from_string(const char* string);
 static s32 accessor_attribute_size(const Accessor& accessor);
 static s32 accessor_component_size(AccessorComponentType component_type);
 static s32 accessor_component_count(AccessorType type);
+
+DefaultScene create_default_scene(const char* generator) {
+	DefaultScene result;
+	result.gltf.asset.generator = generator;
+	result.gltf.asset.version = "2.0";
+	result.gltf.scene = 0;
+	result.scene = &result.gltf.scenes.emplace_back();
+	return result;
+}
+
+GLTF::Mesh* lookup_mesh(GLTF::ModelFile& gltf, const char* name) {
+	for(Mesh& mesh : gltf.meshes) {
+		if(mesh.name.has_value() && strcmp(mesh.name->c_str(), name) == 0) {
+			return &mesh;
+		}
+	}
+	return nullptr;
+}
+
+GLTF::Material* lookup_material(GLTF::ModelFile& gltf, const char* name) {
+	for(GLTF::Material& material : gltf.materials) {
+		if(material.name.has_value() && strcmp(material.name->c_str(), name) == 0) {
+			return &material;
+		}
+	}
+	return nullptr;
+}
 
 #define FOURCC(string) ((string)[0] | (string)[1] << 8 | (string)[2] << 16 | (string)[3] << 24)
 
@@ -234,7 +263,10 @@ ModelFile read_glb(Buffer src) {
 	return gltf;
 }
 
-void write_glb(OutBuffer dest, const ModelFile& gltf) {
+std::vector<u8> write_glb(const ModelFile& gltf) {
+	std::vector<u8> result;
+	OutBuffer dest(result);
+	
 	std::vector<u8> bin_chunk;
 	Json root = write_gltf(gltf, bin_chunk);
 	
@@ -263,6 +295,8 @@ void write_glb(OutBuffer dest, const ModelFile& gltf) {
 	for(size_t i = bin_chunk.size(); (i % 4) != 0; i++) {
 		dest.write<u8>(0);
 	}
+	
+	return result;
 }
 
 // *****************************************************************************
@@ -385,6 +419,18 @@ static Json write_node(const Node& src) {
 // Meshes
 // *****************************************************************************
 
+static const glm::mat3 GLTF_TO_RATCHET_MATRIX = {
+	0, 1, 0,
+	0, 0, 1,
+	1, 0, 0
+};
+
+static const glm::mat3 RATCHET_TO_GLTF_MATRIX = {
+	0, 0, 1,
+	1, 0, 0,
+	0, 1, 0
+};
+
 static Mesh read_mesh(const Json& src, const std::vector<Accessor>& accessors) {
 	Mesh dest;
 	get_opt(dest.name, src, "name");
@@ -446,7 +492,7 @@ static bool read_attribute(Vertex* dest, MeshPrimitiveAttribute semantic, const 
 			verify(accessor.type == VEC3 && accessor.component_type == FLOAT,
 				"POSITION attribute is not a VEC3 of FLOAT components.");
 			for(size_t i = 0; i < accessor.count; i++) {
-				dest[i].pos = *(glm::vec3*) &accessor.bytes[i * sizeof(glm::vec3)];
+				dest[i].pos = GLTF_TO_RATCHET_MATRIX * *(glm::vec3*) &accessor.bytes[i * sizeof(glm::vec3)];
 			}
 			break;
 		}
@@ -504,23 +550,23 @@ static Json write_attributes(const MeshPrimitive& src, std::vector<Accessor>& ac
 		Accessor& accessor = accessors.emplace_back();
 		accessor.bytes.resize(src.vertices.size() * sizeof(glm::vec3));
 		for(size_t i = 0; i < src.vertices.size(); i++) {
-			*(glm::vec3*) &accessor.bytes[i * sizeof(glm::vec3)] = src.vertices[i].pos;
+			*(glm::vec3*) &accessor.bytes[i * sizeof(glm::vec3)] = RATCHET_TO_GLTF_MATRIX * src.vertices[i].pos;
 		}
 		accessor.component_type = FLOAT;
 		accessor.count = (s32) src.vertices.size();
 		accessor.type = VEC3;
 		if(!src.vertices.empty()) {
 			for(s32 i = 0; i < 3; i++) {
-				f32 max = std::numeric_limits<float>::min();
-				for(const Vertex& vertex : src.vertices) {
-					max = std::max(vertex.pos[i], max);
+				f32 max = std::numeric_limits<f32>::min();
+				for(size_t j = 0; j < src.vertices.size(); j++) {
+					max = std::max(*(f32*) &accessor.bytes[j * sizeof(glm::vec3) + i * 4], max);
 				}
 				accessor.max.emplace_back(max);
 			}
 			for(s32 i = 0; i < 3; i++) {
-				f32 min = std::numeric_limits<float>::max();
-				for(const Vertex& vertex : src.vertices) {
-					min = std::min(vertex.pos[i], min);
+				f32 min = std::numeric_limits<f32>::max();
+				for(size_t j = 0; j < src.vertices.size(); j++) {
+					min = std::min(*(f32*) &accessor.bytes[j * sizeof(glm::vec3) + i * 4], min);
 				}
 				accessor.min.emplace_back(min);
 			}
@@ -562,6 +608,7 @@ static Json write_attributes(const MeshPrimitive& src, std::vector<Accessor>& ac
 			accessor.bytes[i * 4 + 3] = src.vertices[i].colour.a;
 		}
 		accessor.component_type = UNSIGNED_BYTE;
+		accessor.normalized = true;
 		accessor.count = (s32) src.vertices.size();
 		accessor.type = VEC4;
 		accessor.target = ARRAY_BUFFER;
@@ -590,6 +637,7 @@ static Json write_attributes(const MeshPrimitive& src, std::vector<Accessor>& ac
 			accessor.bytes[i * 4 + 2] = src.vertices[i].skin.weights[2];
 		}
 		accessor.component_type = UNSIGNED_BYTE;
+		accessor.normalized = true;
 		accessor.count = (s32) src.vertices.size();
 		accessor.type = VEC4;
 		accessor.target = ARRAY_BUFFER;
@@ -847,19 +895,33 @@ static Material read_material(const Json& src) {
 		dest.pbr_metallic_roughness.emplace();
 		read_object(*dest.pbr_metallic_roughness, src, "pbrMetallicRoughness", read_material_pbr_metallic_roughness);
 	}
+	Opt<std::string> alpha_mode_string;
+	get_opt(alpha_mode_string, src, "alphaMode");
+	if(alpha_mode_string.has_value()) {
+		Opt<MaterialAlphaMode> alpha_mode = material_alpha_mode_from_string(alpha_mode_string->c_str());
+		verify(alpha_mode.has_value(), "Material has unknown alpha mode '%s'.", alpha_mode_string->c_str());
+		dest.alpha_mode = *alpha_mode;
+	}
+	get_opt(dest.double_sided, src, "doubleSided");
 	return dest;
 }
 
 static Json write_material(const Material& src) {
 	Json dest = Json::object();
+	set_opt(dest, "name", src.name);
 	if(src.pbr_metallic_roughness.has_value()) {
 		write_object(dest, "pbrMetallicRoughness", *src.pbr_metallic_roughness, write_material_pbr_metallic_roughness);
 	}
+	if(src.alpha_mode.has_value()) {
+		set_opt(dest, "alphaMode", Opt<const char*>(material_alpha_mode_to_string(*src.alpha_mode)));
+	}
+	set_opt(dest, "doubleSided", src.double_sided);
 	return dest;
 }
 
 static MaterialPbrMetallicRoughness read_material_pbr_metallic_roughness(const Json& src) {
 	MaterialPbrMetallicRoughness dest;
+	get_vec(dest.base_color_factor, src, "baseColorFactor");
 	if(src.contains("baseColorTexture")) {
 		dest.base_color_texture.emplace();
 		read_object(*dest.base_color_texture, src, "baseColorTexture", read_texture_info);
@@ -869,6 +931,7 @@ static MaterialPbrMetallicRoughness read_material_pbr_metallic_roughness(const J
 
 static Json write_material_pbr_metallic_roughness(const MaterialPbrMetallicRoughness& src) {
 	Json dest = Json::object();
+	set_vec(dest, "baseColorFactor", src.base_color_factor);
 	if(src.base_color_texture.has_value()) {
 		write_object(dest, "baseColorTexture", *src.base_color_texture, write_texture_info);
 	}
@@ -1287,6 +1350,26 @@ static Json write_accessor(const Accessor& src, std::vector<GLTFBufferView>& buf
 	set_opt(dest, "normalized", src.normalized);
 	set_req(dest, "type", accessor_type_to_string(src.type));
 	
+	s32 alignment = 1;
+	switch(src.component_type) {
+		case SIGNED_BYTE:
+		case UNSIGNED_BYTE: {
+			alignment = 1;
+			break;
+		}
+		case SIGNED_SHORT:
+		case UNSIGNED_SHORT: {
+			alignment = 2;
+			break;
+		}
+		case UNSIGNED_INT:
+		case FLOAT: {
+			alignment = 4;
+			break;
+		}
+	}
+	bin_chunk.pad(alignment, 0);
+	
 	GLTFBufferView& buffer_view = buffer_views.emplace_back();
 	buffer_view.buffer = 0;
 	buffer_view.byte_offset = (s32) bin_chunk.tell();
@@ -1494,6 +1577,22 @@ static Opt<AccessorType> accessor_type_from_string(const char* string) {
 	if(strcmp(string, "MAT2") == 0) return MAT2;
 	if(strcmp(string, "MAT3") == 0) return MAT3;
 	if(strcmp(string, "MAT4") == 0) return MAT4;
+	return std::nullopt;
+}
+
+static const char* material_alpha_mode_to_string(MaterialAlphaMode alpha_mode) {
+	switch(alpha_mode) {
+		case OPAQUE: return "OPAQUE";
+		case MASK: return "MASK";
+		case BLEND: return "BLEND";
+	}
+	return "";
+}
+
+static Opt<MaterialAlphaMode> material_alpha_mode_from_string(const char* string) {
+	if(strcmp(string, "OPAQUE") == 0) return OPAQUE;
+	if(strcmp(string, "MASK") == 0) return MASK;
+	if(strcmp(string, "BLEND") == 0) return BLEND;
 	return std::nullopt;
 }
 

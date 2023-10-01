@@ -20,6 +20,7 @@
 
 #include <core/vif.h>
 #include <core/mesh.h>
+#include <core/algorithm.h>
 
 static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game);
 static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game);
@@ -27,8 +28,8 @@ static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 fr
 static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate);
 static f32 rotation_to_radians_per_second(s16 angle, f32 framerate);
 static s16 rotation_from_radians_per_second(f32 angle, f32 framerate);
-static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured);
-static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Mesh& cluster);
+static GLTF::Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured);
+static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const GLTF::Mesh& cluster);
 
 Sky read_sky(Buffer src, Game game, f32 framerate) {
 	Sky sky;
@@ -216,61 +217,107 @@ static s16 rotation_from_radians_per_second(f32 angle, f32 framerate) {
 	return (u16) roundf(angle * ((32768.f / (2.f * WRENCH_PI)) / framerate));
 }
 
-static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured) {
-	Mesh cluster;
-	cluster.flags |= MESH_HAS_VERTEX_COLOURS | MESH_HAS_TEX_COORDS;
+static GLTF::Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured) {
+	GLTF::Mesh cluster;
 	
 	SkyClusterHeader header = src.read<SkyClusterHeader>(offset, "sky cluster header");
 	
 	//printf("clustinfo :: size=%04d, verts=%04d, tris=%04d\n", header.data_size, header.vertex_count, header.tri_count);
 	
-	auto vertices = src.read_multiple<SkyVertex>(header.data + header.vertex_offset, header.vertex_count, "vertex positions");
+	std::vector<Vertex> vertices(header.vertex_count);
+	auto sky_vertices = src.read_multiple<SkyVertex>(header.data + header.vertex_offset, header.vertex_count, "vertex positions");
 	auto sts = src.read_multiple<SkyTexCoord>(header.data + header.st_offset, header.vertex_count, "texture coordinates");
 	for(s32 i = 0; i < header.vertex_count; i++) {
-		f32 x = vertices[i].x * (1 / 1024.f);
-		f32 y = vertices[i].y * (1 / 1024.f);
-		f32 z = vertices[i].z * (1 / 1024.f);
-		f32 s = vu_fixed12_to_float(sts[i].s);
-		f32 t = vu_fixed12_to_float(sts[i].t);
-		ColourAttribute colour = {255, 255, 255};
-		if(vertices[i].alpha == 0x80) {
-			colour.a = 0xff;
+		vertices[i].pos.x = sky_vertices[i].x * (1 / 1024.f);
+		vertices[i].pos.y = sky_vertices[i].y * (1 / 1024.f);
+		vertices[i].pos.z = sky_vertices[i].z * (1 / 1024.f);
+		vertices[i].tex_coord.s = vu_fixed12_to_float(sts[i].s);
+		vertices[i].tex_coord.t = vu_fixed12_to_float(sts[i].t);
+		vertices[i].colour.r = 255;
+		vertices[i].colour.g = 255;
+		vertices[i].colour.b = 255;
+		if(sky_vertices[i].alpha == 0x80) {
+			vertices[i].colour.a = 255;
 		} else {
-			colour.a = vertices[i].alpha * 2;
+			vertices[i].colour.a = sky_vertices[i].alpha * 2;
 		}
-		cluster.vertices.emplace_back(glm::vec3(x, y, z), colour, glm::vec2(s, t));
 	}
 	
-	SubMesh* submesh = nullptr;
-	if(cluster.submeshes.size() >= 1) {
-		submesh = &cluster.submeshes.back();
-	}
-	
-	s32 last_submesh_material = 0;
+	GLTF::MeshPrimitive* primitive = nullptr;
+	Opt<s32> last_material = 0;
+	s32 vertex_primitives[256];
+	s32 vertex_dest_indices[256];
+	s32 primitive_index = 0;
+	memset(vertex_primitives, 0, sizeof(vertex_primitives));
 	
 	auto faces = src.read_multiple<SkyFace>(header.data + header.tri_offset, header.tri_count, "faces");
 	for(const SkyFace& face : faces) {
-		if(submesh == nullptr || face.texture != last_submesh_material) {
-			verify(face.texture < texture_count, "Sky has bad texture data.");
-			submesh = &cluster.submeshes.emplace_back();
-			submesh->material = face.texture;
+		if(primitive == nullptr || face.texture != last_material) {
+			primitive = &cluster.primitives.emplace_back();
+			primitive->attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::COLOR_0;
+			if(face.texture != 0xff) {
+				verify(face.texture < texture_count, "Sky has bad texture data.");
+				primitive->material = face.texture;
+			}
+			last_material = face.texture;
+			primitive_index++;
 		}
-		last_submesh_material = submesh->material;
 		
-		submesh->faces.emplace_back(face.indices[0], face.indices[1], face.indices[2]);
+		// Make sure we're only adding vertices we need to to each primitive.
+		s32 indices[3];
+		for(s32 i = 0; i < 3; i++) {
+			if(vertex_primitives[face.indices[i]] == primitive_index) {
+				indices[i] = vertex_dest_indices[face.indices[i]];
+			} else {
+				indices[i] = (s32) primitive->vertices.size();
+				primitive->vertices.emplace_back(vertices.at(face.indices[i]));
+				vertex_primitives[face.indices[i]] = primitive_index;
+				vertex_dest_indices[face.indices[i]] = indices[i];
+			}
+		}
+		
+		// Reverse the winding order.
+		primitive->indices.emplace_back(indices[2]);
+		primitive->indices.emplace_back(indices[1]);
+		primitive->indices.emplace_back(indices[0]);
 	}
 	
 	return cluster;
 }
 
-static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Mesh& cluster) {
-	header.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(cluster.vertices));
-	header.vertex_count = cluster.vertices.size();
+static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const GLTF::Mesh& cluster) {
+	std::vector<Vertex> vertices;
+	std::vector<s32> submesh_base_indices;
+	submesh_base_indices.reserve(cluster.primitives.size());
+	for(const GLTF::MeshPrimitive& primitive : cluster.primitives) {
+		submesh_base_indices.emplace_back((s32) vertices.size());
+		vertices.insert(vertices.end(), BEGIN_END(primitive.vertices));
+	}
+	
+	std::vector<s32> canonical_vertices(vertices.size());
+	mark_duplicates(vertices,
+		[](const Vertex& lhs, const Vertex& rhs) { return (lhs < rhs) ? -1 : 0; },
+		[&](s32 index, s32 canonical) { canonical_vertices[index] = canonical; });
+	
+	std::vector<Vertex> unique_vertices;
+	for(s32 i = 0; i < (s32) vertices.size(); i++) {
+		if(canonical_vertices[i] == i) {
+			canonical_vertices[i] = (s32) unique_vertices.size();
+			unique_vertices.emplace_back(vertices[i]);
+		} else {
+			canonical_vertices[i] = canonical_vertices[canonical_vertices[i]];
+		}
+	}
+	
+	verify(unique_vertices.size() <= INT16_MAX, "Too many vertices in a cluster.");
+	
+	header.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(unique_vertices));
+	header.vertex_count = (s16) unique_vertices.size();
 	
 	dest.pad(0x10);
 	header.data = dest.tell();
 	header.vertex_offset = dest.tell() - header.data;
-	for(const Vertex& src : cluster.vertices) {
+	for(const Vertex& src : unique_vertices) {
 		SkyVertex vertex;
 		vertex.x = (s16) roundf(src.pos.x * 1024.f);
 		vertex.y = (s16) roundf(src.pos.y * 1024.f);
@@ -285,7 +332,7 @@ static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Me
 	
 	dest.pad(0x4);
 	header.st_offset = dest.tell() - header.data;
-	for(const Vertex& src : cluster.vertices) {
+	for(const Vertex& src : unique_vertices) {
 		SkyTexCoord st;
 		st.s = vu_float_to_fixed12(src.tex_coord.x);
 		st.t = vu_float_to_fixed12(src.tex_coord.y);
@@ -294,30 +341,29 @@ static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Me
 	
 	dest.pad(0x4);
 	header.tri_offset = dest.tell() - header.data;
-	for(const SubMesh& submesh : cluster.submeshes) {
-		for(const Face& src : submesh.faces) {
-			verify(src.v0 < 256 && src.v1 < 256 && src.v2 < 256 && src.v3 < 256,
-				"Too many vertices in a single cluster.");
-			SkyFace face;
-			verify(submesh.material < 256, "Too many textures.");
-			face.texture = (u8) submesh.material;
-			if(src.is_quad()) {
-				face.indices[0] = (u8) src.v0;
-				face.indices[1] = (u8) src.v1;
-				face.indices[2] = (u8) src.v2;
-				dest.write(face);
-				face.indices[0] = (u8) src.v2;
-				face.indices[1] = (u8) src.v3;
-				face.indices[2] = (u8) src.v0;
-				dest.write(face);
-				header.tri_count += 2;
-			} else {
-				face.indices[0] = (u8) src.v0;
-				face.indices[1] = (u8) src.v1;
-				face.indices[2] = (u8) src.v2;
-				dest.write(face);
-				header.tri_count++;
+	for(size_t i = 0; i < cluster.primitives.size(); i++) {
+		const GLTF::MeshPrimitive& primitive = cluster.primitives[i];
+		s32 base_index = submesh_base_indices[i];
+		
+		for(size_t j = 0; j < primitive.indices.size() / 3; j++) {
+			s32 indices[3];
+			for(s32 k = 0; k < 3; k++) {
+				s32 local_index = primitive.indices[j * 3 + k];
+				indices[k] = canonical_vertices.at(base_index + local_index);
 			}
+			SkyFace face;
+			if(primitive.material.has_value()) {
+				verify(*primitive.material < 256, "Too many textures.");
+				face.texture = (u8) *primitive.material;
+			} else {
+				face.texture = 0xff;
+			}
+			// Reverse the winding order.
+			face.indices[0] = (u8) indices[2];
+			face.indices[1] = (u8) indices[1];
+			face.indices[2] = (u8) indices[0];
+			dest.write(face);
+			header.tri_count++;
 		}
 	}
 	

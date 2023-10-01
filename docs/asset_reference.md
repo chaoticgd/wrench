@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from asset_schema.wtf and is for version 26 of the asset format.
+This file was generated from asset_schema.wtf and is for version 27 of the asset format.
 
 ## Index
 

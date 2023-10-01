@@ -16,9 +16,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <algorithm>
+#include "mesh.h"
 
-#include <core/mesh.h>
+#include <limits>
+#include <algorithm>
 #include <core/timer.h>
 
 Mesh sort_vertices(Mesh src, bool (*compare)(const Vertex& lhs, const Vertex& rhs)) {
@@ -271,30 +272,56 @@ glm::vec4 approximate_bounding_sphere(const glm::mat4** cuboids, size_t cuboid_c
 }
 
 glm::vec4 approximate_bounding_sphere(const std::vector<Vertex>& vertices) {
-	if(vertices.size() == 0) {
+	BSphereVertexList list;
+	list.vertices = vertices.data();
+	list.vertex_count = vertices.size();
+	return approximate_bounding_sphere(&list, 1);
+}
+
+glm::vec4 approximate_bounding_sphere(const BSphereVertexList* vertex_lists, size_t vertex_list_count) {
+	size_t total_vertex_count = 0;
+	for(size_t i = 0; i < vertex_list_count; i++) {
+		total_vertex_count += vertex_lists[i].vertex_count;
+	}
+	
+	if(total_vertex_count == 0) {
 		return glm::vec4(0, 0, 0, 0);
 	}
 	
-	glm::vec3 min = vertices[0].pos;
-	for(const Vertex& vertex : vertices) {
-		min.x = std::min(vertex.pos.x, min.x);
-		min.y = std::min(vertex.pos.y, min.y);
-		min.z = std::min(vertex.pos.z, min.z);
+	glm::vec3 min = {
+		std::numeric_limits<f32>::max(),
+		std::numeric_limits<f32>::max(),
+		std::numeric_limits<f32>::max()
+	};
+	for(size_t i = 0; i < vertex_list_count; i++) {
+		for(size_t j = 0; j < vertex_lists[i].vertex_count; j++) {
+			min.x = std::min(vertex_lists[i].vertices[j].pos.x, min.x);
+			min.y = std::min(vertex_lists[i].vertices[j].pos.y, min.y);
+			min.z = std::min(vertex_lists[i].vertices[j].pos.z, min.z);
+		}
 	}
 	
-	glm::vec3 max = vertices[0].pos;
-	for(const Vertex& vertex : vertices) {
-		max.x = std::max(vertex.pos.x, max.x);
-		max.y = std::max(vertex.pos.y, max.y);
-		max.z = std::max(vertex.pos.z, max.z);
+	glm::vec3 max = {
+		std::numeric_limits<f32>::min(),
+		std::numeric_limits<f32>::min(),
+		std::numeric_limits<f32>::min()
+	};
+	for(size_t i = 0; i < vertex_list_count; i++) {
+		for(size_t j = 0; j < vertex_lists[i].vertex_count; j++) {
+			max.x = std::max(vertex_lists[i].vertices[j].pos.x, max.x);
+			max.y = std::max(vertex_lists[i].vertices[j].pos.y, max.y);
+			max.z = std::max(vertex_lists[i].vertices[j].pos.z, max.z);
+		}
 	}
 	
 	glm::vec3 centre = (min + max) / 2.f;
 	
 	f32 radius = 0.f;
-	for(const Vertex& vertex : vertices) {
-		glm::vec3 delta = vertex.pos - centre;
-		radius = std::max(sqrtf(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z), radius);
+	for(size_t i = 0; i < vertex_list_count; i++) {
+		for(size_t j = 0; j < vertex_lists[i].vertex_count; j++) {
+			glm::vec3 delta = vertex_lists[i].vertices[j].pos - centre;
+			radius = std::max(sqrtf(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z), radius);
+		}
 	}
 	
 	return glm::vec4(centre, radius);
