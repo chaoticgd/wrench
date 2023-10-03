@@ -170,9 +170,11 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 		const MeshAsset& asset = shell_asset.get_mesh();
 		std::string name = asset.name();
 		GLTF::ModelFile& gltf = *gltfs.at(shell);
-		GLTF::Mesh* mesh_ptr = GLTF::lookup_mesh(gltf, name.c_str());
-		verify(mesh_ptr, "Cannot find mesh '%s'.", name.c_str());
-		GLTF::Mesh mesh = *mesh_ptr;
+		GLTF::Node* node = GLTF::lookup_node(gltf, name.c_str());
+		verify(node, "Node '%s' not found.", name.c_str());
+		verify(node->mesh.has_value(), "Node '%s' has no mesh.", name.c_str());
+		verify(*node->mesh >= 0 && *node->mesh < gltf.meshes.size(), "Node '%s' has no invalid mesh index.", name.c_str());
+		GLTF::Mesh mesh = gltf.meshes[*node->mesh];
 		for(GLTF::MeshPrimitive& primitive : mesh.primitives) {
 			if(primitive.material.has_value()) {
 				Opt<std::string>& material_name = gltf.materials.at(*primitive.material).name;

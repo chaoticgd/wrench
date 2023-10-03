@@ -282,6 +282,15 @@ DefaultScene create_default_scene(const char* generator) {
 	return result;
 }
 
+Node* lookup_node(ModelFile& gltf, const char* name) {
+	for(Node& node : gltf.nodes) {
+		if(node.name.has_value() && strcmp(node.name->c_str(), name) == 0) {
+			return &node;
+		}
+	}
+	return nullptr;
+}
+
 Mesh* lookup_mesh(ModelFile& gltf, const char* name) {
 	for(Mesh& mesh : gltf.meshes) {
 		if(mesh.name.has_value() && strcmp(mesh.name->c_str(), name) == 0) {

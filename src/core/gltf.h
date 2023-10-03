@@ -183,6 +183,7 @@ std::vector<u8> write_glb(const ModelFile& gltf);
 DefaultScene create_default_scene(const char* generator);
 
 // Lookup glTF objects by their name.
+Node* lookup_node(ModelFile& gltf, const char* name);
 Mesh* lookup_mesh(ModelFile& gltf, const char* name);
 Material* lookup_material(ModelFile& gltf, const char* name);
 
