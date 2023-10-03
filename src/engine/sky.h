@@ -28,9 +28,9 @@
 #include <engine/basic_types.h>
 
 struct SkyShell {
-	// The material field in these meshes is actually the texture header index
-	// which is std::nullopt for untextured meshes.
-	std::vector<GLTF::Mesh> clusters;
+	// The material field in this mesh is actually either the texture header
+	// index or std::nullopt for untextured meshes.
+	GLTF::Mesh mesh;
 	bool textured = false;
 	bool bloom = false;
 	glm::vec3 rotation = {0.f, 0.f, 0.f};
@@ -119,6 +119,5 @@ packed_struct(SkyFace,
 
 Sky read_sky(Buffer src, Game game, f32 framerate);
 void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate);
-std::vector<GLTF::Mesh> generate_clusters(const GLTF::Mesh& mesh);
 
 #endif

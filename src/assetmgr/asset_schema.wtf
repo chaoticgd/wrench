@@ -1853,13 +1853,10 @@ AssetType SkyShell {
 	}
 	
 	Child mesh {
-		desc: "The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters."
-		allowed_types: ["Collection"]
+		desc: "The mesh."
+		allowed_types: ["Mesh"]
 		required: true
 		games: [1 2 3 4]
-		Child child {
-			allowed_types: ["Mesh"]
-		}
 	}
 }
 

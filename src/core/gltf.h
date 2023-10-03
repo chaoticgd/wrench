@@ -107,7 +107,6 @@ enum MeshPrimitiveAttribute {
 };
 
 struct MeshPrimitive {
-	std::vector<Vertex> vertices;
 	u32 attributes_bitfield = 0;
 	std::vector<u32> indices;
 	Opt<s32> material;
@@ -116,9 +115,10 @@ struct MeshPrimitive {
 };
 
 struct Mesh {
-	std::vector<MeshPrimitive> primitives;
-	// unimplemented: weights
 	Opt<std::string> name;
+	std::vector<MeshPrimitive> primitives;
+	std::vector<Vertex> vertices;
+	// unimplemented: weights
 };
 
 struct Texture {
@@ -173,17 +173,22 @@ struct DefaultScene {
 	Scene* scene;
 };
 
-// Create a model file with a single scene, node, and mesh in it.
-DefaultScene create_default_scene(const char* generator);
-
-GLTF::Mesh* lookup_mesh(GLTF::ModelFile& gltf, const char* name);
-GLTF::Material* lookup_material(GLTF::ModelFile& gltf, const char* name);
-
 // Parse a .glb file from memory.
 ModelFile read_glb(Buffer src);
 
 // Create a .glb file in memory.
 std::vector<u8> write_glb(const ModelFile& gltf);
+
+// Create a model file with a single scene, node, and mesh in it.
+DefaultScene create_default_scene(const char* generator);
+
+// Lookup glTF objects by their name.
+Mesh* lookup_mesh(ModelFile& gltf, const char* name);
+Material* lookup_material(ModelFile& gltf, const char* name);
+
+// Deduplicate identical vertices and update the index buffer accordingly. This
+// is done automatically when meshes are imported.
+void deduplicate_vertices(Mesh& mesh);
 
 }
 

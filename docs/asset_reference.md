@@ -1184,7 +1184,7 @@ No children.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| mesh | The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters. | Mesh\[\] | Yes | RAC/GC/UYA/DL |
+| mesh | The mesh. | Mesh | Yes | RAC/GC/UYA/DL |
 
 
 ### Occlusion

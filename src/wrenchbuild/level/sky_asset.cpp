@@ -75,28 +75,19 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	
 	// Copy all the meshes into the scene.
 	for(size_t i = 0; i < sky.shells.size(); i++) {
-#ifdef SEPERATE_SKY_CLUSTERS
 		SkyShell& shell = sky.shells[i];
-		for(size_t j = 0; j < shell.clusters.size(); j++) {
-			std::string name = stringf("shell%d_cluster%d", i, j);
-			
-			scene->nodes.emplace_back((s32) gltf.nodes.size());
-			
-			GLTF::Node& node = gltf.nodes.emplace_back();
-			node.name = name;
-			node.mesh = (s32) gltf.meshes.size();
-			
-			shell.clusters[j].name = name;
-			gltf.meshes.emplace_back(std::move(shell.clusters[j]));
-		}
-#else
-		u32 flags = MESH_HAS_VERTEX_COLOURS | MESH_HAS_TEX_COORDS;
-		Mesh mesh = merge_meshes(sky.shells[i].clusters, stringf("shell_%d", i), flags);
-		scene.meshes.emplace_back(std::move(mesh));
-#endif
+		
+		scene->nodes.emplace_back((s32) gltf.nodes.size());
+		GLTF::Node& node = gltf.nodes.emplace_back();
+		node.name = stringf("shell_%d", (s32) i);
+		node.mesh = (s32) gltf.meshes.size();
+		
+		gltf.meshes.emplace_back(std::move(shell.mesh));
 	}
 	
+	s32 im = 0;
 	for(GLTF::Mesh& mesh : gltf.meshes) {
+		mesh.name = stringf("shell_%d", im++);
 		for(GLTF::MeshPrimitive& primitive : mesh.primitives) {
 			if(primitive.material.has_value()) {
 				*primitive.material -= sky.fx.size();
@@ -113,22 +104,19 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	
 	// Create the assets for the shells and clusters.
 	for(size_t i = 0; i < sky.shells.size(); i++) {
-		SkyShell& src = sky.shells[i];
-		SkyShellAsset& dest = shells.child<SkyShellAsset>(i);
+		SkyShell& shell_src = sky.shells[i];
+		SkyShellAsset& shell_dest = shells.child<SkyShellAsset>(i);
 		
-		dest.set_textured(src.textured);
+		shell_dest.set_textured(shell_src.textured);
 		if(config.game() == Game::UYA || config.game() == Game::DL) {
-			dest.set_bloom(src.bloom);
+			shell_dest.set_bloom(shell_src.bloom);
 		}
-		dest.set_starting_rotation(src.rotation);
-		dest.set_angular_velocity(src.angular_velocity);
+		shell_dest.set_starting_rotation(shell_src.rotation);
+		shell_dest.set_angular_velocity(shell_src.angular_velocity);
 		
-		CollectionAsset& meshes = dest.mesh<CollectionAsset>();
-		for(size_t j = 0; j < sky.shells[i].clusters.size(); j++) {
-			MeshAsset& mesh = meshes.child<MeshAsset>(j);
-			mesh.set_name(stringf("shell%d_cluster%d", i, j));
-			mesh.set_src(ref);
-		}
+		MeshAsset& mesh = shell_dest.mesh();
+		mesh.set_name(stringf("shell_%d", (s32) i));
+		mesh.set_src(ref);
 	}
 }
 
@@ -167,9 +155,7 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 		}
 		sky.shells.emplace_back(shell);
 		
-		shell_asset.get_mesh().for_each_logical_child_of_type<MeshAsset>([&](const MeshAsset& cluster) {
-			refs.emplace_back(cluster.src());
-		});
+		refs.emplace_back(shell_asset.get_mesh().src());
 	});
 	
 	// Read all the referenced meshes, avoiding duplicated work where possible.
@@ -179,29 +165,27 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	// Setup all the textures.
 	std::map<std::string, s32> material_to_texture = pack_sky_textures(sky, src);
 	
-	s32 i = 0;
 	s32 shell = 0;
 	src.get_shells().for_each_logical_child_of_type<SkyShellAsset>([&](const SkyShellAsset& shell_asset) {
-		shell_asset.get_mesh().for_each_logical_child_of_type<MeshAsset>([&](const MeshAsset& asset) {
-			std::string name = asset.name();
-			GLTF::ModelFile& gltf = *gltfs.at(i++);
-			GLTF::Mesh* mesh_ptr = GLTF::lookup_mesh(gltf, name.c_str());
-			verify(mesh_ptr, "Cannot find mesh '%s'.", name.c_str());
-			GLTF::Mesh mesh = *mesh_ptr;
-			for(GLTF::MeshPrimitive& primitive : mesh.primitives) {
-				if(primitive.material.has_value()) {
-					Opt<std::string>& material_name = gltf.materials.at(*primitive.material).name;
-					verify(material_name.has_value(), "Material %d has no name.\n", *primitive.material);
-					auto mapping = material_to_texture.find(*material_name);
-					if(mapping != material_to_texture.end()) {
-						primitive.material = mapping->second;
-					} else {
-						primitive.material = std::nullopt;
-					}
+		const MeshAsset& asset = shell_asset.get_mesh();
+		std::string name = asset.name();
+		GLTF::ModelFile& gltf = *gltfs.at(shell);
+		GLTF::Mesh* mesh_ptr = GLTF::lookup_mesh(gltf, name.c_str());
+		verify(mesh_ptr, "Cannot find mesh '%s'.", name.c_str());
+		GLTF::Mesh mesh = *mesh_ptr;
+		for(GLTF::MeshPrimitive& primitive : mesh.primitives) {
+			if(primitive.material.has_value()) {
+				Opt<std::string>& material_name = gltf.materials.at(*primitive.material).name;
+				verify(material_name.has_value(), "Material %d has no name.\n", *primitive.material);
+				auto mapping = material_to_texture.find(*material_name);
+				if(mapping != material_to_texture.end()) {
+					primitive.material = mapping->second;
+				} else {
+					primitive.material = std::nullopt;
 				}
 			}
-			sky.shells.at(shell).clusters.emplace_back(std::move(mesh));
-		});
+		}
+		sky.shells.at(shell).mesh = std::move(mesh);
 		shell++;
 	});
 	
