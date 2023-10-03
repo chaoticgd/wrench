@@ -130,7 +130,7 @@ struct Texture {
 struct Image {
 	Opt<std::string> uri;
 	Opt<std::string> mime_type;
-	Opt<std::string> buffer_view;
+	Opt<s32> buffer_view;
 	Opt<std::string> name;
 };
 

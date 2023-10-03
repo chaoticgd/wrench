@@ -1486,7 +1486,11 @@ template <typename T>
 static void get_req(T& dest, const Json& src, const char* property) {
 	auto iter = src.find(property);
 	verify(iter != src.end(), "Missing property '%s'.", property);
-	dest = iter->get<T>();
+	try {
+		dest = iter->get<T>();
+	} catch(Json::type_error& e) {
+		verify_not_reached("Required property '%s' is of the incorrect type (%s).", property, e.what());
+	}
 }
 
 template <typename T>
@@ -1498,7 +1502,11 @@ template <typename T>
 static void get_opt(Opt<T>& dest, const Json& src, const char* property) {
 	auto iter = src.find(property);
 	if(iter != src.end()) {
-		dest = iter->get<T>();
+		try {
+			dest = iter->get<T>();
+		} catch(Json::type_error& e) {
+			verify_not_reached("Optional property '%s' is of the incorrect type (%s).", property, e.what());
+		}
 	}
 }
 
