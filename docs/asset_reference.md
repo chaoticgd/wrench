@@ -1175,7 +1175,6 @@ No children.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| textured | If the mesh is textured or not. | Boolean | Yes | RAC/GC/UYA/DL |
 | bloom | Only works for textured shells. | Boolean | No | UYA/DL |
 | starting_rotation | The starting rotation. Each component is in radians. | Vector3 | No | RAC/GC/UYA/DL |
 | angular_velocity | The change in rotation. Each component is in radians per second. | Vector3 | No | RAC/GC/UYA/DL |

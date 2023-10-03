@@ -85,10 +85,9 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 		gltf.meshes.emplace_back(std::move(shell.mesh));
 	}
 	
-	s32 im = 0;
-	for(GLTF::Mesh& mesh : gltf.meshes) {
-		mesh.name = stringf("shell_%d", im++);
-		for(GLTF::MeshPrimitive& primitive : mesh.primitives) {
+	for(size_t i = 0; i < gltf.meshes.size(); i++) {
+		gltf.meshes[i].name = stringf("shell_%d", (s32) i);
+		for(GLTF::MeshPrimitive& primitive : gltf.meshes[i].primitives) {
 			if(primitive.material.has_value()) {
 				*primitive.material -= sky.fx.size();
 			} else {
@@ -107,7 +106,6 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 		SkyShell& shell_src = sky.shells[i];
 		SkyShellAsset& shell_dest = shells.child<SkyShellAsset>(i);
 		
-		shell_dest.set_textured(shell_src.textured);
 		if(config.game() == Game::UYA || config.game() == Game::DL) {
 			shell_dest.set_bloom(shell_src.bloom);
 		}
@@ -142,19 +140,6 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	// Read all the references to meshes.
 	std::vector<FileReference> refs;
 	src.get_shells().for_each_logical_child_of_type<SkyShellAsset>([&](const SkyShellAsset& shell_asset) {
-		SkyShell shell;
-		shell.textured = shell_asset.textured();
-		if(shell_asset.has_bloom() && (config.game() == Game::UYA || config.game() == Game::DL)) {
-			shell.bloom = shell_asset.bloom();
-		}
-		if(shell_asset.has_starting_rotation()) {
-			shell.rotation = shell_asset.starting_rotation();
-		}
-		if(shell_asset.has_angular_velocity()) {
-			shell.angular_velocity = shell_asset.angular_velocity();
-		}
-		sky.shells.emplace_back(shell);
-		
 		refs.emplace_back(shell_asset.get_mesh().src());
 	});
 	
@@ -165,30 +150,46 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	// Setup all the textures.
 	std::map<std::string, s32> material_to_texture = pack_sky_textures(sky, src);
 	
-	s32 shell = 0;
+	s32 shell_index = 0;
 	src.get_shells().for_each_logical_child_of_type<SkyShellAsset>([&](const SkyShellAsset& shell_asset) {
+		SkyShell& shell = sky.shells.emplace_back();
+		shell.textured = false;
+		if(shell_asset.has_bloom() && (config.game() == Game::UYA || config.game() == Game::DL)) {
+			shell.bloom = shell_asset.bloom();
+		}
+		if(shell_asset.has_starting_rotation()) {
+			shell.rotation = shell_asset.starting_rotation();
+		}
+		if(shell_asset.has_angular_velocity()) {
+			shell.angular_velocity = shell_asset.angular_velocity();
+		}
+		
 		const MeshAsset& asset = shell_asset.get_mesh();
 		std::string name = asset.name();
-		GLTF::ModelFile& gltf = *gltfs.at(shell);
+		GLTF::ModelFile& gltf = *gltfs.at(shell_index);
 		GLTF::Node* node = GLTF::lookup_node(gltf, name.c_str());
 		verify(node, "Node '%s' not found.", name.c_str());
 		verify(node->mesh.has_value(), "Node '%s' has no mesh.", name.c_str());
 		verify(*node->mesh >= 0 && *node->mesh < gltf.meshes.size(), "Node '%s' has no invalid mesh index.", name.c_str());
 		GLTF::Mesh mesh = gltf.meshes[*node->mesh];
+		bool has_set_textured = false;
 		for(GLTF::MeshPrimitive& primitive : mesh.primitives) {
+			bool primitive_has_texture = false;
 			if(primitive.material.has_value()) {
 				Opt<std::string>& material_name = gltf.materials.at(*primitive.material).name;
-				verify(material_name.has_value(), "Material %d has no name.\n", *primitive.material);
+				verify(material_name.has_value(), "Material %d has no name.", *primitive.material);
 				auto mapping = material_to_texture.find(*material_name);
 				if(mapping != material_to_texture.end()) {
 					primitive.material = mapping->second;
-				} else {
-					primitive.material = std::nullopt;
+					shell.textured = true;
+					primitive_has_texture = true;
 				}
 			}
+				verify(!has_set_textured || shell.textured == primitive_has_texture, "Sky shell contains both textured and untextured faces.");
+			has_set_textured = true;
 		}
-		sky.shells.at(shell).mesh = std::move(mesh);
-		shell++;
+		shell.mesh = std::move(mesh);
+		shell_index++;
 	});
 	
 	std::vector<u8> buffer;

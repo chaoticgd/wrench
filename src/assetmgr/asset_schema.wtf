@@ -1828,12 +1828,6 @@ AssetType Sky {
 AssetType SkyShell {
 	bin_leaf: true
 	
-	BooleanAttribute textured {
-		desc: "If the mesh is textured or not."
-		required: true
-		games: [1 2 3 4]
-	}
-	
 	BooleanAttribute bloom {
 		desc: "Only works for textured shells."
 		required: false
