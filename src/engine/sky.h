@@ -82,7 +82,12 @@ packed_struct(Vec3s16,
 	/* 0x4 */ s16 z;
 )
 
-packed_struct(SkyShellHeader,
+packed_struct(RacGcSkyShellHeader,
+	/* 0x0 */ s32 cluster_count;
+	/* 0x2 */ s32 flags;
+)
+
+packed_struct(UyaDlSkyShellHeader,
 	/* 0x0 */ s16 cluster_count;
 	/* 0x2 */ s16 flags;
 	/* 0x4 */ Vec3s16 rotation;

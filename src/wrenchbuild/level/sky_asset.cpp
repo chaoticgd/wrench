@@ -106,11 +106,11 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 		SkyShell& shell_src = sky.shells[i];
 		SkyShellAsset& shell_dest = shells.child<SkyShellAsset>(i);
 		
-		if(config.game() == Game::UYA || config.game() == Game::DL) {
+		if(config.game() != Game::RAC && config.game() != Game::GC) {
 			shell_dest.set_bloom(shell_src.bloom);
+			shell_dest.set_starting_rotation(shell_src.rotation);
+			shell_dest.set_angular_velocity(shell_src.angular_velocity);
 		}
-		shell_dest.set_starting_rotation(shell_src.rotation);
-		shell_dest.set_angular_velocity(shell_src.angular_velocity);
 		
 		MeshAsset& mesh = shell_dest.mesh();
 		mesh.set_name(stringf("shell_%d", (s32) i));
@@ -154,14 +154,16 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	src.get_shells().for_each_logical_child_of_type<SkyShellAsset>([&](const SkyShellAsset& shell_asset) {
 		SkyShell& shell = sky.shells.emplace_back();
 		shell.textured = false;
-		if(shell_asset.has_bloom() && (config.game() == Game::UYA || config.game() == Game::DL)) {
-			shell.bloom = shell_asset.bloom();
-		}
-		if(shell_asset.has_starting_rotation()) {
-			shell.rotation = shell_asset.starting_rotation();
-		}
-		if(shell_asset.has_angular_velocity()) {
-			shell.angular_velocity = shell_asset.angular_velocity();
+		if(config.game() != Game::RAC && config.game() != Game::GC) {
+			if(shell_asset.has_bloom()) {
+				shell.bloom = shell_asset.bloom();
+			}
+			if(shell_asset.has_starting_rotation()) {
+				shell.rotation = shell_asset.starting_rotation();
+			}
+			if(shell_asset.has_angular_velocity()) {
+				shell.angular_velocity = shell_asset.angular_velocity();
+			}
 		}
 		
 		const MeshAsset& asset = shell_asset.get_mesh();
@@ -305,9 +307,9 @@ static bool test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked,
 	std::vector<ByteRange64> ignore;
 	verify(header.shell_count <= 8, "Bad shell count.");
 	for(s32 i = 0; i < header.shell_count; i++) {
-		SkyShellHeader shell = Buffer(original).read<SkyShellHeader>(header.shells[i], "shell header");
-		for(s32 j = 0; j < shell.cluster_count; j++) {
-			s64 cluster_header_ofs = header.shells[i] + sizeof(SkyShellHeader) + j * sizeof(SkyClusterHeader);
+		s16 cluster_count = Buffer(original).read<s16>(header.shells[i], "shell header");
+		for(s32 j = 0; j < cluster_count; j++) {
+			s64 cluster_header_ofs = header.shells[i] + 0x10 + j * sizeof(SkyClusterHeader);
 			ignore.emplace_back(cluster_header_ofs, sizeof(SkyClusterHeader::bounding_sphere));
 		}
 	}

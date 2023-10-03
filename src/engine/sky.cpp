@@ -24,8 +24,8 @@
 
 static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game);
 static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game);
-static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 framerate);
-static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate);
+static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, Game game, f32 framerate);
+static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32 framerate);
 static f32 rotation_to_radians_per_second(s16 angle, f32 framerate);
 static s16 rotation_from_radians_per_second(f32 angle, f32 framerate);
 static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 texture_count, bool textured);
@@ -45,7 +45,7 @@ Sky read_sky(Buffer src, Game game, f32 framerate) {
 	std::tie(sky.textures, sky.texture_mappings) = read_sky_textures(src, header, game);
 	
 	for(s32 i = 0; i < header.shell_count; i++) {
-		sky.shells.emplace_back(read_sky_shell(src, header.shells[i], header.texture_count, framerate));
+		sky.shells.emplace_back(read_sky_shell(src, header.shells[i], header.texture_count, game, framerate));
 	}
 	
 	return sky;
@@ -79,7 +79,7 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	}
 	
 	for(size_t i = 0; i < sky.shells.size(); i++) {
-		header.shells[i] = write_sky_shell(dest, sky.shells[i], framerate);
+		header.shells[i] = write_sky_shell(dest, sky.shells[i], game, framerate);
 	}
 	
 	dest.write(header_ofs, header);
@@ -163,21 +163,29 @@ static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector
 	return {defs_ofs, data_ofs};
 }
 
-static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 framerate) {
+static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, Game game, f32 framerate) {
 	SkyShell shell;
 	
-	SkyShellHeader header = src.read<SkyShellHeader>(offset, "shell header");
-	shell.textured = (header.flags & 1) == 0;
-	shell.bloom = ((header.flags >> 1) & 1) == 1;
-	shell.rotation.x = rotation_to_radians_per_second(header.rotation.x, framerate);
-	shell.rotation.y = rotation_to_radians_per_second(header.rotation.y, framerate);
-	shell.rotation.z = rotation_to_radians_per_second(header.rotation.z, framerate);
-	shell.angular_velocity.x = rotation_to_radians_per_second(header.angular_velocity.x, framerate);
-	shell.angular_velocity.y = rotation_to_radians_per_second(header.angular_velocity.y, framerate);
-	shell.angular_velocity.z = rotation_to_radians_per_second(header.angular_velocity.z, framerate);
+	s32 cluster_count = 0;
+	if(game == Game::RAC || game == Game::GC) {
+		RacGcSkyShellHeader header = src.read<RacGcSkyShellHeader>(offset, "shell header");
+		shell.textured = (header.flags & 1) == 0;
+		cluster_count = header.cluster_count;
+	} else {
+		UyaDlSkyShellHeader header = src.read<UyaDlSkyShellHeader>(offset, "shell header");
+		shell.textured = (header.flags & 1) == 0;
+		shell.bloom = ((header.flags >> 1) & 1) == 1;
+		shell.rotation.x = rotation_to_radians_per_second(header.rotation.x, framerate);
+		shell.rotation.y = rotation_to_radians_per_second(header.rotation.y, framerate);
+		shell.rotation.z = rotation_to_radians_per_second(header.rotation.z, framerate);
+		shell.angular_velocity.x = rotation_to_radians_per_second(header.angular_velocity.x, framerate);
+		shell.angular_velocity.y = rotation_to_radians_per_second(header.angular_velocity.y, framerate);
+		shell.angular_velocity.z = rotation_to_radians_per_second(header.angular_velocity.z, framerate);
+		cluster_count = header.cluster_count;
+	}
 	
-	for(s32 i = 0; i < header.cluster_count; i++) {
-		read_sky_cluster(shell.mesh, src, offset + sizeof(SkyShellHeader) + i * sizeof(SkyClusterHeader), texture_count, shell.textured);
+	for(s32 i = 0; i < cluster_count; i++) {
+		read_sky_cluster(shell.mesh, src, offset + 0x10 + i * sizeof(SkyClusterHeader), texture_count, shell.textured);
 	}
 	
 	GLTF::deduplicate_vertices(shell.mesh);
@@ -185,7 +193,7 @@ static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 fr
 	return shell;
 }
 
-static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate) {
+static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32 framerate) {
 	std::vector<SkyClusterHeader> cluster_headers;
 	std::vector<u8> cluster_data;
 	
@@ -222,25 +230,34 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate)
 	verify(cluster_headers.size() < INT16_MAX, "Too many clusters in a shell.");
 	
 	dest.pad(0x10);
-	SkyShellHeader header = {};
-	s64 header_ofs = dest.alloc<SkyShellHeader>();
-	header.cluster_count = (s16) cluster_headers.size();
-	header.flags |= !shell.textured;
-	header.flags |= shell.bloom << 1;
-	header.rotation.x = rotation_from_radians_per_second(shell.rotation.x, framerate);
-	header.rotation.y = rotation_from_radians_per_second(shell.rotation.y, framerate);
-	header.rotation.z = rotation_from_radians_per_second(shell.rotation.z, framerate);
-	header.angular_velocity.x = rotation_from_radians_per_second(shell.angular_velocity.x, framerate);
-	header.angular_velocity.y = rotation_from_radians_per_second(shell.angular_velocity.y, framerate);
-	header.angular_velocity.z = rotation_from_radians_per_second(shell.angular_velocity.z, framerate);
-	
+	s64 header_ofs = dest.tell();
+	if(game == Game::RAC || game == Game::GC) {
+		RacGcSkyShellHeader header = {};
+		verify(cluster_headers.size() < INT32_MAX, "Too many clusters.");
+		header.cluster_count = (s32) cluster_headers.size();
+		header.flags |= !shell.textured;
+		dest.write(header);
+	} else {
+		UyaDlSkyShellHeader header = {};
+		verify(cluster_headers.size() < INT16_MAX, "Too many clusters.");
+		header.cluster_count = (s16) cluster_headers.size();
+		header.flags |= !shell.textured;
+		header.flags |= shell.bloom << 1;
+		header.rotation.x = rotation_from_radians_per_second(shell.rotation.x, framerate);
+		header.rotation.y = rotation_from_radians_per_second(shell.rotation.y, framerate);
+		header.rotation.z = rotation_from_radians_per_second(shell.rotation.z, framerate);
+		header.angular_velocity.x = rotation_from_radians_per_second(shell.angular_velocity.x, framerate);
+		header.angular_velocity.y = rotation_from_radians_per_second(shell.angular_velocity.y, framerate);
+		header.angular_velocity.z = rotation_from_radians_per_second(shell.angular_velocity.z, framerate);
+		dest.write(header);
+	}
+	dest.pad(0x10);
 	for(SkyClusterHeader& cluster_header : cluster_headers) {
 		cluster_header.data += dest.tell() + cluster_headers.size() * sizeof(SkyClusterHeader);
 	}
 	dest.write_multiple(cluster_headers);
 	dest.write_multiple(cluster_data);
 	
-	dest.write(header_ofs, header);
 	return header_ofs;
 }
 
