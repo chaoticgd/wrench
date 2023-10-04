@@ -131,6 +131,30 @@ std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<Collad
 	return scenes;
 }
 
+std::vector<GLTF::ModelFile*> read_glb_files(std::vector<std::unique_ptr<GLTF::ModelFile>>& owners, std::vector<FileReference> refs) {
+	std::vector<GLTF::ModelFile*> model_files;
+	for(size_t i = 0; i < refs.size(); i++) {
+			bool unique = true;
+		size_t j;
+		for(j = 0; j < refs.size(); j++) {
+			if(i > j && refs[i].owner == refs[j].owner && refs[i].path == refs[j].path) {
+				unique = false;
+				break;
+			}
+		}
+		if(unique) {
+			std::unique_ptr<InputStream> stream = refs[i].open_binary_file_for_reading();
+			std::vector<u8> buffer = stream->read_multiple<u8>(stream->size());
+			std::unique_ptr<GLTF::ModelFile> model_file = std::make_unique<GLTF::ModelFile>(GLTF::read_glb(buffer));
+			std::unique_ptr<GLTF::ModelFile>& owner = owners.emplace_back(std::move(model_file));
+			model_files.emplace_back(owner.get());
+		} else {
+			model_files.emplace_back(model_files[j]);
+		}
+	}
+	return model_files;
+}
+
 const char* next_hint(const char** hint) {
 	static char temp[256];
 	if(hint) {

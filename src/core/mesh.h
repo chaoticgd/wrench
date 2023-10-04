@@ -157,8 +157,14 @@ bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps = 0.0000
 
 Mesh merge_meshes(const std::vector<Mesh>& meshes, std::string name, u32 flags);
 
+struct BSphereVertexList {
+	const Vertex* vertices;
+	size_t vertex_count;
+};
+
 glm::vec4 approximate_bounding_sphere(const glm::mat4** cuboids, size_t cuboid_count, const std::pair<const glm::vec4*, size_t>* splines, size_t spline_count);
 glm::vec4 approximate_bounding_sphere(const std::vector<Vertex>& vertices);
+glm::vec4 approximate_bounding_sphere(const BSphereVertexList* vertex_lists, size_t vertex_list_count);
 
 
 #endif

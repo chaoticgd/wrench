@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from asset_schema.wtf and is for version 26 of the asset format.
+This file was generated from asset_schema.wtf and is for version 27 of the asset format.
 
 ## Index
 
@@ -1175,16 +1175,15 @@ No children.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| textured | If the mesh is textured or not. | Boolean | Yes | RAC/GC/UYA/DL |
 | bloom | Only works for textured shells. | Boolean | No | UYA/DL |
-| starting_rotation | The starting rotation. Each component is in radians. | Vector3 | No | RAC/GC/UYA/DL |
-| angular_velocity | The change in rotation. Each component is in radians per second. | Vector3 | No | RAC/GC/UYA/DL |
+| starting_rotation | The starting rotation. Each component is in radians. | Vector3 | No | UYA/DL |
+| angular_velocity | The change in rotation. Each component is in radians per second. | Vector3 | No | UYA/DL |
 
 *Children*
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| mesh | The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters. | Mesh\[\] | Yes | RAC/GC/UYA/DL |
+| mesh | The mesh. | Mesh | Yes | RAC/GC/UYA/DL |
 
 
 ### Occlusion

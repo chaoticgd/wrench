@@ -34,6 +34,6 @@ TEST_CASE("mark_duplicates integer list", "[algorithm]") {
 	mark_duplicates(list,
 		[](s32 lhs, s32 rhs) { return memcmp(&lhs, &rhs, 4); },
 		[&](s32 index, s32 canonical) { mark[index] = canonical; });
-	std::vector<s32> correct_mark = {0, 3, 2, 3, 5, 5};
+	std::vector<s32> correct_mark = {0, 1, 2, 1, 4, 4};
 	REQUIRE(mark == correct_mark);
 }

@@ -20,15 +20,17 @@
 
 #include <core/vif.h>
 #include <core/mesh.h>
+#include <core/algorithm.h>
 
 static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game);
 static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game);
-static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 framerate);
-static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate);
+static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, Game game, f32 framerate);
+static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32 framerate);
 static f32 rotation_to_radians_per_second(s16 angle, f32 framerate);
 static s16 rotation_from_radians_per_second(f32 angle, f32 framerate);
-static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured);
-static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Mesh& cluster);
+static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 texture_count, bool textured);
+static void write_sky_clusters(std::vector<SkyClusterHeader>& headers, OutBuffer data, const GLTF::Mesh& shell, f32 min_azimuth, f32 max_azimuth, f32 azimuth_bias, f32 min_elev, f32 max_elev);
+static SkyClusterHeader write_sky_cluster(OutBuffer data, const std::vector<Vertex>& vertices, const std::vector<SkyFace>& faces);
 
 Sky read_sky(Buffer src, Game game, f32 framerate) {
 	Sky sky;
@@ -44,7 +46,7 @@ Sky read_sky(Buffer src, Game game, f32 framerate) {
 	std::tie(sky.textures, sky.texture_mappings) = read_sky_textures(src, header, game);
 	
 	for(s32 i = 0; i < header.shell_count; i++) {
-		sky.shells.emplace_back(read_sky_shell(src, header.shells[i], header.texture_count, framerate));
+		sky.shells.emplace_back(read_sky_shell(src, header.shells[i], header.texture_count, game, framerate));
 	}
 	
 	return sky;
@@ -78,7 +80,7 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	}
 	
 	for(size_t i = 0; i < sky.shells.size(); i++) {
-		header.shells[i] = write_sky_shell(dest, sky.shells[i], framerate);
+		header.shells[i] = write_sky_shell(dest, sky.shells[i], game, framerate);
 	}
 	
 	dest.write(header_ofs, header);
@@ -162,49 +164,87 @@ static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector
 	return {defs_ofs, data_ofs};
 }
 
-static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 framerate) {
+static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, Game game, f32 framerate) {
 	SkyShell shell;
 	
-	SkyShellHeader header = src.read<SkyShellHeader>(offset, "shell header");
-	shell.textured = (header.flags & 1) == 0;
-	shell.bloom = ((header.flags >> 1) & 1) == 1;
-	shell.rotation.x = rotation_to_radians_per_second(header.rotation.x, framerate);
-	shell.rotation.y = rotation_to_radians_per_second(header.rotation.y, framerate);
-	shell.rotation.z = rotation_to_radians_per_second(header.rotation.z, framerate);
-	shell.angular_velocity.x = rotation_to_radians_per_second(header.angular_velocity.x, framerate);
-	shell.angular_velocity.y = rotation_to_radians_per_second(header.angular_velocity.y, framerate);
-	shell.angular_velocity.z = rotation_to_radians_per_second(header.angular_velocity.z, framerate);
-	
-	for(s32 i = 0; i < header.cluster_count; i++) {
-		shell.clusters.emplace_back(read_sky_cluster(src, offset + sizeof(SkyShellHeader) + i * sizeof(SkyClusterHeader), texture_count, shell.textured));
+	s32 cluster_count = 0;
+	if(game == Game::RAC || game == Game::GC) {
+		RacGcSkyShellHeader header = src.read<RacGcSkyShellHeader>(offset, "shell header");
+		shell.textured = (header.flags & 1) == 0;
+		cluster_count = header.cluster_count;
+	} else {
+		UyaDlSkyShellHeader header = src.read<UyaDlSkyShellHeader>(offset, "shell header");
+		shell.textured = (header.flags & 1) == 0;
+		shell.bloom = ((header.flags >> 1) & 1) == 1;
+		shell.rotation.x = rotation_to_radians_per_second(header.rotation.x, framerate);
+		shell.rotation.y = rotation_to_radians_per_second(header.rotation.y, framerate);
+		shell.rotation.z = rotation_to_radians_per_second(header.rotation.z, framerate);
+		shell.angular_velocity.x = rotation_to_radians_per_second(header.angular_velocity.x, framerate);
+		shell.angular_velocity.y = rotation_to_radians_per_second(header.angular_velocity.y, framerate);
+		shell.angular_velocity.z = rotation_to_radians_per_second(header.angular_velocity.z, framerate);
+		cluster_count = header.cluster_count;
 	}
+	
+	for(s32 i = 0; i < cluster_count; i++) {
+		read_sky_cluster(shell.mesh, src, offset + 0x10 + i * sizeof(SkyClusterHeader), texture_count, shell.textured);
+	}
+	
+	GLTF::deduplicate_vertices(shell.mesh);
 	
 	return shell;
 }
 
-static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate) {
-	dest.pad(0x10);
-	SkyShellHeader header = {};
-	s64 header_ofs = dest.alloc<SkyShellHeader>();
+static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32 framerate) {
+	std::vector<SkyClusterHeader> cluster_headers;
+	std::vector<u8> cluster_data;
 	
-	header.cluster_count = (s16) shell.clusters.size();
-	header.flags |= !shell.textured;
-	header.flags |= shell.bloom << 1;
-	header.rotation.x = rotation_from_radians_per_second(shell.rotation.x, framerate);
-	header.rotation.y = rotation_from_radians_per_second(shell.rotation.y, framerate);
-	header.rotation.z = rotation_from_radians_per_second(shell.rotation.z, framerate);
-	header.angular_velocity.x = rotation_from_radians_per_second(shell.angular_velocity.x, framerate);
-	header.angular_velocity.y = rotation_from_radians_per_second(shell.angular_velocity.y, framerate);
-	header.angular_velocity.z = rotation_from_radians_per_second(shell.angular_velocity.z, framerate);
+	// This mimics how the sky shells are split up into clusters in the original
+	// games. It's not exactly accurate, but I think it's close enough.
 	
-	s64 cluster_table_ofs = dest.alloc_multiple<SkyClusterHeader>(shell.clusters.size());
-	for(size_t i = 0; i < shell.clusters.size(); i++) {
-		SkyClusterHeader cluster = {};
-		write_sky_cluster(dest, cluster, shell.clusters[i]);
-		dest.write(cluster_table_ofs + i * sizeof(SkyClusterHeader), cluster);
+	f32 mid_threshold = 20.f / 90.f;
+	f32 high_threshold = 65.f / 90.f;
+	for(s32 azimuth = -6; azimuth < 6; azimuth++) {
+		f32 min_azimuth = azimuth * (1.f / 6.f);
+		f32 max_azimuth = (azimuth + 1) * (1.f / 6.f);
+		
+		write_sky_clusters(cluster_headers, cluster_data, shell.mesh, min_azimuth, max_azimuth, 1 / 12.f, -mid_threshold, mid_threshold);
+		write_sky_clusters(cluster_headers, cluster_data, shell.mesh, min_azimuth, max_azimuth, 0.f, -high_threshold, -mid_threshold);
+		write_sky_clusters(cluster_headers, cluster_data, shell.mesh, min_azimuth, max_azimuth, 0.f, mid_threshold, high_threshold);
 	}
+	write_sky_clusters(cluster_headers, cluster_data, shell.mesh, -1.f, 1.f, 0.f, high_threshold, 1.f);
+	write_sky_clusters(cluster_headers, cluster_data, shell.mesh, -1.f, 1.f, 0.f, -1.f, -high_threshold);
 	
-	dest.write(header_ofs, header);
+	verify(cluster_headers.size() < INT16_MAX, "Too many clusters in a shell.");
+	
+	dest.pad(0x10);
+	s64 header_ofs = dest.tell();
+	if(game == Game::RAC || game == Game::GC) {
+		RacGcSkyShellHeader header = {};
+		verify(cluster_headers.size() < INT32_MAX, "Too many clusters.");
+		header.cluster_count = (s32) cluster_headers.size();
+		header.flags |= !shell.textured;
+		dest.write(header);
+	} else {
+		UyaDlSkyShellHeader header = {};
+		verify(cluster_headers.size() < INT16_MAX, "Too many clusters.");
+		header.cluster_count = (s16) cluster_headers.size();
+		header.flags |= !shell.textured;
+		header.flags |= shell.bloom << 1;
+		header.rotation.x = rotation_from_radians_per_second(shell.rotation.x, framerate);
+		header.rotation.y = rotation_from_radians_per_second(shell.rotation.y, framerate);
+		header.rotation.z = rotation_from_radians_per_second(shell.rotation.z, framerate);
+		header.angular_velocity.x = rotation_from_radians_per_second(shell.angular_velocity.x, framerate);
+		header.angular_velocity.y = rotation_from_radians_per_second(shell.angular_velocity.y, framerate);
+		header.angular_velocity.z = rotation_from_radians_per_second(shell.angular_velocity.z, framerate);
+		dest.write(header);
+	}
+	dest.pad(0x10);
+	for(SkyClusterHeader& cluster_header : cluster_headers) {
+		cluster_header.data += dest.tell() + cluster_headers.size() * sizeof(SkyClusterHeader);
+	}
+	dest.write_multiple(cluster_headers);
+	dest.write_multiple(cluster_data);
+	
 	return header_ofs;
 }
 
@@ -216,61 +256,143 @@ static s16 rotation_from_radians_per_second(f32 angle, f32 framerate) {
 	return (u16) roundf(angle * ((32768.f / (2.f * WRENCH_PI)) / framerate));
 }
 
-static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured) {
-	Mesh cluster;
-	cluster.flags |= MESH_HAS_VERTEX_COLOURS | MESH_HAS_TEX_COORDS;
-	
+static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 texture_count, bool textured) {
 	SkyClusterHeader header = src.read<SkyClusterHeader>(offset, "sky cluster header");
 	
 	//printf("clustinfo :: size=%04d, verts=%04d, tris=%04d\n", header.data_size, header.vertex_count, header.tri_count);
 	
-	auto vertices = src.read_multiple<SkyVertex>(header.data + header.vertex_offset, header.vertex_count, "vertex positions");
+	s32 base_index = (s32) dest.vertices.size();
+	dest.vertices.resize(base_index + header.vertex_count);
+	auto sky_vertices = src.read_multiple<SkyVertex>(header.data + header.vertex_offset, header.vertex_count, "vertex positions");
 	auto sts = src.read_multiple<SkyTexCoord>(header.data + header.st_offset, header.vertex_count, "texture coordinates");
 	for(s32 i = 0; i < header.vertex_count; i++) {
-		f32 x = vertices[i].x * (1 / 1024.f);
-		f32 y = vertices[i].y * (1 / 1024.f);
-		f32 z = vertices[i].z * (1 / 1024.f);
-		f32 s = vu_fixed12_to_float(sts[i].s);
-		f32 t = vu_fixed12_to_float(sts[i].t);
-		ColourAttribute colour = {255, 255, 255};
-		if(vertices[i].alpha == 0x80) {
-			colour.a = 0xff;
+		dest.vertices[base_index + i].pos.x = sky_vertices[i].x * (1 / 1024.f);
+		dest.vertices[base_index + i].pos.y = sky_vertices[i].y * (1 / 1024.f);
+		dest.vertices[base_index + i].pos.z = sky_vertices[i].z * (1 / 1024.f);
+		dest.vertices[base_index + i].tex_coord.s = vu_fixed12_to_float(sts[i].s);
+		dest.vertices[base_index + i].tex_coord.t = vu_fixed12_to_float(sts[i].t);
+		dest.vertices[base_index + i].colour.r = 255;
+		dest.vertices[base_index + i].colour.g = 255;
+		dest.vertices[base_index + i].colour.b = 255;
+		if(sky_vertices[i].alpha == 0x80) {
+			dest.vertices[base_index + i].colour.a = 255;
 		} else {
-			colour.a = vertices[i].alpha * 2;
+			dest.vertices[base_index + i].colour.a = sky_vertices[i].alpha * 2;
 		}
-		cluster.vertices.emplace_back(glm::vec3(x, y, z), colour, glm::vec2(s, t));
 	}
 	
-	SubMesh* submesh = nullptr;
-	if(cluster.submeshes.size() >= 1) {
-		submesh = &cluster.submeshes.back();
-	}
-	
-	s32 last_submesh_material = 0;
+	GLTF::MeshPrimitive* primitive = nullptr;
+	Opt<s32> last_material = 0;
 	
 	auto faces = src.read_multiple<SkyFace>(header.data + header.tri_offset, header.tri_count, "faces");
 	for(const SkyFace& face : faces) {
-		if(submesh == nullptr || face.texture != last_submesh_material) {
-			verify(face.texture < texture_count, "Sky has bad texture data.");
-			submesh = &cluster.submeshes.emplace_back();
-			submesh->material = face.texture;
+		if(primitive == nullptr || face.texture != last_material) {
+			primitive = &dest.primitives.emplace_back();
+			primitive->attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::COLOR_0;
+			if(face.texture != 0xff) {
+				verify(face.texture < texture_count, "Sky has bad texture data.");
+				primitive->material = face.texture;
+			}
+			last_material = face.texture;
 		}
-		last_submesh_material = submesh->material;
 		
-		submesh->faces.emplace_back(face.indices[0], face.indices[1], face.indices[2]);
+		// Reverse the winding order.
+		primitive->indices.emplace_back((u32) base_index + face.indices[2]);
+		primitive->indices.emplace_back((u32) base_index + face.indices[1]);
+		primitive->indices.emplace_back((u32) base_index + face.indices[0]);
 	}
-	
-	return cluster;
 }
 
-static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Mesh& cluster) {
-	header.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(cluster.vertices));
-	header.vertex_count = cluster.vertices.size();
+static void write_sky_clusters(std::vector<SkyClusterHeader>& headers, OutBuffer data, const GLTF::Mesh& shell, f32 min_azimuth, f32 max_azimuth, f32 azimuth_bias, f32 min_elev, f32 max_elev) {
+	std::vector<Vertex> vertices;
+	std::vector<SkyFace> faces;
+	std::vector<s32> mapping(shell.vertices.size(), -1);
 	
-	dest.pad(0x10);
-	header.data = dest.tell();
-	header.vertex_offset = dest.tell() - header.data;
-	for(const Vertex& src : cluster.vertices) {
+	for(size_t i = 0; i < shell.primitives.size(); i++) {
+		const GLTF::MeshPrimitive& primitive = shell.primitives[i];
+		
+		for(size_t j = 0; j < primitive.indices.size() / 3; j++) {
+			glm::vec3 inverse_sphere_normal = glm::normalize(
+				shell.vertices[primitive.indices[j * 3 + 0]].pos +
+				shell.vertices[primitive.indices[j * 3 + 1]].pos +
+				shell.vertices[primitive.indices[j * 3 + 2]].pos);
+				
+			f32 azimuth_radians = atan2f(inverse_sphere_normal.x, inverse_sphere_normal.y);
+			f32 azimuth_half_turns = azimuth_radians * (1.f / WRENCH_PI);
+			if(azimuth_bias != 0.f) {
+				azimuth_half_turns = (fmodf((azimuth_half_turns + azimuth_bias) / 2.f + 0.5f, 1.f) - 0.5f) * 2.f;
+			}
+			if(azimuth_half_turns < min_azimuth || azimuth_half_turns > max_azimuth) {
+				continue;
+			}
+			
+			f32 elevation_radians = asinf(inverse_sphere_normal.z);
+			f32 elevation_quarter_turns = elevation_radians * (2.f / WRENCH_PI);
+			if(elevation_quarter_turns < min_elev || elevation_quarter_turns > max_elev) {
+				continue;
+			}
+			
+			size_t vertex_count = vertices.size();
+			for(s32 k = 0; k < 3; k++) {
+				s32 src_index = primitive.indices[j * 3 + k];
+				if(mapping.at(src_index) == -1) {
+					vertex_count++;
+				}
+			}
+			
+			// TODO: Should maybe check the cluster size too.
+			if(vertex_count > INT8_MAX || faces.size() + 1 > INT16_MAX) {
+				headers.emplace_back(write_sky_cluster(data, vertices, faces));
+				vertices.clear();
+				faces.clear();
+				for(s32& m : mapping) {
+					m = -1;
+				}
+			}
+			
+			s32 indices[3];
+			for(s32 k = 0; k < 3; k++) {
+				s32 src_index = primitive.indices[j * 3 + k];
+				s32& dest_index = mapping.at(src_index);
+				if(dest_index == -1) {
+					dest_index = (s32) vertices.size();
+					Vertex& vertex = vertices.emplace_back(shell.vertices.at(src_index));
+					if((primitive.attributes_bitfield & GLTF::COLOR_0) == 0) {
+						vertex.colour.a = 0xff;
+					}
+				}
+				indices[k] = dest_index;
+				verify(indices[k] < 256, "Too many vertices in a single cluster.");
+			}
+			
+			SkyFace& face = faces.emplace_back();
+			if(primitive.material.has_value()) {
+				verify(*primitive.material < 256, "Too many textures.");
+				face.texture = (u8) *primitive.material;
+			} else {
+				face.texture = 0xff;
+			}
+			// Reverse the winding order.
+			face.indices[0] = (u8) indices[2];
+			face.indices[1] = (u8) indices[1];
+			face.indices[2] = (u8) indices[0];
+		}
+	}
+	
+	if(!faces.empty()) {
+		headers.emplace_back(write_sky_cluster(data, vertices, faces));
+	}
+}
+
+static SkyClusterHeader write_sky_cluster(OutBuffer data, const std::vector<Vertex>& vertices, const std::vector<SkyFace>& faces) {
+	SkyClusterHeader header;
+	header.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(vertices));
+	header.vertex_count = (s16) vertices.size();
+	
+	data.pad(0x10);
+	header.data = data.tell();
+	header.vertex_offset = data.tell() - header.data;
+	for(const Vertex& src : vertices) {
 		SkyVertex vertex;
 		vertex.x = (s16) roundf(src.pos.x * 1024.f);
 		vertex.y = (s16) roundf(src.pos.y * 1024.f);
@@ -280,47 +402,25 @@ static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Me
 		} else {
 			vertex.alpha = src.colour.a / 2;
 		}
-		dest.write(vertex);
+		data.write(vertex);
 	}
 	
-	dest.pad(0x4);
-	header.st_offset = dest.tell() - header.data;
-	for(const Vertex& src : cluster.vertices) {
+	data.pad(0x4);
+	header.st_offset = data.tell() - header.data;
+	for(const Vertex& src : vertices) {
 		SkyTexCoord st;
 		st.s = vu_float_to_fixed12(src.tex_coord.x);
 		st.t = vu_float_to_fixed12(src.tex_coord.y);
-		dest.write(st);
+		data.write(st);
 	}
 	
-	dest.pad(0x4);
-	header.tri_offset = dest.tell() - header.data;
-	for(const SubMesh& submesh : cluster.submeshes) {
-		for(const Face& src : submesh.faces) {
-			verify(src.v0 < 256 && src.v1 < 256 && src.v2 < 256 && src.v3 < 256,
-				"Too many vertices in a single cluster.");
-			SkyFace face;
-			verify(submesh.material < 256, "Too many textures.");
-			face.texture = (u8) submesh.material;
-			if(src.is_quad()) {
-				face.indices[0] = (u8) src.v0;
-				face.indices[1] = (u8) src.v1;
-				face.indices[2] = (u8) src.v2;
-				dest.write(face);
-				face.indices[0] = (u8) src.v2;
-				face.indices[1] = (u8) src.v3;
-				face.indices[2] = (u8) src.v0;
-				dest.write(face);
-				header.tri_count += 2;
-			} else {
-				face.indices[0] = (u8) src.v0;
-				face.indices[1] = (u8) src.v1;
-				face.indices[2] = (u8) src.v2;
-				dest.write(face);
-				header.tri_count++;
-			}
-		}
-	}
+	data.pad(0x4);
+	header.tri_offset = data.tell() - header.data;
+	data.write_multiple(faces);
+	header.tri_count = (s16) faces.size();
 	
-	dest.pad(0x10);
-	header.data_size = dest.tell() - header.data;
+	data.pad(0x10);
+	header.data_size = data.tell() - header.data;
+	
+	return header;
 }

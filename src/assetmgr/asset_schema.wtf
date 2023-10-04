@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 26
+format_version: 27
 
 // *****************************************************************************
 
@@ -1828,12 +1828,6 @@ AssetType Sky {
 AssetType SkyShell {
 	bin_leaf: true
 	
-	BooleanAttribute textured {
-		desc: "If the mesh is textured or not."
-		required: true
-		games: [1 2 3 4]
-	}
-	
 	BooleanAttribute bloom {
 		desc: "Only works for textured shells."
 		required: false
@@ -1843,23 +1837,20 @@ AssetType SkyShell {
 	Vector3Attribute starting_rotation {
 		desc: "The starting rotation. Each component is in radians."
 		required: false
-		games: [1 2 3 4]
+		games: [3 4]
 	}
 	
 	Vector3Attribute angular_velocity {
 		desc: "The change in rotation. Each component is in radians per second."
 		required: false
-		games: [1 2 3 4]
+		games: [3 4]
 	}
 	
 	Child mesh {
-		desc: "The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters."
-		allowed_types: ["Collection"]
+		desc: "The mesh."
+		allowed_types: ["Mesh"]
 		required: true
 		games: [1 2 3 4]
-		Child child {
-			allowed_types: ["Mesh"]
-		}
 	}
 }
 
