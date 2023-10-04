@@ -1176,8 +1176,8 @@ No children.
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | bloom | Only works for textured shells. | Boolean | No | UYA/DL |
-| starting_rotation | The starting rotation. Each component is in radians. | Vector3 | No | RAC/GC/UYA/DL |
-| angular_velocity | The change in rotation. Each component is in radians per second. | Vector3 | No | RAC/GC/UYA/DL |
+| starting_rotation | The starting rotation. Each component is in radians. | Vector3 | No | UYA/DL |
+| angular_velocity | The change in rotation. Each component is in radians per second. | Vector3 | No | UYA/DL |
 
 *Children*
 
