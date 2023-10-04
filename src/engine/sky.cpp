@@ -354,6 +354,9 @@ static void write_sky_clusters(std::vector<SkyClusterHeader>& headers, OutBuffer
 				if(dest_index == -1) {
 					dest_index = (s32) vertices.size();
 					Vertex& vertex = vertices.emplace_back(shell.vertices.at(src_index));
+					if((primitive.attributes_bitfield & GLTF::COLOR_0) == 0) {
+						vertex.colour.a = 0xff;
+					}
 				}
 				indices[k] = dest_index;
 				verify(indices[k] < 256, "Too many vertices in a single cluster.");
