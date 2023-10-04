@@ -29,7 +29,8 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32
 static f32 rotation_to_radians_per_second(s16 angle, f32 framerate);
 static s16 rotation_from_radians_per_second(f32 angle, f32 framerate);
 static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 texture_count, bool textured);
-static bool write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const GLTF::Mesh& shell, f32 min_azimuth, f32 max_azimuth, f32 azimuth_bias, f32 min_elev, f32 max_elev);
+static void write_sky_clusters(std::vector<SkyClusterHeader>& headers, OutBuffer data, const GLTF::Mesh& shell, f32 min_azimuth, f32 max_azimuth, f32 azimuth_bias, f32 min_elev, f32 max_elev);
+static SkyClusterHeader write_sky_cluster(OutBuffer data, const std::vector<Vertex>& vertices, const std::vector<SkyFace>& faces);
 
 Sky read_sky(Buffer src, Game game, f32 framerate) {
 	Sky sky;
@@ -203,29 +204,12 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32
 		f32 min_azimuth = azimuth * (1.f / 6.f);
 		f32 max_azimuth = (azimuth + 1) * (1.f / 6.f);
 		
-		SkyClusterHeader middle_cluster_header;
-		if(write_sky_cluster(cluster_data, middle_cluster_header, shell.mesh, min_azimuth, max_azimuth, 1 / 12.f, -mid_threshold, mid_threshold)) {
-			cluster_headers.emplace_back(middle_cluster_header);
-		}
-		
-		SkyClusterHeader low_cluster_header;
-		if(write_sky_cluster(cluster_data, low_cluster_header, shell.mesh, min_azimuth, max_azimuth, 0.f, -high_threshold, -mid_threshold)) {
-			cluster_headers.emplace_back(low_cluster_header);
-		}
-		
-		SkyClusterHeader high_cluster_header;
-		if(write_sky_cluster(cluster_data, high_cluster_header, shell.mesh, min_azimuth, max_azimuth, 0.f, mid_threshold, high_threshold)) {
-			cluster_headers.emplace_back(high_cluster_header);
-		}
+		write_sky_clusters(cluster_headers, cluster_data, shell.mesh, min_azimuth, max_azimuth, 1 / 12.f, -mid_threshold, mid_threshold);
+		write_sky_clusters(cluster_headers, cluster_data, shell.mesh, min_azimuth, max_azimuth, 0.f, -high_threshold, -mid_threshold);
+		write_sky_clusters(cluster_headers, cluster_data, shell.mesh, min_azimuth, max_azimuth, 0.f, mid_threshold, high_threshold);
 	}
-	SkyClusterHeader top_header;
-	if(write_sky_cluster(cluster_data, top_header, shell.mesh, -1.f, 1.f, 0.f, high_threshold, 1.f)) {
-		cluster_headers.emplace_back(top_header);
-	}
-	SkyClusterHeader bottom_header;
-	if(write_sky_cluster(cluster_data, bottom_header, shell.mesh, -1.f, 1.f, 0.f, -1.f, -high_threshold)) {
-		cluster_headers.emplace_back(bottom_header);
-	}
+	write_sky_clusters(cluster_headers, cluster_data, shell.mesh, -1.f, 1.f, 0.f, high_threshold, 1.f);
+	write_sky_clusters(cluster_headers, cluster_data, shell.mesh, -1.f, 1.f, 0.f, -1.f, -high_threshold);
 	
 	verify(cluster_headers.size() < INT16_MAX, "Too many clusters in a shell.");
 	
@@ -316,7 +300,7 @@ static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 textu
 	}
 }
 
-static bool write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const GLTF::Mesh& shell, f32 min_azimuth, f32 max_azimuth, f32 azimuth_bias, f32 min_elev, f32 max_elev) {
+static void write_sky_clusters(std::vector<SkyClusterHeader>& headers, OutBuffer data, const GLTF::Mesh& shell, f32 min_azimuth, f32 max_azimuth, f32 azimuth_bias, f32 min_elev, f32 max_elev) {
 	std::vector<Vertex> vertices;
 	std::vector<SkyFace> faces;
 	std::vector<s32> mapping(shell.vertices.size(), -1);
@@ -345,13 +329,31 @@ static bool write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const GL
 				continue;
 			}
 			
+			size_t vertex_count = vertices.size();
+			for(s32 k = 0; k < 3; k++) {
+				s32 src_index = primitive.indices[j * 3 + k];
+				if(mapping.at(src_index) == -1) {
+					vertex_count++;
+				}
+			}
+			
+			// TODO: Should maybe check the cluster size too.
+			if(vertex_count > INT8_MAX || faces.size() + 1 > INT16_MAX) {
+				headers.emplace_back(write_sky_cluster(data, vertices, faces));
+				vertices.clear();
+				faces.clear();
+				for(s32& m : mapping) {
+					m = -1;
+				}
+			}
+			
 			s32 indices[3];
 			for(s32 k = 0; k < 3; k++) {
 				s32 src_index = primitive.indices[j * 3 + k];
 				s32& dest_index = mapping.at(src_index);
 				if(dest_index == -1) {
 					dest_index = (s32) vertices.size();
-					vertices.emplace_back(shell.vertices.at(src_index));
+					Vertex& vertex = vertices.emplace_back(shell.vertices.at(src_index));
 				}
 				indices[k] = dest_index;
 				verify(indices[k] < 256, "Too many vertices in a single cluster.");
@@ -368,20 +370,22 @@ static bool write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const GL
 			face.indices[0] = (u8) indices[2];
 			face.indices[1] = (u8) indices[1];
 			face.indices[2] = (u8) indices[0];
-			header.tri_count++;
 		}
 	}
 	
-	if(faces.empty()) {
-		return false;
+	if(!faces.empty()) {
+		headers.emplace_back(write_sky_cluster(data, vertices, faces));
 	}
-	
+}
+
+static SkyClusterHeader write_sky_cluster(OutBuffer data, const std::vector<Vertex>& vertices, const std::vector<SkyFace>& faces) {
+	SkyClusterHeader header;
 	header.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(vertices));
 	header.vertex_count = (s16) vertices.size();
 	
-	dest.pad(0x10);
-	header.data = dest.tell();
-	header.vertex_offset = dest.tell() - header.data;
+	data.pad(0x10);
+	header.data = data.tell();
+	header.vertex_offset = data.tell() - header.data;
 	for(const Vertex& src : vertices) {
 		SkyVertex vertex;
 		vertex.x = (s16) roundf(src.pos.x * 1024.f);
@@ -392,25 +396,25 @@ static bool write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const GL
 		} else {
 			vertex.alpha = src.colour.a / 2;
 		}
-		dest.write(vertex);
+		data.write(vertex);
 	}
 	
-	dest.pad(0x4);
-	header.st_offset = dest.tell() - header.data;
+	data.pad(0x4);
+	header.st_offset = data.tell() - header.data;
 	for(const Vertex& src : vertices) {
 		SkyTexCoord st;
 		st.s = vu_float_to_fixed12(src.tex_coord.x);
 		st.t = vu_float_to_fixed12(src.tex_coord.y);
-		dest.write(st);
+		data.write(st);
 	}
 	
-	dest.pad(0x4);
-	header.tri_offset = dest.tell() - header.data;
-	dest.write_multiple(faces);
+	data.pad(0x4);
+	header.tri_offset = data.tell() - header.data;
+	data.write_multiple(faces);
 	header.tri_count = (s16) faces.size();
 	
-	dest.pad(0x10);
-	header.data_size = dest.tell() - header.data;
+	data.pad(0x10);
+	header.data_size = data.tell() - header.data;
 	
-	return true;
+	return header;
 }
