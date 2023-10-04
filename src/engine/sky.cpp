@@ -198,6 +198,9 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32
 	std::vector<SkyClusterHeader> cluster_headers;
 	std::vector<u8> cluster_data;
 	
+	// This mimics how the sky shells are split up into clusters in the original
+	// games. It's not exactly accurate, but I think it's close enough.
+	
 	f32 mid_threshold = 20.f / 90.f;
 	f32 high_threshold = 65.f / 90.f;
 	for(s32 azimuth = -6; azimuth < 6; azimuth++) {

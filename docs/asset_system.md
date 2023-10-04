@@ -144,7 +144,7 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
-| 27   |       | Use glTF (.glb) for the sky models instead of COLLADA. The mesh attribute of the SkyShell asset is now of type Mesh instead of Collection. |
+| 27   |       | Use glTF (.glb) for the sky models instead of COLLADA. The mesh attribute of the SkyShell asset is now of type Mesh instead of Collection. The starting_rotation and angular_velocity attributes now only will only apply for UYA and DL (which is more correct). |
 | 26   |       | Added static_collision children to MobyClass, TieClass and ShrubClass assets. The corresponding instance types now have has_static_collision flags. |
 | 25   | v0.4  | Added version_info nodes to the instances files containing information about the application writing out the file, and the format version. |
 | 24   |       | Instance IDs are now rewritten to indices while the gameplay/mission files are packed. Added core child to mission instances asset. All colours stored on instances are now vec3s. |

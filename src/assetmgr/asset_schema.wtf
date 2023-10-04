@@ -1837,13 +1837,13 @@ AssetType SkyShell {
 	Vector3Attribute starting_rotation {
 		desc: "The starting rotation. Each component is in radians."
 		required: false
-		games: [1 2 3 4]
+		games: [3 4]
 	}
 	
 	Vector3Attribute angular_velocity {
 		desc: "The change in rotation. Each component is in radians per second."
 		required: false
-		games: [1 2 3 4]
+		games: [3 4]
 	}
 	
 	Child mesh {
