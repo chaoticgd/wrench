@@ -56,7 +56,7 @@ void TriStripPacketGenerator::add_list(const s32* indices, s32 index_count, s32 
 		return;
 	}
 	
-	if(_current_effective_material != effective_material) {
+	if(effective_material != _current_effective_material) {
 		if(!try_add_material()) {
 			new_packet();
 			add_list(indices, index_count, effective_material);
@@ -116,14 +116,16 @@ void TriStripPacketGenerator::add_list(const s32* indices, s32 index_count, s32 
 	}
 }
 
-static bool tri_has_zero_area(s32 v0, s32 v1, s32 v2) { return v0 == v1 || v0 == v2 || v1 == v2; }
+static bool tri_has_zero_area(s32 v0, s32 v1, s32 v2) {
+	return v0 == v1 || v0 == v2 || v1 == v2;
+}
 
 void TriStripPacketGenerator::add_strip(const s32* indices, s32 index_count, s32 effective_material) {
 	if(index_count < 3) {
 		return;
 	}
 	
-	if(_current_effective_material != effective_material) {
+	if(effective_material != _current_effective_material) {
 		if(!try_add_material()) {
 			new_packet();
 			add_strip(indices, index_count, effective_material);

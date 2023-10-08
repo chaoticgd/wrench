@@ -456,7 +456,7 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				// The data written here doesn't match the layout of the
 				// respective GS registers. This is because the data is fixed up
 				// at runtime by the game.
-				ShrubTexturePrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<0>();
+				ShrubTexturePrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<ShrubTexturePrimitive>();
 				dest_primitive.d1_tex1_1.address = GIF_AD_TEX1_1;
 				dest_primitive.d1_tex1_1.data_lo = compute_lod_k(mip_distance);
 				dest_primitive.d1_tex1_1.data_hi = 0x04; // mmin
@@ -474,7 +474,7 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				
 				last_effective_material = src_primitive.effective_material;
 			}
-			ShrubVertexPrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<1>();
+			ShrubVertexPrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<ShrubVertexPrimitive>();
 			dest_primitive.type = src_primitive.type;
 			for(s32 j = 0; j < src_primitive.index_count; j++) {
 				ShrubVertex& dest_vertex = dest_primitive.vertices.emplace_back();
