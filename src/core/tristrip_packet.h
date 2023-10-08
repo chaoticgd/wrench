@@ -22,6 +22,7 @@
 #include <core/mesh.h>
 #include <core/mesh_graph.h>
 #include <core/material.h>
+#include <core/tristrip.h>
 
 // This models the limited maximum size of a given packet. For each constraint,
 // the number of the given objects in a packet will be multiplied by their
@@ -38,46 +39,9 @@ struct TriStripConstraints {
 	s32 max_cost[4];
 };
 
-enum class GeometryType {
-	TRIANGLE_LIST,
-	TRIANGLE_STRIP,
-	TRIANGLE_FAN
-};
-
-struct FaceStrip {
-	GeometryType type;
-	s32 face_begin = 0;
-	s32 face_count = 0;
-	s32 effective_material = 0;
-	s32 zero_area_tri_count = 0;
-};
-
-// This is used where a list of faces may contain a zero area triangle i.e. one
-// that isn't included in the original mesh but is inserted to construct a
-// triangle strip.
-struct StripFace {
-	StripFace() {}
-	StripFace(VertexIndex v0, VertexIndex v1, VertexIndex v2, FaceIndex i)
-		: v{v0, v1, v2}, index(i) {}
-	VertexIndex v[3];
-	FaceIndex index = NULL_FACE_INDEX;
-	bool is_zero_area() const { return v[0] == v[1] || v[0] == v[2] || v[1] == v[2]; }
-};
-
-struct FaceStrips {
-	std::vector<FaceStrip> strips;
-	std::vector<StripFace> faces;
-};
-
-struct FaceStripPacket {
-	s32 strip_begin = 0;
-	s32 strip_count = 0;
-};
-
-struct FaceStripPackets {
-	std::vector<FaceStripPacket> packets;
-	std::vector<FaceStrip> strips;
-	std::vector<StripFace> faces;
+struct TriStripConfig {
+	TriStripConstraints constraints;
+	bool support_instancing;
 };
 
 struct TriStripRunningTotals {
@@ -86,6 +50,19 @@ struct TriStripRunningTotals {
 	s32 index_count = 0;
 	s32 material_count = 0;
 };
+
+struct GeometryPacket {
+	s32 primitive_begin = 0;
+	s32 primitive_count = 0;
+};
+
+struct GeometryPackets {
+	std::vector<GeometryPacket> packets;
+	std::vector<GeometryPrimitive> primitives;
+	std::vector<s32> indices;
+};
+
+GeometryPackets generate_tristrip_packets(const GeometryPrimitives& input, const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConfig& config);
 
 // Gets fed tristrips (as well as triangle lists) and incrementally splits them
 // up into packets based on the constraints passed to it at construction time.
@@ -96,17 +73,16 @@ class TriStripPacketGenerator {
 	bool _support_instancing;
 	
 	TriStripRunningTotals _totals;
-	FaceStripPacket* _packet;
-	s32 _last_effective_material = -1;
-	s32 _output_material = -1;
+	GeometryPacket* _packet;
+	s32 _current_effective_material = -1;
 	
-	FaceStripPackets _output;
+	GeometryPackets _output;
 	
 public:
 	TriStripPacketGenerator(const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConstraints& constraints, bool support_instancing);
-	void add_list(const VertexIndex* indices, s32 face_count, s32 effective_material);
-	void add_strip(const StripFace* faces, s32 face_count, s32 effective_material);
-	FaceStripPackets get_output();
+	void add_list(const s32* indices, s32 index_count, s32 effective_material);
+	void add_strip(const s32* indices, s32 index_count, s32 effective_material);
+	GeometryPackets get_output();
 	
 private:
 	void new_packet();

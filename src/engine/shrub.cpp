@@ -20,6 +20,7 @@
 
 #include <algorithm>
 
+#include <core/tristrip_packet.h>
 #include <core/vif.h>
 
 //#define WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
@@ -435,15 +436,20 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 	config.support_instancing = true;
 	
 	// Generate the strips.
-	GeometryPackets output = weave_tristrips(mesh, materials, config);
+	std::vector<EffectiveMaterial> effectives = effective_materials(materials, MATERIAL_ATTRIB_SURFACE | MATERIAL_ATTRIB_WRAP_MODE);
+	GeometryPrimitives primitives = weave_tristrips(mesh, effectives);
+	GeometryPackets output = generate_tristrip_packets(primitives, materials, effectives, config);
 	
 	// Build the shrub packets.
 	for(const GeometryPacket& src_packet : output.packets) {
+		s32 last_effective_material = -1;
 		ShrubPacket& dest_packet = shrub.packets.emplace_back();
 		for(s32 i = 0; i < src_packet.primitive_count; i++) {
 			const GeometryPrimitive& src_primitive = output.primitives[src_packet.primitive_begin + i];
-			if(src_primitive.material != -1) {
-				const Material& material = materials[src_primitive.material];
+			verify(src_primitive.effective_material > -1, "Bad material index.");
+			if(src_primitive.effective_material != last_effective_material) {
+				const EffectiveMaterial& effective = effectives.at(src_primitive.effective_material);
+				const Material& material = materials.at(effective.materials.at(0));
 				verify(material.surface.type == MaterialSurfaceType::TEXTURE,
 					"A shrub material does not have a texture.");
 				
@@ -465,6 +471,8 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				dest_primitive.d3_miptbp1_1.data_lo = material.surface.texture;
 				dest_primitive.d4_tex0_1.address = GIF_AD_TEX0_1;
 				dest_primitive.d4_tex0_1.data_lo = material.surface.texture;
+				
+				last_effective_material = src_primitive.effective_material;
 			}
 			ShrubVertexPrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<1>();
 			dest_primitive.type = src_primitive.type;

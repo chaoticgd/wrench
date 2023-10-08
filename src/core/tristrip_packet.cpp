@@ -18,6 +18,27 @@
 
 #include "tristrip_packet.h"
 
+GeometryPackets generate_tristrip_packets(const GeometryPrimitives& input, const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConfig& config) {
+	TriStripPacketGenerator generator(materials, effectives, config.constraints, config.support_instancing);
+	for(const GeometryPrimitive& primitive : input.primitives) {
+		switch(primitive.type) {
+			case GeometryType::TRIANGLE_LIST: {
+				generator.add_list(&input.indices[primitive.index_begin], primitive.index_count, primitive.effective_material);
+				break;
+			}
+			case GeometryType::TRIANGLE_STRIP: {
+				generator.add_strip(&input.indices[primitive.index_begin], primitive.index_count, primitive.effective_material);
+				break;
+			}
+			case GeometryType::TRIANGLE_FAN: {
+				verify_not_reached("Tri fan packet generation not yet implemented.");
+				break;
+			}
+		}
+	}
+	return generator.get_output();
+}
+
 TriStripPacketGenerator::TriStripPacketGenerator(
 	const std::vector<Material>& materials,
 	const std::vector<EffectiveMaterial>& effectives,
@@ -30,24 +51,23 @@ TriStripPacketGenerator::TriStripPacketGenerator(
 	new_packet();
 }
 
-void TriStripPacketGenerator::add_list(const VertexIndex* indices, s32 face_count, s32 effective_material) {
-	if(face_count == 0) {
+void TriStripPacketGenerator::add_list(const s32* indices, s32 index_count, s32 effective_material) {
+	if(index_count < 3) {
 		return;
 	}
 	
-	if(_last_effective_material != effective_material) {
+	if(_current_effective_material != effective_material) {
 		if(!try_add_material()) {
 			new_packet();
-			add_list(indices, face_count, effective_material);
+			add_list(indices, index_count, effective_material);
 			return;
 		}
-		_last_effective_material = effective_material;
-		_output_material = effective_material;
+		_current_effective_material = effective_material;
 	}
 	
 	if(!try_add_strip()) {
 		new_packet();
-		add_list(indices, face_count, effective_material);
+		add_list(indices, index_count, effective_material);
 	}
 	
 	// See if we can add the first face.
@@ -57,27 +77,26 @@ void TriStripPacketGenerator::add_list(const VertexIndex* indices, s32 face_coun
 	valid &= try_add_unique_vertex();
 	if(!valid) {
 		new_packet();
-		add_list(indices, face_count, effective_material);
+		add_list(indices, index_count, effective_material);
 		return;
 	}
 	
-	// Setup the primitive.
-	_packet->strip_count++;
-	FaceStrip& dest_strip = _output.strips.emplace_back();
-	dest_strip.type = GeometryType::TRIANGLE_LIST;
-	dest_strip.face_begin = (s32) _output.faces.size();
-	dest_strip.face_count = 0;
-	dest_strip.effective_material = _output_material;
+	// Setup the triangle list.
+	_packet->primitive_count++;
+	GeometryPrimitive& dest_primitive = _output.primitives.emplace_back();
+	dest_primitive.type = GeometryType::TRIANGLE_LIST;
+	dest_primitive.index_begin = (s32) _output.indices.size();
+	dest_primitive.index_count = 0;
+	dest_primitive.effective_material = _current_effective_material;
 	
 	// Add the first face.
-	dest_strip.face_count++;
-	StripFace& first_face = _output.faces.emplace_back();
-	first_face.v[0] = indices[0];
-	first_face.v[1] = indices[1];
-	first_face.v[2] = indices[2];
+	dest_primitive.index_count += 3;
+	_output.indices.emplace_back(indices[0]);
+	_output.indices.emplace_back(indices[1]);
+	_output.indices.emplace_back(indices[2]);
 	
 	// Add as many of the remaining faces as possible.
-	for(s32 j = 1; j < face_count; j++) {
+	for(s32 j = 3; j < index_count; j += 3) {
 		bool valid = true;
 		valid &= try_add_unique_vertex();
 		valid &= try_add_unique_vertex();
@@ -85,38 +104,36 @@ void TriStripPacketGenerator::add_list(const VertexIndex* indices, s32 face_coun
 		if(!valid) {
 			// We need to split up the strip.
 			new_packet();
-			add_list(indices + j * 3, face_count - j, effective_material);
+			add_list(indices + j, index_count - j, effective_material);
 			return;
 		}
 		
-		dest_strip.face_count++;
-		StripFace& face = _output.faces.emplace_back();
-		face.v[0] = indices[j * 3 + 0];
-		face.v[1] = indices[j * 3 + 1];
-		face.v[2] = indices[j * 3 + 2];
+		dest_primitive.index_count += 3;
+		_output.indices.emplace_back(indices[j + 0]);
+		_output.indices.emplace_back(indices[j + 1]);
+		_output.indices.emplace_back(indices[j + 2]);
 	}
-	
-	_output_material = -1;
 }
 
-void TriStripPacketGenerator::add_strip(const StripFace* faces, s32 face_count, s32 effective_material) {
-	if(face_count == 0) {
+static bool tri_has_zero_area(s32 v0, s32 v1, s32 v2) { return v0 == v1 || v0 == v2 || v1 == v2; }
+
+void TriStripPacketGenerator::add_strip(const s32* indices, s32 index_count, s32 effective_material) {
+	if(index_count < 3) {
 		return;
 	}
 	
-	if(_last_effective_material != effective_material) {
+	if(_current_effective_material != effective_material) {
 		if(!try_add_material()) {
 			new_packet();
-			add_strip(faces, face_count, effective_material);
+			add_strip(indices, index_count, effective_material);
 			return;
 		}
-		_last_effective_material = effective_material;
-		_output_material = effective_material;
+		_current_effective_material = effective_material;
 	}
 	
 	if(!try_add_strip()) {
 		new_packet();
-		add_strip(faces, face_count, effective_material);
+		add_strip(indices, index_count, effective_material);
 		return;
 	}
 	
@@ -127,50 +144,50 @@ void TriStripPacketGenerator::add_strip(const StripFace* faces, s32 face_count, 
 	valid &= try_add_unique_vertex();
 	if(!valid) {
 		new_packet();
-		add_strip(faces, face_count, effective_material);
+		add_strip(indices, index_count, effective_material);
 		return;
 	}
 	
-	// Setup the strip.
-	_packet->strip_count++;
-	FaceStrip& dest_strip = _output.strips.emplace_back();
-	dest_strip.type = GeometryType::TRIANGLE_STRIP;
-	dest_strip.face_begin = (s32) _output.faces.size();
-	dest_strip.face_count = 0;
-	dest_strip.effective_material = _output_material;
+	// Setup the triangle strip.
+	_packet->primitive_count++;
+	GeometryPrimitive& dest_primitive = _output.primitives.emplace_back();
+	dest_primitive.type = GeometryType::TRIANGLE_STRIP;
+	dest_primitive.index_begin = (s32) _output.indices.size();
+	dest_primitive.index_count = 0;
+	dest_primitive.effective_material = _current_effective_material;
 	
 	// Add the first face.
-	dest_strip.face_count++;
-	_output.faces.emplace_back(faces[0]);
+	dest_primitive.index_count += 3;
+	_output.indices.emplace_back(indices[0]);
+	_output.indices.emplace_back(indices[1]);
+	_output.indices.emplace_back(indices[2]);
 	
 	// Add as many of the remaining faces as possible.
-	for(s32 j = 1; j < face_count; j++) {
+	for(s32 j = 3; j < index_count; j++) {
 		if(!try_add_unique_vertex()) {
 			// We need to split up the strip.
 			new_packet();
-			for(; j < face_count && faces[j].is_zero_area(); j++);
-			add_strip(faces + j, face_count - j, effective_material);
+			for(; j < index_count && tri_has_zero_area(indices[j - 2], indices[j - 1], indices[j]); j++);
+			add_strip(indices + j, index_count - j, effective_material);
 			return;
 		}
 		
-		dest_strip.face_count++;
-		_output.faces.emplace_back(faces[j]);
+		dest_primitive.index_count++;
+		_output.indices.emplace_back(indices[j]);
 	}
-	
-	_output_material = -1;
 }
 
-FaceStripPackets TriStripPacketGenerator::get_output() {
+GeometryPackets TriStripPacketGenerator::get_output() {
 	return std::move(_output);
 }
 
 void TriStripPacketGenerator::new_packet() {
 	_totals = {}; // Reset the constraint calculations.
 	_packet = &_output.packets.emplace_back();
-	_packet->strip_begin = _output.strips.size();
-	_packet->strip_count = 0;
+	_packet->primitive_begin = _output.primitives.size();
+	_packet->primitive_count = 0;
 	if(_support_instancing) {
-		_last_effective_material = -1;
+		_current_effective_material = -1;
 	}
 }
 

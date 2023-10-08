@@ -25,47 +25,81 @@
 //
 // Some of the algorithms here were adapted from the NvTriStrip library.
 
+struct FaceStrip {
+	GeometryType type;
+	s32 face_begin = 0;
+	s32 face_count = 0;
+	s32 effective_material = 0;
+	s32 zero_area_tri_count = 0;
+};
+
+// This is used where a list of faces may contain a zero area triangle i.e. one
+// that isn't included in the original mesh but is inserted to construct a
+// triangle strip.
+struct StripFace {
+	StripFace() {}
+	StripFace(VertexIndex v0, VertexIndex v1, VertexIndex v2, FaceIndex i)
+		: v{v0, v1, v2}, index(i) {}
+	VertexIndex v[3];
+	FaceIndex index = NULL_FACE_INDEX;
+	bool is_zero_area() const { return v[0] == v[1] || v[0] == v[2] || v[1] == v[2]; }
+};
+
+struct FaceStrips {
+	std::vector<FaceStrip> strips;
+	std::vector<StripFace> faces;
+};
+
+struct FaceStripPacket {
+	s32 strip_begin = 0;
+	s32 strip_count = 0;
+};
+
+struct FaceStripPackets {
+	std::vector<FaceStripPacket> packets;
+	std::vector<FaceStrip> strips;
+	std::vector<StripFace> faces;
+};
+
 static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective);
 static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex next_faces[3]);
 static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph, const EffectiveMaterial& effective);
 static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex v1, VertexIndex v2, MeshGraph& graph, const EffectiveMaterial& effective);
-static FaceStripPackets generate_packets(const FaceStrips& strips, const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConfig& config);
-static GeometryPackets facestrips_to_tripstrips(const FaceStripPackets& input, const std::vector<EffectiveMaterial>& effectives);
-static void facestrip_to_tristrip(GeometryPackets& output, const FaceStrip& face_strip, const std::vector<StripFace>& faces);
+static GeometryPrimitives facestrips_to_tristrips(const FaceStrips& input, const std::vector<EffectiveMaterial>& effectives);
+static void facestrip_to_tristrip(std::vector<s32>& output_indices, const FaceStrip& face_strip, const std::vector<StripFace>& faces);
+static void batch_single_triangles_together(GeometryPrimitives& primitives);
 static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace& rhs);
 static std::pair<VertexIndex, VertexIndex> get_shared_vertices(const StripFace& lhs, const StripFace& rhs);
 static void verify_face_strips(const std::vector<FaceStrip>& strips, const std::vector<StripFace>& faces, const char* context, const MeshGraph& graph);
 
-GeometryPackets weave_tristrips(const Mesh& mesh, const std::vector<Material>& materials, const TriStripConfig& config) {
+GeometryPrimitives weave_tristrips(const Mesh& mesh, const std::vector<EffectiveMaterial>& effectives) {
 	// Firstly we build a graph structure to make finding adjacent faces fast.
 	MeshGraph graph(mesh);
 	if(graph.face_count() == 0) {
 		return {};
 	}
-	std::vector<EffectiveMaterial> effectives = effective_materials(materials, MATERIAL_ATTRIB_SURFACE | MATERIAL_ATTRIB_WRAP_MODE);
-	FaceStrips strips;
+	FaceStrips face_strips;
 	for(s32 i = 0; i < (s32) effectives.size(); i++) {
 		const EffectiveMaterial& effective = effectives[i];
 		for(;;) {
-			FaceStrip strip = weave_multiple_strips_and_pick_the_best(strips, graph, effective);
+			FaceStrip strip = weave_multiple_strips_and_pick_the_best(face_strips, graph, effective);
 			if(strip.face_count == 0) {
 				break;
 			}
 			strip.effective_material = i;
 			for(s32 i = 0; i < strip.face_count; i++) {
-				StripFace& face = strips.faces[strip.face_begin + i];
+				StripFace& face = face_strips.faces[strip.face_begin + i];
 				if(face.index != NULL_FACE_INDEX) {
-					graph.put_in_strip(face.index, (s32) strips.strips.size());
+					graph.put_in_strip(face.index, (s32) face_strips.strips.size());
 				}
 			}
-			strips.strips.emplace_back(strip);
+			face_strips.strips.emplace_back(strip);
 		}
 	}
-	verify_face_strips(strips.strips, strips.faces, "weave_multiple_strips_and_pick_the_best", graph);
-	FaceStripPackets packets = generate_packets(strips, materials, effectives, config);
-	verify_face_strips(packets.strips, packets.faces, "generate_packets", graph);
-	// Convert those strips of faces to tristrips.
-	return facestrips_to_tripstrips(packets, effectives);
+	verify_face_strips(face_strips.strips, face_strips.faces, "weave_multiple_strips_and_pick_the_best", graph);
+	GeometryPrimitives tri_strips = facestrips_to_tristrips(face_strips, effectives);
+	batch_single_triangles_together(tri_strips);
+	return tri_strips;
 }
 
 static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective) {
@@ -121,6 +155,7 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshG
 	
 	// Copy the best strip from the temp array to the main array.
 	FaceStrip strip;
+	strip.type = GeometryType::TRIANGLE_STRIP;
 	strip.face_begin = (s32) dest.faces.size();
 	strip.face_count = temp.strips[best_strip].face_count;
 	strip.zero_area_tri_count = temp.strips[best_strip].zero_area_tri_count;
@@ -262,62 +297,35 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 	return strip;
 }
 
-static FaceStripPackets generate_packets(const FaceStrips& strips, const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConfig& config) {
-	TriStripPacketGenerator generator(materials, effectives, config.constraints, config.support_instancing);
-	s32 first_strip_with_material = 0;
-	for(size_t i = 0; i < strips.strips.size(); i++) {
-		const FaceStrip& strip = strips.strips[i];
-		if(strip.face_count > 1) {
-			generator.add_strip(&strips.faces[strip.face_begin], strip.face_count, strip.effective_material);
-		}
-		// Batch single triangles together into lists instead of strips.
-		if(i == strips.strips.size() - 1 || strips.strips[i + 1].effective_material != strip.effective_material) {
-			std::vector<VertexIndex> indices;
-			for(size_t j = first_strip_with_material; j <= i; j++) {
-				const FaceStrip& other_strip = strips.strips[j];
-				if(other_strip.face_count == 1) {
-					indices.emplace_back(strips.faces[other_strip.face_begin].v[0]);
-					indices.emplace_back(strips.faces[other_strip.face_begin].v[1]);
-					indices.emplace_back(strips.faces[other_strip.face_begin].v[2]);
-				}
-			}
-			if(indices.size() > 0) {
-				generator.add_list(indices.data(), indices.size() / 3, strip.effective_material);
-			}
-			first_strip_with_material = i + 1;
-		}
-	}
-	return generator.get_output();
-}
-
-static GeometryPackets facestrips_to_tripstrips(const FaceStripPackets& input, const std::vector<EffectiveMaterial>& effectives) {
-	GeometryPackets output;
+static GeometryPrimitives facestrips_to_tristrips(const FaceStrips& input, const std::vector<EffectiveMaterial>& effectives) {
+	GeometryPrimitives output;
 	
-	for(const FaceStripPacket& face_packet : input.packets) {
-		GeometryPacket& tri_packet = output.packets.emplace_back();
-		tri_packet.primitive_begin = face_packet.strip_begin;
-		tri_packet.primitive_count = face_packet.strip_count;
-		for(s32 i = 0; i < face_packet.strip_count; i++) {
-			GeometryPrimitive& dest_primitive = output.primitives.emplace_back();
-			const FaceStrip& src_primitive = input.strips[face_packet.strip_begin + i];
-			dest_primitive.type = src_primitive.type;
-			dest_primitive.index_begin = output.indices.size();
-			if(src_primitive.effective_material >= 0) {
-				dest_primitive.material = effectives[src_primitive.effective_material].materials.at(0);
-			} else {
-				dest_primitive.material = -1;
-			}
-			verify_fatal(src_primitive.face_count >= 1);
-			if(src_primitive.type == GeometryType::TRIANGLE_LIST) {
+	for(const FaceStrip& src_primitive : input.strips) {
+		GeometryPrimitive& dest_primitive = output.primitives.emplace_back();
+		dest_primitive.effective_material = src_primitive.effective_material;
+		verify_fatal(src_primitive.face_count >= 1);
+		switch(src_primitive.type) {
+			case GeometryType::TRIANGLE_LIST: {
+				dest_primitive.type = GeometryType::TRIANGLE_LIST;
+				dest_primitive.index_begin = (s32) output.indices.size();
 				dest_primitive.index_count = src_primitive.face_count * 3;
 				for(s32 i = 0; i < src_primitive.face_count; i++) {
 					output.indices.emplace_back(input.faces[src_primitive.face_begin + i].v[0].index);
 					output.indices.emplace_back(input.faces[src_primitive.face_begin + i].v[1].index);
 					output.indices.emplace_back(input.faces[src_primitive.face_begin + i].v[2].index);
 				}
-			} else {
-				dest_primitive.index_count = 2 + src_primitive.face_count;
-				facestrip_to_tristrip(output, src_primitive, input.faces);
+				break;
+			}
+			case GeometryType::TRIANGLE_STRIP: {
+					dest_primitive.type = GeometryType::TRIANGLE_STRIP;
+				dest_primitive.index_begin = (s32) output.indices.size();
+				dest_primitive.index_count = src_primitive.face_count + 2;
+				facestrip_to_tristrip(output.indices, src_primitive, input.faces);
+				break;
+			}
+			case GeometryType::TRIANGLE_FAN: {
+				verify_not_reached_fatal("Conversion of face fans to triangle fans not implemented.");
+				break;
 			}
 		}
 	}
@@ -325,7 +333,7 @@ static GeometryPackets facestrips_to_tripstrips(const FaceStripPackets& input, c
 	return output;
 }
 
-static void facestrip_to_tristrip(GeometryPackets& output, const FaceStrip& face_strip, const std::vector<StripFace>& faces) {
+static void facestrip_to_tristrip(std::vector<s32>& output_indices, const FaceStrip& face_strip, const std::vector<StripFace>& faces) {
 	if(face_strip.face_count == 0) {
 		return;
 	}
@@ -363,9 +371,9 @@ static void facestrip_to_tristrip(GeometryPackets& output, const FaceStrip& face
 	verify_fatal(first_face.v[0] != NULL_VERTEX_INDEX);
 	verify_fatal(first_face.v[1] != NULL_VERTEX_INDEX);
 	verify_fatal(first_face.v[2] != NULL_VERTEX_INDEX);
-	output.indices.emplace_back(first_face.v[0].index);
-	output.indices.emplace_back(first_face.v[1].index);
-	output.indices.emplace_back(first_face.v[2].index);
+	output_indices.emplace_back(first_face.v[0].index);
+	output_indices.emplace_back(first_face.v[1].index);
+	output_indices.emplace_back(first_face.v[2].index);
 	
 	// Process the rest of the faces.
 	StripFace last_face = first_face;
@@ -374,17 +382,56 @@ static void facestrip_to_tristrip(GeometryPackets& output, const FaceStrip& face
 		VertexIndex unique = unique_vertex_from_rhs(last_face, face);
 		if(unique != NULL_VERTEX_INDEX) {
 			verify_fatal(unique != NULL_VERTEX_INDEX);
-			output.indices.emplace_back(unique.index);
+			output_indices.emplace_back(unique.index);
 			last_face.v[0] = last_face.v[1];
 			last_face.v[1] = last_face.v[2];
 			last_face.v[2] = unique;
 		} else {
 			// Insert a zero area triangle.
 			verify_fatal(face.v[2] != NULL_VERTEX_INDEX);
-			output.indices.emplace_back(face.v[2].index);
+			output_indices.emplace_back(face.v[2].index);
 			last_face.v[0] = face.v[0];
 			last_face.v[1] = face.v[1];
 			last_face.v[2] = face.v[2];
+		}
+	}
+}
+
+static void batch_single_triangles_together(GeometryPrimitives& primitives) {
+	// For each effective material.
+	size_t start_of_group = 0;
+	for(size_t i = 0; i < primitives.primitives.size(); i++) {
+		s32 effective_material = primitives.primitives[i].effective_material;
+		if(i == primitives.primitives.size() - 1 || primitives.primitives[i + 1].effective_material != effective_material) {
+			// Find a primitive to stuff the batched triangle list in.
+			size_t first_single_tri = SIZE_MAX;
+			for(size_t j = start_of_group; j <= i; j++) {
+				if(primitives.primitives[j].index_count == 3) {
+					first_single_tri = j;
+					break;
+				}
+			}
+			// Do the stuffing.
+			if(first_single_tri != SIZE_MAX) {
+				GeometryPrimitive& first_prim = primitives.primitives[first_single_tri];
+				s32 index_begin = (s32) primitives.indices.size();
+				s32 index_count = 0;
+				for(size_t j = start_of_group; j <= i; j++) {
+					GeometryPrimitive& prim = primitives.primitives[j];
+					if(prim.index_count == 3) {
+						index_count += 3;
+						primitives.indices.emplace_back(primitives.indices[prim.index_begin + 0]);
+						primitives.indices.emplace_back(primitives.indices[prim.index_begin + 1]);
+						primitives.indices.emplace_back(primitives.indices[prim.index_begin + 2]);
+						prim.index_count = 0;
+					}
+				}
+				first_prim.type = GeometryType::TRIANGLE_LIST;
+				first_prim.index_begin = index_begin;
+				first_prim.index_count = index_count;
+			}
+			start_of_group = i + 1;
+			break;
 		}
 	}
 }

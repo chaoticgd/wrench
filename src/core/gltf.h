@@ -179,7 +179,7 @@ ModelFile read_glb(Buffer src);
 // Create a .glb file in memory.
 std::vector<u8> write_glb(const ModelFile& gltf);
 
-// Create a model file with a single scene, node, and mesh in it.
+// Create a model file with a single scene in it.
 DefaultScene create_default_scene(const char* generator);
 
 // Lookup glTF objects by their name.
