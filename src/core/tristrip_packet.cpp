@@ -68,6 +68,7 @@ void TriStripPacketGenerator::add_list(const s32* indices, s32 index_count, s32 
 	if(!try_add_strip()) {
 		new_packet();
 		add_list(indices, index_count, effective_material);
+		return;
 	}
 	
 	// See if we can add the first face.
@@ -168,7 +169,7 @@ void TriStripPacketGenerator::add_strip(const s32* indices, s32 index_count, s32
 			// We need to split up the strip.
 			new_packet();
 			for(; j < index_count && tri_has_zero_area(indices[j - 2], indices[j - 1], indices[j]); j++);
-			add_strip(indices + j, index_count - j, effective_material);
+			add_strip(indices + j - 2, index_count - j + 2, effective_material);
 			return;
 		}
 		
