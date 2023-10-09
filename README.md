@@ -14,30 +14,30 @@ Features currently include:
 	- Used to launch the level editor.
 - Build Tool
 	- Pack/unpack entire ISO files.
-	- **New in v0.4!** Pack/unpack gameplay instances as `.instances` files.
+	- Pack/unpack gameplay instances as `.instances` files.
 	- Unpack tfrag meshes as COLLADA files.
 	- Unpack moby meshes as COLLADA files.
 	- Unpack tie meshes as COLLADA files.
 	- Pack/unpack collision meshes as COLLADA files.
-	- Pack/unpack shrub meshes as COLLADA files.
-	- Pack/unpack sky models as binary glTF files\*.
+	- **Updated in v0.5!** Pack/unpack shrub models as binary glTF files\*.
+	- **Updated in v0.5!** Pack/unpack sky models as binary glTF files\*.
 	- Pack/unpack textures as PNG files.
-	- **New in v0.4!** Pack/unpack packed executables and level overlays as ELF files.
+	- Pack/unpack packed executables and level overlays as ELF files.
 	- Pack/unpack everything else as binary files.
 - Level Editor
 	- View unpacked levels.
 	- Inspect objects and modify their attributes (including pvars).
 	- **New in v0.5!** Recover instanced collision for ties and shrubs.
 	- **New in v0.5!** Translate, rotate and scale objects using 3D transformation gizmos.
-- **New in v0.4!** Memory Card Editor
+- Memory Card Editor
 	- Only works properly on Deadlocked saves. Experimental.
 - Asset System
 	- A system to create, distribute and load mods.
 	- Multiple mods can be loaded at a time.
-- **New in v0.4!** Instance System
+- Instance System
 	- A source format for storing object instances.
 	- Use pvar data types from C++ header files (reflection).
-- **New in v0.4!** Visibility Tool
+- Visibility Tool
 	- Rebuild occlusion data for levels on demand.
 	- Implemented as an OpenGL renderer.
 
@@ -55,7 +55,7 @@ Features currently include:
 1.	Install the following dependencies and tools:
 	- git
 	- cmake
-	- g++ 8 or newer
+	- g++
 	- xorg-dev (needed to build GLFW)
 	- zenity
 
