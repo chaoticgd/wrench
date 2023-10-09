@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 #include <assetmgr/material_asset.h>
 #include <engine/shrub.h>
+#include <toolwads/wads.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
@@ -53,28 +54,50 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
 	ShrubClass shrub = read_shrub_class(buffer);
-	ColladaScene scene = recover_shrub_class(shrub);
+	
+	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
+	scene->nodes.emplace_back((s32) gltf.nodes.size());
+	GLTF::Node& node = gltf.nodes.emplace_back();
+	node.name = "shrub";
+	node.mesh = (s32) gltf.meshes.size();
+	gltf.meshes.emplace_back(recover_shrub_class(shrub));
 	
 	if(dest.has_materials()) {
 		CollectionAsset& materials = dest.get_materials();
 		for(s32 i = 0; i < 16; i++) {
 			if(materials.has_child(i)) {
-				MaterialAsset& material = materials.get_child(i).as<MaterialAsset>();
-				scene.texture_paths.push_back(material.diffuse().src().path.string());
+				MaterialAsset& material_asset = materials.get_child(i).as<MaterialAsset>();
+				
+				GLTF::Material& material = gltf.materials.emplace_back();
+				material.name = stringf("material_%d", i);
+				material.pbr_metallic_roughness.emplace();
+				material.pbr_metallic_roughness->base_color_texture.emplace();
+				material.pbr_metallic_roughness->base_color_texture->index = (s32) gltf.textures.size();
+				material.alpha_mode = GLTF::MASK;
+				material.double_sided = true;
+				
+				GLTF::Texture& texture = gltf.textures.emplace_back();
+				texture.source = (s32) gltf.images.size();
+				
+				GLTF::Image& image = gltf.images.emplace_back();
+				image.uri = material_asset.diffuse().src().path.string();
+				
+				material_asset.set_name(*material.name);
 			} else {
 				break;
 			}
 		}
 	}
 	
-	std::vector<u8> xml = write_collada(scene);
-	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
+	std::vector<u8> glb = GLTF::write_glb(gltf);
+	auto [stream, ref] = dest.file().open_binary_file_for_writing("mesh.glb");
+	stream->write_v(glb);
 	
 	ShrubClassCoreAsset& core = dest.core<ShrubClassCoreAsset>();
 	core.set_mip_distance(shrub.mip_distance);
 	
 	MeshAsset& mesh = core.mesh();
-	mesh.set_name("mesh");
+	mesh.set_name(*node.name);
 	mesh.set_src(ref);
 	
 	if(shrub.billboard.has_value()) {
@@ -99,13 +122,15 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 	const ShrubClassCoreAsset& core = src.get_core().as<ShrubClassCoreAsset>();
 	
 	const MeshAsset& mesh_asset = core.get_mesh();
-	std::string xml = mesh_asset.src().read_text_file();
-	ColladaScene scene = read_collada((char*) xml.data());
-	Mesh* mesh = scene.find_mesh(mesh_asset.name());
-	verify(mesh, "No mesh with name '%s'.", mesh_asset.name().c_str());
+	std::unique_ptr<InputStream> stream = mesh_asset.src().open_binary_file_for_reading();
+	GLTF::ModelFile gltf = GLTF::read_glb(stream->read_multiple<u8>(stream->size()));
+	GLTF::Node* node = GLTF::lookup_node(gltf, mesh_asset.name().c_str());
+	verify(node, "No node with name '%s'.", mesh_asset.name().c_str());
+	verify(node->mesh.has_value(), "Node with name '%s' has no mesh.", mesh_asset.name().c_str());
+	GLTF::Mesh& mesh = gltf.meshes.at(*node->mesh);
 	
 	MaterialSet material_set = read_material_assets(src.get_materials());
-	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+	map_gltf_materials_to_wrench_materials(gltf, material_set.materials);
 	
 	Opt<ShrubBillboardInfo> billboard;
 	if(src.has_billboard()) {
@@ -117,7 +142,7 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 		billboard->z_ofs = billboard_asset.z_offset();
 	}
 	
-	ShrubClass shrub = build_shrub_class(*mesh, material_set.materials, core.mip_distance(), 0, src.id(), billboard);
+	ShrubClass shrub = build_shrub_class(mesh, material_set.materials, core.mip_distance(), 0, src.id(), billboard);
 	
 	std::vector<u8> buffer;
 	write_shrub_class(buffer, shrub);

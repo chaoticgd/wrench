@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 #ifndef CORE_MESH_GRAPH_H
 #define CORE_MESH_GRAPH_H
 
-#include <core/mesh.h>
+#include <core/gltf.h>
 #include <core/material.h>
 
 // A class that keeps track of the relationship between the vertices, edges and
@@ -72,7 +72,7 @@ class MeshGraph {
 	const FaceInfo& face_at(FaceIndex face) const { return _faces[face.index]; }
 	
 public:
-	MeshGraph(const Mesh& mesh);
+	MeshGraph(const GLTF::Mesh& mesh);
 	
 	s32 face_count() const { return _faces.size(); }
 	VertexIndex face_vertex(FaceIndex face, s32 position) const { return face_at(face).v[position]; }

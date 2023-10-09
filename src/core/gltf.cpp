@@ -348,6 +348,66 @@ void deduplicate_vertices(Mesh& mesh) {
 	}
 }
 
+void remove_zero_area_triangles(Mesh& mesh) {
+	for(MeshPrimitive& primitive : mesh.primitives) {
+		std::vector<u32> old_indices = std::move(primitive.indices);
+		primitive.indices = {};
+		for(size_t i = 0; i < old_indices.size() / 3; i++) {
+			u32 v0 = old_indices[i * 3 + 0];
+			u32 v1 = old_indices[i * 3 + 1];
+			u32 v2 = old_indices[i * 3 + 2];
+			if(!(v0 == v1 || v0 == v2 || v1 == v2)) {
+				primitive.indices.emplace_back(v0);
+				primitive.indices.emplace_back(v1);
+				primitive.indices.emplace_back(v2);
+			}
+		}
+	}
+}
+
+void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh) {
+	for(MeshPrimitive& primitive : mesh.primitives) {
+		for(size_t i = 0; i < primitive.indices.size() / 3; i++) {
+			Vertex& v0 = mesh.vertices[primitive.indices[i * 3 + 0]];
+			Vertex& v1 = mesh.vertices[primitive.indices[i * 3 + 1]];
+			Vertex& v2 = mesh.vertices[primitive.indices[i * 3 + 2]];
+			glm::vec3 stored_normal = (v0.normal + v1.normal + v2.normal) / 3.f;
+			glm::vec3 calculated_normal = glm::cross(v1.pos - v0.pos, v2.pos - v0.pos);
+			if(glm::dot(calculated_normal, stored_normal) < 0.f) {
+				std::swap(primitive.indices[i * 3 + 0], primitive.indices[i * 3 + 2]);
+			}
+		}
+	}
+}
+
+void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<::Material>& materials) {
+	// Generate mapping.
+	std::vector<s32> mapping(gltf.materials.size(), -1);
+	for(size_t i = 0; i < gltf.materials.size(); i++) {
+		bool mapped = false;
+		for(size_t j = 0; j < materials.size(); j++) {
+			if(gltf.materials[i].name.has_value() && materials[j].name == *gltf.materials[i].name) {
+				mapping[i] = (s32) j;
+				mapped = true;
+			}
+		}
+		if(gltf.materials[i].name.has_value()) {
+			verify(mapped, "GLTF material '%s' has no corresponding Material asset.", gltf.materials[i].name->c_str());
+		} else {
+			verify(mapped, "GLTF material %d has no corresponding Material asset.", (s32) i);
+		}
+	}
+	
+	// Apply mapping.
+	for(Mesh& mesh : gltf.meshes) {
+		for(MeshPrimitive& primitive : mesh.primitives) {
+			if(primitive.material.has_value()) {
+				primitive.material = mapping[*primitive.material];
+			}
+		}
+	}
+}
+
 // *****************************************************************************
 // GLTF, Scenes & Nodes
 // *****************************************************************************
@@ -527,7 +587,11 @@ static MeshPrimitive read_mesh_primitive(const Json& src, std::vector<Vertex>& v
 	}
 	
 	get_opt(dest.material, src, "material");
-	get_opt(dest.mode, src, "mode");
+	Opt<s32> mode;
+	get_opt(mode, src, "mode");
+	if(mode.has_value()) {
+		dest.mode = (MeshPrimitiveMode) *mode;
+	}
 	return dest;
 }
 
@@ -550,7 +614,9 @@ static Json write_mesh_primitive(const MeshPrimitive& src, const std::vector<Ver
 	dest["attributes"] = write_attributes(src, vertices, accessors);
 	write_indices(dest, indices, accessors);
 	set_opt(dest, "material", src.material);
-	set_opt(dest, "mode", src.mode);
+	if(src.mode.has_value()) {
+		set_opt(dest, "mode", Opt<s32>((s32) *src.mode));
+	}
 	return dest;
 }
 

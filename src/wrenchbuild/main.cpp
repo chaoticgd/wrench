@@ -555,9 +555,13 @@ static void extract_tie(const fs::path& input_path, const fs::path& output_path,
 static void extract_shrub(const fs::path& input_path, const fs::path& output_path) {
 	auto bin = read_file(input_path.string().c_str());
 	ShrubClass shrub = read_shrub_class(bin);
-	ColladaScene scene = recover_shrub_class(shrub);
-	auto xml = write_collada(scene);
-	write_file(output_path, xml, "w");
+	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
+	scene->nodes.emplace_back((s32) gltf.nodes.size());
+	GLTF::Node& node = gltf.nodes.emplace_back();
+	node.mesh = (s32) gltf.meshes.size();
+	gltf.meshes.emplace_back(recover_shrub_class(shrub));
+	auto glb = GLTF::write_glb(gltf);
+	write_file(output_path,glb, "w");
 }
 
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path) {

@@ -21,6 +21,7 @@
 
 #include <core/buffer.h>
 #include <core/mesh.h>
+#include <core/material.h>
 
 namespace GLTF {
 
@@ -106,11 +107,21 @@ enum MeshPrimitiveAttribute {
 	WEIGHTS_0 = 1 << 5
 };
 
+enum MeshPrimitiveMode {
+	POINTS = 0,
+	LINES = 1,
+	LINE_LOOP = 2,
+	LINE_STRIP = 3,
+	TRIANGLES = 4,
+	TRIANGLE_STRIP = 5,
+	TRIANGLE_FAN = 6
+};
+
 struct MeshPrimitive {
 	u32 attributes_bitfield = 0;
 	std::vector<u32> indices;
 	Opt<s32> material;
-	Opt<s32> mode;
+	Opt<MeshPrimitiveMode> mode;
 	// unimplemented: targets
 };
 
@@ -179,7 +190,7 @@ ModelFile read_glb(Buffer src);
 // Create a .glb file in memory.
 std::vector<u8> write_glb(const ModelFile& gltf);
 
-// Create a model file with a single scene, node, and mesh in it.
+// Create a model file with a single scene in it.
 DefaultScene create_default_scene(const char* generator);
 
 // Lookup glTF objects by their name.
@@ -190,6 +201,13 @@ Material* lookup_material(ModelFile& gltf, const char* name);
 // Deduplicate identical vertices and update the index buffer accordingly. This
 // is done automatically when meshes are imported.
 void deduplicate_vertices(Mesh& mesh);
+
+// Clean up meshes that have just been converted from triangle strips to lists.
+void remove_zero_area_triangles(Mesh& mesh);
+void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh);
+
+// Rewrite material indices so they point into the provided materials array.
+void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<::Material>& materials);
 
 }
 

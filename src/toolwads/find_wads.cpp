@@ -46,3 +46,15 @@ static std::string find_bank(const fs::path& directory, const char* file_name) {
 	}
 	verify_not_reached_fatal("Failed to load WAD.");
 }
+
+const char* get_versioned_application_name(const char* name) {
+	const char* application_version;
+	if(strlen(wadinfo.build.version_string) > 0) {
+		application_version = wadinfo.build.version_string;
+	} else {
+		application_version = wadinfo.build.commit_string;
+	}
+	static char versioned_name[256];
+	snprintf(versioned_name, sizeof(versioned_name), "%s %s", name, application_version);
+	return versioned_name;
+}

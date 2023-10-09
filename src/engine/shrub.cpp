@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,13 +20,11 @@
 
 #include <algorithm>
 
+#include <core/tristrip_packet.h>
 #include <core/vif.h>
 
-//#define WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
-//#define WRITE_OUT_BOUNDING_SPHERE_POINTS
-
 static TriStripConstraints setup_shrub_constraints();
-static f32 compute_optimal_scale(const Mesh& mesh);
+static f32 compute_optimal_scale(const GLTF::Mesh& mesh);
 static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(const std::vector<Vertex>& vertices);
 static s32 compute_lod_k(f32 distance);
 
@@ -314,42 +312,27 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 	dest.write(header_ofs, header);
 }
 
-ColladaScene recover_shrub_class(const ShrubClass& shrub) {
-	ColladaScene scene;
-	
-#ifndef WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
-	Mesh& mesh = scene.meshes.emplace_back();
+GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
+	GLTF::Mesh mesh;
 	mesh.name = "mesh";
-	mesh.flags |= MESH_HAS_TEX_COORDS;
-	mesh.flags |= MESH_HAS_NORMALS;
-	SubMesh* submesh = nullptr;
-#endif
-	s32 texture_index = -1;
-	s32 max_texture_index = 0;
 	
-	for(size_t i = 0; i < shrub.packets.size(); i++) {
-		const ShrubPacket& packet = shrub.packets[i];
-		for(size_t j = 0; j < packet.primitives.size(); j++) {
-			const ShrubPrimitive& primitive = packet.primitives[j];
-#ifdef WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
-			Mesh& mesh = scene.meshes.emplace_back();
-			mesh.name = stringf("packet_%d_strip_%d", (s32) i, (s32) j);
-			mesh.flags |= MESH_HAS_TEX_COORDS;
-			mesh.flags |= MESH_HAS_VERTEX_COLOURS;
-			SubMesh* submesh = nullptr;
-#endif
-			if(const ShrubTexturePrimitive* prim = std::get_if<ShrubTexturePrimitive>(&primitive)) {
+	GLTF::MeshPrimitive* dest_primitive = nullptr;
+	s32 texture_index = -1;
+	
+	for(const ShrubPacket& packet : shrub.packets) {
+		for(const ShrubPrimitive& src_primitive : packet.primitives) {
+			if(const ShrubTexturePrimitive* prim = std::get_if<ShrubTexturePrimitive>(&src_primitive)) {
 				texture_index = prim->d4_tex0_1.data_lo;
 			}
 			
-			if(const ShrubVertexPrimitive* prim = std::get_if<ShrubVertexPrimitive>(&primitive)) {
-				if(submesh == nullptr || texture_index != submesh->material) {
-					submesh = &mesh.submeshes.emplace_back();
-					submesh->material = texture_index;
-					max_texture_index = std::max(max_texture_index, texture_index);
+			if(const ShrubVertexPrimitive* prim = std::get_if<ShrubVertexPrimitive>(&src_primitive)) {
+				if(dest_primitive == nullptr || texture_index != *dest_primitive->material) {
+					dest_primitive = &mesh.primitives.emplace_back();
+					dest_primitive->attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::NORMAL;
+					dest_primitive->material = texture_index;
 				}
 				
-				size_t first_index = mesh.vertices.size();
+				u32 base_index = (u32) mesh.vertices.size();
 				for(const ShrubVertex& vertex : prim->vertices) {
 					Vertex& dest_vertex = mesh.vertices.emplace_back();
 					f32 x = vertex.x * shrub.scale * (1.f / 1024.f);
@@ -365,59 +348,31 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 				}
 				
 				if(prim->type == GeometryType::TRIANGLE_LIST) {
-					for(size_t i = first_index; i < mesh.vertices.size() - 2; i += 3) {
-						submesh->faces.emplace_back(i, i + 1, i + 2);
+					for(u32 i = base_index; i < mesh.vertices.size(); i++) {
+						dest_primitive->indices.emplace_back(i);
 					}
 				} else {
-					for(size_t i = first_index; i < mesh.vertices.size() - 2; i++) {
-						submesh->faces.emplace_back(i, i + 1, i + 2);
+					for(u32 i = base_index; i < mesh.vertices.size() - 2; i++) {
+						dest_primitive->indices.emplace_back(i + 0);
+						dest_primitive->indices.emplace_back(i + 1);
+						dest_primitive->indices.emplace_back(i + 2);
 					}
 				}
 			}
 		}
 	}
-	
-	for(s32 i = 0; i <= max_texture_index; i++) {
-		ColladaMaterial& mat = scene.materials.emplace_back();
-		mat.name = stringf("%d", i);
-		mat.surface = MaterialSurface(i);
-		
-		scene.texture_paths.emplace_back(stringf("%d.png", i));
-	}
 
-#ifndef WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
-	mesh = deduplicate_vertices(std::move(mesh));
-	remove_zero_area_triangles(mesh);
-#endif
+	GLTF::deduplicate_vertices(mesh);
+	GLTF::remove_zero_area_triangles(mesh);
 	
 	// The winding orders of the faces weren't preserved by Insomniac's triangle
 	// stripper, so we need to recalculate them here.
-	fix_winding_orders_of_triangles_based_on_normals(mesh);
-
-#ifdef WRITE_OUT_BOUNDING_SPHERE_POINTS
-	Mesh& bsphere_ind = scene.meshes.emplace_back();
-	bsphere_ind.name = "bpshere";
-	SubMesh& sub = bsphere_ind.submeshes.emplace_back();
-	glm::vec4 bs = shrub.bounding_sphere.unpack() * shrub.scale;
-	sub.material = 0;
-	bsphere_ind.vertices.emplace_back(glm::vec3(bs.x + bs.w, bs.y, bs.z));
-	bsphere_ind.vertices.emplace_back(glm::vec3(bs.x - bs.w, bs.y, bs.z));
-	bsphere_ind.vertices.emplace_back(glm::vec3(bs.x, bs.y + bs.w, bs.z));
-	bsphere_ind.vertices.emplace_back(glm::vec3(bs.x, bs.y - bs.w, bs.z));
-	bsphere_ind.vertices.emplace_back(glm::vec3(bs.x, bs.y, bs.z + bs.w));
-	bsphere_ind.vertices.emplace_back(glm::vec3(bs.x, bs.y, bs.z - bs.w));
-	sub.faces.emplace_back(0, 0, 0);
-	sub.faces.emplace_back(1, 1, 1);
-	sub.faces.emplace_back(2, 2, 2);
-	sub.faces.emplace_back(3, 3, 3);
-	sub.faces.emplace_back(4, 4, 4);
-	sub.faces.emplace_back(5, 5, 5);
-#endif
+	GLTF::fix_winding_orders_of_triangles_based_on_normals(mesh);
 	
-	return scene;
+	return mesh;
 }
 
-ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard_info) {
+ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard_info) {
 	ShrubClass shrub = {};
 	shrub.mip_distance = mip_distance;
 	shrub.mode_bits = mode_bits;
@@ -435,22 +390,28 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 	config.support_instancing = true;
 	
 	// Generate the strips.
-	GeometryPackets output = weave_tristrips(mesh, materials, config);
+	std::vector<EffectiveMaterial> effectives = effective_materials(materials, MATERIAL_ATTRIB_SURFACE | MATERIAL_ATTRIB_WRAP_MODE);
+	GeometryPrimitives primitives = weave_tristrips(mesh, effectives);
+	GeometryPackets output = generate_tristrip_packets(primitives, materials, effectives, config);
 	
 	// Build the shrub packets.
 	for(const GeometryPacket& src_packet : output.packets) {
+		s32 last_effective_material = -1;
 		ShrubPacket& dest_packet = shrub.packets.emplace_back();
 		for(s32 i = 0; i < src_packet.primitive_count; i++) {
 			const GeometryPrimitive& src_primitive = output.primitives[src_packet.primitive_begin + i];
-			if(src_primitive.material != -1) {
-				const Material& material = materials[src_primitive.material];
+			verify(src_primitive.effective_material > -1, "Bad material index.");
+			
+			if(src_primitive.effective_material != last_effective_material) {
+				const EffectiveMaterial& effective = effectives.at(src_primitive.effective_material);
+				const Material& material = materials.at(effective.materials.at(0));
 				verify(material.surface.type == MaterialSurfaceType::TEXTURE,
 					"A shrub material does not have a texture.");
 				
 				// The data written here doesn't match the layout of the
 				// respective GS registers. This is because the data is fixed up
 				// at runtime by the game.
-				ShrubTexturePrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<0>();
+				ShrubTexturePrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<ShrubTexturePrimitive>();
 				dest_primitive.d1_tex1_1.address = GIF_AD_TEX1_1;
 				dest_primitive.d1_tex1_1.data_lo = compute_lod_k(mip_distance);
 				dest_primitive.d1_tex1_1.data_hi = 0x04; // mmin
@@ -465,8 +426,11 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				dest_primitive.d3_miptbp1_1.data_lo = material.surface.texture;
 				dest_primitive.d4_tex0_1.address = GIF_AD_TEX0_1;
 				dest_primitive.d4_tex0_1.data_lo = material.surface.texture;
+				
+				last_effective_material = src_primitive.effective_material;
 			}
-			ShrubVertexPrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<1>();
+			
+			ShrubVertexPrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<ShrubVertexPrimitive>();
 			dest_primitive.type = src_primitive.type;
 			for(s32 j = 0; j < src_primitive.index_count; j++) {
 				ShrubVertex& dest_vertex = dest_primitive.vertices.emplace_back();
@@ -532,7 +496,7 @@ static TriStripConstraints setup_shrub_constraints() {
 	return c;
 }
 
-static f32 compute_optimal_scale(const Mesh& mesh) {
+static f32 compute_optimal_scale(const GLTF::Mesh& mesh) {
 	// Compute the minimum axis-aligned bounding box.
 	f32 xmin = 0.f, xmax = 0.f;
 	f32 ymin = 0.f, ymax = 0.f;

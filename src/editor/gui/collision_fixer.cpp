@@ -179,7 +179,7 @@ void collision_fixer() {
 			collada_scene = std::move(*out);
 			verify_fatal(collada_scene.meshes.size() == 1);
 			collision_render_mesh = upload_mesh(collada_scene.meshes[0], true);
-			collision_materials = upload_materials(collada_scene.materials, {});
+			collision_materials = upload_collada_materials(collada_scene.materials, {});
 			g_app->collision_fixer_previews.collision_mesh = &collision_render_mesh;
 			g_app->collision_fixer_previews.collision_materials = &collision_materials;
 			waiting_for_completion = false;

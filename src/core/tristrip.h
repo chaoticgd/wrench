@@ -19,34 +19,28 @@
 #ifndef CORE_TRISTRIP_H
 #define CORE_TRISTRIP_H
 
-#include <core/mesh.h>
+#include <core/gltf.h>
 #include <core/material.h>
-#include <core/tristrip_packet.h>
 
-struct GeometryPacket {
-	s32 primitive_begin;
-	s32 primitive_count;
+enum class GeometryType {
+	TRIANGLE_LIST,
+	TRIANGLE_STRIP,
+	TRIANGLE_FAN
 };
 
 struct GeometryPrimitive {
 	GeometryType type;
-	s32 index_begin = 0;
-	s32 index_count = 0;
-	s32 material = 0; // -1 for no change
+	s32 index_begin;
+	s32 index_count;
+	s32 effective_material = 0;
 };
 
-struct GeometryPackets {
-	std::vector<GeometryPacket> packets;
+struct GeometryPrimitives {
 	std::vector<GeometryPrimitive> primitives;
 	std::vector<s32> indices;
 };
 
-struct TriStripConfig {
-	TriStripConstraints constraints;
-	bool support_instancing;
-};
-
-// Generates a set of tristrips that cover a given mesh.
-GeometryPackets weave_tristrips(const Mesh& mesh, const std::vector<Material>& materials, const TriStripConfig& config);
+// Generates a set of triangle strips and triangle lists that cover a given mesh.
+GeometryPrimitives weave_tristrips(const GLTF::Mesh& mesh, const std::vector<EffectiveMaterial>& effectives);
 
 #endif
