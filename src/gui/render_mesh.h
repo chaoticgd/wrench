@@ -21,6 +21,7 @@
 
 #include <vector>
 
+#include <core/gltf.h>
 #include <core/mesh.h>
 #include <core/collada.h>
 #include <core/texture.h>
@@ -42,7 +43,10 @@ struct RenderMesh {
 };
 
 RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals);
-RenderMaterial upload_material(const ColladaMaterial& material, const std::vector<Texture>& textures);
-std::vector<RenderMaterial> upload_materials(const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures);
+RenderMesh upload_gltf_mesh(const GLTF::Mesh& mesh, bool generate_normals);
+std::vector<RenderMaterial> upload_collada_materials(const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures);
+std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materials, const std::vector<Texture>& textures);
+RenderMaterial upload_collada_material(const ColladaMaterial& material, const std::vector<Texture>& textures);
+RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures);
 
 #endif

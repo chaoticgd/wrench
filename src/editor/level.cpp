@@ -52,7 +52,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		for(const Mesh& mesh : collision_scene.meshes) {
 			chunk.collision.emplace_back(upload_mesh(mesh, true));
 		}
-		chunk.collision_materials = upload_materials(collision_scene.materials, {});
+		chunk.collision_materials = upload_collada_materials(collision_scene.materials, {});
 		
 		const TfragsAsset& tfrags_asset = chunk_asset.get_tfrags();
 		
@@ -81,7 +81,7 @@ void Level::read(LevelAsset& asset, Game g) {
 				textures.emplace_back(*texture);
 			}
 			
-			tfrag_materials = upload_materials(scene.materials, textures);
+			tfrag_materials = upload_collada_materials(scene.materials, textures);
 		}
 	}
 	
@@ -104,7 +104,7 @@ void Level::read(LevelAsset& asset, Game g) {
 				
 				ec.mesh = *mesh;
 				ec.render_mesh = upload_mesh(*mesh, true);
-				ec.materials = upload_materials(scene.materials, textures);
+				ec.materials = upload_collada_materials(scene.materials, textures);
 			}
 		}
 		if(moby.has_editor_icon()) {
@@ -115,7 +115,7 @@ void Level::read(LevelAsset& asset, Game g) {
 				std::vector<Texture> textures = { std::move(*icon) };
 				ColladaMaterial mat;
 				mat.surface = MaterialSurface(0);
-				ec.icon = upload_material(mat, textures);
+				ec.icon = upload_collada_material(mat, textures);
 			}
 		}
 		auto pvar_type = types.find(stringf("update%d", moby.id()));
@@ -244,7 +244,7 @@ Opt<EditorClass> load_tie_editor_class(const TieClassAsset& tie) {
 	EditorClass editor_tie;
 	editor_tie.mesh = std::move(*mesh);
 	editor_tie.render_mesh = upload_mesh(*editor_tie.mesh, true);
-	editor_tie.materials = upload_materials(scene.materials, textures);
+	editor_tie.materials = upload_collada_materials(scene.materials, textures);
 	return editor_tie;
 }
 
@@ -261,15 +261,17 @@ Opt<EditorClass> load_shrub_editor_class(const ShrubClassAsset& shrub) {
 		return std::nullopt;
 	}
 	const MeshAsset& asset = core.get_mesh();
-	std::string xml = asset.src().read_text_file();
-	ColladaScene scene = read_collada((char*) xml.data());
-	Mesh* mesh = scene.find_mesh(asset.name());
-	if(!mesh) {
+	std::unique_ptr<InputStream> stream = asset.src().open_binary_file_for_reading();
+	std::vector<u8> glb = stream->read_multiple<u8>(stream->size());
+	GLTF::ModelFile gltf = GLTF::read_glb(glb);
+	GLTF::Node* node = GLTF::lookup_node(gltf, asset.name().c_str());
+	if(node == nullptr || !node->mesh.has_value() || *node->mesh < 0 || *node->mesh >= gltf.meshes.size()) {
 		return std::nullopt;
 	}
+	GLTF::Mesh& mesh = gltf.meshes[*node->mesh];
 	
 	MaterialSet material_set = read_material_assets(shrub.get_materials());
-	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+	GLTF::map_gltf_materials_to_wrench_materials(gltf, material_set.materials);
 	
 	std::vector<Texture> textures;
 	for(FileReference ref : material_set.textures) {
@@ -281,8 +283,7 @@ Opt<EditorClass> load_shrub_editor_class(const ShrubClassAsset& shrub) {
 	}
 	
 	EditorClass editor_shrub;
-	editor_shrub.mesh = std::move(*mesh);
-	editor_shrub.render_mesh = upload_mesh(*editor_shrub.mesh, true);
-	editor_shrub.materials = upload_materials(scene.materials, textures);
+	editor_shrub.render_mesh = upload_gltf_mesh(mesh, true);
+	editor_shrub.materials = upload_materials(material_set.materials, textures);
 	return editor_shrub;
 }
