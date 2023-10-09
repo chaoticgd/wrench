@@ -20,8 +20,7 @@
 
 #include <core/mesh_graph.h>
 
-// Code to generate triangle strips and split said strips into packets based on
-// a set of size constraints.
+// Code to generate triangle strips.
 //
 // Some of the algorithms here were adapted from the NvTriStrip library.
 
@@ -72,7 +71,7 @@ static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace&
 static std::pair<VertexIndex, VertexIndex> get_shared_vertices(const StripFace& lhs, const StripFace& rhs);
 static void verify_face_strips(const std::vector<FaceStrip>& strips, const std::vector<StripFace>& faces, const char* context, const MeshGraph& graph);
 
-GeometryPrimitives weave_tristrips(const Mesh& mesh, const std::vector<EffectiveMaterial>& effectives) {
+GeometryPrimitives weave_tristrips(const GLTF::Mesh& mesh, const std::vector<EffectiveMaterial>& effectives) {
 	// Firstly we build a graph structure to make finding adjacent faces fast.
 	MeshGraph graph(mesh);
 	if(graph.face_count() == 0) {

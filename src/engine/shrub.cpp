@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include <core/vif.h>
 
 static TriStripConstraints setup_shrub_constraints();
-static f32 compute_optimal_scale(const Mesh& mesh);
+static f32 compute_optimal_scale(const GLTF::Mesh& mesh);
 static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(const std::vector<Vertex>& vertices);
 static s32 compute_lod_k(f32 distance);
 
@@ -372,7 +372,7 @@ GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
 	return mesh;
 }
 
-ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard_info) {
+ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard_info) {
 	ShrubClass shrub = {};
 	shrub.mip_distance = mip_distance;
 	shrub.mode_bits = mode_bits;
@@ -401,6 +401,7 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 		for(s32 i = 0; i < src_packet.primitive_count; i++) {
 			const GeometryPrimitive& src_primitive = output.primitives[src_packet.primitive_begin + i];
 			verify(src_primitive.effective_material > -1, "Bad material index.");
+			
 			if(src_primitive.effective_material != last_effective_material) {
 				const EffectiveMaterial& effective = effectives.at(src_primitive.effective_material);
 				const Material& material = materials.at(effective.materials.at(0));
@@ -428,6 +429,7 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				
 				last_effective_material = src_primitive.effective_material;
 			}
+			
 			ShrubVertexPrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<ShrubVertexPrimitive>();
 			dest_primitive.type = src_primitive.type;
 			for(s32 j = 0; j < src_primitive.index_count; j++) {
@@ -494,7 +496,7 @@ static TriStripConstraints setup_shrub_constraints() {
 	return c;
 }
 
-static f32 compute_optimal_scale(const Mesh& mesh) {
+static f32 compute_optimal_scale(const GLTF::Mesh& mesh) {
 	// Compute the minimum axis-aligned bounding box.
 	f32 xmin = 0.f, xmax = 0.f;
 	f32 ymin = 0.f, ymax = 0.f;

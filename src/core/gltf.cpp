@@ -380,6 +380,34 @@ void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh) {
 	}
 }
 
+void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<::Material>& materials) {
+	// Generate mapping.
+	std::vector<s32> mapping(gltf.materials.size(), -1);
+	for(size_t i = 0; i < gltf.materials.size(); i++) {
+		bool mapped = false;
+		for(size_t j = 0; j < materials.size(); j++) {
+			if(gltf.materials[i].name.has_value() && materials[j].name == *gltf.materials[i].name) {
+				mapping[i] = (s32) j;
+				mapped = true;
+			}
+		}
+		if(gltf.materials[i].name.has_value()) {
+			verify(mapped, "GLTF material '%s' has no corresponding Material asset.", gltf.materials[i].name->c_str());
+		} else {
+			verify(mapped, "GLTF material %d has no corresponding Material asset.", (s32) i);
+		}
+	}
+	
+	// Apply mapping.
+	for(Mesh& mesh : gltf.meshes) {
+		for(MeshPrimitive& primitive : mesh.primitives) {
+			if(primitive.material.has_value()) {
+				primitive.material = mapping[*primitive.material];
+			}
+		}
+	}
+}
+
 // *****************************************************************************
 // GLTF, Scenes & Nodes
 // *****************************************************************************

@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,32 +18,17 @@
 
 #include "mesh_graph.h"
 
-MeshGraph::MeshGraph(const Mesh& mesh) {
+MeshGraph::MeshGraph(const GLTF::Mesh& mesh) {
 	_vertices.resize(mesh.vertices.size());
 	
 	// Collect faces.
-	for(const SubMesh& submesh : mesh.submeshes) {
-		for(const Face& face : submesh.faces) {
-			verify_fatal(!face.is_quad());
-			if(face.is_quad()) {
-				FaceInfo& info_1 = _faces.emplace_back();
-				info_1.v[0] = face.v0;
-				info_1.v[1] = face.v1;
-				info_1.v[2] = face.v2;
-				info_1.material = {submesh.material};
-				
-				FaceInfo& info_2 = _faces.emplace_back();
-				info_2.v[0] = face.v2;
-				info_2.v[1] = face.v3;
-				info_2.v[2] = face.v0;
-				info_2.material = {submesh.material};
-			} else {
-				FaceInfo& info = _faces.emplace_back();
-				info.v[0] = face.v0;
-				info.v[1] = face.v1;
-				info.v[2] = face.v2;
-				info.material = {submesh.material};
-			}
+	for(const GLTF::MeshPrimitive& primitive : mesh.primitives) {
+		for(size_t i = 0; i < primitive.indices.size() / 3; i++) {
+			FaceInfo& info = _faces.emplace_back();
+			info.v[0] = primitive.indices[i * 3 + 0];
+			info.v[1] = primitive.indices[i * 3 + 1];
+			info.v[2] = primitive.indices[i * 3 + 2];
+			info.material = {primitive.material.has_value() ? *primitive.material : -1};
 		}
 	}
 	

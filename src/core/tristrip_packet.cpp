@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -47,9 +47,7 @@ TriStripPacketGenerator::TriStripPacketGenerator(
 	: _materials(materials)
 	, _effectives(effectives)
 	, _constraints(constraints)
-	, _support_instancing(support_instancing) {
-	new_packet();
-}
+	, _support_instancing(support_instancing) {}
 
 void TriStripPacketGenerator::add_list(const s32* indices, s32 index_count, s32 effective_material) {
 	if(index_count < 3) {
@@ -195,6 +193,9 @@ void TriStripPacketGenerator::new_packet() {
 }
 
 bool TriStripPacketGenerator::try_add_strip() {
+	if(_packet == nullptr) {
+		return false;
+	}
 	for(s32 i = 0; i < _constraints.num_constraints; i++) {
 		s32 cost = 0;
 		cost += _constraints.constant_cost[i];
@@ -211,6 +212,9 @@ bool TriStripPacketGenerator::try_add_strip() {
 }
 
 bool TriStripPacketGenerator::try_add_unique_vertex() {
+	if(_packet == nullptr) {
+		return false;
+	}
 	for(s32 i = 0; i < _constraints.num_constraints; i++) {
 		s32 cost = 0;
 		cost += _constraints.constant_cost[i];
@@ -228,6 +232,9 @@ bool TriStripPacketGenerator::try_add_unique_vertex() {
 }
 
 bool TriStripPacketGenerator::try_add_duplicate_vertex() {
+	if(_packet == nullptr) {
+		return false;
+	}
 	for(s32 i = 0; i < _constraints.num_constraints; i++) {
 		s32 cost = 0;
 		cost += _constraints.constant_cost[i];
@@ -244,6 +251,9 @@ bool TriStripPacketGenerator::try_add_duplicate_vertex() {
 }
 
 bool TriStripPacketGenerator::try_add_material() {
+	if(_packet == nullptr) {
+		return false;
+	}
 	for(s32 i = 0; i < _constraints.num_constraints; i++) {
 		s32 cost = 0;
 		cost += _constraints.constant_cost[i];

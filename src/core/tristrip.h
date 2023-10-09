@@ -19,7 +19,7 @@
 #ifndef CORE_TRISTRIP_H
 #define CORE_TRISTRIP_H
 
-#include <core/mesh.h>
+#include <core/gltf.h>
 #include <core/material.h>
 
 enum class GeometryType {
@@ -41,6 +41,6 @@ struct GeometryPrimitives {
 };
 
 // Generates a set of triangle strips and triangle lists that cover a given mesh.
-GeometryPrimitives weave_tristrips(const Mesh& mesh, const std::vector<EffectiveMaterial>& effectives);
+GeometryPrimitives weave_tristrips(const GLTF::Mesh& mesh, const std::vector<EffectiveMaterial>& effectives);
 
 #endif

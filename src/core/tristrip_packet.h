@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ class TriStripPacketGenerator {
 	bool _support_instancing;
 	
 	TriStripRunningTotals _totals;
-	GeometryPacket* _packet;
+	GeometryPacket* _packet = nullptr;
 	s32 _current_effective_material = -1;
 	
 	GeometryPackets _output;
