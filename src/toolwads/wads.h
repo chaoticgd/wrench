@@ -97,5 +97,6 @@ struct WadPaths {
 };
 
 WadPaths find_wads(const char* bin_path);
+const char* get_versioned_application_name(const char* name);
 
 #endif

@@ -22,7 +22,7 @@
 #include <variant>
 
 #include <core/buffer.h>
-#include <core/collada.h>
+#include <core/gltf.h>
 #include <core/texture.h>
 #include <core/tristrip.h>
 #include <core/build_config.h>
@@ -147,7 +147,7 @@ struct ShrubClass {
 ShrubClass read_shrub_class(Buffer src);
 void write_shrub_class(OutBuffer dest, const ShrubClass& shrub);
 
-ColladaScene recover_shrub_class(const ShrubClass& shrub);
+GLTF::Mesh recover_shrub_class(const ShrubClass& shrub);
 ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard);
 
 #endif

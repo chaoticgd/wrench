@@ -18,6 +18,7 @@
 
 #include <assetmgr/material_asset.h>
 #include <engine/shrub.h>
+#include <toolwads/wads.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
@@ -53,22 +54,41 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
 	ShrubClass shrub = read_shrub_class(buffer);
-	ColladaScene scene = recover_shrub_class(shrub);
+	
+	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
+	scene->nodes.emplace_back((s32) gltf.nodes.size());
+	GLTF::Node& node = gltf.nodes.emplace_back();
+	node.mesh = (s32) gltf.meshes.size();
+	gltf.meshes.emplace_back(recover_shrub_class(shrub));
 	
 	if(dest.has_materials()) {
 		CollectionAsset& materials = dest.get_materials();
 		for(s32 i = 0; i < 16; i++) {
 			if(materials.has_child(i)) {
-				MaterialAsset& material = materials.get_child(i).as<MaterialAsset>();
-				scene.texture_paths.push_back(material.diffuse().src().path.string());
+				MaterialAsset& material_asset = materials.get_child(i).as<MaterialAsset>();
+				
+				GLTF::Material& material = gltf.materials.emplace_back();
+				material.name = stringf("material_%d", (s32) gltf.materials.size());
+				material.pbr_metallic_roughness.emplace();
+				material.pbr_metallic_roughness->base_color_texture.emplace();
+				material.pbr_metallic_roughness->base_color_texture->index = (s32) gltf.textures.size();
+				material.alpha_mode = GLTF::BLEND;
+				material.double_sided = true;
+				
+				GLTF::Texture& texture = gltf.textures.emplace_back();
+				texture.source = (s32) gltf.images.size();
+				
+				GLTF::Image& image = gltf.images.emplace_back();
+				image.uri = material_asset.diffuse().src().path.string();
 			} else {
 				break;
 			}
 		}
 	}
 	
-	std::vector<u8> xml = write_collada(scene);
-	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
+	std::vector<u8> glb = GLTF::write_glb(gltf);
+	auto [stream, ref] = dest.file().open_binary_file_for_writing("mesh.glb");
+	stream->write_v(glb);
 	
 	ShrubClassCoreAsset& core = dest.core<ShrubClassCoreAsset>();
 	core.set_mip_distance(shrub.mip_distance);

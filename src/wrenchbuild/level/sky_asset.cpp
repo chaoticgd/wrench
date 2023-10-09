@@ -63,14 +63,7 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	
 	CollectionAsset& shells = dest.shells();
 	
-	const char* application_version;
-	if(strlen(wadinfo.build.version_string) > 0) {
-		application_version = wadinfo.build.version_string;
-	} else {
-		application_version = wadinfo.build.commit_string;
-	}
-	std::string generator = stringf("Wrench Build Tool %s", application_version);
-	auto [gltf, scene] = GLTF::create_default_scene(generator.c_str());
+	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
 	unpack_sky_textures(gltf, dest.fx(), dest.materials(), sky);
 	
 	// Copy all the meshes into the scene.
