@@ -1856,7 +1856,6 @@ AssetType SkyShell {
 
 AssetType Occlusion {
 	desc: "Occlusion information needed by the game at runtime to determine which objects are visible.\n\nThe playable space of a level is divided into 4x4x4 cubes called octants that dictate which objects are visible at a given time."
-	bin_leaf: true
 	
 	IntegerAttribute memory_budget {
 		desc: "The maximum size of the computed collision database in bytes, including both the octant lookup tree and the visibility masks."
