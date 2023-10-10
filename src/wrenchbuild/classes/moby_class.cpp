@@ -35,13 +35,20 @@ on_load(MobyClass, []() {
 	MobyClassAsset::funcs.pack_rac3 = wrap_hint_packer_func<MobyClassAsset>(pack_moby_class_core);
 	MobyClassAsset::funcs.pack_dl = wrap_hint_packer_func<MobyClassAsset>(pack_moby_class_core);
 	
-	MobyClassAsset::funcs.test_rac = new AssetTestFunc(test_moby_class_core);
-	MobyClassAsset::funcs.test_gc  = new AssetTestFunc(test_moby_class_core);
-	MobyClassAsset::funcs.test_uya = new AssetTestFunc(test_moby_class_core);
-	MobyClassAsset::funcs.test_dl  = new AssetTestFunc(test_moby_class_core);
+	MobyClassCoreAsset::funcs.test_rac = new AssetTestFunc(test_moby_class_core);
+	MobyClassCoreAsset::funcs.test_gc  = new AssetTestFunc(test_moby_class_core);
+	MobyClassCoreAsset::funcs.test_uya = new AssetTestFunc(test_moby_class_core);
+	MobyClassCoreAsset::funcs.test_dl  = new AssetTestFunc(test_moby_class_core);
 })
 
 static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+	if(g_asset_unpacker.dump_binaries) {
+		if(!dest.has_core()) {
+			unpack_asset_impl(dest.core<MobyClassCoreAsset>(), src, nullptr, config);
+		}
+		return;
+	}
+	
 	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 	
 	s32 texture_count = 0;
