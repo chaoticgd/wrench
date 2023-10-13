@@ -538,7 +538,7 @@ static void extract_tfrags(const fs::path& input_path, const fs::path& output_pa
 
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game) {
 	auto bin = read_file(input_path.string().c_str());
-	MobyClassData moby = read_moby_class(bin, game);
+	MOBY::MobyClassData moby = MOBY::read_class(bin, game);
 	ColladaScene scene = recover_moby_class(moby, 0, 0);
 	auto xml = write_collada(scene);
 	write_file(output_path, xml, "w");

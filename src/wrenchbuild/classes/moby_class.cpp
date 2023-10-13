@@ -73,11 +73,11 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
 	
-	MobyClassData data;
+	MOBY::MobyClassData data;
 	if((config.game() == Game::GC && is_sparmor) || (config.game() == Game::UYA && is_sparmor)) {
-		data = read_armor_moby_class(buffer, config.game());
+		data = MOBY::read_armor_class(buffer, config.game());
 	} else {
-		data = read_moby_class(buffer, config.game());
+		data = MOBY::read_class(buffer, config.game());
 	}
 	ColladaScene scene = recover_moby_class(data, -1, texture_count);
 	
@@ -150,10 +150,10 @@ static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, 
 }
 
 static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
-	MobyClassData moby = read_moby_class(src, config.game());
+	MOBY::MobyClassData moby = MOBY::read_class(src, config.game());
 	
 	std::vector<u8> dest;
-	write_moby_class(dest, moby, config.game());
+	MOBY::write_class(dest, moby, config.game());
 	
 	bool header_matches = diff_buffers(src, dest, 0, 0x50, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 	bool data_matches = diff_buffers(src, dest, 0x50, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);

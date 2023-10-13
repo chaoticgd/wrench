@@ -18,6 +18,8 @@
 
 #include "moby.h"
 
+namespace MOBY {
+
 static std::vector<MobyBangle> read_moby_bangles(Buffer src, s32 bangles_ofs, s32 packet_table_offset, f32 scale, MobyFormat format, bool animated);
 static void write_moby_bangles(OutBuffer dest, GifUsageTable& gif_usage, s64 bangles_ofs, s64 packet_table_ofs, s32 packet, const std::vector<MobyBangle>& bangles, f32 scale, MobyFormat format);
 static MobyCornCob read_moby_corncob(Buffer src);
@@ -28,7 +30,7 @@ static std::vector<MobyJointEntry> read_moby_joints(Buffer src, s64 joints_ofs);
 static s64 write_moby_joints(OutBuffer dest, const std::vector<MobyJointEntry>& joints);
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby, f32 scale);
 
-MobyClassData read_moby_class(Buffer src, Game game) {
+MobyClassData read_class(Buffer src, Game game) {
 	auto header = src.read<MobyClassHeader>(0, "moby class header");
 	MobyClassData moby;
 	moby.animation.joint_count = header.joint_count;
@@ -131,7 +133,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 
 static s64 class_header_ofs;
 
-void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
+void write_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	MobyClassHeader header = {0};
 	class_header_ofs = dest.alloc<MobyClassHeader>();
 	verify_fatal(class_header_ofs % 0x40 == 0);
@@ -260,7 +262,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 
 // *****************************************************************************
 
-MobyClassData read_armor_moby_class(Buffer src, Game game) {
+MobyClassData read_armor_class(Buffer src, Game game) {
 	MobyFormat format;
 	switch(game) {
 		case Game::RAC:
@@ -283,7 +285,7 @@ MobyClassData read_armor_moby_class(Buffer src, Game game) {
 	return moby;
 }
 
-void write_armor_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
+void write_armor_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	MobyFormat format;
 	switch(game) {
 		case Game::RAC:
@@ -706,4 +708,6 @@ static std::vector<Joint> recover_moby_joints(const MobyClassData& moby, f32 sca
 	}
 	
 	return joints;
+}
+
 }
