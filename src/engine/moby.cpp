@@ -19,7 +19,7 @@
 #include "moby.h"
 
 static std::vector<MobyBangle> read_moby_bangles(Buffer src, s32 bangles_ofs, s32 submesh_table_offset, f32 scale, MobyFormat format, bool animated);
-static s64 write_moby_bangles(OutBuffer dest, s64 bangles_ofs, s64 submesh_table_ofs, s32 submesh, const std::vector<MobyBangle>& bangles, f32 scale, MobyFormat format);
+static void write_moby_bangles(OutBuffer dest, GifUsageTable& gif_usage, s64 bangles_ofs, s64 submesh_table_ofs, s32 submesh, const std::vector<MobyBangle>& bangles, f32 scale, MobyFormat format);
 static MobyCornCob read_moby_corncob(Buffer src);
 static s64 write_moby_corncob(OutBuffer dest, const MobyCornCob& corncob);
 static MobyCollision read_moby_collision(Buffer src);
@@ -180,7 +180,9 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	s64 bangles_ofs;
 	if(!moby.bangles.empty()) {
 		dest.pad(0x10);
-		bangles_ofs = dest.alloc_multiple<u8>(64 + 16 * moby.bangles.size());
+		bangles_ofs = dest.alloc_multiple<u8>(
+			sizeof(MobyBangleHeader) + 15 * sizeof(MobyBangleIndices) +
+			moby.bangles.size() * sizeof(MobyVec4) * 2);
 		header.bangles = (bangles_ofs - class_header_ofs) / 0x10;
 	}
 	if(game == Game::RAC) {
@@ -195,15 +197,13 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	while(dest.tell() < class_header_ofs + moby.submesh_table_offset) {
 		dest.write<u8>(0);
 	}
-	s64 submesh_table_ofs = allocate_submesh_table(dest, moby.mesh);
-	s64 bangles_submesh_table_ofs = 0;
+	s64 submesh_table_ofs = allocate_submesh_table(dest, moby.mesh, moby.bangles.size());
 	if(!moby.bangles.empty()) {
-		bangles_submesh_table_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.bangles.size());
+		dest.alloc_multiple<MobySubMeshEntry>(moby.bangles.size());
 	}
 	if(moby.mesh.has_submesh_table) {
 		header.submesh_table_offset = submesh_table_ofs - class_header_ofs;
 	}
-	dest.write<s32>(0);
 	if(moby.collision.has_value()) {
 		header.collision = write_moby_collision(dest, *moby.collision) - class_header_ofs;
 	}
@@ -222,19 +222,19 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 			dest.write_multiple(*moby.animation.skeleton);
 		}
 	}
-	dest.pad(0x10);
 	if(moby.animation.common_trans.has_value()) {
+		dest.pad(0x10);
 		header.common_trans = dest.write_multiple(*moby.animation.common_trans) - class_header_ofs;
 	}
 	header.joints = write_moby_joints(dest, moby.animation.joints) - class_header_ofs;
-	dest.pad(0x10);
 	if(moby.sound_defs.size() > 0) {
+		dest.pad(0x10);
 		header.sound_defs = dest.write_multiple(moby.sound_defs) - class_header_ofs;
 	}
 	std::vector<MobyGifUsage> gif_usage;
 	header.mesh_info = write_moby_mesh_section(dest, gif_usage, submesh_table_ofs, moby.mesh, moby.scale, format);
 	if(!moby.bangles.empty()) {
-		write_moby_bangles(dest, bangles_ofs, submesh_table_ofs, header.mesh_info.metal_begin + header.mesh_info.metal_count, moby.bangles, moby.scale, format);
+		write_moby_bangles(dest, gif_usage, bangles_ofs, submesh_table_ofs, header.mesh_info.metal_begin + header.mesh_info.metal_count, moby.bangles, moby.scale, format);
 	}
 	if(moby.team_palettes.size() > 0 && (game == Game::UYA || game == Game::DL)) {
 		dest.pad(0x10);
@@ -302,7 +302,7 @@ void write_armor_moby_class(OutBuffer dest, const MobyClassData& moby, Game game
 	
 	MobyArmorHeader header = {};
 	class_header_ofs = dest.alloc<MobyArmorHeader>();
-	s64 table_ofs = allocate_submesh_table(dest, moby.mesh);
+	s64 table_ofs = allocate_submesh_table(dest, moby.mesh, moby.bangles.size());
 	std::vector<MobyGifUsage> gif_usage;
 	header.info = write_moby_mesh_section(dest, gif_usage, table_ofs, moby.mesh, moby.scale, format);
 	if(gif_usage.size() > 0) {
@@ -328,8 +328,8 @@ MobyMeshSection read_moby_mesh_section(Buffer src, s64 table_ofs, MobyMeshInfo i
 	return mesh;
 }
 
-s64 allocate_submesh_table(OutBuffer& dest, const MobyMeshSection& mesh) {
-	size_t count = mesh.high_lod.size() + mesh.low_lod.size() + mesh.metal.size();
+s64 allocate_submesh_table(OutBuffer& dest, const MobyMeshSection& mesh, size_t bangle_count) {
+	size_t count = mesh.high_lod.size() + mesh.low_lod.size() + mesh.metal.size() + bangle_count;
 	return dest.alloc_multiple<MobySubMeshEntry>(count);
 }
 
@@ -366,13 +366,13 @@ static std::vector<MobyBangle> read_moby_bangles(Buffer src, s32 bangles_ofs, s3
 		MobyBangle bangle;
 		if(ind.high_lod_submesh_begin != 0) {
 			s32 high_lod_ofs = submesh_table_offset + ind.high_lod_submesh_begin * 0x10;
-			bangle.submeshes = read_moby_submeshes(src, high_lod_ofs, ind.high_lod_submesh_count, scale, animated, format);
+			bangle.high_lod = read_moby_submeshes(src, high_lod_ofs, ind.high_lod_submesh_count, scale, animated, format);
 		}
 		if(ind.low_lod_submesh_begin != 0) {
 			s32 low_lod_ofs = submesh_table_offset + ind.low_lod_submesh_begin * 0x10;
-			bangle.low_lod_submeshes = read_moby_submeshes(src, low_lod_ofs, ind.low_lod_submesh_count, scale, animated, format);
+			bangle.low_lod = read_moby_submeshes(src, low_lod_ofs, ind.low_lod_submesh_count, scale, animated, format);
 		}
-		if(!bangle.submeshes.empty() || !bangle.low_lod_submeshes.empty()) {
+		if(!bangle.high_lod.empty() || !bangle.low_lod.empty()) {
 			bangle.vectors[0] = src.read<MobyVec4>(bangles_ofs + 64 + i * 16 + 0, "bangle vector 1");
 			bangle.vectors[1] = src.read<MobyVec4>(bangles_ofs + 64 + i * 16 + 8, "bangle vector 2");
 			bangles.emplace_back(std::move(bangle));
@@ -382,10 +382,38 @@ static std::vector<MobyBangle> read_moby_bangles(Buffer src, s32 bangles_ofs, s3
 	return bangles;
 }
 
-static s64 write_moby_bangles(OutBuffer dest, s64 bangles_ofs, s64 submesh_table_ofs, s32 submesh, const std::vector<MobyBangle>& bangles, f32 scale, MobyFormat format) {
-	// TODO: Implement this.
-	s64 ofs = dest.tell();
-	return ofs;
+static void write_moby_bangles(OutBuffer dest, GifUsageTable& gif_usage, s64 bangles_ofs, s64 submesh_table_ofs, s32 submesh, const std::vector<MobyBangle>& bangles, f32 scale, MobyFormat format) {
+	MobyBangleHeader header = {};
+	std::vector<MobyBangleIndices> indices;
+	std::vector<MobyVec4> vectors;
+	for(const MobyBangle& bangle : bangles) {
+		MobyBangleIndices& index = indices.emplace_back();
+		
+		s32 high_lod_table_ofs = submesh_table_ofs + submesh * 16;
+		index.high_lod_submesh_begin = submesh;
+		index.high_lod_submesh_count = bangle.high_lod.size();
+		write_moby_submeshes(dest, gif_usage, high_lod_table_ofs, bangle.high_lod.data(), bangle.high_lod.size(), scale, format, class_header_ofs);
+		submesh += (s32) bangle.high_lod.size();
+		
+		if(!bangle.low_lod.empty()) {
+			s32 low_lod_table_ofs = submesh_table_ofs + submesh * 16;
+			verify(submesh < 256 && bangle.low_lod.size() < 256,
+				"Bangles are too big (too many packets).");
+			index.low_lod_submesh_begin = (u8) submesh;
+			index.low_lod_submesh_count = (u8) bangle.low_lod.size();
+			write_moby_submeshes(dest, gif_usage, low_lod_table_ofs, bangle.low_lod.data(), bangle.low_lod.size(), scale, format, class_header_ofs);
+			submesh += (s32) bangle.low_lod.size();
+		} else {
+			index.low_lod_submesh_begin = 0;
+			index.low_lod_submesh_count = 0;
+		}
+		
+		vectors.emplace_back(bangle.vectors[0]);
+		vectors.emplace_back(bangle.vectors[1]);
+	}
+	dest.write(bangles_ofs, header);
+	dest.write_multiple(bangles_ofs + sizeof(MobyBangleHeader), indices);
+	dest.write_multiple(bangles_ofs + 64, vectors);
 }
 
 static MobyCornCob read_moby_corncob(Buffer src) {
@@ -560,10 +588,10 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 	
 	for(s32 i = 0; i < (s32) moby.bangles.size(); i++) {
 		std::string name = stringf("bangle_%d", i);
-		scene.meshes.emplace_back(recover_moby_mesh(moby.bangles[i].submeshes, name.c_str(), o_class, texture_count, NO_SUBMESH_FILTER));
+		scene.meshes.emplace_back(recover_moby_mesh(moby.bangles[i].high_lod, name.c_str(), o_class, texture_count, NO_SUBMESH_FILTER));
 		
 		std::string low_lod_name = stringf("bangle_%d_low_lod", i);
-		scene.meshes.emplace_back(recover_moby_mesh(moby.bangles[i].low_lod_submeshes, low_lod_name.c_str(), o_class, texture_count, NO_SUBMESH_FILTER));
+		scene.meshes.emplace_back(recover_moby_mesh(moby.bangles[i].low_lod, low_lod_name.c_str(), o_class, texture_count, NO_SUBMESH_FILTER));
 	}
 	
 	if(moby.animation.joint_count != 0) {

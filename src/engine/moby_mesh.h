@@ -243,8 +243,8 @@ packed_struct(MobyVec4,
 )
 
 struct MobyBangle {
-	std::vector<MobySubMesh> submeshes;
-	std::vector<MobySubMesh> low_lod_submeshes;
+	std::vector<MobySubMesh> high_lod;
+	std::vector<MobySubMesh> low_lod;
 	MobyVec4 vectors[2];
 };
 

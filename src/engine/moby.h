@@ -181,7 +181,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
 MobyClassData read_armor_moby_class(Buffer src, Game game);
 void write_armor_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
 MobyMeshSection read_moby_mesh_section(Buffer src, s64 table_ofs, MobyMeshInfo info, f32 scale, MobyFormat format, bool animated);
-s64 allocate_submesh_table(OutBuffer& dest, const MobyMeshSection& mesh);
+s64 allocate_submesh_table(OutBuffer& dest, const MobyMeshSection& mesh, size_t bangle_count);
 MobyMeshInfo write_moby_mesh_section(OutBuffer& dest, std::vector<MobyGifUsage>& gif_usage, s64 table_ofs, const MobyMeshSection& mesh, f32 scale, MobyFormat format);
 
 ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count);
