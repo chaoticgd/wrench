@@ -40,17 +40,17 @@ struct MatrixSlot {
 };
 
 struct VertexLocation {
-	size_t submesh;
+	size_t packet;
 	size_t vertex;
 	
-	const Vertex& find_vertex_in(const std::vector<MobySubMesh>& submeshes) const {
-		return submeshes[submesh].vertices[vertex];
+	const Vertex& find_vertex_in(const std::vector<MobyPacket>& packets) const {
+		return packets[packet].vertices[vertex];
 	}
 };
 
 struct MatrixLivenessInfo {
 	s32 population_count = 0;
-	s32 last_submesh = -1;
+	s32 last_packet = -1;
 	VertexLocation first_vertex;
 };
 
@@ -61,52 +61,52 @@ class VU0MatrixAllocator {
 	u8 next_transfer_store_addr = 0x0;
 	u8 first_blend_store_addr;
 	u8 next_blend_store_addr;
-	s32 transfer_allocations_this_submesh = 0;
-	s32 blend_allocations_this_submesh = 0;
+	s32 transfer_allocations_this_packet = 0;
+	s32 blend_allocations_this_packet = 0;
 public:
-	VU0MatrixAllocator(s32 max_joints_per_submesh);
-	void new_submesh();
+	VU0MatrixAllocator(s32 max_joints_per_packet);
+	void new_packet();
 	Opt<u8> allocate_transferred(u8 joint, const char* context);
-	void allocate_blended(SkinAttributes attribs, s32 current_submesh, s32 last_submesh, const std::vector<Vertex>& vertices);
-	Opt<MatrixAllocation> get_allocation(SkinAttributes attribs, s32 current_submesh);
+	void allocate_blended(SkinAttributes attribs, s32 current_packet, s32 last_packet, const std::vector<Vertex>& vertices);
+	Opt<MatrixAllocation> get_allocation(SkinAttributes attribs, s32 current_packet);
 	Opt<MatrixAllocation> get_allocation_pre(SkinAttributes attribs);
 };
 
-// write_moby_submeshes
-// write_moby_metal_submeshes
-static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh, s64 class_header_ofs);
+// write_moby_packets
+// write_moby_metal_packets
+static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobyPacketBase& packet, s64 class_header_ofs);
 struct MatrixTransferSchedule {
-	std::vector<MobyMatrixTransfer> last_submesh_transfers;
+	std::vector<MobyMatrixTransfer> last_packet_transfers;
 	std::vector<MobyMatrixTransfer> preloop_transfers;
 	std::vector<MobyMatrixTransfer> two_way_transfers;
 };
-static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMesh& submesh, MobySubMeshLowLevel* last_submesh, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness);
-static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale);
+static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobyPacket& packet, MobyPacketLowLevel* last_packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness);
+static MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale);
 static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inverse_scale);
-static s32 max_num_joints_referenced_per_submesh(const std::vector<MobySubMesh>& submeshes);
-static std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobySubMesh>& submeshes);
-static MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobySubMesh& submesh, const MobySubMeshLowLevel& low, MobyFormat format);
-// build_moby_submeshes
+static s32 max_num_joints_referenced_per_packet(const std::vector<MobyPacket>& packets);
+static std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobyPacket>& packets);
+static MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobyPacket& packet, const MobyPacketLowLevel& low, MobyFormat format);
+// build_moby_packets
 struct IndexMappingRecord {
-	s32 submesh = -1;
+	s32 packet = -1;
 	s32 index = -1; // The index of the vertex in the vertex table.
 	s32 id = -1; // The index of the vertex in the intermediate buffer.
 	s32 dedup_out_edge = -1; // If this vertex is a duplicate, this points to the canonical vertex.
 };
 static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices);
 
-void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobySubMesh* submeshes_in, size_t submesh_count, f32 scale, MobyFormat format, s64 class_header_ofs) {
+void write_moby_packets(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobyPacket* packets_in, size_t packet_count, f32 scale, MobyFormat format, s64 class_header_ofs) {
 	static const s32 ST_UNPACK_ADDR_QUADWORDS = 0xc2;
 	
-	// TODO: Make it so we don't have to copy the submeshes here.
-	std::vector<MobySubMesh> submeshes;
-	for(size_t i = 0; i < submesh_count; i++) {
-		submeshes.push_back(submeshes_in[i]);
+	// TODO: Make it so we don't have to copy the packets here.
+	std::vector<MobyPacket> packets;
+	for(size_t i = 0; i < packet_count; i++) {
+		packets.push_back(packets_in[i]);
 	}
 	
 	// Fixup joint indices.
-	for(MobySubMesh& submesh : submeshes) {
-		for(Vertex& vertex : submesh.vertices) {
+	for(MobyPacket& packet : packets) {
+		for(Vertex& vertex : packet.vertices) {
 			for(s32 i = 0; i < vertex.skin.count; i++) {
 				if(vertex.skin.joints[i] == -1) {
 					vertex.skin.joints[i] = 0;
@@ -115,27 +115,27 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 		}
 	}
 	
-	s32 max_joints_per_submesh = max_num_joints_referenced_per_submesh(submeshes);
+	s32 max_joints_per_packet = max_num_joints_referenced_per_packet(packets);
 	
-	std::vector<std::vector<MatrixLivenessInfo>> liveness = compute_matrix_liveness(submeshes);
-	verify_fatal(liveness.size() == submeshes.size());
+	std::vector<std::vector<MatrixLivenessInfo>> liveness = compute_matrix_liveness(packets);
+	verify_fatal(liveness.size() == packets.size());
 	
-	std::vector<MobySubMeshLowLevel> low_submeshes;
-	MobySubMeshLowLevel* last = nullptr;
-	VU0MatrixAllocator matrix_allocator(max_joints_per_submesh);
-	for(size_t i = 0; i < submeshes.size(); i++) {
-		VERBOSE_MATRIX_ALLOCATION(printf("**** submesh %d ****\n", i));
-		matrix_allocator.new_submesh();
-		MatrixTransferSchedule schedule = schedule_matrix_transfers((s32) i, submeshes[i], last, matrix_allocator, liveness[i]);
-		MobySubMeshLowLevel low = pack_vertices((s32) i, submeshes[i], matrix_allocator, liveness[i], scale);
+	std::vector<MobyPacketLowLevel> low_packets;
+	MobyPacketLowLevel* last = nullptr;
+	VU0MatrixAllocator matrix_allocator(max_joints_per_packet);
+	for(size_t i = 0; i < packets.size(); i++) {
+		VERBOSE_MATRIX_ALLOCATION(printf("**** packet %d ****\n", i));
+		matrix_allocator.new_packet();
+		MatrixTransferSchedule schedule = schedule_matrix_transfers((s32) i, packets[i], last, matrix_allocator, liveness[i]);
+		MobyPacketLowLevel low = pack_vertices((s32) i, packets[i], matrix_allocator, liveness[i], scale);
 		
 		// Write the scheduled transfers.
-		verify_fatal((last == nullptr && schedule.last_submesh_transfers.size() == 0) ||
-			(last != nullptr && schedule.last_submesh_transfers.size() <= last->main_vertex_count));
-		for(size_t i = 0; i < schedule.last_submesh_transfers.size(); i++) {
+		verify_fatal((last == nullptr && schedule.last_packet_transfers.size() == 0) ||
+			(last != nullptr && schedule.last_packet_transfers.size() <= last->main_vertex_count));
+		for(size_t i = 0; i < schedule.last_packet_transfers.size(); i++) {
 			verify_fatal(last != nullptr);
 			MobyVertex& mv = last->vertices.at(last->vertices.size() - i - 1);
-			MobyMatrixTransfer& transfer = schedule.last_submesh_transfers[i];
+			MobyMatrixTransfer& transfer = schedule.last_packet_transfers[i];
 			mv.v.regular.low_halfword |= transfer.spr_joint_index << 9;
 			mv.v.regular.vu0_transferred_matrix_store_addr = transfer.vu0_dest_addr;
 		}
@@ -149,15 +149,15 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 		}
 		
 		// The vertices are reordered while being packed.
-		map_indices(submeshes[i], low.index_mapping);
+		map_indices(packets[i], low.index_mapping);
 		
-		low_submeshes.emplace_back(std::move(low));
-		last = &low_submeshes.back();
+		low_packets.emplace_back(std::move(low));
+		last = &low_packets.back();
 	}
 	
-	for(const MobySubMeshLowLevel& low : low_submeshes) {
-		const MobySubMesh& submesh = low.high_level;
-		MobySubMeshEntry entry = {0};
+	for(const MobyPacketLowLevel& low : low_packets) {
+		const MobyPacket& packet = low.high_level;
+		MobyPacketEntry entry = {0};
 		
 		// Write VIF command list.
 		dest.pad(0x10);
@@ -167,15 +167,15 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 		VifPacket st_unpack;
 		st_unpack.code.interrupt = 0;
 		st_unpack.code.cmd = (VifCmd) 0b1110000; // UNPACK
-		st_unpack.code.num = submesh.sts.size();
+		st_unpack.code.num = packet.sts.size();
 		st_unpack.code.unpack.vnvl = VifVnVl::V2_16;
 		st_unpack.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
 		st_unpack.code.unpack.usn = VifUsn::SIGNED;
 		st_unpack.code.unpack.addr = ST_UNPACK_ADDR_QUADWORDS;
-		st_unpack.data = Buffer((u8*) &submesh.sts[0], (u8*) (&submesh.sts[0] + submesh.sts.size()));
+		st_unpack.data = Buffer((u8*) &packet.sts[0], (u8*) (&packet.sts[0] + packet.sts.size()));
 		write_vif_packet(dest, st_unpack);
 		
-		s64 tex_unpack = write_shared_moby_vif_packets(dest, &gif_usage, submesh, class_header_ofs);
+		s64 tex_unpack = write_shared_moby_vif_packets(dest, &gif_usage, packet, class_header_ofs);
 		
 		entry.vif_list_texture_unpack_offset = tex_unpack;
 		dest.pad(0x10);
@@ -183,7 +183,7 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 		
 		s64 vertex_header_ofs = dest.tell();
 		
-		auto vertex_header = write_vertices(dest, submesh, low, format);
+		auto vertex_header = write_vertices(dest, packet, low, format);
 		
 		entry.vertex_offset = vertex_header_ofs - class_header_ofs;
 		dest.pad(0x10);
@@ -198,27 +198,27 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 	}
 }
 
-void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes, s64 class_header_ofs) {
-	for(const MobyMetalSubMesh& submesh : submeshes) {
-		MobySubMeshEntry entry = {0};
+void write_moby_metal_packets(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& packets, s64 class_header_ofs) {
+	for(const MobyMetalSubMesh& packet : packets) {
+		MobyPacketEntry entry = {0};
 		
 		// Write VIF command list.
 		dest.pad(0x10);
 		s64 vif_list_ofs = dest.tell();
 		entry.vif_list_offset = vif_list_ofs - class_header_ofs;
-		s64 tex_unpack = write_shared_moby_vif_packets(dest, nullptr, submesh, class_header_ofs);
+		s64 tex_unpack = write_shared_moby_vif_packets(dest, nullptr, packet, class_header_ofs);
 		entry.vif_list_texture_unpack_offset = tex_unpack;
 		dest.pad(0x10);
 		entry.vif_list_size = (dest.tell() - vif_list_ofs) / 0x10;
 		
 		// Write vertex table.
 		MobyMetalVertexTableHeader vertex_header;
-		vertex_header.vertex_count = submesh.vertices.size();
-		vertex_header.unknown_4 = submesh.unknown_4;
-		vertex_header.unknown_8 = submesh.unknown_8;
-		vertex_header.unknown_c = submesh.unknown_c;
+		vertex_header.vertex_count = packet.vertices.size();
+		vertex_header.unknown_4 = packet.unknown_4;
+		vertex_header.unknown_8 = packet.unknown_8;
+		vertex_header.unknown_c = packet.unknown_c;
 		s64 vertex_header_ofs = dest.write(vertex_header);
-		dest.write_multiple(submesh.vertices);
+		dest.write_multiple(packet.vertices);
 		entry.vertex_offset = vertex_header_ofs - class_header_ofs;
 		dest.pad(0x10);
 		entry.vertex_data_size = (dest.tell() - vertex_header_ofs) / 0x10;
@@ -231,21 +231,21 @@ void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector
 	}
 }
 
-static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh, s64 class_header_ofs) {
+static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobyPacketBase& packet, s64 class_header_ofs) {
 	static const s32 INDEX_UNPACK_ADDR_QUADWORDS = 0x12d;
 	
 	std::vector<u8> indices;
 	OutBuffer index_buffer(indices);
 	s64 index_header_ofs = index_buffer.alloc<MobyIndexHeader>();
-	index_buffer.write_multiple(submesh.indices);
+	index_buffer.write_multiple(packet.indices);
 	
 	MobyIndexHeader index_header = {0};
-	index_header.unknown_0 = submesh.index_header_first_byte;
-	if(submesh.textures.size() > 0) {
+	index_header.unknown_0 = packet.index_header_first_byte;
+	if(packet.textures.size() > 0) {
 		index_header.texture_unpack_offset_quadwords = indices.size() / 4;
 	}
-	if(submesh.secret_indices.size() >= 1) {
-		index_header.secret_index = submesh.secret_indices[0];
+	if(packet.secret_indices.size() >= 1) {
+		index_header.secret_index = packet.secret_indices[0];
 	}
 	index_buffer.write(index_header_ofs, index_header);
 	
@@ -261,7 +261,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	write_vif_packet(dest, index_unpack);
 	
 	s64 rel_texture_unpack_ofs = 0;
-	if(submesh.textures.size() > 0) {
+	if(packet.textures.size() > 0) {
 		while(dest.tell() % 0x10 != 0xc) {
 			dest.write<u8>(0);
 		}
@@ -269,20 +269,20 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 		VifPacket texture_unpack;
 		texture_unpack.code.interrupt = 0;
 		texture_unpack.code.cmd = (VifCmd) 0b1100000; // UNPACK
-		texture_unpack.code.num = submesh.textures.size() * 4;
+		texture_unpack.code.num = packet.textures.size() * 4;
 		texture_unpack.code.unpack.vnvl = VifVnVl::V4_32;
 		texture_unpack.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
 		texture_unpack.code.unpack.usn = VifUsn::SIGNED;
 		texture_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS + index_unpack.code.num;
 		
-		verify_fatal(submesh.secret_indices.size() >= submesh.textures.size());
+		verify_fatal(packet.secret_indices.size() >= packet.textures.size());
 		std::vector<u8> texture_unpack_data;
-		for(size_t i = 0; i < submesh.textures.size(); i++) {
-			MobyTexturePrimitive primitive = submesh.textures[i];
+		for(size_t i = 0; i < packet.textures.size(); i++) {
+			MobyTexturePrimitive primitive = packet.textures[i];
 			OutBuffer(texture_unpack_data).write(primitive);
 		}
-		for(size_t i = 1; i < submesh.secret_indices.size(); i++) {
-			OutBuffer(texture_unpack_data).write((i - 1) * 0x10 + 0xc, submesh.secret_indices[i]);
+		for(size_t i = 1; i < packet.secret_indices.size(); i++) {
+			OutBuffer(texture_unpack_data).write((i - 1) * 0x10 + 0xc, packet.secret_indices[i]);
 		}
 		texture_unpack.data = Buffer(texture_unpack_data);
 		s32 abs_texture_unpack_ofs = dest.tell();
@@ -292,7 +292,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 			MobyGifUsage gif_entry;
 			gif_entry.offset_and_terminator = abs_texture_unpack_ofs - 0xc - class_header_ofs;
 			s32 gif_index = 0;
-			for(const MobyTexturePrimitive& prim : submesh.textures) {
+			for(const MobyTexturePrimitive& prim : packet.textures) {
 				verify_fatal(gif_index < 12);
 				gif_entry.texture_indices[gif_index++] = prim.d3_tex0_1.data_lo;
 			}
@@ -309,24 +309,24 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	return rel_texture_unpack_ofs;
 }
 
-static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMesh& submesh, MobySubMeshLowLevel* last_submesh, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness) {
-	// Determine which slots in VU0 memory are in use by the previous submesh
-	// while we are trying to do transfers for the current submesh.
+static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobyPacket& packet, MobyPacketLowLevel* last_packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness) {
+	// Determine which slots in VU0 memory are in use by the previous packet
+	// while we are trying to do transfers for the current packet.
 	std::vector<bool> slots_in_use(0x40, false);
-	if(last_submesh != nullptr) {
+	if(last_packet != nullptr) {
 		size_t i = 0;
-		size_t regular_begin = last_submesh->two_way_blend_vertex_count + last_submesh->three_way_blend_vertex_count;
-		for(size_t i = regular_begin; i < last_submesh->vertices.size(); i++) {
-			const MobyVertex& mv = last_submesh->vertices[i];
+		size_t regular_begin = last_packet->two_way_blend_vertex_count + last_packet->three_way_blend_vertex_count;
+		for(size_t i = regular_begin; i < last_packet->vertices.size(); i++) {
+			const MobyVertex& mv = last_packet->vertices[i];
 			slots_in_use[mv.v.regular.vu0_matrix_load_addr / 0x4] = true;
 		}
 	}
 	
-	// Find all the joints that are used by this submesh.
+	// Find all the joints that are used by this packet.
 	std::set<u8> used_joints;
 	std::vector<bool> joint_used_by_two_way_blends(256, false);
-	for(size_t i = 0; i < submesh.vertices.size(); i++) {
-		const Vertex& vertex = submesh.vertices[i];
+	for(size_t i = 0; i < packet.vertices.size(); i++) {
+		const Vertex& vertex = packet.vertices[i];
 		//if(vertex.skin.count == 1 || liveness[i].population_count > 0) {
 		for(s32 j = 0; j < vertex.skin.count; j++) {
 			u8 joint = (u8) vertex.skin.joints[j];
@@ -382,10 +382,10 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 	}
 	
 	// Allocate space for newly blended matrices.
-	for(size_t i = 0; i < submesh.vertices.size(); i++) {
-		const Vertex& vertex = submesh.vertices[i];
+	for(size_t i = 0; i < packet.vertices.size(); i++) {
+		const Vertex& vertex = packet.vertices[i];
 		if(vertex.skin.count > 1) {
-			mat_alloc.allocate_blended(submesh.vertices[i].skin, smi, liveness[i].last_submesh, submesh.vertices);
+			mat_alloc.allocate_blended(packet.vertices[i].skin, smi, liveness[i].last_packet, packet.vertices);
 		}
 	}
 	
@@ -395,10 +395,10 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 		independent_matrix_transfers
 	};
 	
-	// Count the number of two-way blends that will be issued for this submesh.
+	// Count the number of two-way blends that will be issued for this packet.
 	s32 two_way_count = 0;
-	for(size_t i = 0; i < submesh.vertices.size(); i++) {
-		const Vertex& vertex = submesh.vertices[i];
+	for(size_t i = 0; i < packet.vertices.size(); i++) {
+		const Vertex& vertex = packet.vertices[i];
 		if(vertex.skin.count == 2) {
 			MatrixAllocation allocation;
 			if(liveness[i].population_count != 1) {
@@ -413,17 +413,17 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 		}
 	}
 	
-	if(last_submesh != nullptr) {
+	if(last_packet != nullptr) {
 		// Try to schedule as many matrix transfers as is possible given this
-		// heuristic on the last submesh.
-		verify_fatal(last_submesh->vertices.size() >= 1);
-		s64 insert_index = (s64) last_submesh->vertices.size() - 1 - schedule.last_submesh_transfers.size();
-		s64 last_three_way_end = last_submesh->two_way_blend_vertex_count + last_submesh->three_way_blend_vertex_count;
+		// heuristic on the last packet.
+		verify_fatal(last_packet->vertices.size() >= 1);
+		s64 insert_index = (s64) last_packet->vertices.size() - 1 - schedule.last_packet_transfers.size();
+		s64 last_three_way_end = last_packet->two_way_blend_vertex_count + last_packet->three_way_blend_vertex_count;
 		for(MobyMatrixTransfer& transfer : matrix_transfers) {
 			if(insert_index >= last_three_way_end) {
 				bool conflict = false;
-				for(size_t i = insert_index; i < last_submesh->vertices.size(); i++) {
-					const MobyVertex& mv = last_submesh->vertices[i];
+				for(size_t i = insert_index; i < last_packet->vertices.size(); i++) {
+					const MobyVertex& mv = last_packet->vertices[i];
 					if(mv.v.regular.vu0_matrix_load_addr == transfer.vu0_dest_addr) {
 						conflict = true;
 						break;
@@ -431,7 +431,7 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 				}
 				
 				if(!conflict) {
-					schedule.last_submesh_transfers.push_back(transfer);
+					schedule.last_packet_transfers.push_back(transfer);
 					insert_index--;
 				} else {
 					schedule.preloop_transfers.push_back(transfer);
@@ -451,10 +451,10 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 			schedule.two_way_transfers.push_back(transfer);
 			two_way_insert_index++;
 		} else {
-			bool last_submesh_has_space = last_submesh != nullptr &&
-				schedule.last_submesh_transfers.size() < last_submesh->main_vertex_count;
-			if(last_submesh_has_space && !slots_in_use[transfer.vu0_dest_addr / 0x4]) {
-				schedule.last_submesh_transfers.push_back(transfer);
+			bool last_packet_has_space = last_packet != nullptr &&
+				schedule.last_packet_transfers.size() < last_packet->main_vertex_count;
+			if(last_packet_has_space && !slots_in_use[transfer.vu0_dest_addr / 0x4]) {
+				schedule.last_packet_transfers.push_back(transfer);
 			} else {
 				schedule.preloop_transfers.push_back(transfer);
 			}
@@ -464,17 +464,17 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 	return schedule;
 }
 
-static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale) {
-	MobySubMeshLowLevel dest{submesh};
-	dest.index_mapping.resize(submesh.vertices.size());
+static MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale) {
+	MobyPacketLowLevel dest{packet};
+	dest.index_mapping.resize(packet.vertices.size());
 	
 	f32 inverse_scale = 1024.f / scale;
 	
-	std::vector<bool> first_uses(submesh.vertices.size(), false);
+	std::vector<bool> first_uses(packet.vertices.size(), false);
 	
 	// Pack vertices that should issue a 2-way matrix blend operation on VU0.
-	for(size_t i = 0; i < submesh.vertices.size(); i++) {
-		const Vertex& vertex = submesh.vertices[i];
+	for(size_t i = 0; i < packet.vertices.size(); i++) {
+		const Vertex& vertex = packet.vertices[i];
 		if(vertex.skin.count == 2) {
 			MatrixAllocation allocation;
 			if(liveness[i].population_count != 1) {
@@ -516,8 +516,8 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 	}
 	
 	// Pack vertices that should issue a 3-way matrix blend operation on VU0.
-	for(size_t i = 0; i < submesh.vertices.size(); i++) {
-		const Vertex& vertex = submesh.vertices[i];
+	for(size_t i = 0; i < packet.vertices.size(); i++) {
+		const Vertex& vertex = packet.vertices[i];
 		if(vertex.skin.count == 3) {
 			MatrixAllocation allocation;
 			if(liveness[i].population_count != 1) {
@@ -562,8 +562,8 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 	}
 	
 	// Pack vertices that use unblended matrices.
-	for(size_t i = 0; i < submesh.vertices.size(); i++) {
-		const Vertex& vertex = submesh.vertices[i];
+	for(size_t i = 0; i < packet.vertices.size(); i++) {
+		const Vertex& vertex = packet.vertices[i];
 		if(vertex.skin.count == 1) {
 			dest.main_vertex_count++;
 			dest.index_mapping[i] = dest.vertices.size();
@@ -583,8 +583,8 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 	}
 	
 	// Pack vertices that use previously blended matrices.
-	for(size_t i = 0; i < submesh.vertices.size(); i++) {
-		const Vertex& vertex = submesh.vertices[i];
+	for(size_t i = 0; i < packet.vertices.size(); i++) {
+		const Vertex& vertex = packet.vertices[i];
 		if(vertex.skin.count > 1 && !first_uses[i]) {
 			dest.main_vertex_count++;
 			dest.index_mapping[i] = dest.vertices.size();
@@ -606,16 +606,16 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 	return dest;
 }
 
-VU0MatrixAllocator::VU0MatrixAllocator(s32 max_joints_per_submesh) {
-	first_blend_store_addr = max_joints_per_submesh * 0x4;
+VU0MatrixAllocator::VU0MatrixAllocator(s32 max_joints_per_packet) {
+	first_blend_store_addr = max_joints_per_packet * 0x4;
 	next_blend_store_addr = first_blend_store_addr;
 	verify(first_blend_store_addr < 0xf4, "Failed to allocate transfer matrices in VU0 memory. Try simplifying your joint weights.");
 }
 
-void VU0MatrixAllocator::new_submesh() {
+void VU0MatrixAllocator::new_packet() {
 	next_blend_store_addr = first_blend_store_addr;
-	transfer_allocations_this_submesh = 0;
-	blend_allocations_this_submesh = 0;
+	transfer_allocations_this_packet = 0;
+	blend_allocations_this_packet = 0;
 	for(s32 i = 0; i < first_blend_store_addr; i += 0x4) {
 		slots[i / 0x4].generation++;
 	}
@@ -632,7 +632,7 @@ Opt<u8> VU0MatrixAllocator::allocate_transferred(u8 joint, const char* context) 
 		MatrixSlot& slot = slots[next_transfer_store_addr / 0x4];
 		slot.generation++;
 		allocation = MatrixAllocation{next_transfer_store_addr, true, true, slot.generation};
-		transfer_allocations_this_submesh++;
+		transfer_allocations_this_packet++;
 		next_transfer_store_addr += 0x4;
 		if(next_transfer_store_addr >= first_blend_store_addr) {
 			next_transfer_store_addr = 0;
@@ -642,12 +642,12 @@ Opt<u8> VU0MatrixAllocator::allocate_transferred(u8 joint, const char* context) 
 	return std::nullopt;
 }
 
-void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_submesh, s32 last_submesh, const std::vector<Vertex>& vertices) {
+void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_packet, s32 last_packet, const std::vector<Vertex>& vertices) {
 	MatrixAllocation& allocation = allocations[attribs];
 	if(allocation.generation != slots[allocation.address / 0x4].generation) {
 		// Try to find a slot that isn't live.
 		u8 first_addr = next_blend_store_addr;
-		while(slots[next_blend_store_addr / 0x4].liveness >= current_submesh) {
+		while(slots[next_blend_store_addr / 0x4].liveness >= current_packet) {
 			next_blend_store_addr += 0x4;
 			if(next_blend_store_addr >= 0xf4) {
 				next_blend_store_addr = first_blend_store_addr;
@@ -658,16 +658,16 @@ void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_su
 				for(s32 i = first_blend_store_addr; i < 0xf4; i += 0x4) {
 					MatrixSlot& slot = slots[i / 0x4];
 					
-					bool used_by_this_submesh = false;
+					bool used_by_this_packet = false;
 					for(const Vertex& vertex : vertices) {
 						if(vertex.skin == slot.current_contents) {
-							used_by_this_submesh = true;
+							used_by_this_packet = true;
 						}
 					}
 					
-					if(slot.liveness > liveness && !used_by_this_submesh) {
+					if(slot.liveness > liveness && !used_by_this_packet) {
 						// Make sure we're not writing over data that's going to
-						// be needed for this submesh.
+						// be needed for this packet.
 						next_blend_store_addr = i;
 						liveness = slot.liveness;
 					}
@@ -682,14 +682,14 @@ void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_su
 		
 		VERBOSE_MATRIX_ALLOCATION(printf("Alloc blended matrix {%hhu,{%hhd,%hhd,%hhd},{%hhu,%hhu,%hhu}} -> %hhx (%d)\n",
 			attribs.count, attribs.joints[0], attribs.joints[1], attribs.joints[2],
-			attribs.weights[0], attribs.weights[1], attribs.weights[2], next_blend_store_addr, last_submesh));
+			attribs.weights[0], attribs.weights[1], attribs.weights[2], next_blend_store_addr, last_packet));
 		
 		MatrixSlot& slot = slots[next_blend_store_addr / 0x4];
 		slot.generation++;
-		slot.liveness = last_submesh;
+		slot.liveness = last_packet;
 		slot.current_contents = attribs;
 		allocation = MatrixAllocation{next_blend_store_addr, true, true, slot.generation};
-		blend_allocations_this_submesh++;
+		blend_allocations_this_packet++;
 		next_blend_store_addr += 0x4;
 		if(next_blend_store_addr >= 0xf4) {
 			next_blend_store_addr = first_blend_store_addr;
@@ -697,7 +697,7 @@ void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_su
 	}
 }
 
-Opt<MatrixAllocation> VU0MatrixAllocator::get_allocation(SkinAttributes attribs, s32 current_submesh) {
+Opt<MatrixAllocation> VU0MatrixAllocator::get_allocation(SkinAttributes attribs, s32 current_packet) {
 	auto iter = allocations.find(attribs);
 	if(iter == allocations.end()) {
 		return std::nullopt;
@@ -709,9 +709,9 @@ Opt<MatrixAllocation> VU0MatrixAllocator::get_allocation(SkinAttributes attribs,
 			attribs.count, attribs.joints[0], attribs.joints[1], attribs.joints[2],
 			attribs.weights[0], attribs.weights[1], attribs.weights[2],
 			allocation.generation, slot.generation);
-	verify(attribs.count == 1 || slot.liveness >= current_submesh,
-		"Bad liveness analysis (current submesh is %d, max is %d).",
-		current_submesh, slot.liveness);
+	verify(attribs.count == 1 || slot.liveness >= current_packet,
+		"Bad liveness analysis (current packet is %d, max is %d).",
+		current_packet, slot.liveness);
 	MatrixAllocation copy = allocation;
 	allocation.first_use = false;
 	return copy;
@@ -743,70 +743,70 @@ static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inve
 	}
 }
 
-static s32 max_num_joints_referenced_per_submesh(const std::vector<MobySubMesh>& submeshes) {
+static s32 max_num_joints_referenced_per_packet(const std::vector<MobyPacket>& packets) {
 	// This seems suboptimal but it's what Insomniac did.
-	s32 max_joints_per_submesh = 0;
-	for(size_t i = 0; i < submeshes.size(); i++) {
-		const MobySubMesh& submesh = submeshes[i];
+	s32 max_joints_per_packet = 0;
+	for(size_t i = 0; i < packets.size(); i++) {
+		const MobyPacket& packet = packets[i];
 		
 		std::set<u8> joints;
-		for(size_t j = 0; j < submesh.vertices.size(); j++) {
-			const Vertex& vertex = submesh.vertices[j];
+		for(size_t j = 0; j < packet.vertices.size(); j++) {
+			const Vertex& vertex = packet.vertices[j];
 			for(s32 k = 0; k < vertex.skin.count; k++) {
 				joints.emplace(vertex.skin.joints[k]);
 			}
 		}
 		
-		max_joints_per_submesh = std::max(max_joints_per_submesh, (s32) joints.size());
+		max_joints_per_packet = std::max(max_joints_per_packet, (s32) joints.size());
 	}
-	return max_joints_per_submesh;
+	return max_joints_per_packet;
 }
 
-static std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobySubMesh>& submeshes) {
+static std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobyPacket>& packets) {
 	std::vector<VertexLocation> mapping;
-	for(size_t i = 0; i < submeshes.size(); i++) {
-		for(size_t j = 0; j < submeshes[i].vertices.size(); j++) {
+	for(size_t i = 0; i < packets.size(); i++) {
+		for(size_t j = 0; j < packets[i].vertices.size(); j++) {
 			mapping.push_back(VertexLocation{i, j});
 		}
 	}
 	
 	std::sort(BEGIN_END(mapping), [&](const VertexLocation& l, const VertexLocation& r) {
-		return l.find_vertex_in(submeshes).skin < r.find_vertex_in(submeshes).skin;
+		return l.find_vertex_in(packets).skin < r.find_vertex_in(packets).skin;
 	});
 	
 	std::vector<std::vector<MatrixLivenessInfo>> liveness;
-	for(const MobySubMesh& submesh : submeshes) {
-		liveness.emplace_back(submesh.vertices.size(), MatrixLivenessInfo{});
+	for(const MobyPacket& packet : packets) {
+		liveness.emplace_back(packet.vertices.size(), MatrixLivenessInfo{});
 	}
 	
 	auto process_run = [&](size_t begin, size_t end) {
 		VertexLocation first_vertex = {SIZE_MAX, SIZE_MAX};
-		s32 last_submesh = -1;
+		s32 last_packet = -1;
 		for(size_t j = begin; j < end; j++) {
-			if(mapping[j].submesh < first_vertex.submesh) {
+			if(mapping[j].packet < first_vertex.packet) {
 				first_vertex = mapping[j];
 			}
-			if(mapping[j].submesh == first_vertex.submesh && mapping[j].vertex < first_vertex.vertex) {
+			if(mapping[j].packet == first_vertex.packet && mapping[j].vertex < first_vertex.vertex) {
 				first_vertex = mapping[j];
 			}
-			if((s32) mapping[j].submesh > last_submesh) {
-				last_submesh = (s32) mapping[j].submesh;
+			if((s32) mapping[j].packet > last_packet) {
+				last_packet = (s32) mapping[j].packet;
 			}
 		}
-		verify_fatal(first_vertex.submesh != SIZE_MAX);
+		verify_fatal(first_vertex.packet != SIZE_MAX);
 		verify_fatal(first_vertex.vertex != SIZE_MAX);
-		verify_fatal(last_submesh != -1);
-		liveness[first_vertex.submesh][first_vertex.vertex].population_count = end - begin;
+		verify_fatal(last_packet != -1);
+		liveness[first_vertex.packet][first_vertex.vertex].population_count = end - begin;
 		for(size_t j = begin; j < end; j++) {
-			liveness[mapping[j].submesh][mapping[j].vertex].last_submesh = last_submesh;
-			liveness[mapping[j].submesh][mapping[j].vertex].first_vertex = first_vertex;
+			liveness[mapping[j].packet][mapping[j].vertex].last_packet = last_packet;
+			liveness[mapping[j].packet][mapping[j].vertex].first_vertex = first_vertex;
 		}
 	};
 	
 	size_t start_of_run = 0;
 	for(size_t i = 1; i < mapping.size(); i++) {
-		const Vertex& last = mapping[i - 1].find_vertex_in(submeshes);
-		const Vertex& current = mapping[i].find_vertex_in(submeshes);
+		const Vertex& last = mapping[i - 1].find_vertex_in(packets);
+		const Vertex& current = mapping[i].find_vertex_in(packets);
 		if(!(current.skin == last.skin)) {
 			process_run(start_of_run, i);
 			start_of_run = i;
@@ -819,7 +819,7 @@ static std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(cons
 	return liveness;
 }
 
-static MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobySubMesh& submesh, const MobySubMeshLowLevel& low, MobyFormat format) {
+static MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobyPacket& packet, const MobyPacketLowLevel& low, MobyFormat format) {
 	s64 vertex_header_ofs;
 	if(format == MobyFormat::RAC1) {
 		vertex_header_ofs = dest.alloc<MobyVertexTableHeaderRac1>();
@@ -836,10 +836,10 @@ static MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobySubMe
 	std::vector<MobyVertex> vertices = low.vertices;
 	dest.write_multiple(low.preloop_matrix_transfers);
 	dest.pad(0x8);
-	for(u16 dupe : submesh.duplicate_vertices) {
+	for(u16 dupe : packet.duplicate_vertices) {
 		dest.write<u16>(dupe << 7);
 	}
-	vertex_header.duplicate_vertex_count = submesh.duplicate_vertices.size();
+	vertex_header.duplicate_vertex_count = packet.duplicate_vertices.size();
 	dest.pad(0x10);
 	vertex_header.vertex_table_offset = dest.tell() - vertex_header_ofs;
 	
@@ -864,18 +864,18 @@ static MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobySubMe
 	s32 trailing = 0;
 	for(; vertices.size() % 4 != 2 && trailing < trailing_vertex_indices.size(); trailing++) {
 		MobyVertex vertex = {0};
-		if(submesh.vertices.size() + trailing >= 7) {
+		if(packet.vertices.size() + trailing >= 7) {
 			vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
 		}
 		vertices.push_back(vertex);
 	}
 	verify_fatal(trailing < trailing_vertex_indices.size());
 	MobyVertex last_vertex = {0};
-	if(submesh.vertices.size() + trailing >= 7) {
+	if(packet.vertices.size() + trailing >= 7) {
 		last_vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
 	}
 	for(s32 i = trailing + 1; i < trailing_vertex_indices.size(); i++) {
-		if(submesh.vertices.size() + i >= 7) {
+		if(packet.vertices.size() + i >= 7) {
 			last_vertex.trailing.vertex_indices[i - trailing - 1] = trailing_vertex_indices[i];
 		}
 	}
@@ -890,11 +890,11 @@ static MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobySubMe
 		vertex_header.three_way_blend_vertex_count +
 		vertex_header.main_vertex_count +
 		vertex_header.duplicate_vertex_count;
-	vertex_header.unknown_e = submesh.unknown_e;
+	vertex_header.unknown_e = packet.unknown_e;
 	
 	if(format == MobyFormat::RAC1) {
 		vertex_header.unknown_e = dest.tell() - vertex_header_ofs;
-		dest.write_multiple(submesh.unknown_e_data);
+		dest.write_multiple(packet.unknown_e_data);
 		dest.write(vertex_header_ofs, vertex_header);
 	} else {
 		MobyVertexTableHeaderRac23DL compact_vertex_header;
@@ -945,7 +945,7 @@ struct MidLevelDuplicateVertex {
 	s32 tex_coord;
 };
 
-// Intermediate data structure used so the submeshes can be built in two
+// Intermediate data structure used so the packets can be built in two
 // seperate passes.
 struct MidLevelSubMesh {
 	std::vector<MidLevelVertex> vertices;
@@ -954,7 +954,7 @@ struct MidLevelSubMesh {
 	std::vector<MidLevelDuplicateVertex> duplicate_vertices;
 };
 
-std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<ColladaMaterial>& materials) {
+std::vector<MobyPacket> build_moby_packets(const Mesh& mesh, const std::vector<ColladaMaterial>& materials) {
 	static const s32 MAX_SUBMESH_TEXTURE_COUNT = 4;
 	static const s32 MAX_SUBMESH_STORED_VERTEX_COUNT = 97;
 	static const s32 MAX_SUBMESH_TOTAL_VERTEX_COUNT = 0x7f;
@@ -967,7 +967,7 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 	// First pass
 	// *************************************************************************
 	
-	std::vector<MidLevelSubMesh> mid_submeshes;
+	std::vector<MidLevelSubMesh> mid_packets;
 	MidLevelSubMesh mid;
 	s32 next_id = 0;
 	for(s32 i = 0; i < (s32) mesh.submeshes.size(); i++) {
@@ -988,17 +988,17 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 		}
 		
 		if(mid.textures.size() >= MAX_SUBMESH_TEXTURE_COUNT || mid.indices.size() >= MAX_SUBMESH_INDEX_COUNT) {
-			mid_submeshes.emplace_back(std::move(mid));
+			mid_packets.emplace_back(std::move(mid));
 			mid = MidLevelSubMesh{};
 		}
 		
 		mid.textures.push_back({texture, (s32) mid.indices.size()});
 		
 		for(size_t j = 0; j < indices.size(); j++) {
-			auto new_submesh = [&]() {
-				mid_submeshes.emplace_back(std::move(mid));
+			auto new_packet = [&]() {
+				mid_packets.emplace_back(std::move(mid));
 				mid = MidLevelSubMesh{};
-				// Handle splitting the strip up between moby submeshes.
+				// Handle splitting the strip up between moby packets.
 				if(j - 2 >= 0) {
 					if(!indices[j].restart) {
 						j -= 3;
@@ -1013,7 +1013,7 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 					}
 				} else {
 					// If we tried to start a tristrip at the end of the last
-					// submesh but didn't push any non-restarting indices, go
+					// packet but didn't push any non-restarting indices, go
 					// back to the beginning of the strip.
 					j = -1;
 				}
@@ -1027,17 +1027,17 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 			//}
 			IndexMappingRecord& canonical = index_mappings[canonical_index];
 			
-			if(canonical.submesh != mid_submeshes.size()) {
+			if(canonical.packet != mid_packets.size()) {
 				if(mid.vertices.size() >= MAX_SUBMESH_STORED_VERTEX_COUNT) {
-					new_submesh();
+					new_packet();
 					continue;
 				}
 				
-				canonical.submesh = mid_submeshes.size();
+				canonical.packet = mid_packets.size();
 				canonical.index = mid.vertices.size();
 				
 				mid.vertices.push_back({(s32) r.index, (s32) r.index});
-			} else if(mapping.submesh != mid_submeshes.size()) {
+			} else if(mapping.packet != mid_packets.size()) {
 				if(canonical.id == -1) {
 					canonical.id = next_id++;
 					mid.vertices.at(canonical.index).id = canonical.id;
@@ -1046,7 +1046,7 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 			}
 			
 			if(mid.indices.size() >= MAX_SUBMESH_INDEX_COUNT - 4) {
-				new_submesh();
+				new_packet();
 				continue;
 			}
 			
@@ -1054,16 +1054,16 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 		}
 	}
 	if(mid.indices.size() > 0) {
-		mid_submeshes.emplace_back(std::move(mid));
+		mid_packets.emplace_back(std::move(mid));
 	}
 	
 	// *************************************************************************
 	// Second pass
 	// *************************************************************************
 	
-	std::vector<MobySubMesh> low_submeshes;
-	for(const MidLevelSubMesh& mid : mid_submeshes) {
-		MobySubMesh low;
+	std::vector<MobyPacket> low_packets;
+	for(const MidLevelSubMesh& mid : mid_packets) {
+		MobyPacket low;
 		
 		for(const MidLevelVertex& vertex : mid.vertices) {
 			const Vertex& high_vert = mesh.vertices[vertex.canonical];
@@ -1123,10 +1123,10 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 			low.sts.push_back({s, t});
 		}
 		
-		low_submeshes.emplace_back(std::move(low));
+		low_packets.emplace_back(std::move(low));
 	}
 	
-	return low_submeshes;
+	return low_packets;
 }
 
 static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices) {

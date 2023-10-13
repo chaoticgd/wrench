@@ -22,48 +22,48 @@
 
 #define VERBOSE_SKINNING(...) //__VA_ARGS__
 
-// read_moby_submeshes
-// read_moby_metal_submeshes
-static void sort_moby_vertices_after_reading(MobySubMeshLowLevel& low, MobySubMesh& submesh);
-static std::vector<Vertex> unpack_vertices(const MobySubMeshLowLevel& src, Opt<SkinAttributes> blend_buffer[64], f32 scale);
+// read_moby_packets
+// read_moby_metal_packets
+static void sort_moby_vertices_after_reading(MobyPacketLowLevel& low, MobyPacket& packet);
+static std::vector<Vertex> unpack_vertices(const MobyPacketLowLevel& src, Opt<SkinAttributes> blend_buffer[64], f32 scale);
 static SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64], const MobyVertex& mv, s32 ind, s32 two_way_count, s32 three_way_count);
-static std::vector<MobyVertex> read_vertices(Buffer src, const MobySubMeshEntry& entry, const MobyVertexTableHeaderRac1& header, MobyFormat format);
+static std::vector<MobyVertex> read_vertices(Buffer src, const MobyPacketEntry& entry, const MobyVertexTableHeaderRac1& header, MobyFormat format);
 // recover_moby_mesh
 // map_indices
 
-std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 count, f32 scale, bool animated, MobyFormat format) {
-	std::vector<MobySubMesh> submeshes;
+std::vector<MobyPacket> read_moby_packets(Buffer src, s64 table_ofs, s64 count, f32 scale, bool animated, MobyFormat format) {
+	std::vector<MobyPacket> packets;
 	
 	Opt<SkinAttributes> blend_buffer[64]; // The game stores blended matrices in VU0 memory.
 	
-	auto submesh_table = src.read_multiple<MobySubMeshEntry>(table_ofs, count, "moby submesh table");
-	for(s32 i = 0; i < (s32) submesh_table.size(); i++) {
-		VERBOSE_SKINNING(printf("******** submesh %d\n", i));
+	auto packet_table = src.read_multiple<MobyPacketEntry>(table_ofs, count, "moby packet table");
+	for(s32 i = 0; i < (s32) packet_table.size(); i++) {
+		VERBOSE_SKINNING(printf("******** packet %d\n", i));
 		
-		const MobySubMeshEntry& entry = submesh_table[i];
-		MobySubMesh submesh;
+		const MobyPacketEntry& entry = packet_table[i];
+		MobyPacket packet;
 		
 		// Read VIF command list.
 		Buffer command_buffer = src.subbuf(entry.vif_list_offset, entry.vif_list_size * 0x10);
 		auto command_list = read_vif_command_list(command_buffer);
 		auto unpacks = filter_vif_unpacks(command_list);
 		Buffer st_data(unpacks.at(0).data);
-		submesh.sts = st_data.read_multiple<MobyTexCoord>(0, st_data.size() / 4, "moby st unpack").copy();
+		packet.sts = st_data.read_multiple<MobyTexCoord>(0, st_data.size() / 4, "moby st unpack").copy();
 		
 		Buffer index_data(unpacks.at(1).data);
 		auto index_header = index_data.read<MobyIndexHeader>(0, "moby index unpack header");
-		submesh.index_header_first_byte = index_header.unknown_0;
+		packet.index_header_first_byte = index_header.unknown_0;
 		verify(index_header.pad == 0, "Moby has bad index buffer.");
-		submesh.secret_indices.push_back(index_header.secret_index);
-		submesh.indices = index_data.read_bytes(4, index_data.size() - 4, "moby index unpack data");
+		packet.secret_indices.push_back(index_header.secret_index);
+		packet.indices = index_data.read_bytes(4, index_data.size() - 4, "moby index unpack data");
 		if(unpacks.size() >= 3) {
 			Buffer texture_data(unpacks.at(2).data);
 			verify(texture_data.size() % 0x40 == 0, "Moby has bad texture unpack.");
 			for(size_t i = 0; i < texture_data.size() / 0x40; i++) {
-				submesh.secret_indices.push_back(texture_data.read<s32>(i * 0x10 + 0xc, "extra index"));
+				packet.secret_indices.push_back(texture_data.read<s32>(i * 0x10 + 0xc, "extra index"));
 				auto prim = texture_data.read<MobyTexturePrimitive>(i * 0x40, "moby texture primitive");
-				verify(prim.d3_tex0_1.data_lo >= MOBY_TEX_NONE, "Regular moby submesh has a texture index that is too low.");
-				submesh.textures.push_back(prim);
+				verify(prim.d3_tex0_1.data_lo >= MOBY_TEX_NONE, "Regular moby packet has a texture index that is too low.");
+				packet.textures.push_back(prim);
 			}
 		}
 		
@@ -101,7 +101,7 @@ std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 coun
 			continue;
 		}
 		
-		MobySubMeshLowLevel low{submesh};
+		MobyPacketLowLevel low{packet};
 		
 		low.preloop_matrix_transfers = src.read_multiple<MobyMatrixTransfer>(array_ofs, vertex_header.matrix_transfer_count, "vertex table").copy();
 		for(const MobyMatrixTransfer& transfer : low.preloop_matrix_transfers) {
@@ -123,31 +123,31 @@ std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 coun
 			array_ofs += 4;
 		}
 		for(u16 dupe : src.read_multiple<u16>(array_ofs, vertex_header.duplicate_vertex_count, "vertex table")) {
-			submesh.duplicate_vertices.push_back(dupe >> 7);
+			packet.duplicate_vertices.push_back(dupe >> 7);
 		}
 		
 		low.two_way_blend_vertex_count = vertex_header.two_way_blend_vertex_count;
 		low.three_way_blend_vertex_count = vertex_header.three_way_blend_vertex_count;
 		
 		low.vertices = read_vertices(src, entry, vertex_header, format);
-		submesh.vertices = unpack_vertices(low, blend_buffer, scale);
-		//sort_moby_vertices_after_reading(low, submesh);
+		packet.vertices = unpack_vertices(low, blend_buffer, scale);
+		//sort_moby_vertices_after_reading(low, packet);
 		
-		submesh.unknown_e = vertex_header.unknown_e;
+		packet.unknown_e = vertex_header.unknown_e;
 		if(format == MobyFormat::RAC1) {
 			s32 unknown_e_size = entry.vertex_data_size * 0x10 - vertex_header.unknown_e;
-			submesh.unknown_e_data = src.read_bytes(entry.vertex_offset + vertex_header.unknown_e, unknown_e_size, "vertex table unknown_e data");
+			packet.unknown_e_data = src.read_bytes(entry.vertex_offset + vertex_header.unknown_e, unknown_e_size, "vertex table unknown_e data");
 		}
 		
-		submeshes.emplace_back(std::move(submesh));
+		packets.emplace_back(std::move(packet));
 	}
-	return submeshes;
+	return packets;
 }
 
-std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count) {
-	std::vector<MobyMetalSubMesh> submeshes;
-	for(auto& entry : src.read_multiple<MobySubMeshEntry>(table_ofs, count, "moby metal submesh table")) {
-		MobyMetalSubMesh submesh;
+std::vector<MobyMetalSubMesh> read_moby_metal_packets(Buffer src, s64 table_ofs, s64 count) {
+	std::vector<MobyMetalSubMesh> packets;
+	for(auto& entry : src.read_multiple<MobyPacketEntry>(table_ofs, count, "moby metal packet table")) {
+		MobyMetalSubMesh packet;
 		
 		// Read VIF command list.
 		Buffer command_buffer = src.subbuf(entry.vif_list_offset, entry.vif_list_size * 0x10);
@@ -155,36 +155,36 @@ std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_of
 		auto unpacks = filter_vif_unpacks(command_list);
 		Buffer index_data(unpacks.at(0).data);
 		auto index_header = index_data.read<MobyIndexHeader>(0, "moby index unpack header");
-		submesh.index_header_first_byte = index_header.unknown_0;
+		packet.index_header_first_byte = index_header.unknown_0;
 		verify(index_header.pad == 0, "Moby has bad index buffer.");
-		submesh.secret_indices.push_back(index_header.secret_index);
-		submesh.indices = index_data.read_bytes(4, index_data.size() - 4, "moby index unpack data");
+		packet.secret_indices.push_back(index_header.secret_index);
+		packet.indices = index_data.read_bytes(4, index_data.size() - 4, "moby index unpack data");
 		if(unpacks.size() >= 2) {
 			Buffer texture_data(unpacks.at(1).data);
 			verify(texture_data.size() % 0x40 == 0, "Moby has bad texture unpack.");
 			for(size_t i = 0; i < texture_data.size() / 0x40; i++) {
-				submesh.secret_indices.push_back(texture_data.read<s32>(i * 0x10 + 0xc, "extra index"));
+				packet.secret_indices.push_back(texture_data.read<s32>(i * 0x10 + 0xc, "extra index"));
 				auto prim = texture_data.read<MobyTexturePrimitive>(i * 0x40, "moby texture primitive");
 				verify(prim.d3_tex0_1.data_lo == MOBY_TEX_CHROME || prim.d3_tex0_1.data_lo == MOBY_TEX_GLASS,
-					"Metal moby submesh has a bad texture index.");
-				submesh.textures.push_back(prim);
+					"Metal moby packet has a bad texture index.");
+				packet.textures.push_back(prim);
 			}
 		}
 		
 		// Read vertex table.
 		auto vertex_header = src.read<MobyMetalVertexTableHeader>(entry.vertex_offset, "metal vertex table header");
-		submesh.vertices = src.read_multiple<MobyMetalVertex>(entry.vertex_offset + 0x10, vertex_header.vertex_count, "metal vertex table").copy();
-		submesh.unknown_4 = vertex_header.unknown_4;
-		submesh.unknown_8 = vertex_header.unknown_8;
-		submesh.unknown_c = vertex_header.unknown_c;
+		packet.vertices = src.read_multiple<MobyMetalVertex>(entry.vertex_offset + 0x10, vertex_header.vertex_count, "metal vertex table").copy();
+		packet.unknown_4 = vertex_header.unknown_4;
+		packet.unknown_8 = vertex_header.unknown_8;
+		packet.unknown_c = vertex_header.unknown_c;
 		
-		submeshes.emplace_back(std::move(submesh));
+		packets.emplace_back(std::move(packet));
 	}
-	return submeshes;
+	return packets;
 }
 
-static void sort_moby_vertices_after_reading(MobySubMeshLowLevel& low, MobySubMesh& submesh) {
-	verify_fatal(low.vertices.size() == submesh.vertices.size());
+static void sort_moby_vertices_after_reading(MobyPacketLowLevel& low, MobyPacket& packet) {
+	verify_fatal(low.vertices.size() == packet.vertices.size());
 	
 	s32 two_way_end = low.two_way_blend_vertex_count;
 	s32 three_way_end = low.two_way_blend_vertex_count + low.three_way_blend_vertex_count;
@@ -193,7 +193,7 @@ static void sort_moby_vertices_after_reading(MobySubMeshLowLevel& low, MobySubMe
 	s32 three_way_index = two_way_end;
 	s32 next_mapped_index = 0;
 	
-	std::vector<size_t> mapping(submesh.vertices.size(), SIZE_MAX);
+	std::vector<size_t> mapping(packet.vertices.size(), SIZE_MAX);
 	
 	// This rearranges the vertices into an order such that the blended matrices
 	// in VU0 memory can be allocated sequentially and the resultant moby class
@@ -222,16 +222,16 @@ static void sort_moby_vertices_after_reading(MobySubMeshLowLevel& low, MobySubMe
 	
 	low.vertices = {};
 	
-	auto old_vertices = std::move(submesh.vertices);
-	submesh.vertices = std::vector<Vertex>(old_vertices.size());
+	auto old_vertices = std::move(packet.vertices);
+	packet.vertices = std::vector<Vertex>(old_vertices.size());
 	for(size_t i = 0; i < old_vertices.size(); i++) {
-		submesh.vertices[mapping[i]] = old_vertices[i];
+		packet.vertices[mapping[i]] = old_vertices[i];
 	}
 	
-	map_indices(submesh, mapping);
+	map_indices(packet, mapping);
 }
 
-static std::vector<Vertex> unpack_vertices(const MobySubMeshLowLevel& src, Opt<SkinAttributes> blend_buffer[64], f32 scale) {
+static std::vector<Vertex> unpack_vertices(const MobyPacketLowLevel& src, Opt<SkinAttributes> blend_buffer[64], f32 scale) {
 	std::vector<Vertex> vertices;
 	vertices.reserve(src.vertices.size());
 	for(size_t i = 0; i < src.vertices.size(); i++) {
@@ -392,7 +392,7 @@ static SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64],
 	return attribs;
 }
 
-static std::vector<MobyVertex> read_vertices(Buffer src, const MobySubMeshEntry& entry, const MobyVertexTableHeaderRac1& header, MobyFormat format) {
+static std::vector<MobyVertex> read_vertices(Buffer src, const MobyPacketEntry& entry, const MobyVertexTableHeaderRac1& header, MobyFormat format) {
 	s64 vertex_ofs = entry.vertex_offset + header.vertex_table_offset;
 	s32 in_file_vertex_count = header.two_way_blend_vertex_count + header.three_way_blend_vertex_count + header.main_vertex_count;
 	std::vector<MobyVertex> vertices = src.read_multiple<MobyVertex>(vertex_ofs, in_file_vertex_count, "vertex table").copy();
@@ -427,9 +427,9 @@ static std::vector<MobyVertex> read_vertices(Buffer src, const MobySubMeshEntry&
 	return vertices;
 }
 
-#define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, submesh %d has bad " message ".", o_class, i);
+#define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, packet %d has bad " message ".", o_class, i);
 
-Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 submesh_filter) {
+Mesh recover_moby_mesh(const std::vector<MobyPacket>& packets, const char* name, s32 o_class, s32 texture_count, s32 packet_filter) {
 	Mesh mesh;
 	mesh.name = name;
 	mesh.flags = MESH_HAS_NORMALS | MESH_HAS_TEX_COORDS;
@@ -439,10 +439,10 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 	SubMesh dest;
 	dest.material = 0;
 	
-	for(s32 i = 0; i < submeshes.size(); i++) {
-		bool lift_submesh = !MOBY_EXPORT_SUBMESHES_SEPERATELY || submesh_filter == -1 || i == submesh_filter; // This is just for debugging.
+	for(s32 i = 0; i < packets.size(); i++) {
+		bool lift_packet = !MOBY_EXPORT_SUBMESHES_SEPERATELY || packet_filter == -1 || i == packet_filter; // This is just for debugging.
 		
-		const MobySubMesh& src = submeshes[i];
+		const MobyPacket& src = packets[i];
 		
 		s32 vertex_base = mesh.vertices.size();
 		
@@ -482,7 +482,7 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 				// triangle with it as its last index is not actually drawn.
 				u8 secret_index = src.secret_indices.at(texture_index);
 				if(secret_index == 0) {
-					if(lift_submesh) {
+					if(lift_packet) {
 						VERIFY_SUBMESH(dest.faces.size() >= 3, "index buffer");
 						// The VU1 microprogram has multiple vertices in flight
 						// at a time, so we need to remove the ones that
@@ -513,7 +513,7 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 			if(index < 0x80) {
 				VERIFY_SUBMESH(vertex_base + index - 1 < mesh.vertices.size(), "index buffer");
 				index_queue[index_pos] = vertex_base + index - 1;
-				if(lift_submesh) {
+				if(lift_packet) {
 					if(reverse_winding_order) {
 						s32 v0 = index_queue[(index_pos + 3) % 3];
 						s32 v1 = index_queue[(index_pos + 2) % 3];
@@ -542,16 +542,16 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 	return mesh;
 }
 
-void map_indices(MobySubMesh& submesh, const std::vector<size_t>& mapping) {
-	verify_fatal(submesh.vertices.size() == mapping.size());
+void map_indices(MobyPacket& packet, const std::vector<size_t>& mapping) {
+	verify_fatal(packet.vertices.size() == mapping.size());
 	
 	// Find the end of the index buffer.
 	s32 next_secret_index_pos = 0;
 	size_t buffer_end = 0;
-	for(size_t i = 0; i < submesh.indices.size(); i++) {
-		u8 index = submesh.indices[i];
+	for(size_t i = 0; i < packet.indices.size(); i++) {
+		u8 index = packet.indices[i];
 		if(index == 0) {
-			if(next_secret_index_pos >= submesh.secret_indices.size() || submesh.secret_indices[next_secret_index_pos] == 0) {
+			if(next_secret_index_pos >= packet.secret_indices.size() || packet.secret_indices[next_secret_index_pos] == 0) {
 				verify_fatal(i >= 3);
 				buffer_end = i - 3;
 			}
@@ -562,11 +562,11 @@ void map_indices(MobySubMesh& submesh, const std::vector<size_t>& mapping) {
 	// Map the index buffer and the secret indices.
 	next_secret_index_pos = 0;
 	for(size_t i = 0; i < buffer_end; i++) {
-		u8& index = submesh.indices[i];
+		u8& index = packet.indices[i];
 		if(index == 0) {
-			if(next_secret_index_pos < submesh.secret_indices.size()) {
-				u8& secret_index = submesh.secret_indices[next_secret_index_pos];
-				if(secret_index != 0 && secret_index <= submesh.vertices.size()) {
+			if(next_secret_index_pos < packet.secret_indices.size()) {
+				u8& secret_index = packet.secret_indices[next_secret_index_pos];
+				if(secret_index != 0 && secret_index <= packet.vertices.size()) {
 					secret_index = mapping.at(secret_index - 1) + 1;
 				}
 			}
@@ -576,7 +576,7 @@ void map_indices(MobySubMesh& submesh, const std::vector<size_t>& mapping) {
 			if(restart_bit_set) {
 				index -= 0x80;
 			}
-			if(index <= submesh.vertices.size()) {;
+			if(index <= packet.vertices.size()) {;
 				index = mapping.at(index - 1) + 1;
 			}
 			if(restart_bit_set) {

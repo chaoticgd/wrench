@@ -28,13 +28,13 @@
 #include <engine/moby_animation.h>
 
 struct MobyMeshSection {
-	std::vector<MobySubMesh> high_lod;
+	std::vector<MobyPacket> high_lod;
 	u8 high_lod_count = 0;
-	std::vector<MobySubMesh> low_lod;
+	std::vector<MobyPacket> low_lod;
 	u8 low_lod_count = 0;
 	std::vector<MobyMetalSubMesh> metal;
 	u8 metal_count = 0;
-	bool has_submesh_table = true;
+	bool has_packet_table = true;
 };
 
 packed_struct(MobyTrans,
@@ -109,7 +109,7 @@ struct MobyClassData {
 	u8 type = 0;
 	u8 mode_bits2 = 0;
 	s32 header_end_offset = 0;
-	s32 submesh_table_offset = 0;
+	s32 packet_table_offset = 0;
 	u8 rac1_byte_a = 0;
 	u8 rac1_byte_b = 0;
 	u16 rac1_short_2e = 0;
@@ -126,7 +126,7 @@ packed_struct(MobyMeshInfo,
 )
 
 packed_struct(MobyClassHeader,
-	/* 0x00 */ s32 submesh_table_offset;
+	/* 0x00 */ s32 packet_table_offset;
 	/* 0x04 */ MobyMeshInfo mesh_info;
 	/* 0x08 */ u8 joint_count;
 	/* 0x09 */ u8 unknown_9;
@@ -171,7 +171,7 @@ packed_struct(MobyCornCobHeader,
 
 packed_struct(MobyArmorHeader,
 	/* 0x00 */ MobyMeshInfo info;
-	/* 0x04 */ s32 submesh_table_offset;
+	/* 0x04 */ s32 packet_table_offset;
 	/* 0x08 */ s32 gif_usage;
 	/* 0x0c */ s32 pad;
 )
@@ -181,7 +181,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
 MobyClassData read_armor_moby_class(Buffer src, Game game);
 void write_armor_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
 MobyMeshSection read_moby_mesh_section(Buffer src, s64 table_ofs, MobyMeshInfo info, f32 scale, MobyFormat format, bool animated);
-s64 allocate_submesh_table(OutBuffer& dest, const MobyMeshSection& mesh, size_t bangle_count);
+s64 allocate_packet_table(OutBuffer& dest, const MobyMeshSection& mesh, size_t bangle_count);
 MobyMeshInfo write_moby_mesh_section(OutBuffer& dest, std::vector<MobyGifUsage>& gif_usage, s64 table_ofs, const MobyMeshSection& mesh, f32 scale, MobyFormat format);
 
 ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count);

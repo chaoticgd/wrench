@@ -118,14 +118,14 @@ enum MobySpecialTextureIndex {
 	MOBY_TEX_GLASS = -3
 };
 
-struct MobySubMeshBase {
+struct MobyPacketBase {
 	std::vector<u8> indices;
 	std::vector<u8> secret_indices;
 	std::vector<MobyTexturePrimitive> textures;
 	u8 index_header_first_byte = 0xff;
 };
 
-struct MobySubMesh : MobySubMeshBase {
+struct MobyPacket : MobyPacketBase {
 	std::vector<MobyTexCoord> sts;
 	std::vector<Vertex> vertices;
 	std::vector<u16> duplicate_vertices;
@@ -138,8 +138,8 @@ packed_struct(MobyMatrixTransfer,
 	u8 vu0_dest_addr;
 )
 
-struct MobySubMeshLowLevel {
-	const MobySubMesh& high_level;
+struct MobyPacketLowLevel {
+	const MobyPacket& high_level;
 	std::vector<MobyMatrixTransfer> preloop_matrix_transfers;
 	s32 two_way_blend_vertex_count = 0;
 	s32 three_way_blend_vertex_count = 0;
@@ -164,14 +164,14 @@ packed_struct(MobyMetalVertex,
 	/* 0xf */ u8 unknown_f;
 )
 
-struct MobyMetalSubMesh : MobySubMeshBase {
+struct MobyMetalSubMesh : MobyPacketBase {
 	std::vector<MobyMetalVertex> vertices;
 	u32 unknown_4;
 	u32 unknown_8;
 	u32 unknown_c;
 };
 
-packed_struct(MobySubMeshEntry,
+packed_struct(MobyPacketEntry,
 	/* 0x0 */ u32 vif_list_offset;
 	/* 0x4 */ u16 vif_list_size; // In 16 byte units.
 	/* 0x6 */ u16 vif_list_texture_unpack_offset; // No third UNPACK if zero.
@@ -222,17 +222,17 @@ enum class MobyFormat {
 };
 
 packed_struct(MobyBangleHeader,
-	u8 submesh_begin;
-	u8 submesh_count;
+	u8 packet_begin;
+	u8 packet_count;
 	u8 unknown_2;
 	u8 unknown_3;
 )
 
 packed_struct(MobyBangleIndices,
-	u8 high_lod_submesh_begin;
-	u8 high_lod_submesh_count;
-	u8 low_lod_submesh_begin;
-	u8 low_lod_submesh_count;
+	u8 high_lod_packet_begin;
+	u8 high_lod_packet_count;
+	u8 low_lod_packet_begin;
+	u8 low_lod_packet_count;
 )
 
 packed_struct(MobyVec4,
@@ -243,21 +243,21 @@ packed_struct(MobyVec4,
 )
 
 struct MobyBangle {
-	std::vector<MobySubMesh> high_lod;
-	std::vector<MobySubMesh> low_lod;
+	std::vector<MobyPacket> high_lod;
+	std::vector<MobyPacket> low_lod;
 	MobyVec4 vectors[2];
 };
 
 // moby_mesh_importer.cpp
-std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 count, f32 scale, bool animated, MobyFormat format);
-std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count);
-Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 submesh_filter);
-void map_indices(MobySubMesh& submesh, const std::vector<size_t>& index_mapping);
+std::vector<MobyPacket> read_moby_packets(Buffer src, s64 table_ofs, s64 count, f32 scale, bool animated, MobyFormat format);
+std::vector<MobyMetalSubMesh> read_moby_metal_packets(Buffer src, s64 table_ofs, s64 count);
+Mesh recover_moby_mesh(const std::vector<MobyPacket>& packets, const char* name, s32 o_class, s32 texture_count, s32 packet_filter);
+void map_indices(MobyPacket& packet, const std::vector<size_t>& index_mapping);
 
 // moby_mesh_exporter.cpp
 using GifUsageTable = std::vector<MobyGifUsage>;
-void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobySubMesh* submeshes_in, size_t submesh_count, f32 scale, MobyFormat format, s64 class_header_ofs);
-void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes, s64 class_header_ofs);
-std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<ColladaMaterial>& materials);
+void write_moby_packets(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobyPacket* packets_in, size_t packet_count, f32 scale, MobyFormat format, s64 class_header_ofs);
+void write_moby_metal_packets(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& packets, s64 class_header_ofs);
+std::vector<MobyPacket> build_moby_packets(const Mesh& mesh, const std::vector<ColladaMaterial>& materials);
 
 #endif
