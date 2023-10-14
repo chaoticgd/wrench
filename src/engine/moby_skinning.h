@@ -46,7 +46,7 @@ struct VertexLocation {
 	size_t packet;
 	size_t vertex;
 	
-	const Vertex& find_vertex_in(const std::vector<MobyPacket>& packets) const;
+	//const Vertex& find_vertex_in(const std::vector<MobyPacket>& packets) const;
 };
 
 struct MatrixLivenessInfo {
@@ -72,11 +72,6 @@ public:
 	Opt<MatrixAllocation> get_allocation(SkinAttributes attribs, s32 current_packet);
 	Opt<MatrixAllocation> get_allocation_pre(SkinAttributes attribs);
 };
-
-packed_struct(MobyMatrixTransfer,
-	u8 spr_joint_index;
-	u8 vu0_dest_addr;
-)
 
 s32 max_num_joints_referenced_per_packet(const std::vector<MobyPacket>& packets);
 std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobyPacket>& packets);

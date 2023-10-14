@@ -75,7 +75,7 @@ packed_struct(MobyVertex,
 			/* 0xc */ s16 y;
 			/* 0xe */ s16 z;
 		)
-		packed_nested_struct(trailing,
+		packed_nested_struct(epilogue,
 			/* 0x0 */ u16 vertex_index;
 			/* 0x2 */ u8 unused_2;
 			/* 0x3 */ u8 unused_3;
@@ -84,35 +84,6 @@ packed_struct(MobyVertex,
 	)
 )
 static_assert(sizeof(MobyVertex) == 0x10);
-
-packed_struct(MobyVertexTableHeaderRac1,
-	/* 0x00 */ u32 matrix_transfer_count;
-	/* 0x04 */ u32 two_way_blend_vertex_count;
-	/* 0x08 */ u32 three_way_blend_vertex_count;
-	/* 0x0c */ u32 main_vertex_count;
-	/* 0x10 */ u32 duplicate_vertex_count;
-	/* 0x14 */ u32 transfer_vertex_count; // transfer_vertex_count == two_way_blend_vertex_count + three_way_blend_vertex_count + main_vertex_count + duplicate_vertex_count
-	/* 0x18 */ u32 vertex_table_offset;
-	/* 0x1c */ u32 unknown_e;
-)
-
-packed_struct(MobyVertexTableHeaderRac23DL,
-	/* 0x0 */ u16 matrix_transfer_count;
-	/* 0x2 */ u16 two_way_blend_vertex_count;
-	/* 0x4 */ u16 three_way_blend_vertex_count;
-	/* 0x6 */ u16 main_vertex_count;
-	/* 0x8 */ u16 duplicate_vertex_count;
-	/* 0xa */ u16 transfer_vertex_count; // transfer_vertex_count == two_way_blend_vertex_count + three_way_blend_vertex_count + main_vertex_count + duplicate_vertex_count
-	/* 0xc */ u16 vertex_table_offset;
-	/* 0xe */ u16 unknown_e;
-)
-
-packed_struct(MobyMetalVertexTableHeader,
-	/* 0x0 */ s32 vertex_count;
-	/* 0x4 */ s32 unknown_4;
-	/* 0x8 */ s32 unknown_8;
-	/* 0xc */ s32 unknown_c;
-)
 
 packed_struct(MobyGifUsage,
 	u8 texture_indices[12];
@@ -124,18 +95,58 @@ enum class MobyFormat {
 	RAC1, RAC2, RAC3DL
 };
 
+packed_struct(MobyMatrixTransfer,
+	u8 spr_joint_index;
+	u8 vu0_dest_addr;
+)
+
+struct VertexTable {
+	std::vector<MobyMatrixTransfer> preloop_matrix_transfers;
+	std::vector<u16> duplicate_vertices;
+	s32 two_way_blend_vertex_count = 0;
+	s32 three_way_blend_vertex_count = 0;
+	s32 main_vertex_count = 0;
+	std::vector<MobyVertex> vertices;
+	u16 unknown_e = 0;
+	std::vector<u8> unknown_e_data;
+};
+
+VertexTable read_vertex_table(Buffer src, s64 header_offset, s32 transfer_vertex_count, s32 vertex_data_size, s32 d, s32 e, MobyFormat format);
+u32 write_vertex_table(OutBuffer& dest, const VertexTable& src, MobyFormat format);
+
+packed_struct(MetalVertex,
+	/* 0x0 */ s16 x;
+	/* 0x2 */ s16 y;
+	/* 0x4 */ s16 z;
+	/* 0x6 */ u8 unknown_6;
+	/* 0x7 */ u8 unknown_7;
+	/* 0x8 */ u8 unknown_8;
+	/* 0x9 */ u8 unknown_9;
+	/* 0xa */ u8 unknown_a;
+	/* 0xb */ u8 unknown_b;
+	/* 0xc */ u8 unknown_c;
+	/* 0xd */ u8 unknown_d;
+	/* 0xe */ u8 unknown_e;
+	/* 0xf */ u8 unknown_f;
+)
+
+struct MetalVertexTable {
+	std::vector<MetalVertex> vertices;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
+};
+
+MetalVertexTable read_metal_vertex_table(Buffer src, s64 header_offset);
+u32 write_metal_vertex_table(OutBuffer& dest, const MetalVertexTable& src);
+
 struct MobyPacket;
-struct MobyPacketEntry;
 struct MobyPacketLowLevel;
-
-std::vector<MobyVertex> read_vertices(Buffer src, const MobyPacketEntry& entry, const MobyVertexTableHeaderRac1& header, MobyFormat format);
-MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobyPacket& packet, const MobyPacketLowLevel& low, MobyFormat format);
-
 struct VU0MatrixAllocator;
 struct MatrixLivenessInfo;
 
-std::vector<Vertex> unpack_vertices(const MobyPacketLowLevel& src, Opt<SkinAttributes> blend_buffer[64], f32 scale);
-MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale);
+std::vector<Vertex> unpack_vertices(const VertexTable& src, Opt<SkinAttributes> blend_buffer[64], f32 scale);
+//MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale);
 
 }
 

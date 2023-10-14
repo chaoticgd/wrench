@@ -21,12 +21,9 @@
 
 #include <engine/moby_packet.h>
 
-#define MOBY_EXPORT_SUBMESHES_SEPERATELY false
-#define NO_SUBMESH_FILTER -1
-
 namespace MOBY {
 
-Mesh recover_moby_mesh(const std::vector<MobyPacket>& packets, const char* name, s32 o_class, s32 texture_count, s32 packet_filter);
+Mesh recover_moby_mesh(const std::vector<MobyPacket>& packets, const char* name, s32 o_class, s32 texture_count, f32 scale, bool animated);
 std::vector<MobyPacket> build_moby_packets(const Mesh& mesh, const std::vector<ColladaMaterial>& materials);
 
 }

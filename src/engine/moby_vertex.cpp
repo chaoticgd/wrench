@@ -21,65 +21,146 @@
 #include <engine/moby_packet.h>
 
 namespace MOBY {
+
+packed_struct(RacVertexTableHeader,
+	/* 0x00 */ u32 matrix_transfer_count;
+	/* 0x04 */ u32 two_way_blend_vertex_count;
+	/* 0x08 */ u32 three_way_blend_vertex_count;
+	/* 0x0c */ u32 main_vertex_count;
+	/* 0x10 */ u32 duplicate_vertex_count;
+	/* 0x14 */ u32 transfer_vertex_count; // transfer_vertex_count == two_way_blend_vertex_count + three_way_blend_vertex_count + main_vertex_count + duplicate_vertex_count
+	/* 0x18 */ u32 vertex_table_offset;
+	/* 0x1c */ u32 unknown_e;
+)
+
+packed_struct(GcUyaDlVertexTableHeader,
+	/* 0x0 */ u16 matrix_transfer_count;
+	/* 0x2 */ u16 two_way_blend_vertex_count;
+	/* 0x4 */ u16 three_way_blend_vertex_count;
+	/* 0x6 */ u16 main_vertex_count;
+	/* 0x8 */ u16 duplicate_vertex_count;
+	/* 0xa */ u16 transfer_vertex_count; // transfer_vertex_count == two_way_blend_vertex_count + three_way_blend_vertex_count + main_vertex_count + duplicate_vertex_count
+	/* 0xc */ u16 vertex_table_offset;
+	/* 0xe */ u16 unknown_e;
+)
+
+packed_struct(MobyMetalVertexTableHeader,
+	/* 0x0 */ s32 vertex_count;
+	/* 0x4 */ s32 unknown_4;
+	/* 0x8 */ s32 unknown_8;
+	/* 0xc */ s32 unknown_c;
+)
 	
 static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inverse_scale);
 
-std::vector<MobyVertex> read_vertices(Buffer src, const MobyPacketEntry& entry, const MobyVertexTableHeaderRac1& header, MobyFormat format) {
-	s64 vertex_ofs = entry.vertex_offset + header.vertex_table_offset;
+VertexTable read_vertex_table(Buffer src, s64 header_offset, s32 transfer_vertex_count, s32 vertex_data_size, s32 d, s32 e, MobyFormat format) {
+	VertexTable output;
+	
+	// Read vertex table.
+	RacVertexTableHeader header;
+	s64 array_ofs = header_offset;
+	if(format == MobyFormat::RAC1) {
+		header = src.read<RacVertexTableHeader>(header_offset, "moby vertex header");
+		array_ofs += sizeof(RacVertexTableHeader);
+	} else {
+		auto compact_vertex_header = src.read<GcUyaDlVertexTableHeader>(header_offset, "moby vertex header");
+		header.matrix_transfer_count = compact_vertex_header.matrix_transfer_count;
+		header.two_way_blend_vertex_count = compact_vertex_header.two_way_blend_vertex_count;
+		header.three_way_blend_vertex_count = compact_vertex_header.three_way_blend_vertex_count;
+		header.main_vertex_count = compact_vertex_header.main_vertex_count;
+		header.duplicate_vertex_count = compact_vertex_header.duplicate_vertex_count;
+		header.transfer_vertex_count = compact_vertex_header.transfer_vertex_count;
+		header.vertex_table_offset = compact_vertex_header.vertex_table_offset;
+		header.unknown_e = compact_vertex_header.unknown_e;
+		array_ofs += sizeof(GcUyaDlVertexTableHeader);
+	}
+	verify(header.vertex_table_offset / 0x10 <= vertex_data_size,
+		"Bad vertex table offset or size.");
+	verify(transfer_vertex_count == header.transfer_vertex_count,
+		"Conflicting vertex counts.\n");
+	verify(d == (0xf + transfer_vertex_count * 6) / 0x10,
+		"Weird value in submodel table entry at field 0xd.\n");
+	verify(e == (3 + transfer_vertex_count) / 4,
+		"Weird value in submodel table entry at field 0xe.\n");
+	
+	s64 vertex_ofs = header_offset + header.vertex_table_offset;
 	s32 in_file_vertex_count = header.two_way_blend_vertex_count + header.three_way_blend_vertex_count + header.main_vertex_count;
-	std::vector<MobyVertex> vertices = src.read_multiple<MobyVertex>(vertex_ofs, in_file_vertex_count, "vertex table").copy();
+	output.vertices = src.read_multiple<MobyVertex>(vertex_ofs, in_file_vertex_count, "vertex table").copy();
 	vertex_ofs += in_file_vertex_count * 0x10;
 	
-	// Fix vertex indices (see comment in write_vertices).
+	output.preloop_matrix_transfers = src.read_multiple<MobyMatrixTransfer>(array_ofs, header.matrix_transfer_count, "vertex table").copy();
+	
+	array_ofs += header.matrix_transfer_count * 2;
+	if(array_ofs % 4 != 0) {
+		array_ofs += 2;
+	}
+	if(array_ofs % 8 != 0) {
+		array_ofs += 4;
+	}
+	for(u16 dupe : src.read_multiple<u16>(array_ofs, header.duplicate_vertex_count, "vertex table")) {
+		output.duplicate_vertices.push_back(dupe >> 7);
+	}
+	
+	output.two_way_blend_vertex_count = header.two_way_blend_vertex_count;
+	output.three_way_blend_vertex_count = header.three_way_blend_vertex_count;
+	
+	output.unknown_e = header.unknown_e;
+	if(format == MobyFormat::RAC1) {
+		s32 unknown_e_size = vertex_data_size * 0x10 - header.unknown_e;
+		output.unknown_e_data = src.read_bytes(header_offset + header.unknown_e, unknown_e_size, "vertex table unknown_e data");
+	}
+	
+	// Fix vertex indices (see comment in write_vertex_table).
+	std::vector<MobyVertex> vertices = output.vertices;
 	for(size_t i = 7; i < vertices.size(); i++) {
 		vertices[i - 7].v.i.low_halfword = (vertices[i - 7].v.i.low_halfword & ~0x1ff) | (vertices[i].v.i.low_halfword & 0x1ff);
 	}
-	s32 trailing_vertex_count = 0;
+	s32 epilogue_vertex_count = 0;
 	if(format == MobyFormat::RAC1) {
-		trailing_vertex_count = (header.unknown_e - header.vertex_table_offset) / 0x10 - in_file_vertex_count;
+		epilogue_vertex_count = (header.unknown_e - header.vertex_table_offset) / 0x10 - in_file_vertex_count;
 	} else {
-		trailing_vertex_count = entry.vertex_data_size - header.vertex_table_offset / 0x10 - in_file_vertex_count;
+		epilogue_vertex_count = vertex_data_size - header.vertex_table_offset / 0x10 - in_file_vertex_count;
 	}
-	verify(trailing_vertex_count < 7, "Bad moby vertex table.");
+	verify(epilogue_vertex_count < 7, "Bad moby vertex table.");
 	vertex_ofs += std::max(7 - in_file_vertex_count, 0) * 0x10;
-	for(s64 i = std::max(7 - in_file_vertex_count, 0); i < trailing_vertex_count; i++) {
+	for(s64 i = std::max(7 - in_file_vertex_count, 0); i < epilogue_vertex_count; i++) {
 		MobyVertex vertex = src.read<MobyVertex>(vertex_ofs, "vertex table");
 		vertex_ofs += 0x10;
 		s64 dest_index = in_file_vertex_count + i - 7;
 		vertices.at(dest_index).v.i.low_halfword = (vertices[dest_index].v.i.low_halfword & ~0x1ff) | (vertex.v.i.low_halfword & 0x1ff);
 	}
 	MobyVertex last_vertex = src.read<MobyVertex>(vertex_ofs - 0x10, "vertex table");
-	for(s32 i = std::max(7 - in_file_vertex_count - trailing_vertex_count, 0); i < 6; i++) {
-		s64 dest_index = in_file_vertex_count + trailing_vertex_count + i - 7;
+	for(s32 i = std::max(7 - in_file_vertex_count - epilogue_vertex_count, 0); i < 6; i++) {
+		s64 dest_index = in_file_vertex_count + epilogue_vertex_count + i - 7;
 		if(dest_index < vertices.size()) {
-			vertices[dest_index].v.i.low_halfword = (vertices[dest_index].v.i.low_halfword & ~0x1ff) | (last_vertex.trailing.vertex_indices[i] & 0x1ff);
+			vertices[dest_index].v.i.low_halfword = (vertices[dest_index].v.i.low_halfword & ~0x1ff) | (last_vertex.epilogue.vertex_indices[i] & 0x1ff);
 		}
 	}
 	
-	return vertices;
+	return output;
 }
 
-MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobyPacket& packet, const MobyPacketLowLevel& low, MobyFormat format) {
+u32 write_vertex_table(OutBuffer& dest, const VertexTable& src, MobyFormat format) {
 	s64 vertex_header_ofs;
 	if(format == MobyFormat::RAC1) {
-		vertex_header_ofs = dest.alloc<MobyVertexTableHeaderRac1>();
+		vertex_header_ofs = dest.alloc<RacVertexTableHeader>();
 	} else {
-		vertex_header_ofs = dest.alloc<MobyVertexTableHeaderRac23DL>();
+		vertex_header_ofs = dest.alloc<GcUyaDlVertexTableHeader>();
 	}
 	
-	MobyVertexTableHeaderRac1 vertex_header;
-	vertex_header.matrix_transfer_count = low.preloop_matrix_transfers.size();
-	vertex_header.two_way_blend_vertex_count = low.two_way_blend_vertex_count;
-	vertex_header.three_way_blend_vertex_count = low.three_way_blend_vertex_count;
-	vertex_header.main_vertex_count = low.main_vertex_count;
+	RacVertexTableHeader vertex_header;
+	vertex_header.matrix_transfer_count = src.preloop_matrix_transfers.size();
+	vertex_header.two_way_blend_vertex_count = src.two_way_blend_vertex_count;
+	vertex_header.three_way_blend_vertex_count = src.three_way_blend_vertex_count;
+	vertex_header.main_vertex_count = src.main_vertex_count;
 	
-	std::vector<MobyVertex> vertices = low.vertices;
-	dest.write_multiple(low.preloop_matrix_transfers);
+	std::vector<MobyVertex> vertices = src.vertices;
+	dest.write_multiple(src.preloop_matrix_transfers);
 	dest.pad(0x8);
-	for(u16 dupe : packet.duplicate_vertices) {
+	for(u16 dupe : src.duplicate_vertices) {
 		dest.write<u16>(dupe << 7);
 	}
-	vertex_header.duplicate_vertex_count = packet.duplicate_vertices.size();
+	vertex_header.duplicate_vertex_count = src.duplicate_vertices.size();
 	dest.pad(0x10);
 	vertex_header.vertex_table_offset = dest.tell() - vertex_header_ofs;
 	
@@ -90,9 +171,9 @@ MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobyPacket& pack
 	// runs out they're written into the second part of the last padding
 	// vertex (hence there is at least one padding vertex). Now I see why
 	// they call it Insomniac Games.
-	std::vector<u16> trailing_vertex_indices(std::max(7 - (s32) vertices.size(), 0), 0);
+	std::vector<u16> epilogue_vertex_indices(std::max(7 - (s32) vertices.size(), 0), 0);
 	for(s32 i = std::max((s32) vertices.size() - 7, 0); i < vertices.size(); i++) {
-		trailing_vertex_indices.push_back(vertices[i].v.i.low_halfword & 0x1ff);
+		epilogue_vertex_indices.push_back(vertices[i].v.i.low_halfword & 0x1ff);
 	}
 	for(s32 i = vertices.size() - 1; i >= 7; i--) {
 		vertices[i].v.i.low_halfword = (vertices[i].v.i.low_halfword & ~0x1ff) | (vertices[i - 7].v.i.low_halfword & 0xff);
@@ -101,22 +182,22 @@ MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobyPacket& pack
 		vertices[i].v.i.low_halfword = vertices[i].v.i.low_halfword & ~0x1ff;
 	}
 	
-	s32 trailing = 0;
-	for(; vertices.size() % 4 != 2 && trailing < trailing_vertex_indices.size(); trailing++) {
+	s32 epilogue = 0;
+	for(; vertices.size() % 4 != 2 && epilogue < epilogue_vertex_indices.size(); epilogue++) {
 		MobyVertex vertex = {0};
-		if(packet.vertices.size() + trailing >= 7) {
-			vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
+		if(src.vertices.size() + epilogue >= 7) {
+			vertex.v.i.low_halfword = epilogue_vertex_indices[epilogue];
 		}
 		vertices.push_back(vertex);
 	}
-	verify_fatal(trailing < trailing_vertex_indices.size());
-	MobyVertex last_vertex = {0};
-	if(packet.vertices.size() + trailing >= 7) {
-		last_vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
+	verify_fatal(epilogue < epilogue_vertex_indices.size());
+	MobyVertex last_vertex = {};
+	if(src.vertices.size() + epilogue >= 7) {
+		last_vertex.v.i.low_halfword = epilogue_vertex_indices[epilogue];
 	}
-	for(s32 i = trailing + 1; i < trailing_vertex_indices.size(); i++) {
-		if(packet.vertices.size() + i >= 7) {
-			last_vertex.trailing.vertex_indices[i - trailing - 1] = trailing_vertex_indices[i];
+	for(s32 i = epilogue + 1; i < epilogue_vertex_indices.size(); i++) {
+		if(src.vertices.size() + i >= 7) {
+			last_vertex.epilogue.vertex_indices[i - epilogue - 1] = epilogue_vertex_indices[i];
 		}
 	}
 	vertices.push_back(last_vertex);
@@ -130,14 +211,14 @@ MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobyPacket& pack
 		vertex_header.three_way_blend_vertex_count +
 		vertex_header.main_vertex_count +
 		vertex_header.duplicate_vertex_count;
-	vertex_header.unknown_e = packet.unknown_e;
+	vertex_header.unknown_e = src.unknown_e;
 	
 	if(format == MobyFormat::RAC1) {
 		vertex_header.unknown_e = dest.tell() - vertex_header_ofs;
-		dest.write_multiple(packet.unknown_e_data);
+		dest.write_multiple(src.unknown_e_data);
 		dest.write(vertex_header_ofs, vertex_header);
 	} else {
-		MobyVertexTableHeaderRac23DL compact_vertex_header;
+		GcUyaDlVertexTableHeader compact_vertex_header;
 		compact_vertex_header.matrix_transfer_count = vertex_header.matrix_transfer_count;
 		compact_vertex_header.two_way_blend_vertex_count = vertex_header.two_way_blend_vertex_count;
 		compact_vertex_header.three_way_blend_vertex_count = vertex_header.three_way_blend_vertex_count;
@@ -149,10 +230,31 @@ MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobyPacket& pack
 		dest.write(vertex_header_ofs, compact_vertex_header);
 	}
 	
-	return vertex_header;
+	return vertex_header.transfer_vertex_count;
 }
 
-std::vector<Vertex> unpack_vertices(const MobyPacketLowLevel& src, Opt<SkinAttributes> blend_buffer[64], f32 scale) {
+MetalVertexTable read_metal_vertex_table(Buffer src, s64 header_offset) {
+	auto vertex_header = src.read<MobyMetalVertexTableHeader>(header_offset, "metal vertex table header");
+	
+	MetalVertexTable output;
+	output.vertices = src.read_multiple<MetalVertex>(header_offset + 0x10, vertex_header.vertex_count, "metal vertex table").copy();
+	output.unknown_4 = vertex_header.unknown_4;
+	output.unknown_8 = vertex_header.unknown_8;
+	output.unknown_c = vertex_header.unknown_c;
+	return output;
+}
+
+u32 write_metal_vertex_table(OutBuffer& dest, const MetalVertexTable& src) {
+	MobyMetalVertexTableHeader vertex_header;
+	vertex_header.vertex_count = src.vertices.size();
+	vertex_header.unknown_4 = src.unknown_4;
+	vertex_header.unknown_8 = src.unknown_8;
+	vertex_header.unknown_c = src.unknown_c;
+	dest.write(vertex_header);
+	dest.write_multiple(src.vertices);
+}
+
+std::vector<Vertex> unpack_vertices(const VertexTable& src, Opt<SkinAttributes> blend_buffer[64], f32 scale) {
 	std::vector<Vertex> vertices;
 	vertices.reserve(src.vertices.size());
 	for(size_t i = 0; i < src.vertices.size(); i++) {
@@ -185,7 +287,7 @@ std::vector<Vertex> unpack_vertices(const MobyPacketLowLevel& src, Opt<SkinAttri
 	}
 	return vertices;
 }
-
+/*
 MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale) {
 	MobyPacketLowLevel dest{packet};
 	dest.index_mapping.resize(packet.vertices.size());
@@ -327,7 +429,7 @@ MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAll
 	
 	return dest;
 }
-
+*/
 static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inverse_scale) {
 	dest.v.x = roundf(src.pos.x * inverse_scale);
 	dest.v.y = roundf(src.pos.y * inverse_scale);

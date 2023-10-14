@@ -150,11 +150,12 @@ SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64], const 
 	return attribs;
 }
 
-const Vertex& VertexLocation::find_vertex_in(const std::vector<MobyPacket>& packets) const {
-	return packets[packet].vertices[vertex];
-}
+//const Vertex& VertexLocation::find_vertex_in(const std::vector<MobyPacket>& packets) const {
+//	return packets[packet].vertex_table.vertices[vertex];
+//}
 
 s32 max_num_joints_referenced_per_packet(const std::vector<MobyPacket>& packets) {
+	/*
 	// This seems suboptimal but it's what Insomniac did.
 	s32 max_joints_per_packet = 0;
 	for(size_t i = 0; i < packets.size(); i++) {
@@ -171,9 +172,11 @@ s32 max_num_joints_referenced_per_packet(const std::vector<MobyPacket>& packets)
 		max_joints_per_packet = std::max(max_joints_per_packet, (s32) joints.size());
 	}
 	return max_joints_per_packet;
+	*/
 }
 
 std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobyPacket>& packets) {
+	/*
 	std::vector<VertexLocation> mapping;
 	for(size_t i = 0; i < packets.size(); i++) {
 		for(size_t j = 0; j < packets[i].vertices.size(); j++) {
@@ -227,11 +230,13 @@ std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::
 		process_run(start_of_run, mapping.size());
 	}
 	
-	return liveness;
+	return liveness;*/
+	return {};
 }
 
 
 MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobyPacket& packet, MobyPacketLowLevel* last_packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness) {
+	/*
 	// Determine which slots in VU0 memory are in use by the previous packet
 	// while we are trying to do transfers for the current packet.
 	std::vector<bool> slots_in_use(0x40, false);
@@ -383,7 +388,8 @@ MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobyPacket& pack
 		}
 	}
 	
-	return schedule;
+	return schedule;*/
+	return {};
 }
 
 VU0MatrixAllocator::VU0MatrixAllocator(s32 max_joints_per_packet) {

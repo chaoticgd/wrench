@@ -30,6 +30,128 @@ struct IndexMappingRecord {
 };
 static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices);
 
+#define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, packet %d has bad " message ".", o_class, i);
+
+Mesh recover_moby_mesh(const std::vector<MobyPacket>& packets, const char* name, s32 o_class, s32 texture_count, f32 scale, bool animated) {
+	Mesh mesh;
+	mesh.name = name;
+	mesh.flags = MESH_HAS_NORMALS | MESH_HAS_TEX_COORDS;
+	
+	Opt<SkinAttributes> blend_buffer[64]; // The game stores blended matrices in VU0 memory.
+	Opt<Vertex> intermediate_buffer[512]; // The game stores this on the end of the VU1 chain.
+	
+	SubMesh dest;
+	dest.material = 0;
+	
+	for(s32 i = 0; i < packets.size(); i++) {
+		const MobyPacket& src = packets[i];
+		
+		for(const MobyMatrixTransfer& transfer : src.vertex_table.preloop_matrix_transfers) {
+			verify(transfer.vu0_dest_addr % 4 == 0, "Unaligned pre-loop joint address 0x%llx.", transfer.vu0_dest_addr);
+			if(!animated && transfer.spr_joint_index == 0) {
+				// If the mesh isn't animated, use the blend shape matrix (identity matrix).
+				blend_buffer[transfer.vu0_dest_addr / 0x4] = SkinAttributes{1, {-1, 0, 0}, {255, 0, 0}};
+			} else {
+				blend_buffer[transfer.vu0_dest_addr / 0x4] = SkinAttributes{1, {(s8) transfer.spr_joint_index, 0, 0}, {255, 0, 0}};
+			}
+			VERBOSE_SKINNING(printf("preloop upload spr[%02hhx] -> %02hhx\n", transfer.spr_joint_index, transfer.vu0_dest_addr));
+		}
+		
+		std::vector<Vertex> vertices = unpack_vertices(src.vertex_table, blend_buffer, scale);
+		
+		s32 vertex_base = mesh.vertices.size();
+		for(size_t j = 0; j < vertices.size(); j++) {
+			Vertex vertex = vertices[j];
+			
+			const MobyTexCoord& tex_coord = src.sts.at(mesh.vertices.size() - vertex_base);
+			vertex.tex_coord.s = vu_fixed12_to_float(tex_coord.s);
+			vertex.tex_coord.t = vu_fixed12_to_float(tex_coord.t);
+			
+			intermediate_buffer[vertex.vertex_index & 0x1ff] = vertex;
+			mesh.vertices.emplace_back(vertex);
+		}
+		
+		for(u16 dupe : src.vertex_table.duplicate_vertices) {
+			Opt<Vertex> v = intermediate_buffer[dupe];
+			VERIFY_SUBMESH(v.has_value(), "duplicate vertex");
+			
+			const MobyTexCoord& tex_coord = src.sts.at(mesh.vertices.size() - vertex_base);
+			v->tex_coord.s = vu_fixed12_to_float(tex_coord.s);
+			v->tex_coord.t = vu_fixed12_to_float(tex_coord.t);
+			mesh.vertices.emplace_back(*v);
+		}
+		
+		s32 index_queue[3] = {0};
+		s32 index_pos = 0;
+		s32 max_index = 0;
+		s32 texture_index = 0;
+		bool reverse_winding_order = true;
+		for(u8 index : src.vif.indices) {
+			VERIFY_SUBMESH(index != 0x80, "index buffer");
+			if(index == 0) {
+				// There's an extra index stored in the index header, in
+				// addition to an index stored in some 0x10 byte texture unpack
+				// blocks. When a texture is applied, the next index from this
+				// list is used as the next vertex in the queue, but the
+				// triangle with it as its last index is not actually drawn.
+				u8 secret_index = src.vif.secret_indices.at(texture_index);
+				if(secret_index == 0) {
+					VERIFY_SUBMESH(dest.faces.size() >= 3, "index buffer");
+					// The VU1 microprogram has multiple vertices in flight
+					// at a time, so we need to remove the ones that
+					// wouldn't have been written to the GS packet.
+					dest.faces.pop_back();
+					dest.faces.pop_back();
+					dest.faces.pop_back();
+					break;
+				} else {
+					index = secret_index + 0x80;
+					if(dest.faces.size() > 0) {
+						mesh.submeshes.emplace_back(std::move(dest));
+					}
+					dest = SubMesh();
+					s32 texture = src.vif.textures.at(texture_index).d3_tex0_1.data_lo;
+					verify_fatal(texture >= -1);
+					if(texture == -1) {
+						dest.material = 0; // none
+					} else if(texture >= texture_count) {
+						dest.material = 1; // dummy
+					} else {
+						dest.material = 2 + texture; // mat[texture]
+					}
+					texture_index++;
+				}
+			}
+			if(index < 0x80) {
+				VERIFY_SUBMESH(vertex_base + index - 1 < mesh.vertices.size(), "index buffer");
+				index_queue[index_pos] = vertex_base + index - 1;
+				if(reverse_winding_order) {
+					s32 v0 = index_queue[(index_pos + 3) % 3];
+					s32 v1 = index_queue[(index_pos + 2) % 3];
+					s32 v2 = index_queue[(index_pos + 1) % 3];
+					dest.faces.emplace_back(v0, v1, v2);
+				} else {
+					s32 v0 = index_queue[(index_pos + 1) % 3];
+					s32 v1 = index_queue[(index_pos + 2) % 3];
+					s32 v2 = index_queue[(index_pos + 3) % 3];
+					dest.faces.emplace_back(v0, v1, v2);
+				}
+			} else {
+				index_queue[index_pos] = vertex_base + index - 0x81;
+			}
+			max_index = std::max(max_index, index_queue[index_pos]);
+			VERIFY_SUBMESH(index_queue[index_pos] < mesh.vertices.size(), "index buffer");
+			index_pos = (index_pos + 1) % 3;
+			reverse_winding_order = !reverse_winding_order;
+		}
+	}
+	if(dest.faces.size() > 0) {
+		mesh.submeshes.emplace_back(std::move(dest));
+	}
+	mesh = deduplicate_vertices(std::move(mesh));
+	return mesh;
+}
+
 struct RichIndex {
 	u32 index;
 	bool restart;
@@ -178,72 +300,73 @@ std::vector<MobyPacket> build_moby_packets(const Mesh& mesh, const std::vector<C
 	// Second pass
 	// *************************************************************************
 	
-	std::vector<MobyPacket> low_packets;
-	for(const MidLevelSubMesh& mid : mid_packets) {
-		MobyPacket low;
-		
-		for(const MidLevelVertex& vertex : mid.vertices) {
-			const Vertex& high_vert = mesh.vertices[vertex.canonical];
-			low.vertices.emplace_back(high_vert);
-			
-			const glm::vec2& tex_coord = mesh.vertices[vertex.tex_coord].tex_coord;
-			s16 s = tex_coord.x * (INT16_MAX / 8.f);
-			s16 t = tex_coord.y * (INT16_MAX / 8.f);
-			low.sts.push_back({s, t});
-		}
-		
-		s32 texture_index = 0;
-		for(size_t i = 0; i < mid.indices.size(); i++) {
-			RichIndex cur = mid.indices[i];
-			u8 out;
-			if(cur.is_dupe) {
-				out = mid.vertices.size() + cur.index;
-			} else {
-				out = cur.index;
-			}
-			if(texture_index < mid.textures.size() && mid.textures.at(texture_index).starting_index >= i) {
-				verify_fatal(cur.restart);
-				low.indices.push_back(0);
-				low.secret_indices.push_back(out + 1);
-				texture_index++;
-			} else {
-				low.indices.push_back(cur.restart ? (out + 0x81) : (out + 1));
-			}
-		}
-		
-		// These fake indices are required to signal to the microprogram that it
-		// should terminate.
-		low.indices.push_back(1);
-		low.indices.push_back(1);
-		low.indices.push_back(1);
-		low.indices.push_back(0);
-		
-		for(const MidLevelTexture& tex : mid.textures) {
-			MobyTexturePrimitive primitive = {0};
-			primitive.d1_tex1_1.data_lo = 0xff92; // Not sure.
-			primitive.d1_tex1_1.data_hi = 0x4;
-			primitive.d1_tex1_1.address = GIF_AD_TEX1_1;
-			primitive.d1_tex1_1.pad_a = 0x41a0;
-			primitive.d2_clamp_1.address = GIF_AD_CLAMP_1;
-			primitive.d3_tex0_1.address = GIF_AD_TEX0_1;
-			primitive.d3_tex0_1.data_lo = tex.texture;
-			primitive.d4_miptbp1_1.address = 0x34;
-			low.textures.push_back(primitive);
-		}
-		
-		for(const MidLevelDuplicateVertex& dupe : mid.duplicate_vertices) {
-			low.duplicate_vertices.push_back(dupe.index);
-			
-			const glm::vec2& tex_coord = mesh.vertices[dupe.tex_coord].tex_coord;
-			s16 s = vu_float_to_fixed12(tex_coord.s);
-			s16 t = vu_float_to_fixed12(tex_coord.t);
-			low.sts.push_back({s, t});
-		}
-		
-		low_packets.emplace_back(std::move(low));
-	}
-	
-	return low_packets;
+	//std::vector<MobyPacket> low_packets;
+	//for(const MidLevelSubMesh& mid : mid_packets) {
+	//	MobyPacket low;
+	//	
+	//	for(const MidLevelVertex& vertex : mid.vertices) {
+	//		const Vertex& high_vert = mesh.vertices[vertex.canonical];
+	//		low.vertices.emplace_back(high_vert);
+	//		
+	//		const glm::vec2& tex_coord = mesh.vertices[vertex.tex_coord].tex_coord;
+	//		s16 s = tex_coord.x * (INT16_MAX / 8.f);
+	//		s16 t = tex_coord.y * (INT16_MAX / 8.f);
+	//		low.sts.push_back({s, t});
+	//	}
+	//	
+	//	s32 texture_index = 0;
+	//	for(size_t i = 0; i < mid.indices.size(); i++) {
+	//		RichIndex cur = mid.indices[i];
+	//		u8 out;
+	//		if(cur.is_dupe) {
+	//			out = mid.vertices.size() + cur.index;
+	//		} else {
+	//			out = cur.index;
+	//		}
+	//		if(texture_index < mid.textures.size() && mid.textures.at(texture_index).starting_index >= i) {
+	//			verify_fatal(cur.restart);
+	//			low.indices.push_back(0);
+	//			low.secret_indices.push_back(out + 1);
+	//			texture_index++;
+	//		} else {
+	//			low.indices.push_back(cur.restart ? (out + 0x81) : (out + 1));
+	//		}
+	//	}
+	//	
+	//	// These fake indices are required to signal to the microprogram that it
+	//	// should terminate.
+	//	low.indices.push_back(1);
+	//	low.indices.push_back(1);
+	//	low.indices.push_back(1);
+	//	low.indices.push_back(0);
+	//	
+	//	for(const MidLevelTexture& tex : mid.textures) {
+	//		MobyTexturePrimitive primitive = {0};
+	//		primitive.d1_tex1_1.data_lo = 0xff92; // Not sure.
+	//		primitive.d1_tex1_1.data_hi = 0x4;
+	//		primitive.d1_tex1_1.address = GIF_AD_TEX1_1;
+	//		primitive.d1_tex1_1.pad_a = 0x41a0;
+	//		primitive.d2_clamp_1.address = GIF_AD_CLAMP_1;
+	//		primitive.d3_tex0_1.address = GIF_AD_TEX0_1;
+	//		primitive.d3_tex0_1.data_lo = tex.texture;
+	//		primitive.d4_miptbp1_1.address = 0x34;
+	//		low.textures.push_back(primitive);
+	//	}
+	//	
+	//	for(const MidLevelDuplicateVertex& dupe : mid.duplicate_vertices) {
+	//		low.duplicate_vertices.push_back(dupe.index);
+	//		
+	//		const glm::vec2& tex_coord = mesh.vertices[dupe.tex_coord].tex_coord;
+	//		s16 s = vu_float_to_fixed12(tex_coord.s);
+	//		s16 t = vu_float_to_fixed12(tex_coord.t);
+	//		low.sts.push_back({s, t});
+	//	}
+	//	
+	//	low_packets.emplace_back(std::move(low));
+	//}
+	//
+	//return low_packets;
+	return {};
 }
 
 static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices) {
@@ -266,121 +389,6 @@ static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mappi
 			index_mapping[indices[i]].dedup_out_edge = vert;
 		}
 	}
-}
-
-#define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, packet %d has bad " message ".", o_class, i);
-
-Mesh recover_moby_mesh(const std::vector<MobyPacket>& packets, const char* name, s32 o_class, s32 texture_count, s32 packet_filter) {
-	Mesh mesh;
-	mesh.name = name;
-	mesh.flags = MESH_HAS_NORMALS | MESH_HAS_TEX_COORDS;
-	
-	Opt<Vertex> intermediate_buffer[512]; // The game stores this on the end of the VU1 chain.
-	
-	SubMesh dest;
-	dest.material = 0;
-	
-	for(s32 i = 0; i < packets.size(); i++) {
-		bool lift_packet = !MOBY_EXPORT_SUBMESHES_SEPERATELY || packet_filter == -1 || i == packet_filter; // This is just for debugging.
-		
-		const MobyPacket& src = packets[i];
-		
-		s32 vertex_base = mesh.vertices.size();
-		
-		for(size_t j = 0; j < src.vertices.size(); j++) {
-			Vertex vertex = src.vertices[j];
-			
-			const MobyTexCoord& tex_coord = src.sts.at(mesh.vertices.size() - vertex_base);
-			vertex.tex_coord.s = vu_fixed12_to_float(tex_coord.s);
-			vertex.tex_coord.t = vu_fixed12_to_float(tex_coord.t);
-			
-			intermediate_buffer[vertex.vertex_index & 0x1ff] = vertex;
-			mesh.vertices.emplace_back(vertex);
-		}
-		
-		for(u16 dupe : src.duplicate_vertices) {
-			Opt<Vertex> v = intermediate_buffer[dupe];
-			VERIFY_SUBMESH(v.has_value(), "duplicate vertex");
-			
-			const MobyTexCoord& tex_coord = src.sts.at(mesh.vertices.size() - vertex_base);
-			v->tex_coord.s = vu_fixed12_to_float(tex_coord.s);
-			v->tex_coord.t = vu_fixed12_to_float(tex_coord.t);
-			mesh.vertices.emplace_back(*v);
-		}
-		
-		s32 index_queue[3] = {0};
-		s32 index_pos = 0;
-		s32 max_index = 0;
-		s32 texture_index = 0;
-		bool reverse_winding_order = true;
-		for(u8 index : src.indices) {
-			VERIFY_SUBMESH(index != 0x80, "index buffer");
-			if(index == 0) {
-				// There's an extra index stored in the index header, in
-				// addition to an index stored in some 0x10 byte texture unpack
-				// blocks. When a texture is applied, the next index from this
-				// list is used as the next vertex in the queue, but the
-				// triangle with it as its last index is not actually drawn.
-				u8 secret_index = src.secret_indices.at(texture_index);
-				if(secret_index == 0) {
-					if(lift_packet) {
-						VERIFY_SUBMESH(dest.faces.size() >= 3, "index buffer");
-						// The VU1 microprogram has multiple vertices in flight
-						// at a time, so we need to remove the ones that
-						// wouldn't have been written to the GS packet.
-						dest.faces.pop_back();
-						dest.faces.pop_back();
-						dest.faces.pop_back();
-					}
-					break;
-				} else {
-					index = secret_index + 0x80;
-					if(dest.faces.size() > 0) {
-						mesh.submeshes.emplace_back(std::move(dest));
-					}
-					dest = SubMesh();
-					s32 texture = src.textures.at(texture_index).d3_tex0_1.data_lo;
-					verify_fatal(texture >= -1);
-					if(texture == -1) {
-						dest.material = 0; // none
-					} else if(texture >= texture_count) {
-						dest.material = 1; // dummy
-					} else {
-						dest.material = 2 + texture; // mat[texture]
-					}
-					texture_index++;
-				}
-			}
-			if(index < 0x80) {
-				VERIFY_SUBMESH(vertex_base + index - 1 < mesh.vertices.size(), "index buffer");
-				index_queue[index_pos] = vertex_base + index - 1;
-				if(lift_packet) {
-					if(reverse_winding_order) {
-						s32 v0 = index_queue[(index_pos + 3) % 3];
-						s32 v1 = index_queue[(index_pos + 2) % 3];
-						s32 v2 = index_queue[(index_pos + 1) % 3];
-						dest.faces.emplace_back(v0, v1, v2);
-					} else {
-						s32 v0 = index_queue[(index_pos + 1) % 3];
-						s32 v1 = index_queue[(index_pos + 2) % 3];
-						s32 v2 = index_queue[(index_pos + 3) % 3];
-						dest.faces.emplace_back(v0, v1, v2);
-					}
-				}
-			} else {
-				index_queue[index_pos] = vertex_base + index - 0x81;
-			}
-			max_index = std::max(max_index, index_queue[index_pos]);
-			VERIFY_SUBMESH(index_queue[index_pos] < mesh.vertices.size(), "index buffer");
-			index_pos = (index_pos + 1) % 3;
-			reverse_winding_order = !reverse_winding_order;
-		}
-	}
-	if(dest.faces.size() > 0) {
-		mesh.submeshes.emplace_back(std::move(dest));
-	}
-	mesh = deduplicate_vertices(std::move(mesh));
-	return mesh;
 }
 
 }

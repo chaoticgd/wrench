@@ -35,7 +35,7 @@ struct MobyMeshSection {
 	u8 high_lod_count = 0;
 	std::vector<MobyPacket> low_lod;
 	u8 low_lod_count = 0;
-	std::vector<MobyMetalSubMesh> metal;
+	std::vector<MobyMetalPacket> metal;
 	u8 metal_count = 0;
 	bool has_packet_table = true;
 };
@@ -134,10 +134,10 @@ packed_struct(MobyClassHeader,
 	/* 0x08 */ u8 joint_count;
 	/* 0x09 */ u8 unknown_9;
 	/* 0x0a */ u8 rac1_byte_a;
-	union {
+	packed_nested_anon_union(
 		/* 0x0b */ u8 rac12_byte_b; // 0x00 => R&C2 format.
 		/* 0x0b */ u8 rac3dl_team_textures;
-	};
+	)
 	/* 0x0c */ u8 sequence_count;
 	/* 0x0d */ u8 sound_count;
 	/* 0x0e */ u8 lod_trans;
@@ -183,7 +183,7 @@ MobyClassData read_class(Buffer src, Game game);
 void write_class(OutBuffer dest, const MobyClassData& moby, Game game);
 MobyClassData read_armor_class(Buffer src, Game game);
 void write_armor_class(OutBuffer dest, const MobyClassData& moby, Game game);
-MobyMeshSection read_moby_mesh_section(Buffer src, s64 table_ofs, MobyMeshInfo info, f32 scale, MobyFormat format, bool animated);
+MobyMeshSection read_moby_mesh_section(Buffer src, s64 table_ofs, MobyMeshInfo info, MobyFormat format);
 s64 allocate_packet_table(OutBuffer& dest, const MobyMeshSection& mesh, size_t bangle_count);
 MobyMeshInfo write_moby_mesh_section(OutBuffer& dest, std::vector<MobyGifUsage>& gif_usage, s64 table_ofs, const MobyMeshSection& mesh, f32 scale, MobyFormat format);
 
