@@ -46,12 +46,12 @@ std::vector<MobyPacket> read_packets(Buffer src, s64 table_ofs, s64 count, MobyF
 		packet.vif.index_header_first_byte = index_header.unknown_0;
 		verify(index_header.pad == 0, "Moby has bad index buffer.");
 		packet.vif.secret_indices.push_back(index_header.secret_index);
-		packet.vif.indices = index_data.read_bytes(4, index_data.size() - 4, "moby index unpack data");
+		packet.vif.indices = index_data.read_multiple<s8>(4, index_data.size() - 4, "moby index unpack data").copy();
 		if(unpacks.size() >= 3) {
 			Buffer texture_data(unpacks.at(2).data);
 			verify(texture_data.size() % 0x40 == 0, "Moby has bad texture unpack.");
 			for(size_t i = 0; i < texture_data.size() / 0x40; i++) {
-				packet.vif.secret_indices.push_back(texture_data.read<s32>(i * 0x10 + 0xc, "extra index"));
+				packet.vif.secret_indices.push_back(texture_data.read<s8>(i * 0x10 + 0xc, "extra index"));
 				auto prim = texture_data.read<MobyTexturePrimitive>(i * 0x40, "moby texture primitive");
 				verify(prim.d3_tex0_1.data_lo >= MOBY_TEX_NONE, "Regular moby packet has a texture index that is too low.");
 				packet.vif.textures.push_back(prim);
@@ -186,12 +186,12 @@ std::vector<MobyMetalPacket> read_metal_packets(Buffer src, s64 table_ofs, s64 c
 		packet.vif.index_header_first_byte = index_header.unknown_0;
 		verify(index_header.pad == 0, "Moby has bad index buffer.");
 		packet.vif.secret_indices.push_back(index_header.secret_index);
-		packet.vif.indices = index_data.read_bytes(4, index_data.size() - 4, "moby index unpack data");
+		packet.vif.indices = index_data.read_multiple<s8>(4, index_data.size() - 4, "moby index unpack data").copy();
 		if(unpacks.size() >= 2) {
 			Buffer texture_data(unpacks.at(1).data);
 			verify(texture_data.size() % 0x40 == 0, "Moby has bad texture unpack.");
 			for(size_t i = 0; i < texture_data.size() / 0x40; i++) {
-				packet.vif.secret_indices.push_back(texture_data.read<s32>(i * 0x10 + 0xc, "extra index"));
+				packet.vif.secret_indices.push_back(texture_data.read<s8>(i * 0x10 + 0xc, "extra index"));
 				auto prim = texture_data.read<MobyTexturePrimitive>(i * 0x40, "moby texture primitive");
 				verify(prim.d3_tex0_1.data_lo == MOBY_TEX_CHROME || prim.d3_tex0_1.data_lo == MOBY_TEX_GLASS,
 					"Metal moby packet has a bad texture index.");

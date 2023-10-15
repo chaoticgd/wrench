@@ -18,7 +18,9 @@
 
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
-#include <engine/moby.h>
+#include <toolwads/wads.h>
+#include <engine/moby_low.h>
+#include <engine/moby_high.h>
 
 static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint);
@@ -79,22 +81,55 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	} else {
 		data = MOBY::read_class(buffer, config.game());
 	}
-	ColladaScene scene = recover_moby_class(data, -1, texture_count);
+	
+	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
+	
+	scene->nodes.emplace_back((s32) gltf.nodes.size());
+	GLTF::Node& high_lod_nodes = gltf.nodes.emplace_back();
+	high_lod_nodes.name = "moby";
+	high_lod_nodes.mesh = (s32) gltf.meshes.size();
+	
+	std::vector<GLTF::Mesh> high_lod_packets = MOBY::recover_packets(data.mesh.high_lod, "moby", -1, texture_count, data.scale, data.animation.joints.size() > 0);
+	gltf.meshes.emplace_back(MOBY::recover_mesh(high_lod_packets, "high_lod_mesh"));
+	
+	scene->nodes.emplace_back((s32) gltf.nodes.size());
+	GLTF::Node& low_lod_nodes = gltf.nodes.emplace_back();
+	low_lod_nodes.name = "moby_low_lod";
+	low_lod_nodes.mesh = (s32) gltf.meshes.size();
+	
+	std::vector<GLTF::Mesh> low_lod_packets = MOBY::recover_packets(data.mesh.low_lod, "moby", -1, texture_count, data.scale, data.animation.joints.size() > 0);
+	gltf.meshes.emplace_back(MOBY::recover_mesh(low_lod_packets, "low_lod_mesh"));
 	
 	if(!g_asset_unpacker.dump_binaries && dest.has_materials()) {
 		CollectionAsset& materials = dest.get_materials();
 		for(s32 i = 0; i < 16; i++) {
-			if(materials.has_child(i)) {
-				TextureAsset& texture = materials.get_child(i).as<TextureAsset>();
-				scene.texture_paths.push_back(texture.src().path.string());
-			} else {
+			if(!materials.has_child(i)) {
 				break;
 			}
+			
+			MaterialAsset& material_asset = materials.get_child(i).as<MaterialAsset>();
+			
+			GLTF::Material& material = gltf.materials.emplace_back();
+			material.name = stringf("material_%d", i);
+			material.pbr_metallic_roughness.emplace();
+			material.pbr_metallic_roughness->base_color_texture.emplace();
+			material.pbr_metallic_roughness->base_color_texture->index = (s32) gltf.textures.size();
+			material.alpha_mode = GLTF::MASK;
+			material.double_sided = true;
+			
+			GLTF::Texture& texture = gltf.textures.emplace_back();
+			texture.source = (s32) gltf.images.size();
+			
+			GLTF::Image& image = gltf.images.emplace_back();
+			image.uri = material_asset.diffuse().src().path.string();
+			
+			material_asset.set_name(*material.name);
 		}
 	}
 	
-	std::vector<u8> xml = write_collada(scene);
-	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
+	std::vector<u8> glb = GLTF::write_glb(gltf);
+	auto [stream, ref] = dest.file().open_binary_file_for_writing("mesh.glb");
+	stream->write_v(glb);
 	
 	MeshAsset& editor_mesh = dest.editor_mesh();
 	editor_mesh.set_name("high_lod");

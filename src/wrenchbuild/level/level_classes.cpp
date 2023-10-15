@@ -40,7 +40,7 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 			asset.set_stash_textures(true);
 		}
 		
-		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game(), stashed ? moby_stash_addr : -1);
+		unpack_level_materials(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game(), stashed ? moby_stash_addr : -1);
 		
 		if(entry.offset_in_asset_wad != 0) {
 			unpack_asset(asset, data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config, FMT_MOBY_CLASS_LEVEL);

@@ -310,8 +310,10 @@ Material* lookup_material(ModelFile& gltf, const char* name) {
 }
 
 void deduplicate_vertices(Mesh& mesh) {
+	size_t old_vertex_count = mesh.vertices.size();
+	
 	// Map duplicate vertices onto their "canonical" equivalents.
-	std::vector<u32> canonical_vertices(mesh.vertices.size());
+	std::vector<u32> canonical_vertices(old_vertex_count);
 	s32 unique_vertex_count = mark_duplicates(mesh.vertices,
 		[](const Vertex& lhs, const Vertex& rhs) {
 			if(lhs < rhs) {
@@ -329,7 +331,7 @@ void deduplicate_vertices(Mesh& mesh) {
 	// Copy over the unique vertices, preserving their original ordering.
 	std::vector<Vertex> new_vertices;
 	new_vertices.reserve(unique_vertex_count);
-	for(size_t i = 0; i < mesh.vertices.size(); i++) {
+	for(size_t i = 0; i < old_vertex_count; i++) {
 		if(i == canonical_vertices[i]) {
 			canonical_vertices[i] = (s32) new_vertices.size();
 			new_vertices.emplace_back(mesh.vertices[i]);
@@ -343,7 +345,8 @@ void deduplicate_vertices(Mesh& mesh) {
 	// Map the indices.
 	for(MeshPrimitive& primitive : mesh.primitives) {
 		for(u32& index : primitive.indices) {
-			index = canonical_vertices.at(index);
+			verify(index < old_vertex_count, "Index too large.");
+			index = canonical_vertices[index];
 		}
 	}
 }

@@ -19,12 +19,16 @@
 #ifndef ENGINE_MOBY_HIGH_H
 #define ENGINE_MOBY_HIGH_H
 
+#include <core/gltf.h>
 #include <engine/moby_packet.h>
 
 namespace MOBY {
 
-Mesh recover_moby_mesh(const std::vector<MobyPacket>& packets, const char* name, s32 o_class, s32 texture_count, f32 scale, bool animated);
-std::vector<MobyPacket> build_moby_packets(const Mesh& mesh, const std::vector<ColladaMaterial>& materials);
+std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, const char* name, s32 o_class, s32 texture_count, f32 scale, bool animated);
+std::vector<MobyPacket> build_packets(const Mesh& mesh, const std::vector<ColladaMaterial>& materials);
+
+GLTF::Mesh recover_mesh(std::vector<GLTF::Mesh>& packets, Opt<std::string> name);
+std::vector<GLTF::Mesh> build_mesh(const GLTF::Mesh& mesh);
 
 }
 

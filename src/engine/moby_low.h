@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ENGINE_MOBY_H
-#define ENGINE_MOBY_H
+#ifndef ENGINE_MOBY_LOW_H
+#define ENGINE_MOBY_LOW_H
 
 #include <core/vif.h>
 #include <core/buffer.h>
@@ -104,7 +104,7 @@ struct MobyClassData {
 	std::vector<MobySoundDef> sound_defs;
 	u8 unknown_9 = 0;
 	u8 lod_trans = 0;
-	f32 scale = 0.f;
+	f32 scale = 1.f;
 	u8 mip_dist = 0;
 	glm::vec4 bounding_sphere = {0.f, 0.f, 0.f, 0.f};
 	s32 glow_rgba = 0;

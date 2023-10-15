@@ -30,7 +30,7 @@
 #include <assetmgr/zipped_asset_bank.h>
 #include <instancemgr/instance.h>
 #include <engine/tfrag_high.h>
-#include <engine/moby.h>
+#include <engine/moby_low.h>
 #include <engine/tie.h>
 #include <engine/shrub.h>
 #include <engine/collision.h>

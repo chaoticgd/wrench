@@ -19,7 +19,7 @@
 #include "level_core.h"
 
 #include <core/timer.h>
-#include <engine/moby.h>
+#include <engine/moby_low.h>
 #include <engine/compression.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>

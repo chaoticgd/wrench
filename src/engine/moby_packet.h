@@ -36,7 +36,7 @@ packed_struct(MobyTexCoord,
 packed_struct(MobyIndexHeader, // Second UNPACK header.
 	/* 0x0 */ u8 unknown_0;
 	/* 0x1 */ u8 texture_unpack_offset_quadwords; // Offset of texture data relative to decompressed index buffer in VU mem.
-	/* 0x2 */ u8 secret_index;
+	/* 0x2 */ s8 secret_index;
 	/* 0x3 */ u8 pad;
 	// Indices directly follow.
 )
@@ -59,8 +59,8 @@ enum MobySpecialTextureIndex {
 };
 
 struct SharedVifData {
-	std::vector<u8> indices;
-	std::vector<u8> secret_indices;
+	std::vector<s8> indices;
+	std::vector<s8> secret_indices;
 	std::vector<MobyTexturePrimitive> textures;
 	u8 index_header_first_byte = 0xff;
 };
@@ -123,7 +123,6 @@ std::vector<MobyMetalPacket> read_metal_packets(Buffer src, s64 table_ofs, s64 c
 void write_metal_packets(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalPacket>& packets, s64 class_header_ofs);
 
 void map_indices(MobyPacket& packet, const std::vector<size_t>& index_mapping);
-std::vector<MobyPacket> build_moby_packets(const Mesh& mesh, const std::vector<ColladaMaterial>& materials);
 
 }
 

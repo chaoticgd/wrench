@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 27
+format_version: 28
 
 // *****************************************************************************
 
@@ -46,6 +46,12 @@ AssetType Collection {
 		syntax: "texlist,<texture hint>"
 		example: "texlist,pif,8,unswizzled"
 		desc: "A list of textures, where <texture hint> is the hint used by each Texture asset in the list."
+	}
+	
+	Hint matlist {
+		syntax: "matlist,<texture hint>"
+		example: "matlist,pif,8,unswizzled"
+		desc: "A list of materials, where <texture hint> is the hint used by each Texture asset."
 	}
 	
 	Hint subtitles {
@@ -1457,7 +1463,7 @@ AssetType MobyClass {
 		required: true
 		games: [1 2 3 4]
 		Child child {
-			allowed_types: ["Material" "Texture"]
+			allowed_types: ["Material"]
 		}
 	}
 	

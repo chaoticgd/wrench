@@ -89,8 +89,8 @@ VertexTable read_vertex_table(Buffer src, s64 header_offset, s32 transfer_vertex
 	vertex_ofs += in_file_vertex_count * 0x10;
 	
 	output.preloop_matrix_transfers = src.read_multiple<MobyMatrixTransfer>(array_ofs, header.matrix_transfer_count, "vertex table").copy();
+	array_ofs += header.matrix_transfer_count * sizeof(MobyMatrixTransfer);
 	
-	array_ofs += header.matrix_transfer_count * 2;
 	if(array_ofs % 4 != 0) {
 		array_ofs += 2;
 	}
@@ -111,7 +111,7 @@ VertexTable read_vertex_table(Buffer src, s64 header_offset, s32 transfer_vertex
 	}
 	
 	// Fix vertex indices (see comment in write_vertex_table).
-	std::vector<MobyVertex> vertices = output.vertices;
+	std::vector<MobyVertex>& vertices = output.vertices;
 	for(size_t i = 7; i < vertices.size(); i++) {
 		vertices[i - 7].v.i.low_halfword = (vertices[i - 7].v.i.low_halfword & ~0x1ff) | (vertices[i].v.i.low_halfword & 0x1ff);
 	}
@@ -254,38 +254,40 @@ u32 write_metal_vertex_table(OutBuffer& dest, const MetalVertexTable& src) {
 	dest.write_multiple(src.vertices);
 }
 
-std::vector<Vertex> unpack_vertices(const VertexTable& src, Opt<SkinAttributes> blend_buffer[64], f32 scale) {
-	std::vector<Vertex> vertices;
-	vertices.reserve(src.vertices.size());
-	for(size_t i = 0; i < src.vertices.size(); i++) {
-		const MobyVertex& vertex = src.vertices[i];
+std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes> blend_buffer[64], f32 scale) {
+	std::vector<Vertex> output;
+	output.resize(input.vertices.size());
+	
+	for(size_t i = 0; i < input.vertices.size(); i++) {
+		const MobyVertex& src = input.vertices[i];
+		Vertex& dest = output[i];
 		
-		f32 px = vertex.v.x * (scale / 1024.f);
-		f32 py = vertex.v.y * (scale / 1024.f);
-		f32 pz = vertex.v.z * (scale / 1024.f);
+		dest.pos.x = src.v.x * (scale / 1024.f);
+		dest.pos.y = src.v.y * (scale / 1024.f);
+		dest.pos.z = src.v.z * (scale / 1024.f);
 		
 		// The normals are stored in spherical coordinates, then there's a
 		// cosine/sine lookup table at the top of the scratchpad.
-		f32 normal_azimuth_radians = vertex.v.normal_angle_azimuth * (WRENCH_PI / 128.f);
-		f32 normal_elevation_radians = vertex.v.normal_angle_elevation * (WRENCH_PI / 128.f);
+		f32 normal_azimuth_radians = src.v.normal_angle_azimuth * (WRENCH_PI / 128.f);
+		f32 normal_elevation_radians = src.v.normal_angle_elevation * (WRENCH_PI / 128.f);
 		f32 cos_azimuth = cosf(normal_azimuth_radians);
 		f32 sin_azimuth = sinf(normal_azimuth_radians);
 		f32 cos_elevation = cosf(normal_elevation_radians);
 		f32 sin_elevation = sinf(normal_elevation_radians);
 		
 		// This bit is done on VU0.
-		f32 nx = sin_azimuth * cos_elevation;
-		f32 ny = cos_azimuth * cos_elevation;
-		f32 nz = sin_elevation;
+		dest.normal.x = sin_azimuth * cos_elevation;
+		dest.normal.y = cos_azimuth * cos_elevation;
+		dest.normal.z = sin_elevation;
 		
-		s32 two_way_count = src.two_way_blend_vertex_count;
-		s32 three_way_count = src.three_way_blend_vertex_count;
-		SkinAttributes skin = read_skin_attributes(blend_buffer, vertex, i, two_way_count, three_way_count);
+		s32 two_way_count = input.two_way_blend_vertex_count;
+		s32 three_way_count = input.three_way_blend_vertex_count;
+		dest.skin = read_skin_attributes(blend_buffer, src, i, two_way_count, three_way_count);
 		
-		vertices.emplace_back(glm::vec3(px, py, pz), glm::vec3(nx, ny, nz), skin);
-		vertices.back().vertex_index = vertex.v.i.low_halfword & 0x1ff;
+		dest.vertex_index = src.v.i.low_halfword & 0x1ff;
 	}
-	return vertices;
+	
+	return output;
 }
 /*
 MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale) {

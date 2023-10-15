@@ -98,8 +98,6 @@ struct SharedLevelTextures {
 	LevelTextureRange shrub_range;
 };
 
-void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr = -1);
-void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i, s32 moby_stash_addr = -1);
 void unpack_level_materials(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr = -1);
 void unpack_level_material(MaterialAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i, s32 moby_stash_addr = -1);
 void unpack_shrub_billboard_texture(TextureAsset& dest, const ShrubBillboardInfo& billboard, InputStream& gs_ram, Game game);

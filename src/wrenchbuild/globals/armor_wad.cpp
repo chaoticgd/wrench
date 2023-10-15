@@ -120,7 +120,7 @@ static void unpack_armors(CollectionAsset& dest, InputStream& src, const ArmorHe
 	for(s32 i = 0; i < count; i++) {
 		if(headers[i].mesh.size.sectors > 0) {
 			MobyClassAsset& moby = dest.foreign_child<MobyClassAsset>(i);
-			unpack_asset(moby.materials(), src, headers[i].textures, config, FMT_COLLECTION_PIF8);
+			unpack_asset(moby.materials(), src, headers[i].textures, config, FMT_COLLECTION_MATLIST_PIF8);
 			unpack_asset(moby, src, headers[i].mesh, config, hint);
 		}
 	}
@@ -131,7 +131,7 @@ static void pack_armors(OutputStream& dest, ArmorHeader* headers, s32 count, con
 		if(src.has_child(i)) {
 			const MobyClassAsset& moby = src.get_child(i).as<MobyClassAsset>();
 			headers[i].mesh = pack_asset_sa<SectorRange>(dest, moby, config, hint);
-			headers[i].textures = pack_asset_sa<SectorRange>(dest, moby.get_materials(), config, FMT_COLLECTION_PIF8);
+			headers[i].textures = pack_asset_sa<SectorRange>(dest, moby.get_materials(), config, FMT_COLLECTION_MATLIST_PIF8);
 		}
 	}
 }

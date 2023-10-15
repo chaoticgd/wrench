@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "moby.h"
+#include "moby_low.h"
 
 namespace MOBY {
 
@@ -574,18 +574,20 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 		glass.surface = MaterialSurface(texture);
 	}
 	
-	scene.meshes.emplace_back(recover_moby_mesh(moby.mesh.high_lod, "high_lod", o_class, texture_count, moby.scale, moby.animation.joint_count > 0));
-	scene.meshes.emplace_back(recover_moby_mesh(moby.mesh.low_lod, "low_lod", o_class, texture_count, moby.scale, moby.animation.joint_count > 0));
-	
-	bool is_animated = moby.animation.joint_count > 0;
-	
-	for(s32 i = 0; i < (s32) moby.bangles.size(); i++) {
-		std::string name = stringf("bangle_%d", i);
-		scene.meshes.emplace_back(recover_moby_mesh(moby.bangles[i].high_lod, name.c_str(), o_class, texture_count, moby.scale, is_animated));
-		
-		std::string low_lod_name = stringf("bangle_%d_low_lod", i);
-		scene.meshes.emplace_back(recover_moby_mesh(moby.bangles[i].low_lod, low_lod_name.c_str(), o_class, texture_count, moby.scale, is_animated));
-	}
+	//auto high = MOBY::recover_packets(moby.mesh.high_lod, "high_lod", o_class, texture_count, moby.scale, moby.animation.joint_count > 0);
+	//auto low = MOBY::recover_packets(moby.mesh.low_lod, "low_lod", o_class, texture_count, moby.scale, moby.animation.joint_count > 0);
+	//scene.meshes.emplace_back(MOBY::recover_mesh(low));
+	//scene.meshes.emplace_back(MOBY::recover_mesh(high));
+	//
+	//bool is_animated = moby.animation.joint_count > 0;
+	//
+	//for(s32 i = 0; i < (s32) moby.bangles.size(); i++) {
+	//	std::string name = stringf("bangle_%d", i);
+	//	scene.meshes.emplace_back(recover_moby_mesh(moby.bangles[i].high_lod, name.c_str(), o_class, texture_count, moby.scale, is_animated));
+	//	
+	//	std::string low_lod_name = stringf("bangle_%d_low_lod", i);
+	//	scene.meshes.emplace_back(recover_moby_mesh(moby.bangles[i].low_lod, low_lod_name.c_str(), o_class, texture_count, moby.scale, is_animated));
+	//}
 	
 	if(moby.animation.joint_count != 0) {
 		scene.joints = recover_moby_joints(moby, moby.scale);
@@ -608,12 +610,12 @@ MobyClassData build_moby_class(const ColladaScene& scene) {
 	verify(high_lod_mesh, "Collada file doesn't contain a 'high_lod' node.");
 	
 	MobyClassData moby;
-	moby.mesh.high_lod = build_moby_packets(*high_lod_mesh, scene.materials);
-	moby.mesh.high_lod_count = moby.mesh.high_lod.size();
-	if(low_lod_mesh) {
-		moby.mesh.low_lod = build_moby_packets(*low_lod_mesh, scene.materials);
-		moby.mesh.low_lod_count = moby.mesh.low_lod.size();
-	}
+	//moby.mesh.high_lod = build_moby_packets(*high_lod_mesh, scene.materials);
+	//moby.mesh.high_lod_count = moby.mesh.high_lod.size();
+	//if(low_lod_mesh) {
+	//	moby.mesh.low_lod = build_moby_packets(*low_lod_mesh, scene.materials);
+	//	moby.mesh.low_lod_count = moby.mesh.low_lod.size();
+	//}
 	moby.animation.skeleton = {};
 	moby.animation.common_trans = {};
 	moby.unknown_9 = 0;
