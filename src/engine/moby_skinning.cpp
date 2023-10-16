@@ -23,6 +23,19 @@
 
 namespace MOBY {
 
+void prepare_skin_matrices(const std::vector<MobyMatrixTransfer>& preloop_matrix_transfers, Opt<SkinAttributes> blend_cache[64], bool animated) {
+	for(const MobyMatrixTransfer& transfer : preloop_matrix_transfers) {
+		verify(transfer.vu0_dest_addr % 4 == 0, "Unaligned pre-loop joint address 0x%llx.", transfer.vu0_dest_addr);
+		if(!animated && transfer.spr_joint_index == 0) {
+			// If the mesh isn't animated, use the blend shape matrix (identity matrix).
+			blend_cache[transfer.vu0_dest_addr / 0x4] = SkinAttributes{1, {-1, 0, 0}, {255, 0, 0}};
+		} else {
+			blend_cache[transfer.vu0_dest_addr / 0x4] = SkinAttributes{1, {(s8) transfer.spr_joint_index, 0, 0}, {255, 0, 0}};
+		}
+		VERBOSE_SKINNING(printf("preloop upload spr[%02hhx] -> %02hhx\n", transfer.spr_joint_index, transfer.vu0_dest_addr));
+	}
+}
+
 SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64], const MobyVertex& mv, s32 ind, s32 two_way_count, s32 three_way_count) {
 	SkinAttributes attribs;
 	

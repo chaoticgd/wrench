@@ -27,6 +27,7 @@
 
 namespace MOBY {
 
+void prepare_skin_matrices(const std::vector<MobyMatrixTransfer>& preloop_matrix_transfers, Opt<SkinAttributes> blend_cache[64], bool animated);
 SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64], const MobyVertex& mv, s32 ind, s32 two_way_count, s32 three_way_count);
 
 struct MatrixAllocation {

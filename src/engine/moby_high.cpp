@@ -44,18 +44,7 @@ std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, 
 		const MobyPacket& src = packets[i];
 		GLTF::Mesh& dest = output.emplace_back();
 		
-		for(const MobyMatrixTransfer& transfer : src.vertex_table.preloop_matrix_transfers) {
-			verify(transfer.vu0_dest_addr % 4 == 0, "Unaligned pre-loop joint address 0x%llx.", transfer.vu0_dest_addr);
-			if(!animated && transfer.spr_joint_index == 0) {
-				// If the mesh isn't animated, use the blend shape matrix (identity matrix).
-				blend_cache[transfer.vu0_dest_addr / 0x4] = SkinAttributes{1, {-1, 0, 0}, {255, 0, 0}};
-			} else {
-				blend_cache[transfer.vu0_dest_addr / 0x4] = SkinAttributes{1, {(s8) transfer.spr_joint_index, 0, 0}, {255, 0, 0}};
-			}
-			VERBOSE_SKINNING(printf("preloop upload spr[%02hhx] -> %02hhx\n", transfer.spr_joint_index, transfer.vu0_dest_addr));
-		}
-		
-		dest.vertices = unpack_vertices(src.vertex_table, blend_cache, scale);
+		dest.vertices = unpack_vertices(src.vertex_table, blend_cache, scale, animated);
 		
 		for(size_t j = 0; j < dest.vertices.size(); j++) {
 			Vertex& vertex = dest.vertices[j];
@@ -112,16 +101,24 @@ std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, 
 			
 			// Test if both the current and the next index have the primitive
 			// restart bit set. We need to test two indices to filter out swaps.
-			if(index <= 0 && j + 1 < src.vif.indices.size() && src.vif.indices[j + 1] <= 0) {
-				// New triangle strip.
-				primitive = &dest.primitives.emplace_back();
-				primitive->attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::NORMAL | GLTF::JOINTS_0 | GLTF::WEIGHTS_0;
-				primitive->material = Opt<s32>(texture_index);
-				primitive->mode = GLTF::TRIANGLE_STRIP;
+			if(index <= 0) {
+				if(j + 1 < src.vif.indices.size() && src.vif.indices[j + 1] <= 0) {
+					// New triangle strip.
+					primitive = &dest.primitives.emplace_back();
+					primitive->attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::NORMAL;
+					if(animated) {
+						primitive->attributes_bitfield |= GLTF::JOINTS_0 | GLTF::WEIGHTS_0;
+					}
+					primitive->material = Opt<s32>(texture_index);
+					primitive->mode = GLTF::TRIANGLE_STRIP;
+				} else {
+					// Just a single primitive restart.
+					VERIFY_SUBMESH(primitive && primitive->indices.size() >= 1, "index buffer");
+					primitive->indices.emplace_back(primitive->indices.back());
+				}
 			}
 			
 			VERIFY_SUBMESH(primitive, "index buffer");
-			VERIFY_SUBMESH((index & 0x7f) - 1 < dest.vertices.size(), "index");
 			primitive->indices.emplace_back((index & 0x7f) - 1);
 		}
 	}

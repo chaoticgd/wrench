@@ -103,6 +103,7 @@ VertexTable read_vertex_table(Buffer src, s64 header_offset, s32 transfer_vertex
 	
 	output.two_way_blend_vertex_count = header.two_way_blend_vertex_count;
 	output.three_way_blend_vertex_count = header.three_way_blend_vertex_count;
+	output.main_vertex_count = header.main_vertex_count;
 	
 	output.unknown_e = header.unknown_e;
 	if(format == MobyFormat::RAC1) {
@@ -254,9 +255,11 @@ u32 write_metal_vertex_table(OutBuffer& dest, const MetalVertexTable& src) {
 	dest.write_multiple(src.vertices);
 }
 
-std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes> blend_buffer[64], f32 scale) {
+std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes> blend_cache[64], f32 scale, bool animated) {
 	std::vector<Vertex> output;
 	output.resize(input.vertices.size());
+	
+	prepare_skin_matrices(input.preloop_matrix_transfers, blend_cache, animated);
 	
 	for(size_t i = 0; i < input.vertices.size(); i++) {
 		const MobyVertex& src = input.vertices[i];
@@ -282,7 +285,7 @@ std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes
 		
 		s32 two_way_count = input.two_way_blend_vertex_count;
 		s32 three_way_count = input.three_way_blend_vertex_count;
-		dest.skin = read_skin_attributes(blend_buffer, src, i, two_way_count, three_way_count);
+		dest.skin = read_skin_attributes(blend_cache, src, i, two_way_count, three_way_count);
 		
 		dest.vertex_index = src.v.i.low_halfword & 0x1ff;
 	}

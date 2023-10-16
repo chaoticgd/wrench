@@ -21,6 +21,7 @@
 #include <toolwads/wads.h>
 #include <engine/moby_low.h>
 #include <engine/moby_high.h>
+#include <wrenchbuild/tests.h>
 
 static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint);
@@ -189,6 +190,8 @@ static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConf
 	
 	std::vector<u8> dest;
 	MOBY::write_class(dest, moby, config.game());
+	
+	strip_trailing_padding_from_lhs(src, dest, 0x40);
 	
 	bool header_matches = diff_buffers(src, dest, 0, 0x50, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 	bool data_matches = diff_buffers(src, dest, 0x50, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
