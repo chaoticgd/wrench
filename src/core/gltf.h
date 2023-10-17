@@ -119,7 +119,7 @@ enum MeshPrimitiveMode {
 
 struct MeshPrimitive {
 	u32 attributes_bitfield = 0;
-	std::vector<u32> indices;
+	std::vector<s32> indices;
 	Opt<s32> material;
 	Opt<MeshPrimitiveMode> mode;
 	// unimplemented: targets
@@ -208,6 +208,8 @@ void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh);
 
 // Rewrite material indices so they point into the provided materials array.
 void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<::Material>& materials);
+
+void verify_meshes_equal(Mesh& lhs, Mesh& rhs, const char* context);
 
 }
 

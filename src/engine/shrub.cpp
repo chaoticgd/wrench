@@ -332,7 +332,7 @@ GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
 					dest_primitive->material = texture_index;
 				}
 				
-				u32 base_index = (u32) mesh.vertices.size();
+				s32 base_index = (s32) mesh.vertices.size();
 				for(const ShrubVertex& vertex : prim->vertices) {
 					Vertex& dest_vertex = mesh.vertices.emplace_back();
 					f32 x = vertex.x * shrub.scale * (1.f / 1024.f);
@@ -348,11 +348,11 @@ GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
 				}
 				
 				if(prim->type == GeometryType::TRIANGLE_LIST) {
-					for(u32 i = base_index; i < mesh.vertices.size(); i++) {
+					for(s32 i = base_index; i < (s32) mesh.vertices.size(); i++) {
 						dest_primitive->indices.emplace_back(i);
 					}
 				} else {
-					for(u32 i = base_index; i < mesh.vertices.size() - 2; i++) {
+					for(s32 i = base_index; i < (s32) mesh.vertices.size() - 2; i++) {
 						dest_primitive->indices.emplace_back(i + 0);
 						dest_primitive->indices.emplace_back(i + 1);
 						dest_primitive->indices.emplace_back(i + 2);

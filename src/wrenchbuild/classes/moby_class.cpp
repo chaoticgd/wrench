@@ -90,7 +90,7 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	high_lod_nodes.name = "moby";
 	high_lod_nodes.mesh = (s32) gltf.meshes.size();
 	
-	std::vector<GLTF::Mesh> high_lod_packets = MOBY::recover_packets(data.mesh.high_lod, "moby", -1, texture_count, data.scale, data.animation.joints.size() > 0);
+	std::vector<GLTF::Mesh> high_lod_packets = MOBY::recover_packets(data.mesh.high_lod, -1, data.scale, data.animation.joints.size() > 0);
 	gltf.meshes.emplace_back(MOBY::recover_mesh(high_lod_packets, "high_lod_mesh"));
 	
 	scene->nodes.emplace_back((s32) gltf.nodes.size());
@@ -98,7 +98,7 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	low_lod_nodes.name = "moby_low_lod";
 	low_lod_nodes.mesh = (s32) gltf.meshes.size();
 	
-	std::vector<GLTF::Mesh> low_lod_packets = MOBY::recover_packets(data.mesh.low_lod, "moby", -1, texture_count, data.scale, data.animation.joints.size() > 0);
+	std::vector<GLTF::Mesh> low_lod_packets = MOBY::recover_packets(data.mesh.low_lod, -1, data.scale, data.animation.joints.size() > 0);
 	gltf.meshes.emplace_back(MOBY::recover_mesh(low_lod_packets, "low_lod_mesh"));
 	
 	if(!g_asset_unpacker.dump_binaries && dest.has_materials()) {

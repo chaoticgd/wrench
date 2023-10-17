@@ -32,7 +32,7 @@ static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mappi
 
 #define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, packet %d has bad " message ".", o_class, (s32) i);
 
-std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, const char* name, s32 o_class, s32 texture_count, f32 scale, bool animated) {
+std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, s32 o_class, f32 scale, bool animated) {
 	std::vector<GLTF::Mesh> output;
 	output.reserve(packets.size());
 	
@@ -370,10 +370,10 @@ GLTF::Mesh recover_mesh(std::vector<GLTF::Mesh>& packets, Opt<std::string> name)
 	output.name = name;
 	
 	for(GLTF::Mesh& packet : packets) {
-		u32 vertex_base = (u32) output.vertices.size();
+		s32 vertex_base = (s32) output.vertices.size();
 		output.vertices.insert(output.vertices.end(), BEGIN_END(packet.vertices));
 		for(GLTF::MeshPrimitive& primitive : packet.primitives) {
-			for(u32& index : primitive.indices) {
+			for(s32& index : primitive.indices) {
 				index += vertex_base;
 			}
 			output.primitives.emplace_back(std::move(primitive));

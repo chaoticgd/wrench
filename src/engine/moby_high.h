@@ -24,7 +24,7 @@
 
 namespace MOBY {
 
-std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, const char* name, s32 o_class, s32 texture_count, f32 scale, bool animated);
+std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, s32 o_class, f32 scale, bool animated);
 std::vector<MobyPacket> build_packets(const Mesh& mesh, const std::vector<ColladaMaterial>& materials);
 
 GLTF::Mesh recover_mesh(std::vector<GLTF::Mesh>& packets, Opt<std::string> name);

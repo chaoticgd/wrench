@@ -297,9 +297,9 @@ static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 textu
 		}
 		
 		// Reverse the winding order.
-		primitive->indices.emplace_back((u32) base_index + face.indices[2]);
-		primitive->indices.emplace_back((u32) base_index + face.indices[1]);
-		primitive->indices.emplace_back((u32) base_index + face.indices[0]);
+		primitive->indices.emplace_back(base_index + face.indices[2]);
+		primitive->indices.emplace_back(base_index + face.indices[1]);
+		primitive->indices.emplace_back(base_index + face.indices[0]);
 	}
 }
 

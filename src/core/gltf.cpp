@@ -125,8 +125,8 @@ static std::vector<glm::vec2> convert_tex_coords(const Accessor& accessor);
 static std::vector<ColourAttribute> convert_colours(const Accessor& accessor);
 static std::vector<std::array<s8, 3>> convert_joints(const Accessor& accessor);
 static std::vector<std::array<u8, 3>> convert_weights(const Accessor& accessor);
-static std::vector<u32> read_indices(const Json& src, const std::vector<Accessor>& accessors);
-static void write_indices(Json& dest, const std::vector<u32>& indices, std::vector<Accessor>& accessors);
+static std::vector<s32> read_indices(const Json& src, const std::vector<Accessor>& accessors);
+static void write_indices(Json& dest, const std::vector<s32>& indices, std::vector<Accessor>& accessors);
 
 // Materials & Textures
 static Material read_material(const Json& src);
@@ -344,7 +344,7 @@ void deduplicate_vertices(Mesh& mesh) {
 	
 	// Map the indices.
 	for(MeshPrimitive& primitive : mesh.primitives) {
-		for(u32& index : primitive.indices) {
+		for(s32& index : primitive.indices) {
 			verify(index < old_vertex_count, "Index too large.");
 			index = canonical_vertices[index];
 		}
@@ -353,12 +353,12 @@ void deduplicate_vertices(Mesh& mesh) {
 
 void remove_zero_area_triangles(Mesh& mesh) {
 	for(MeshPrimitive& primitive : mesh.primitives) {
-		std::vector<u32> old_indices = std::move(primitive.indices);
+		std::vector<s32> old_indices = std::move(primitive.indices);
 		primitive.indices = {};
 		for(size_t i = 0; i < old_indices.size() / 3; i++) {
-			u32 v0 = old_indices[i * 3 + 0];
-			u32 v1 = old_indices[i * 3 + 1];
-			u32 v2 = old_indices[i * 3 + 2];
+			s32 v0 = old_indices[i * 3 + 0];
+			s32 v1 = old_indices[i * 3 + 1];
+			s32 v2 = old_indices[i * 3 + 2];
 			if(!(v0 == v1 || v0 == v2 || v1 == v2)) {
 				primitive.indices.emplace_back(v0);
 				primitive.indices.emplace_back(v1);
@@ -409,6 +409,43 @@ void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<:
 			}
 		}
 	}
+}
+
+void verify_meshes_equal(Mesh& lhs, Mesh& rhs, const char* context) {
+	verify(lhs.name.has_value() == rhs.name.has_value()
+		&& (lhs.name.has_value() || *lhs.name == *rhs.name),
+		"%s GLTF::Mesh::name", context);
+	verify(lhs.primitives.size() == rhs.primitives.size(), "%s GLTF::Mesh::primitives", context);
+	for(size_t i = 0; i < lhs.primitives.size(); i++) {
+		MeshPrimitive& lhs_prim = lhs.primitives[i];
+		MeshPrimitive& rhs_prim = rhs.primitives[i];
+		verify(lhs_prim.attributes_bitfield == rhs_prim.attributes_bitfield,
+			"%s GLTF::MeshPrimitive::attributes_bitfield", context);
+		if(lhs_prim.indices != rhs_prim.indices) {
+			std::string lhs_indices, rhs_indices;
+			for(s32 index : lhs_prim.indices) {
+				lhs_indices += stringf("%d,", index);
+			}
+			for(s32 index : rhs_prim.indices) {
+				rhs_indices += stringf("%d,", index);
+			}
+			verify_not_reached(
+				"%s GLTF::MeshPrimitive::indices\n"
+				"lhs_prim.indices={%s}\n"
+				"rhs_prim.indices={%s}",
+				context, lhs_indices.c_str(), rhs_indices.c_str());
+		}
+		verify(lhs_prim.material.has_value() == rhs_prim.material.has_value()
+			&& (lhs_prim.material.has_value() || *lhs_prim.material == *rhs_prim.material),
+			"%s GLTF::MeshPrimitive::material %d %d",
+			context,
+			lhs_prim.material.has_value() ? *lhs_prim.material : -1,
+			rhs_prim.material.has_value() ? *rhs_prim.material : -1);
+		verify(lhs_prim.mode.has_value() == rhs_prim.mode.has_value()
+			&& (lhs_prim.mode.has_value() || *lhs_prim.mode == *rhs_prim.mode),
+			"%s GLTF::MeshPrimitive::mode", context);
+	}
+	verify(lhs.vertices == rhs.vertices, "%s GLTF::Mesh::vertices", context);
 }
 
 // *****************************************************************************
@@ -571,7 +608,7 @@ static MeshPrimitive read_mesh_primitive(const Json& src, std::vector<Vertex>& v
 		const Accessor& accessor = accessors[accessor_index];
 		vertex_count = std::max(accessor.count, vertex_count);
 	}
-	u32 base_index = (u32) vertices_dest.size();
+	s32 base_index = (s32) vertices_dest.size();
 	vertices_dest.resize(base_index + vertex_count);
 	
 	for(auto& [string, accessor_index] : attributes->items()) {
@@ -585,7 +622,7 @@ static MeshPrimitive read_mesh_primitive(const Json& src, std::vector<Vertex>& v
 	}
 	
 	dest.indices = read_indices(src, accessors);
-	for(u32& index : dest.indices) {
+	for(s32& index : dest.indices) {
 		index += base_index;
 	}
 	
@@ -601,10 +638,10 @@ static MeshPrimitive read_mesh_primitive(const Json& src, std::vector<Vertex>& v
 static Json write_mesh_primitive(const MeshPrimitive& src, const std::vector<Vertex>& vertices_src, std::vector<Accessor>& accessors) {
 	// Filter out vertices that are not included in this primitive.
 	std::vector<Vertex> vertices;
-	std::vector<u32> indices;
+	std::vector<s32> indices;
 	std::vector<s32> mappings(vertices_src.size(), -1);
 	indices.reserve(src.indices.size());
-	for(u32 src_index : src.indices) {
+	for(s32 src_index : src.indices) {
 		s32& dest_index = mappings.at(src_index);
 		if(dest_index == -1) {
 			dest_index = (s32) vertices.size();
@@ -948,8 +985,8 @@ static std::vector<std::array<u8, 3>> convert_weights(const Accessor& accessor) 
 	return weights;
 }
 
-static std::vector<u32> read_indices(const Json& src, const std::vector<Accessor>& accessors) {
-	std::vector<u32> indices;
+static std::vector<s32> read_indices(const Json& src, const std::vector<Accessor>& accessors) {
+	std::vector<s32> indices;
 	
 	Opt<s32> indices_accessor_index;
 	get_opt(indices_accessor_index, src, "indices");
@@ -987,9 +1024,9 @@ static std::vector<u32> read_indices(const Json& src, const std::vector<Accessor
 	return indices;
 }
 
-static void write_indices(Json& dest, const std::vector<u32>& indices, std::vector<Accessor>& accessors) {
-	u32 max_index = 0;
-	for(u32 index : indices) {
+static void write_indices(Json& dest, const std::vector<s32>& indices, std::vector<Accessor>& accessors) {
+	s32 max_index = 0;
+	for(s32 index : indices) {
 		max_index = std::max(index, max_index);
 	}
 	
@@ -1009,14 +1046,12 @@ static void write_indices(Json& dest, const std::vector<u32>& indices, std::vect
 			*(u16*) &index_accessor.bytes[i * 2] = (u16) indices[i];
 		}
 		index_accessor.component_type = UNSIGNED_SHORT;
-	} else if(max_index < 4294967295) {
+	} else {
 		index_accessor.bytes.resize(indices.size() * 4);
 		for(size_t i = 0; i < indices.size(); i++) {
 			*(u32*) &index_accessor.bytes[i * 4] = indices[i];
 		}
 		index_accessor.component_type = UNSIGNED_INT;
-	} else {
-		verify_not_reached("Index out of range.");
 	}
 	index_accessor.target = ELEMENT_ARRAY_BUFFER;
 }
