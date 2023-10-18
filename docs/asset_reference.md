@@ -971,11 +971,8 @@ No attributes.
 
 | Syntax | Example | Description |
 | - | - | - |
-| `level` | `level` | A moby class to be packed in with the level data. |
-| `gadget` | `gadget` | A moby class to be packed in with the gadget data. |
-| `mission` | `mission` | A moby class to be packed into a mission. |
-| `sparmor` | `sparmor` | A moby class to be packed as a singleplayer armor. |
-| `mparmor` | `mparmor` | A moby class to be packed as a multiplayer armor. |
+| `fat` | `fat` | A full moby class. This is the default if no hint is specified. |
+| `meshonly,<scale>,<animated>` | `meshonly,0.5,true` | A stripped down moby class that only includes the high LOD, low LOD and multipass metal meshes. Only use this for singleplayer armors for GC and UYA. The \<scale\> and \<animated\> parameters are only used by the unpacker, so can be omitted or set to junk values for packing. |
 
 ### MobyClassCore
 

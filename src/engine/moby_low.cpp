@@ -262,7 +262,7 @@ void write_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 
 // *****************************************************************************
 
-MobyClassData read_armor_class(Buffer src, Game game) {
+MobyMeshSection read_mesh_only_class(Buffer src, Game game) {
 	MobyFormat format;
 	switch(game) {
 		case Game::RAC:
@@ -280,12 +280,10 @@ MobyClassData read_armor_class(Buffer src, Game game) {
 	}
 	
 	auto header = src.read<MobyArmorHeader>(0, "moby armor header");
-	MobyClassData moby;
-	moby.mesh = read_moby_mesh_section(src, header.packet_table_offset, header.info, format);
-	return moby;
+	return read_moby_mesh_section(src, header.packet_table_offset, header.info, format);
 }
 
-void write_armor_class(OutBuffer dest, const MobyClassData& moby, Game game) {
+void write_mesh_only_class(OutBuffer dest, const MobyMeshSection& moby, f32 scale, Game game) {
 	MobyFormat format;
 	switch(game) {
 		case Game::RAC:
@@ -304,9 +302,9 @@ void write_armor_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	
 	MobyArmorHeader header = {};
 	class_header_ofs = dest.alloc<MobyArmorHeader>();
-	s64 table_ofs = allocate_packet_table(dest, moby.mesh, moby.bangles.size());
+	s64 table_ofs = allocate_packet_table(dest, moby, 0);
 	std::vector<MobyGifUsage> gif_usage;
-	header.info = write_moby_mesh_section(dest, gif_usage, table_ofs, moby.mesh, moby.scale, format);
+	header.info = write_moby_mesh_section(dest, gif_usage, table_ofs, moby, scale, format);
 	if(gif_usage.size() > 0) {
 		gif_usage.back().offset_and_terminator |= 0x80000000;
 		header.gif_usage = dest.write_multiple(gif_usage) - class_header_ofs;

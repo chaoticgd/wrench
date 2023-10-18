@@ -1488,34 +1488,16 @@ AssetType MobyClass {
 		games: [1 2 3 4]
 	}
 	
-	Hint level {
-		syntax: "level"
-		example: "level"
-		desc: "A moby class to be packed in with the level data."
+	Hint fat {
+		syntax: "fat"
+		example: "fat"
+		desc: "A full moby class. This is the default if no hint is specified."
 	}
 	
-	Hint gadget {
-		syntax: "gadget"
-		example: "gadget"
-		desc: "A moby class to be packed in with the gadget data."
-	}
-	
-	Hint mission {
-		syntax: "mission"
-		example: "mission"
-		desc: "A moby class to be packed into a mission."
-	}
-	
-	Hint sparmor {
-		syntax: "sparmor"
-		example: "sparmor"
-		desc: "A moby class to be packed as a singleplayer armor."
-	}
-	
-	Hint mparmor {
-		syntax: "mparmor"
-		example: "mparmor"
-		desc: "A moby class to be packed as a multiplayer armor."
+	Hint meshonly {
+		syntax: "meshonly,<scale>,<animated>"
+		example: "meshonly,0.5,true"
+		desc: "A stripped down moby class that only includes the high LOD, low LOD and multipass metal meshes. Only use this for singleplayer armors for GC and UYA. The <scale> and <animated> parameters are only used by the unpacker, so can be omitted or set to junk values for packing."
 	}
 }
 

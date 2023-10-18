@@ -181,8 +181,9 @@ packed_struct(MobyArmorHeader,
 
 MobyClassData read_class(Buffer src, Game game);
 void write_class(OutBuffer dest, const MobyClassData& moby, Game game);
-MobyClassData read_armor_class(Buffer src, Game game);
-void write_armor_class(OutBuffer dest, const MobyClassData& moby, Game game);
+MobyMeshSection read_mesh_only_class(Buffer src, Game game);
+void write_mesh_only_class(OutBuffer dest, const MobyMeshSection& moby, f32 scale, Game game);
+
 MobyMeshSection read_moby_mesh_section(Buffer src, s64 table_ofs, MobyMeshInfo info, MobyFormat format);
 s64 allocate_packet_table(OutBuffer& dest, const MobyMeshSection& mesh, size_t bangle_count);
 MobyMeshInfo write_moby_mesh_section(OutBuffer& dest, std::vector<MobyGifUsage>& gif_usage, s64 table_ofs, const MobyMeshSection& mesh, f32 scale, MobyFormat format);

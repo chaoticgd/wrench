@@ -204,7 +204,7 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 			}
 			
 			ByteRange class_range{entry.class_offset, end - entry.class_offset};
-			unpack_asset(moby, src, class_range, config, FMT_MOBY_CLASS_MISSION);
+			unpack_asset(moby, src, class_range, config, FMT_MOBY_CLASS_FAT);
 		}
 	}
 }
@@ -228,7 +228,7 @@ static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src,
 			entry.o_class = moby.id();
 			
 			if(moby.has_core()) {
-				entry.class_offset = pack_asset<ByteRange>(dest, moby, config, 0x10, FMT_MOBY_CLASS_MISSION).offset;
+				entry.class_offset = pack_asset<ByteRange>(dest, moby, config, 0x10, FMT_MOBY_CLASS_FAT).offset;
 			}
 			
 			if(moby.has_materials()) {

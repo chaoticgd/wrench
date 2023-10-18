@@ -368,7 +368,7 @@ static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mappi
 	}
 }
 
-GLTF::Mesh recover_mesh(const std::vector<GLTF::Mesh>& packets, Opt<std::string> name) {
+GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string> name) {
 	GLTF::Mesh output;
 	output.name = name;
 	
@@ -388,7 +388,7 @@ GLTF::Mesh recover_mesh(const std::vector<GLTF::Mesh>& packets, Opt<std::string>
 	return output;
 }
 
-std::vector<GLTF::Mesh> build_mesh(const GLTF::Mesh& mesh, bool output_broken_indices) {
+std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, bool output_broken_indices) {
 	TriStripConfig config;
 	config.constraints = setup_moby_constraints();
 	config.support_index_buffer = true;
