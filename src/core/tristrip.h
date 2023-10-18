@@ -40,7 +40,19 @@ struct GeometryPrimitives {
 	std::vector<s32> indices;
 };
 
-// Generates a set of triangle strips and triangle lists that cover a given mesh.
+// Generates a set of triangle strips and triangle lists with the zero area tri
+// representation that cover a given mesh.
 GeometryPrimitives weave_tristrips(const GLTF::Mesh& mesh, const std::vector<EffectiveMaterial>& effectives);
+
+// Convert between two representations of triangle strips: The "restart bit"
+// representation, where discontinuations in the strip are represented by
+// setting the sign bit of the affected vertex, which is used internally by the
+// moby code, and the zero area tri representation, where additional indices are
+// inserted to produce zero area tris that bridge the gap. Only the latter
+// representation is safe to export. Note that these functions DO NOT support
+// storing multiple triangle strips (where two contiguous indices have the
+// restart bit set) in a single primitive.
+std::vector<s32> zero_area_tris_to_restart_bit_strip(const std::vector<s32>& indices);
+std::vector<s32> restart_bit_strip_to_zero_area_tris(const std::vector<s32>& indices);
 
 #endif

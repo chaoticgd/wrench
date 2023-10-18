@@ -80,6 +80,10 @@ struct EffectiveMaterial {
 	std::vector<s32> materials;
 };
 
-std::vector<EffectiveMaterial> effective_materials(const std::vector<Material>& materials, u32 attributes);
+struct EffectiveMaterialsOutput {
+	std::vector<EffectiveMaterial> effectives;
+	std::vector<s32> material_to_effective;
+};
+EffectiveMaterialsOutput effective_materials(const std::vector<Material>& materials, u32 attributes);
 
 #endif

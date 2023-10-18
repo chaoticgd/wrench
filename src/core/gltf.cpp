@@ -411,41 +411,85 @@ void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<:
 	}
 }
 
-void verify_meshes_equal(Mesh& lhs, Mesh& rhs, const char* context) {
-	verify(lhs.name.has_value() == rhs.name.has_value()
-		&& (lhs.name.has_value() || *lhs.name == *rhs.name),
-		"%s GLTF::Mesh::name", context);
-	verify(lhs.primitives.size() == rhs.primitives.size(), "%s GLTF::Mesh::primitives", context);
-	for(size_t i = 0; i < lhs.primitives.size(); i++) {
-		MeshPrimitive& lhs_prim = lhs.primitives[i];
-		MeshPrimitive& rhs_prim = rhs.primitives[i];
-		verify(lhs_prim.attributes_bitfield == rhs_prim.attributes_bitfield,
-			"%s GLTF::MeshPrimitive::attributes_bitfield", context);
-		if(lhs_prim.indices != rhs_prim.indices) {
-			std::string lhs_indices, rhs_indices;
-			for(s32 index : lhs_prim.indices) {
-				lhs_indices += stringf("%d,", index);
+// When splitting a mesh up into submeshes, this is used to generate a new
+// vertex buffer for each output mesh, and rewrite the index buffers of the
+// mesh primitives appropriately.
+void filter_vertices(Mesh& mesh, const std::vector<Vertex>& input_vertices, bool rewrite_indices) {
+	std::vector<Vertex> output_vertices;
+	std::vector<s32> mapping(input_vertices.size(), -1);
+	for(MeshPrimitive& primitive : mesh.primitives) {
+		for(s32& index : primitive.indices) {
+			s32& dest_index = mapping.at(index);
+			if(dest_index == -1) {
+				dest_index = (s32) output_vertices.size();
+				output_vertices.emplace_back(input_vertices.at(index));
 			}
-			for(s32 index : rhs_prim.indices) {
-				rhs_indices += stringf("%d,", index);
+			if(rewrite_indices) {
+				index = dest_index;
 			}
-			verify_not_reached(
-				"%s GLTF::MeshPrimitive::indices\n"
-				"lhs_prim.indices={%s}\n"
-				"rhs_prim.indices={%s}",
-				context, lhs_indices.c_str(), rhs_indices.c_str());
 		}
-		verify(lhs_prim.material.has_value() == rhs_prim.material.has_value()
-			&& (lhs_prim.material.has_value() || *lhs_prim.material == *rhs_prim.material),
-			"%s GLTF::MeshPrimitive::material %d %d",
-			context,
-			lhs_prim.material.has_value() ? *lhs_prim.material : -1,
-			rhs_prim.material.has_value() ? *rhs_prim.material : -1);
-		verify(lhs_prim.mode.has_value() == rhs_prim.mode.has_value()
-			&& (lhs_prim.mode.has_value() || *lhs_prim.mode == *rhs_prim.mode),
-			"%s GLTF::MeshPrimitive::mode", context);
 	}
-	verify(lhs.vertices == rhs.vertices, "%s GLTF::Mesh::vertices", context);
+	mesh.vertices = std::move(output_vertices);
+}
+
+void verify_meshes_equal(Mesh& lhs, Mesh& rhs, bool check_vertices, bool check_indices, const char* context) {
+	verify(lhs.name.has_value() == rhs.name.has_value()
+		&& (!lhs.name.has_value() || *lhs.name == *rhs.name),
+		"%s GLTF::Mesh::name %s %s", context,
+		lhs.name.has_value() ? lhs.name->c_str() : "std::nullopt",
+		rhs.name.has_value() ? rhs.name->c_str() : "std::nullopt");
+	for(size_t i = 0; i < std::min(lhs.primitives.size(), rhs.primitives.size()); i++) {
+		std::string primitive_context = stringf("%s primitive %d", context, (s32) i);
+		verify_mesh_primitives_equal(lhs.primitives[i], rhs.primitives[i], check_indices, primitive_context.c_str());
+	}
+	if(lhs.primitives.size() != rhs.primitives.size()) {
+		s32 lhs_index_count = 0, rhs_index_count = 0;
+		for(const GLTF::MeshPrimitive& primitive : lhs.primitives) {
+			lhs_index_count += (s32) primitive.indices.size();
+		}
+		for(const GLTF::MeshPrimitive& primitive : rhs.primitives) {
+			rhs_index_count += (s32) primitive.indices.size();
+		}
+		verify_not_reached("%s GLTF::Mesh::primitives\n"
+			"primitive count = %d %d\n"
+			"vertex count = %d %d\n"
+			"index count = %d %d",
+			context,
+			(s32) lhs.primitives.size(), (s32) rhs.primitives.size(),
+			(s32) lhs.vertices.size(), (s32) rhs.vertices.size(),
+			lhs_index_count, rhs_index_count);
+	}
+	if(check_vertices) {
+		verify(lhs.vertices == rhs.vertices, "%s GLTF::Mesh::vertices", context);
+	}
+}
+
+void verify_mesh_primitives_equal(MeshPrimitive& lhs, MeshPrimitive& rhs, bool check_indices, const char* context) {
+	verify(lhs.attributes_bitfield == rhs.attributes_bitfield,
+		"%s GLTF::MeshPrimitive::attributes_bitfield", context);
+	if(check_indices ? (lhs.indices != rhs.indices) : lhs.indices.size() != rhs.indices.size()) {
+		std::string lhs_indices, rhs_indices;
+		for(s32 index : lhs.indices) {
+			lhs_indices += stringf("%d,", index);
+		}
+		for(s32 index : rhs.indices) {
+			rhs_indices += stringf("%d,", index);
+		}
+		verify_not_reached(
+			"%s GLTF::MeshPrimitive::indices\n"
+			"lhs.indices={%s}\n"
+			"rhs.indices={%s}",
+			context, lhs_indices.c_str(), rhs_indices.c_str());
+	}
+	verify(lhs.material.has_value() == rhs.material.has_value()
+		&& (!lhs.material.has_value() || *lhs.material == *rhs.material),
+		"%s GLTF::MeshPrimitive::material %d %d",
+		context,
+		lhs.material.has_value() ? *lhs.material : -1,
+		rhs.material.has_value() ? *rhs.material : -1);
+	verify(lhs.mode.has_value() == rhs.mode.has_value()
+		&& (lhs.mode.has_value() || *lhs.mode == *rhs.mode),
+		"%s GLTF::MeshPrimitive::mode", context);
 }
 
 // *****************************************************************************

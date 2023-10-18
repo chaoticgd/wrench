@@ -209,7 +209,14 @@ void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh);
 // Rewrite material indices so they point into the provided materials array.
 void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<::Material>& materials);
 
-void verify_meshes_equal(Mesh& lhs, Mesh& rhs, const char* context);
+// When splitting a mesh up into submeshes, this is used to generate a new
+// vertex buffer for each output mesh, and optionally to rewrite the index
+// buffers of the mesh primitives appropriately.
+void filter_vertices(Mesh& mesh, const std::vector<Vertex>& input_vertices, bool rewrite_indices);
+
+// Check that various pairs of glTF objects are equal, used for testing.
+void verify_meshes_equal(Mesh& lhs, Mesh& rhs, bool check_vertices, bool check_indices, const char* context);
+void verify_mesh_primitives_equal(MeshPrimitive& lhs, MeshPrimitive& rhs, bool check_indices, const char* context);
 
 }
 

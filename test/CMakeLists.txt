@@ -10,6 +10,7 @@ add_executable(runtests
 	test_elf.cpp
 	test_engine.cpp
 	test_gltf.cpp
+	test_tristrip.cpp
 )
 target_link_libraries(runtests catch2)
 target_link_libraries(runtests wrenchcore wrench_assetmgr wrenchiso wrenchengine wrenchinstancemgr)

@@ -19,6 +19,7 @@
 #include "moby_high.h"
 
 #include <core/vif.h>
+#include <core/tristrip_packet.h>
 
 namespace MOBY {
 
@@ -29,6 +30,7 @@ struct IndexMappingRecord {
 	s32 dedup_out_edge = -1; // If this vertex is a duplicate, this points to the canonical vertex.
 };
 static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices);
+static std::vector<TriStripConstraint> setup_moby_constraints();
 
 #define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, packet %d has bad " message ".", o_class, (s32) i);
 
@@ -112,7 +114,8 @@ std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, 
 					primitive->material = Opt<s32>(texture_index);
 					primitive->mode = GLTF::TRIANGLE_STRIP;
 				} else {
-					// Just a single primitive restart.
+					// Primitive restarts in the input are encoded with zero
+					// area tris in the output.
 					VERIFY_SUBMESH(primitive && primitive->indices.size() >= 1, "index buffer");
 					primitive->indices.emplace_back(primitive->indices.back());
 				}
@@ -365,14 +368,14 @@ static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mappi
 	}
 }
 
-GLTF::Mesh recover_mesh(std::vector<GLTF::Mesh>& packets, Opt<std::string> name) {
+GLTF::Mesh recover_mesh(const std::vector<GLTF::Mesh>& packets, Opt<std::string> name) {
 	GLTF::Mesh output;
 	output.name = name;
 	
-	for(GLTF::Mesh& packet : packets) {
+	for(const GLTF::Mesh& packet : packets) {
 		s32 vertex_base = (s32) output.vertices.size();
 		output.vertices.insert(output.vertices.end(), BEGIN_END(packet.vertices));
-		for(GLTF::MeshPrimitive& primitive : packet.primitives) {
+		for(GLTF::MeshPrimitive primitive : packet.primitives) {
 			for(s32& index : primitive.indices) {
 				index += vertex_base;
 			}
@@ -385,8 +388,66 @@ GLTF::Mesh recover_mesh(std::vector<GLTF::Mesh>& packets, Opt<std::string> name)
 	return output;
 }
 
-std::vector<GLTF::Mesh> build_mesh(const GLTF::Mesh& mesh) {
-	return {};
+std::vector<GLTF::Mesh> build_mesh(const GLTF::Mesh& mesh, bool output_broken_indices) {
+	TriStripConfig config;
+	config.constraints = setup_moby_constraints();
+	config.support_index_buffer = true;
+	config.support_instancing = false;
+	
+	TriStripPacketGenerator generator(config);
+	for(const GLTF::MeshPrimitive& primitive : mesh.primitives) {
+		if(!primitive.material.has_value()) {
+			continue;
+		}
+		std::vector<s32> indices = zero_area_tris_to_restart_bit_strip(primitive.indices);
+		generator.add_primitive(indices.data(), (s32) indices.size(), GeometryType::TRIANGLE_STRIP, *primitive.material);
+	}
+	GeometryPackets geo = generator.get_output();
+	
+	std::vector<GLTF::Mesh> output;
+	for(const GeometryPacket& packet : geo.packets) {
+		GLTF::Mesh& dest = output.emplace_back();
+		for(s32 i = 0; i < packet.primitive_count; i++) {
+			const GeometryPrimitive& src_primitive = geo.primitives[packet.primitive_begin + i];
+			GLTF::MeshPrimitive& dest_primitive = dest.primitives.emplace_back();
+			
+			dest_primitive.attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::NORMAL;
+			if(true) { // animated
+				dest_primitive.attributes_bitfield |= GLTF::JOINTS_0 | GLTF::WEIGHTS_0;
+			}
+			s32* index_begin = &geo.indices[src_primitive.index_begin];
+			s32* index_end = &geo.indices[src_primitive.index_begin + src_primitive.index_count];
+			dest_primitive.indices = restart_bit_strip_to_zero_area_tris(std::vector<s32>(index_begin, index_end));
+			dest_primitive.material = src_primitive.effective_material;
+			dest_primitive.mode = GLTF::TRIANGLE_STRIP;
+		}
+		GLTF::filter_vertices(dest, mesh.vertices, !output_broken_indices);
+	}
+	
+	return output;
+}
+
+static std::vector<TriStripConstraint> setup_moby_constraints() {
+	std::vector<TriStripConstraint> constraints;
+	
+	TriStripConstraint& vu1_vertex_buffer_size = constraints.emplace_back();
+	vu1_vertex_buffer_size.constant_cost = 0;
+	vu1_vertex_buffer_size.strip_cost = 0;
+	vu1_vertex_buffer_size.vertex_cost = 2; // position + colour
+	vu1_vertex_buffer_size.index_cost = 0;
+	vu1_vertex_buffer_size.material_cost = 0;
+	vu1_vertex_buffer_size.max_cost = 0xc2; // buffer size
+	
+	TriStripConstraint& vu1_unpacked_data_size = constraints.emplace_back();
+	vu1_unpacked_data_size.constant_cost = (0x12d + 1 + 1) * 16; // fixed index buffer offset + index header size + microprogram termination indices
+	vu1_unpacked_data_size.strip_cost = 0;
+	vu1_unpacked_data_size.vertex_cost = 0;
+	vu1_unpacked_data_size.index_cost = 4; // indices
+	vu1_unpacked_data_size.material_cost = 4 * 16; // ad gif
+	vu1_unpacked_data_size.max_cost = 0x164 * 16; // buffer size
+	vu1_unpacked_data_size.round_index_cost_up_to_multiple_of = 16;
+	
+	return constraints;
 }
 
 }

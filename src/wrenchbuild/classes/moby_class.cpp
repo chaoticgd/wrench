@@ -186,6 +186,7 @@ static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, 
 }
 
 static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
+	// Test the binary reading/writing code.
 	MOBY::MobyClassData moby = MOBY::read_class(src, config.game());
 	
 	std::vector<u8> dest;
@@ -195,6 +196,19 @@ static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConf
 	
 	bool header_matches = diff_buffers(src, dest, 0, 0x50, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 	bool data_matches = diff_buffers(src, dest, 0x50, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
+	
+	// Test the code that splits up the mesh into packets.
+	for(std::vector<MOBY::MobyPacket>* packets : {&moby.mesh.high_lod, &moby.mesh.low_lod}) {
+		std::vector<GLTF::Mesh> src_meshes = MOBY::recover_packets(*packets, -1, 1.f, moby.animation.joints.size() > 0);
+		GLTF::Mesh combined_mesh = MOBY::recover_mesh(src_meshes, "moby");
+		std::vector<GLTF::Mesh> dest_meshes = MOBY::build_mesh(combined_mesh, true);
+		for(size_t i = 0; i < std::min(src_meshes.size(), dest_meshes.size()); i++) {
+			std::string context = stringf("packet %d", (s32) i);
+			GLTF::verify_meshes_equal(src_meshes[i], dest_meshes[i], false, false, context.c_str());
+			printf("packet %d passed!\n", (s32) i);
+		}
+		verify(src_meshes.size() == dest_meshes.size(), "Packet count doesn't match.");
+	}
 	
 	return header_matches && data_matches;
 }
