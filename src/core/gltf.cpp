@@ -739,18 +739,22 @@ static bool read_attribute(Vertex* dest, MeshPrimitiveAttribute semantic, const 
 		case JOINTS_0: {
 			std::vector<std::array<s8, 3>> joints = convert_joints(accessor);
 			for(size_t i = 0; i < joints.size(); i++) {
-				dest[i].skin.joints[0] = joints[i][0];
-				dest[i].skin.joints[1] = joints[i][1];
-				dest[i].skin.joints[2] = joints[i][2];
+				for(s32 j = 0; j < 3; j++) {
+					dest[i].skin.joints[j] = joints[i][j];
+				}
 			}
 			break;
 		}
 		case WEIGHTS_0: {
 			std::vector<std::array<u8, 3>> weights = convert_weights(accessor);
 			for(size_t i = 0; i < weights.size(); i++) {
-				dest[i].skin.weights[0] = weights[i][0];
-				dest[i].skin.weights[1] = weights[i][1];
-				dest[i].skin.weights[2] = weights[i][2];
+				dest[i].skin.count = 0;
+				for(s32 j = 0; j < 3; j++) {
+					dest[i].skin.weights[j] = weights[i][j];
+					if(weights[i][j] != 0) {
+						dest[i].skin.count++;
+					}
+				}
 			}
 			break;
 		}
@@ -977,7 +981,6 @@ static std::vector<std::array<s8, 3>> convert_joints(const Accessor& accessor) {
 				joints[i][0] = accessor.bytes.at(i * 4 + 0);
 				joints[i][1] = accessor.bytes.at(i * 4 + 1);
 				joints[i][2] = accessor.bytes.at(i * 4 + 2);
-				joints[i][3] = accessor.bytes.at(i * 4 + 3);
 			}
 			break;
 		}
@@ -986,7 +989,6 @@ static std::vector<std::array<s8, 3>> convert_joints(const Accessor& accessor) {
 				joints[i][0] = accessor.bytes.at(i * 8 + 0);
 				joints[i][1] = accessor.bytes.at(i * 8 + 2);
 				joints[i][2] = accessor.bytes.at(i * 8 + 4);
-				joints[i][3] = accessor.bytes.at(i * 8 + 6);
 			}
 			break;
 		}
@@ -1003,8 +1005,8 @@ static std::vector<std::array<u8, 3>> convert_weights(const Accessor& accessor) 
 	switch(accessor.component_type) {
 		case FLOAT: {
 			for(s32 i = 0; i < accessor.count; i++) {
-				weights[i][0] = (*(f32*) &accessor.bytes.at(i * 8 + 0)) / 255.f;
-				weights[i][1] = (*(f32*) &accessor.bytes.at(i * 8 + 4)) / 255.f;
+				weights[i][0] = (u8) roundf((*(f32*) &accessor.bytes.at(i * 8 + 0)) / 255.f);
+				weights[i][1] = (u8) roundf((*(f32*) &accessor.bytes.at(i * 8 + 4)) / 255.f);
 			}
 			break;
 		}
@@ -1017,8 +1019,8 @@ static std::vector<std::array<u8, 3>> convert_weights(const Accessor& accessor) 
 		}
 		case UNSIGNED_SHORT: {
 			for(s32 i = 0; i < accessor.count; i++) {
-				weights[i][0] = (u8) ((*(u16*) &accessor.bytes.at(i * 4 + 0)) * (1 / 256.f));
-				weights[i][1] = (u8) ((*(u16*) &accessor.bytes.at(i * 4 + 2)) * (1 / 256.f));
+				weights[i][0] = (u8) roundf((*(u16*) &accessor.bytes.at(i * 4 + 0)) * (1 / 256.f));
+				weights[i][1] = (u8) roundf((*(u16*) &accessor.bytes.at(i * 4 + 2)) * (1 / 256.f));
 			}
 			break;
 		}
@@ -1040,23 +1042,24 @@ static std::vector<s32> read_indices(const Json& src, const std::vector<Accessor
 	
 	const Accessor& indices_accessor = accessors[*indices_accessor_index];
 	verify(indices_accessor.type == SCALAR, "Indices accessor has an invalid type (must be a SCALAR).");
+	
 	indices.resize(indices_accessor.count);
 	switch(indices_accessor.component_type) {
 		case UNSIGNED_BYTE: {
 			for(s32 i = 0; i < indices_accessor.count; i++) {
-				indices[i] = indices_accessor.bytes[i];
+				indices[i] = (s32) indices_accessor.bytes[i];
 			}
 			break;
 		}
 		case UNSIGNED_SHORT: {
 			for(s32 i = 0; i < indices_accessor.count; i++) {
-				indices[i] = *(u16*) &indices_accessor.bytes[i * 2];
+				indices[i] = (s32) *(u16*) &indices_accessor.bytes[i * 2];
 			}
 			break;
 		}
 		case UNSIGNED_INT: {
 			for(s32 i = 0; i < indices_accessor.count; i++) {
-				indices[i] = *(u32*) &indices_accessor.bytes[i * 4];
+				indices[i] = *(s32*) &indices_accessor.bytes[i * 4];
 			}
 			break;
 		}

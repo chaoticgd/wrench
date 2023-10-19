@@ -336,13 +336,13 @@ s64 allocate_packet_table(OutBuffer& dest, const MobyMeshSection& mesh, size_t b
 MobyMeshInfo write_moby_mesh_section(OutBuffer& dest, std::vector<MobyGifUsage>& gif_usage, s64 table_ofs, const MobyMeshSection& mesh, f32 scale, MobyFormat format) {
 	MobyMeshInfo info;
 	
-	verify_fatal(!mesh.has_packet_table | (mesh.high_lod.size() == mesh.high_lod_count));
+	verify_fatal(!mesh.has_packet_table || (mesh.high_lod.size() == mesh.high_lod_count));
 	verify(mesh.high_lod.size() < 256, "Moby class has too many packets.");
 	info.high_lod_count = mesh.high_lod_count;
-	verify_fatal(!mesh.has_packet_table | (mesh.low_lod.size() == mesh.low_lod_count));
+	verify_fatal(!mesh.has_packet_table || (mesh.low_lod.size() == mesh.low_lod_count));
 	verify(mesh.low_lod.size() < 256, "Moby class has too many low detail packets.");
 	info.low_lod_count = mesh.low_lod_count;
-	verify_fatal(!mesh.has_packet_table | (mesh.metal.size() == mesh.metal_count));
+	verify_fatal(!mesh.has_packet_table || (mesh.metal.size() == mesh.metal_count));
 	verify(mesh.metal.size() < 256, "Moby class has too many metal packets.");
 	info.metal_count = mesh.metal_count;
 	info.metal_begin = mesh.high_lod_count + mesh.low_lod_count;

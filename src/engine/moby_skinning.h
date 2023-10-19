@@ -20,6 +20,7 @@
 #define ENGINE_MOBY_SKINNING_H
 
 #include <map>
+#include <core/gltf.h>
 #include <engine/moby_vertex.h>
 
 #define VERBOSE_SKINNING(...) //__VA_ARGS__
@@ -47,7 +48,7 @@ struct VertexLocation {
 	size_t packet;
 	size_t vertex;
 	
-	//const Vertex& find_vertex_in(const std::vector<MobyPacket>& packets) const;
+	const Vertex& find_vertex_in(const std::vector<GLTF::Mesh>& packets) const;
 };
 
 struct MatrixLivenessInfo {
@@ -74,16 +75,16 @@ public:
 	Opt<MatrixAllocation> get_allocation_pre(SkinAttributes attribs);
 };
 
-s32 max_num_joints_referenced_per_packet(const std::vector<MobyPacket>& packets);
-std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobyPacket>& packets);
+s32 max_num_joints_referenced_per_packet(const std::vector<GLTF::Mesh>& packets);
+std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<GLTF::Mesh>& packets);
 struct MatrixTransferSchedule {
 	std::vector<MobyMatrixTransfer> last_packet_transfers;
 	std::vector<MobyMatrixTransfer> preloop_transfers;
 	std::vector<MobyMatrixTransfer> two_way_transfers;
 };
-MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobyPacket& packet, MobyPacketLowLevel* last_packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness);
-s32 max_num_joints_referenced_per_packet(const std::vector<MobyPacket>& packets);
-std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobyPacket>& packets);
+MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const GLTF::Mesh& packet, MobyPacketLowLevel* last_packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness);
+s32 max_num_joints_referenced_per_packet(const std::vector<GLTF::Mesh>& packets);
+std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<GLTF::Mesh>& packets);
 
 }
 

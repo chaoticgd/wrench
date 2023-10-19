@@ -146,7 +146,11 @@ struct VU0MatrixAllocator;
 struct MatrixLivenessInfo;
 
 std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes> blend_cache[64], f32 scale, bool animated);
-//MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale);
+struct PackVerticesOutput {
+	VertexTable vertex_table;
+	std::vector<s32> index_mapping;
+};
+PackVerticesOutput pack_vertices(s32 smi, const std::vector<Vertex>& input_vertices, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale);
 
 }
 

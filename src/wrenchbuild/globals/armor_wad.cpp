@@ -82,26 +82,26 @@ static void pack_gc_armor_wad(OutputStream& dest, GcArmorWadHeader& header, cons
 static void unpack_uya_armor_wad(ArmorWadAsset& dest, const UyaArmorWadHeader& header, InputStream& src, BuildConfig config) {
 	unpack_armors(dest.armors(SWITCH_FILES), src, ARRAY_PAIR(header.armors), config, "meshonly,0.145833328,true");
 	unpack_armors(dest.wrenches(SWITCH_FILES), src, ARRAY_PAIR(header.wrenches), config, "meshonly,0.0833333358,true"); // TODO: Check if this scale is correct.
-	unpack_armors(dest.multiplayer_armors(SWITCH_FILES), src, ARRAY_PAIR(header.multiplayer_armors), config, FMT_MOBY_CLASS_FAT);
+	unpack_armors(dest.multiplayer_armors(SWITCH_FILES), src, ARRAY_PAIR(header.multiplayer_armors), config, FMT_MOBY_CLASS_PHAT);
 	unpack_assets<TextureAsset>(dest.clank_textures(SWITCH_FILES), src, ARRAY_PAIR(header.clank_textures), config, FMT_TEXTURE_PIF8, true);
 }
 
 static void pack_uya_armor_wad(OutputStream& dest, UyaArmorWadHeader& header, const ArmorWadAsset& src, BuildConfig config) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), config, "meshonly");
 	pack_armors(dest, ARRAY_PAIR(header.wrenches), src.get_wrenches(), config, "meshonly");
-	pack_armors(dest, ARRAY_PAIR(header.multiplayer_armors), src.get_multiplayer_armors(), config, FMT_MOBY_CLASS_FAT);
+	pack_armors(dest, ARRAY_PAIR(header.multiplayer_armors), src.get_multiplayer_armors(), config, FMT_MOBY_CLASS_PHAT);
 	pack_assets_sa(dest, ARRAY_PAIR(header.clank_textures), src.get_clank_textures(), config, FMT_TEXTURE_PIF8);
 }
 
 static void unpack_dl_armor_wad(ArmorWadAsset& dest, const DlArmorWadHeader& header, InputStream& src, BuildConfig config) {
-	unpack_armors(dest.armors(SWITCH_FILES), src, ARRAY_PAIR(header.armors), config, FMT_MOBY_CLASS_FAT);
+	unpack_armors(dest.armors(SWITCH_FILES), src, ARRAY_PAIR(header.armors), config, FMT_MOBY_CLASS_PHAT);
 	unpack_assets<CollectionAsset>(dest.bot_textures(SWITCH_FILES), src, ARRAY_PAIR(header.bot_textures), config, FMT_COLLECTION_PIF8, true);
 	unpack_assets<CollectionAsset>(dest.landstalker_textures(SWITCH_FILES), src, ARRAY_PAIR(header.landstalker_textures), config, FMT_COLLECTION_PIF8, true);
 	unpack_assets<CollectionAsset>(dest.dropship_textures(SWITCH_FILES), src, ARRAY_PAIR(header.dropship_textures), config, FMT_COLLECTION_PIF8, true);
 }
 
 static void pack_dl_armor_wad(OutputStream& dest, DlArmorWadHeader& header, const ArmorWadAsset& src, BuildConfig config) {
-	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), config, FMT_MOBY_CLASS_FAT);
+	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), config, FMT_MOBY_CLASS_PHAT);
 	pack_assets_sa(dest, ARRAY_PAIR(header.bot_textures), src.get_bot_textures(), config, FMT_COLLECTION_PIF8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.landstalker_textures), src.get_landstalker_textures(), config, FMT_COLLECTION_PIF8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.dropship_textures), src.get_dropship_textures(), config, FMT_COLLECTION_PIF8);

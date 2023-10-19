@@ -253,6 +253,7 @@ u32 write_metal_vertex_table(OutBuffer& dest, const MetalVertexTable& src) {
 	vertex_header.unknown_c = src.unknown_c;
 	dest.write(vertex_header);
 	dest.write_multiple(src.vertices);
+	return (u32) vertex_header.vertex_count;
 }
 
 std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes> blend_cache[64], f32 scale, bool animated) {
@@ -292,18 +293,17 @@ std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes
 	
 	return output;
 }
-/*
-MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale) {
-	MobyPacketLowLevel dest{packet};
-	dest.index_mapping.resize(packet.vertices.size());
+
+PackVerticesOutput pack_vertices(s32 smi, const std::vector<Vertex>& input_vertices, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale) {
+	PackVerticesOutput output;
+	output.index_mapping.resize(input_vertices.size());
 	
 	f32 inverse_scale = 1024.f / scale;
-	
-	std::vector<bool> first_uses(packet.vertices.size(), false);
+	std::vector<bool> first_uses(input_vertices.size(), false);
 	
 	// Pack vertices that should issue a 2-way matrix blend operation on VU0.
-	for(size_t i = 0; i < packet.vertices.size(); i++) {
-		const Vertex& vertex = packet.vertices[i];
+	for(size_t i = 0; i < input_vertices.size(); i++) {
+		const Vertex& vertex = input_vertices[i];
 		if(vertex.skin.count == 2) {
 			MatrixAllocation allocation;
 			if(liveness[i].population_count != 1) {
@@ -314,10 +314,10 @@ MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAll
 			}
 			if(allocation.first_use) {
 				first_uses[i] = true;
-				dest.two_way_blend_vertex_count++;
-				dest.index_mapping[i] = dest.vertices.size();
+				output.vertex_table.two_way_blend_vertex_count++;
+				output.index_mapping[i] = output.vertex_table.vertices.size();
 				
-				MobyVertex mv = {0};
+				MobyVertex& mv = output.vertex_table.vertices.emplace_back();
 				mv.v.i.low_halfword = vertex.vertex_index & 0x1ff;
 				pack_common_attributes(mv, vertex, inverse_scale);
 				
@@ -326,27 +326,25 @@ MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAll
 				
 				auto alloc_1 = mat_alloc.get_allocation(load_1, smi);
 				auto alloc_2 = mat_alloc.get_allocation(load_2, smi);
-				verify_fatal(alloc_1 && alloc_2);
+				//verify_fatal(alloc_1 && alloc_2);
 				
-				mv.v.two_way_blend.vu0_matrix_load_addr_1 = alloc_1->address;
-				mv.v.two_way_blend.vu0_matrix_load_addr_2 = alloc_2->address;
-				mv.v.two_way_blend.weight_1 = vertex.skin.weights[0];
-				mv.v.two_way_blend.weight_2 = vertex.skin.weights[1];
-				mv.v.two_way_blend.vu0_transferred_matrix_store_addr = 0xf4;
-				if(liveness[i].population_count > 1) {
-					mv.v.two_way_blend.vu0_blended_matrix_store_addr = allocation.address;
-				} else {
-					mv.v.two_way_blend.vu0_blended_matrix_store_addr = 0xf4;
-				}
-				
-				dest.vertices.emplace_back(mv);
+				//mv.v.two_way_blend.vu0_matrix_load_addr_1 = alloc_1->address;
+				//mv.v.two_way_blend.vu0_matrix_load_addr_2 = alloc_2->address;
+				//mv.v.two_way_blend.weight_1 = vertex.skin.weights[0];
+				//mv.v.two_way_blend.weight_2 = vertex.skin.weights[1];
+				//mv.v.two_way_blend.vu0_transferred_matrix_store_addr = 0xf4;
+				//if(liveness[i].population_count > 1) {
+				//	mv.v.two_way_blend.vu0_blended_matrix_store_addr = allocation.address;
+				//} else {
+				//	mv.v.two_way_blend.vu0_blended_matrix_store_addr = 0xf4;
+				//}
 			}
 		}
 	}
 	
 	// Pack vertices that should issue a 3-way matrix blend operation on VU0.
-	for(size_t i = 0; i < packet.vertices.size(); i++) {
-		const Vertex& vertex = packet.vertices[i];
+	for(size_t i = 0; i < input_vertices.size(); i++) {
+		const Vertex& vertex = input_vertices[i];
 		if(vertex.skin.count == 3) {
 			MatrixAllocation allocation;
 			if(liveness[i].population_count != 1) {
@@ -357,10 +355,10 @@ MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAll
 			}
 			if(allocation.first_use) {
 				first_uses[i] = true;
-				dest.three_way_blend_vertex_count++;
-				dest.index_mapping[i] = dest.vertices.size();
+				output.vertex_table.three_way_blend_vertex_count++;
+				output.index_mapping[i] = output.vertex_table.vertices.size();
 				
-				MobyVertex mv = {0};
+				MobyVertex mv = output.vertex_table.vertices.emplace_back();
 				mv.v.i.low_halfword = vertex.vertex_index & 0x1ff;
 				pack_common_attributes(mv, vertex, inverse_scale);
 				
@@ -371,70 +369,64 @@ MobyPacketLowLevel pack_vertices(s32 smi, const MobyPacket& packet, VU0MatrixAll
 				auto alloc_1 = mat_alloc.get_allocation(load_1, smi);
 				auto alloc_2 = mat_alloc.get_allocation(load_2, smi);
 				auto alloc_3 = mat_alloc.get_allocation(load_3, smi);
-				verify_fatal(alloc_1 && alloc_2 && alloc_3);
+				//verify_fatal(alloc_1 && alloc_2 && alloc_3);
 				
-				mv.v.three_way_blend.vu0_matrix_load_addr_1 = alloc_1->address;
-				mv.v.three_way_blend.vu0_matrix_load_addr_2 = alloc_2->address;
-				mv.v.three_way_blend.low_halfword |= (alloc_3->address / 2) << 9;
-				mv.v.three_way_blend.weight_1 = vertex.skin.weights[0];
-				mv.v.three_way_blend.weight_2 = vertex.skin.weights[1];
-				mv.v.three_way_blend.weight_3 = vertex.skin.weights[2];
-				if(liveness[i].population_count > 1) {
-					mv.v.three_way_blend.vu0_blended_matrix_store_addr = allocation.address;
-				} else {
-					mv.v.three_way_blend.vu0_blended_matrix_store_addr = 0xf4;
-				}
-				
-				dest.vertices.emplace_back(mv);
+				//mv.v.three_way_blend.vu0_matrix_load_addr_1 = alloc_1->address;
+				//mv.v.three_way_blend.vu0_matrix_load_addr_2 = alloc_2->address;
+				//mv.v.three_way_blend.low_halfword |= (alloc_3->address / 2) << 9;
+				//mv.v.three_way_blend.weight_1 = vertex.skin.weights[0];
+				//mv.v.three_way_blend.weight_2 = vertex.skin.weights[1];
+				//mv.v.three_way_blend.weight_3 = vertex.skin.weights[2];
+				//if(liveness[i].population_count > 1) {
+				//	mv.v.three_way_blend.vu0_blended_matrix_store_addr = allocation.address;
+				//} else {
+				//	mv.v.three_way_blend.vu0_blended_matrix_store_addr = 0xf4;
+				//}
 			}
 		}
 	}
 	
 	// Pack vertices that use unblended matrices.
-	for(size_t i = 0; i < packet.vertices.size(); i++) {
-		const Vertex& vertex = packet.vertices[i];
+	for(size_t i = 0; i < input_vertices.size(); i++) {
+		const Vertex& vertex = input_vertices[i];
 		if(vertex.skin.count == 1) {
-			dest.main_vertex_count++;
-			dest.index_mapping[i] = dest.vertices.size();
+			output.vertex_table.main_vertex_count++;
+			output.index_mapping[i] = output.vertex_table.vertices.size();
 			
 			auto alloc = mat_alloc.get_allocation(vertex.skin, smi);
-			verify_fatal(alloc);
+			//verify_fatal(alloc);
 			
-			MobyVertex mv = {0};
-			mv.v.i.low_halfword = vertex.vertex_index & 0x1ff;
+			MobyVertex& mv = output.vertex_table.vertices.emplace_back();
+			//mv.v.i.low_halfword = vertex.vertex_index & 0x1ff;
 			pack_common_attributes(mv, vertex, inverse_scale);
-			mv.v.regular.vu0_matrix_load_addr = alloc->address;
-			mv.v.regular.vu0_transferred_matrix_store_addr = 0xf4;
+			//mv.v.regular.vu0_matrix_load_addr = alloc->address;
+			//mv.v.regular.vu0_transferred_matrix_store_addr = 0xf4;
 			//mv.v.regular.unused_5 = smi;
-			
-			dest.vertices.emplace_back(mv);
 		}
 	}
 	
 	// Pack vertices that use previously blended matrices.
-	for(size_t i = 0; i < packet.vertices.size(); i++) {
-		const Vertex& vertex = packet.vertices[i];
+	for(size_t i = 0; i < input_vertices.size(); i++) {
+		const Vertex& vertex = input_vertices[i];
 		if(vertex.skin.count > 1 && !first_uses[i]) {
-			dest.main_vertex_count++;
-			dest.index_mapping[i] = dest.vertices.size();
+			output.vertex_table.main_vertex_count++;
+			output.index_mapping[i] = output.vertex_table.vertices.size();
 			
 			auto alloc = mat_alloc.get_allocation(vertex.skin, smi);
-			verify_fatal(alloc);
+			//verify_fatal(alloc);
 			
-			MobyVertex mv = {0};
-			mv.v.i.low_halfword = vertex.vertex_index & 0x1ff;
+			MobyVertex& mv = output.vertex_table.vertices.emplace_back();
+			//mv.v.i.low_halfword = vertex.vertex_index & 0x1ff;
 			pack_common_attributes(mv, vertex, inverse_scale);
-			mv.v.regular.vu0_matrix_load_addr = alloc->address;
-			mv.v.regular.vu0_transferred_matrix_store_addr = 0xf4;
+			//mv.v.regular.vu0_matrix_load_addr = alloc->address;
+			//mv.v.regular.vu0_transferred_matrix_store_addr = 0xf4;
 			//mv.v.regular.unused_5 = smi;
-			
-			dest.vertices.emplace_back(mv);
 		}
 	}
 	
-	return dest;
+	return output;
 }
-*/
+
 static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inverse_scale) {
 	dest.v.x = roundf(src.pos.x * inverse_scale);
 	dest.v.y = roundf(src.pos.y * inverse_scale);

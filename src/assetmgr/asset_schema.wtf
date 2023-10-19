@@ -1488,9 +1488,9 @@ AssetType MobyClass {
 		games: [1 2 3 4]
 	}
 	
-	Hint fat {
-		syntax: "fat"
-		example: "fat"
+	Hint phat {
+		syntax: "phat"
+		example: "phat"
 		desc: "A full moby class. This is the default if no hint is specified."
 	}
 	
@@ -1503,6 +1503,10 @@ AssetType MobyClass {
 
 AssetType MobyClassCore {
 	bin_leaf: true
+	
+	FloatAttribute scale {
+		desc: "The scale multiplier used to account for the quantization of the components of the vertex positions are signed 16 bit integers. This cannot be automatically computed since animation is done in this space which can be affected by manipulators/tweakers at runtime."
+	}
 	
 	Child mesh { allowed_types: ["Mesh"] }
 	Child low_lod_mesh { allowed_types: ["Mesh"] }

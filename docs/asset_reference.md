@@ -971,14 +971,16 @@ No attributes.
 
 | Syntax | Example | Description |
 | - | - | - |
-| `fat` | `fat` | A full moby class. This is the default if no hint is specified. |
+| `phat` | `phat` | A full moby class. This is the default if no hint is specified. |
 | `meshonly,<scale>,<animated>` | `meshonly,0.5,true` | A stripped down moby class that only includes the high LOD, low LOD and multipass metal meshes. Only use this for singleplayer armors for GC and UYA. The \<scale\> and \<animated\> parameters are only used by the unpacker, so can be omitted or set to junk values for packing. |
 
 ### MobyClassCore
 
 *Attributes*
 
-No attributes.
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| scale | The scale multiplier used to account for the quantization of the components of the vertex positions are signed 16 bit integers. This cannot be automatically computed since animation is done in this space which can be affected by manipulators/tweakers at runtime. | Float | *Not yet documented.* | *Not yet documented.*  |
 
 *Children*
 

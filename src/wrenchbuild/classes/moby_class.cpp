@@ -19,14 +19,16 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <toolwads/wads.h>
+#include <assetmgr/material_asset.h>
 #include <engine/moby_low.h>
 #include <engine/moby_high.h>
 #include <wrenchbuild/tests.h>
 
 static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_moby_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint);
-static void unpack_fat_class(MobyClassAsset& dest, InputStream& src, BuildConfig config);
+static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfig config);
 static void unpack_mesh_only_class(MobyClassAsset& dest, InputStream& src, f32 scale, bool animated, BuildConfig config);
+static void pack_mesh_only_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config);
 static s32 count_materials(const CollectionAsset& materials);
 static void unpack_materials(CollectionAsset& materials, GLTF::ModelFile& gltf);
 static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
@@ -71,16 +73,33 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 			verify_not_reached("Invalid moby class hint: <animated> must be 'true' or 'false'.");
 		}
 		unpack_mesh_only_class(dest, src, scale, animated, config);
-	} else {
-		unpack_fat_class(dest, src, config);
+		return;
 	}
+	
+	unpack_phat_class(dest, src, config);
 }
 
 static void pack_moby_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint) {
-	//pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config);
+	if(g_asset_packer_dry_run) {
+		return;
+	}
+	
+	if(src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
+		pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config);
+		return;
+	}
+	
+	const char* type = next_hint(&hint);
+	bool is_mesh_only = strcmp(type, "meshonly") == 0;
+	if(is_mesh_only) {
+		pack_mesh_only_class(dest, src, config);
+		return;
+	}
+	
+	verify_not_reached("MobyClassCore asset packing not yet implemented for fat classes");
 }
 
-static void unpack_fat_class(MobyClassAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfig config) {
 	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 	
 	s32 texture_count = 0;
@@ -161,6 +180,37 @@ static void unpack_mesh_only_class(MobyClassAsset& dest, InputStream& src, f32 s
 	MeshAsset& moby_low_lod_mesh = core.low_lod_mesh();
 	moby_low_lod_mesh.set_name("moby_low_lod");
 	moby_low_lod_mesh.set_src(ref);
+	
+	core.set_scale(scale);
+}
+
+static void pack_mesh_only_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config) {
+	const MobyClassCoreAsset& core = src.get_core().as<MobyClassCoreAsset>();
+	
+	const MeshAsset& mesh_asset = core.get_mesh();
+	std::unique_ptr<InputStream> stream = mesh_asset.src().open_binary_file_for_reading();
+	GLTF::ModelFile gltf = GLTF::read_glb(stream->read_multiple<u8>(stream->size()));
+	GLTF::Node* node = GLTF::lookup_node(gltf, mesh_asset.name().c_str());
+	verify(node, "No node with name '%s'.", mesh_asset.name().c_str());
+	verify(node->mesh.has_value(), "Node with name '%s' has no mesh.", mesh_asset.name().c_str());
+	GLTF::Mesh& mesh = gltf.meshes.at(*node->mesh);
+	
+	MaterialSet material_set = read_material_assets(src.get_materials());
+	map_gltf_materials_to_wrench_materials(gltf, material_set.materials);
+	
+	auto [effectives, material_to_effective] = effective_materials(material_set.materials, MATERIAL_ATTRIB_SURFACE | MATERIAL_ATTRIB_WRAP_MODE);
+	
+	std::vector<GLTF::Mesh> gltf_packets = MOBY::split_packets(mesh, material_to_effective, false);
+	std::vector<MOBY::MobyPacket> packets = MOBY::build_packets(gltf_packets, effectives, material_set.materials, core.scale());
+	
+	MOBY::MobyMeshSection moby;
+	moby.high_lod = std::move(packets);
+	moby.high_lod_count = (u8) moby.high_lod.size();
+	moby.has_packet_table = true;
+	
+	std::vector<u8> buffer;
+	MOBY::write_mesh_only_class(buffer, moby, core.scale(), config.game());
+	dest.write_v(buffer);
 }
 
 static s32 count_materials(const CollectionAsset& materials) {
@@ -217,7 +267,7 @@ static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConf
 	for(std::vector<MOBY::MobyPacket>* packets : {&moby.mesh.high_lod, &moby.mesh.low_lod}) {
 		std::vector<GLTF::Mesh> src_meshes = MOBY::recover_packets(*packets, -1, 1.f, moby.animation.joints.size() > 0);
 		GLTF::Mesh combined_mesh = MOBY::merge_packets(src_meshes, "moby");
-		std::vector<GLTF::Mesh> dest_meshes = MOBY::split_packets(combined_mesh, true);
+		std::vector<GLTF::Mesh> dest_meshes = MOBY::split_packets(combined_mesh, {}, true);
 		for(size_t i = 0; i < std::min(src_meshes.size(), dest_meshes.size()); i++) {
 			std::string context = stringf("packet %d", (s32) i);
 			GLTF::verify_meshes_equal(src_meshes[i], dest_meshes[i], false, false, context.c_str());

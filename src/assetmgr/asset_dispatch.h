@@ -39,7 +39,7 @@ class Asset;
 #define FMT_TEXTURE_PIF4_SWIZZLED "pif,4,1,swizzled"
 #define FMT_TEXTURE_PIF8 "pif,8,unswizzled"
 #define FMT_TEXTURE_PIF8_SWIZZLED "pif,8,1,swizzled"
-#define FMT_MOBY_CLASS_FAT "fat"
+#define FMT_MOBY_CLASS_PHAT "phat"
 #define FMT_MOBY_CLASS_MESH_ONLY_ARMOR "gadget"
 #define FMT_MOBY_CLASS_MESH_ONLY_WRENCH "mission"
 #define FMT_COLLECTION_PIF8 "texlist,pif,8,1,unswizzled"

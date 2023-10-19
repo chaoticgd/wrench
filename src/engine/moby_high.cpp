@@ -23,13 +23,6 @@
 
 namespace MOBY {
 
-struct IndexMappingRecord {
-	s32 packet = -1;
-	s32 index = -1; // The index of the vertex in the vertex table.
-	s32 id = -1; // The index of the vertex in the intermediate buffer.
-	s32 dedup_out_edge = -1; // If this vertex is a duplicate, this points to the canonical vertex.
-};
-static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices);
 static std::vector<TriStripConstraint> setup_moby_constraints();
 
 #define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, packet %d has bad " message ".", o_class, (s32) i);
@@ -145,227 +138,91 @@ static std::vector<RichIndex> fake_tristripper(const std::vector<Face>& faces) {
 	return indices;
 }
 
-struct MidLevelTexture {
-	s32 texture;
-	s32 starting_index;
-};
+//struct SharedVifData {
+//	std::vector<s8> indices;
+//	std::vector<s8> secret_indices;
+//	std::vector<MobyTexturePrimitive> textures;
+//	u8 index_header_first_byte = 0xff;
+//};
+//
+//struct MobyPacket {
+//	VertexTable vertex_table;
+//	SharedVifData vif;
+//	std::vector<MobyTexCoord> sts;
+//};
 
-struct MidLevelVertex {
-	s32 canonical;
-	s32 tex_coord;
-	s32 id = 0xff;
-};
-
-struct MidLevelDuplicateVertex {
-	s32 index;
-	s32 tex_coord;
-};
-
-// Intermediate data structure used so the packets can be built in two
-// seperate passes.
-struct MidLevelSubMesh {
-	std::vector<MidLevelVertex> vertices;
-	std::vector<RichIndex> indices;
-	std::vector<MidLevelTexture> textures;
-	std::vector<MidLevelDuplicateVertex> duplicate_vertices;
-};
-
-std::vector<MobyPacket> build_packets(const Mesh& mesh, const std::vector<ColladaMaterial>& materials) {
-	static const s32 MAX_SUBMESH_TEXTURE_COUNT = 4;
-	static const s32 MAX_SUBMESH_STORED_VERTEX_COUNT = 97;
-	static const s32 MAX_SUBMESH_TOTAL_VERTEX_COUNT = 0x7f;
-	static const s32 MAX_SUBMESH_INDEX_COUNT = 196;
+std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const std::vector<EffectiveMaterial>& effectives, const std::vector<Material>& materials, f32 scale) {
+	std::vector<MobyPacket> output;
+	VU0MatrixAllocator mat_alloc(max_num_joints_referenced_per_packet(input));
+	std::vector<std::vector<MatrixLivenessInfo>> liveness = compute_matrix_liveness(input);
+	s32 last_effective_material = -1;
 	
-	std::vector<IndexMappingRecord> index_mappings(mesh.vertices.size());
-	find_duplicate_vertices(index_mappings, mesh.vertices);
-	
-	// *************************************************************************
-	// First pass
-	// *************************************************************************
-	
-	std::vector<MidLevelSubMesh> mid_packets;
-	MidLevelSubMesh mid;
-	s32 next_id = 0;
-	for(s32 i = 0; i < (s32) mesh.submeshes.size(); i++) {
-		const SubMesh& high = mesh.submeshes[i];
+	for(s32 i = 0; i < (s32) input.size(); i++) {
+		const GLTF::Mesh& src = input[i];
+		MobyPacket& dest = output.emplace_back();
 		
-		auto indices = fake_tristripper(high.faces);
-		if(indices.size() < 1) {
-			continue;
-		}
+		auto [vertex_table, index_mapping] = MOBY::pack_vertices(i, src.vertices, mat_alloc, liveness[i], scale);
+		dest.vertex_table = std::move(vertex_table);
 		
-		const ColladaMaterial& material = materials.at(high.material);
-		s32 texture = -1;
-		if(material.name.size() > 4 && memcmp(material.name.data(), "mat_", 4) == 0) {
-			texture = strtol(material.name.c_str() + 4, nullptr, 10);
-		} else {
-			fprintf(stderr, "Invalid material '%s'.", material.name.c_str());
-			continue;
-		}
+		dest.vif.index_header_first_byte = false;
 		
-		if(mid.textures.size() >= MAX_SUBMESH_TEXTURE_COUNT || mid.indices.size() >= MAX_SUBMESH_INDEX_COUNT) {
-			mid_packets.emplace_back(std::move(mid));
-			mid = MidLevelSubMesh{};
-		}
-		
-		mid.textures.push_back({texture, (s32) mid.indices.size()});
-		
-		for(size_t j = 0; j < indices.size(); j++) {
-			auto new_packet = [&]() {
-				mid_packets.emplace_back(std::move(mid));
-				mid = MidLevelSubMesh{};
-				// Handle splitting the strip up between moby packets.
-				if(j - 2 >= 0) {
-					if(!indices[j].restart) {
-						j -= 3;
-						indices[j + 1].restart = 1;
-						indices[j + 2].restart = 1;
-					} else if(!indices[j + 1].restart) {
-						j -= 2;
-						indices[j + 1].restart = 1;
-						indices[j + 2].restart = 1;
-					} else {
-						j -= 1;
-					}
-				} else {
-					// If we tried to start a tristrip at the end of the last
-					// packet but didn't push any non-restarting indices, go
-					// back to the beginning of the strip.
-					j = -1;
-				}
-			};
-			
-			RichIndex& r = indices[j];
-			IndexMappingRecord& mapping = index_mappings[r.index];
-			size_t canonical_index = r.index;
-			//if(mapping.dedup_out_edge != -1) {
-			//	canonical_index = mapping.dedup_out_edge;
-			//}
-			IndexMappingRecord& canonical = index_mappings[canonical_index];
-			
-			if(canonical.packet != mid_packets.size()) {
-				if(mid.vertices.size() >= MAX_SUBMESH_STORED_VERTEX_COUNT) {
-					new_packet();
-					continue;
-				}
-				
-				canonical.packet = mid_packets.size();
-				canonical.index = mid.vertices.size();
-				
-				mid.vertices.push_back({(s32) r.index, (s32) r.index});
-			} else if(mapping.packet != mid_packets.size()) {
-				if(canonical.id == -1) {
-					canonical.id = next_id++;
-					mid.vertices.at(canonical.index).id = canonical.id;
-				}
-				mid.duplicate_vertices.push_back({canonical.id, (s32) r.index});
-			}
-			
-			if(mid.indices.size() >= MAX_SUBMESH_INDEX_COUNT - 4) {
-				new_packet();
+		for(const GLTF::MeshPrimitive& primitive : src.primitives) {
+			if(!primitive.material.has_value()) {
 				continue;
 			}
 			
-			mid.indices.push_back({(u32) canonical.index, r.restart, r.is_dupe});
-		}
-	}
-	if(mid.indices.size() > 0) {
-		mid_packets.emplace_back(std::move(mid));
-	}
-	
-	// *************************************************************************
-	// Second pass
-	// *************************************************************************
-	
-	//std::vector<MobyPacket> low_packets;
-	//for(const MidLevelSubMesh& mid : mid_packets) {
-	//	MobyPacket low;
-	//	
-	//	for(const MidLevelVertex& vertex : mid.vertices) {
-	//		const Vertex& high_vert = mesh.vertices[vertex.canonical];
-	//		low.vertices.emplace_back(high_vert);
-	//		
-	//		const glm::vec2& tex_coord = mesh.vertices[vertex.tex_coord].tex_coord;
-	//		s16 s = tex_coord.x * (INT16_MAX / 8.f);
-	//		s16 t = tex_coord.y * (INT16_MAX / 8.f);
-	//		low.sts.push_back({s, t});
-	//	}
-	//	
-	//	s32 texture_index = 0;
-	//	for(size_t i = 0; i < mid.indices.size(); i++) {
-	//		RichIndex cur = mid.indices[i];
-	//		u8 out;
-	//		if(cur.is_dupe) {
-	//			out = mid.vertices.size() + cur.index;
-	//		} else {
-	//			out = cur.index;
-	//		}
-	//		if(texture_index < mid.textures.size() && mid.textures.at(texture_index).starting_index >= i) {
-	//			verify_fatal(cur.restart);
-	//			low.indices.push_back(0);
-	//			low.secret_indices.push_back(out + 1);
-	//			texture_index++;
-	//		} else {
-	//			low.indices.push_back(cur.restart ? (out + 0x81) : (out + 1));
-	//		}
-	//	}
-	//	
-	//	// These fake indices are required to signal to the microprogram that it
-	//	// should terminate.
-	//	low.indices.push_back(1);
-	//	low.indices.push_back(1);
-	//	low.indices.push_back(1);
-	//	low.indices.push_back(0);
-	//	
-	//	for(const MidLevelTexture& tex : mid.textures) {
-	//		MobyTexturePrimitive primitive = {0};
-	//		primitive.d1_tex1_1.data_lo = 0xff92; // Not sure.
-	//		primitive.d1_tex1_1.data_hi = 0x4;
-	//		primitive.d1_tex1_1.address = GIF_AD_TEX1_1;
-	//		primitive.d1_tex1_1.pad_a = 0x41a0;
-	//		primitive.d2_clamp_1.address = GIF_AD_CLAMP_1;
-	//		primitive.d3_tex0_1.address = GIF_AD_TEX0_1;
-	//		primitive.d3_tex0_1.data_lo = tex.texture;
-	//		primitive.d4_miptbp1_1.address = 0x34;
-	//		low.textures.push_back(primitive);
-	//	}
-	//	
-	//	for(const MidLevelDuplicateVertex& dupe : mid.duplicate_vertices) {
-	//		low.duplicate_vertices.push_back(dupe.index);
-	//		
-	//		const glm::vec2& tex_coord = mesh.vertices[dupe.tex_coord].tex_coord;
-	//		s16 s = vu_float_to_fixed12(tex_coord.s);
-	//		s16 t = vu_float_to_fixed12(tex_coord.t);
-	//		low.sts.push_back({s, t});
-	//	}
-	//	
-	//	low_packets.emplace_back(std::move(low));
-	//}
-	//
-	//return low_packets;
-	return {};
-}
-
-static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices) {
-	std::vector<size_t> indices(vertices.size());
-	for(size_t i = 0; i < vertices.size(); i++) {
-		indices[i] = i;
-	}
-	std::sort(BEGIN_END(indices), [&](size_t l, size_t r) {
-		return vertices[l] < vertices[r];
-	});
-	
-	for(size_t i = 1; i < indices.size(); i++) {
-		const Vertex& prev = vertices[indices[i - 1]];
-		const Vertex& cur = vertices[indices[i]];
-		if(vec3_equal_eps(prev.pos, cur.pos) && vec3_equal_eps(prev.normal, cur.normal)) {
-			size_t vert = indices[i - 1];
-			if(index_mapping[vert].dedup_out_edge != -1) {
-				vert = index_mapping[vert].dedup_out_edge;
+			bool use_secret_index = false;
+			if(*primitive.material != last_effective_material) {
+				s32 material_index = effectives.at(*primitive.material).materials.at(0);
+				const Material& material = materials.at(material_index);
+				verify(material.surface.type == MaterialSurfaceType::TEXTURE, "Material needs a texture.");
+				
+				MobyTexturePrimitive& ad_gif = dest.vif.textures.emplace_back();
+				ad_gif.d1_tex1_1.data_lo = 0xff92; // lod k
+				ad_gif.d1_tex1_1.data_hi = 0x4;
+				ad_gif.d1_tex1_1.address = GIF_AD_TEX1_1;
+				ad_gif.d1_tex1_1.pad_a = 0x41a0;
+				ad_gif.d2_clamp_1.address = GIF_AD_CLAMP_1;
+				ad_gif.d3_tex0_1.address = GIF_AD_TEX0_1;
+				ad_gif.d3_tex0_1.data_lo = material.surface.texture;
+				ad_gif.d4_miptbp1_1.address = 0x34;
+				
+				last_effective_material = *primitive.material;
+				use_secret_index = true;
 			}
-			index_mapping[indices[i]].dedup_out_edge = vert;
+			
+			std::vector<s32> indices = zero_area_tris_to_restart_bit_strip(primitive.indices);
+			
+			for(size_t j = 0; j < indices.size(); j++) {
+				s32 index = indices[j] & ~(1 << 31);
+				bool restart_bit = (indices[j] & (1 << 31)) != 0;
+				s32 mapped_index = index_mapping.at(index);
+				if(use_secret_index) {
+					dest.vif.indices.emplace_back(0);
+					dest.vif.secret_indices.emplace_back(mapped_index);
+					use_secret_index = false;
+				} else {
+					dest.vif.indices.emplace_back(index | (restart_bit << 7));
+				}
+			}
+		}
+		
+		// These fake indices are required to signal to the microprogram that it
+		// should terminate.
+		dest.vif.indices.push_back(1);
+		dest.vif.indices.push_back(1);
+		dest.vif.indices.push_back(1);
+		dest.vif.indices.push_back(0);
+		
+		for(const Vertex& vertex : src.vertices) {
+			//const glm::vec2& tex_coord = mesh.vertices[vertex.tex_coord].tex_coord;
+			//s16 s = vu_float_to_fixed12(tex_coord.x);
+			//s16 t = vu_float_to_fixed12(tex_coord.y);
+			//low.sts.push_back({s, t});
 		}
 	}
+	
+	return output;
 }
 
 GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string> name) {
@@ -388,11 +245,16 @@ GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string
 	return output;
 }
 
-std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, bool output_broken_indices) {
+std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, const std::vector<s32>& material_to_effective, bool output_broken_indices) {
 	TriStripConfig config;
 	config.constraints = setup_moby_constraints();
 	config.support_index_buffer = true;
 	config.support_instancing = false;
+	
+	u32 attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::NORMAL;
+	for(const GLTF::MeshPrimitive& primitive : mesh.primitives) {
+		attributes_bitfield |= primitive.attributes_bitfield;
+	}
 	
 	TriStripPacketGenerator generator(config);
 	for(const GLTF::MeshPrimitive& primitive : mesh.primitives) {
@@ -400,7 +262,8 @@ std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, bool output_broken
 			continue;
 		}
 		std::vector<s32> indices = zero_area_tris_to_restart_bit_strip(primitive.indices);
-		generator.add_primitive(indices.data(), (s32) indices.size(), GeometryType::TRIANGLE_STRIP, *primitive.material);
+		s32 effective_material = material_to_effective.at(*primitive.material);
+		generator.add_primitive(indices.data(), (s32) indices.size(), GeometryType::TRIANGLE_STRIP, effective_material);
 	}
 	GeometryPackets geo = generator.get_output();
 	
@@ -411,10 +274,7 @@ std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, bool output_broken
 			const GeometryPrimitive& src_primitive = geo.primitives[packet.primitive_begin + i];
 			GLTF::MeshPrimitive& dest_primitive = dest.primitives.emplace_back();
 			
-			dest_primitive.attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::NORMAL;
-			if(true) { // animated
-				dest_primitive.attributes_bitfield |= GLTF::JOINTS_0 | GLTF::WEIGHTS_0;
-			}
+			dest_primitive.attributes_bitfield = attributes_bitfield;
 			s32* index_begin = &geo.indices[src_primitive.index_begin];
 			s32* index_end = &geo.indices[src_primitive.index_begin + src_primitive.index_count];
 			dest_primitive.indices = restart_bit_strip_to_zero_area_tris(std::vector<s32>(index_begin, index_end));

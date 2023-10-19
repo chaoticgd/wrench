@@ -43,7 +43,7 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 		unpack_level_materials(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game(), stashed ? moby_stash_addr : -1);
 		
 		if(entry.offset_in_asset_wad != 0) {
-			unpack_asset(asset, data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config, FMT_MOBY_CLASS_FAT);
+			unpack_asset(asset, data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config, FMT_MOBY_CLASS_PHAT);
 		}
 		
 		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.absolute_link());
@@ -57,7 +57,7 @@ void pack_moby_classes(OutputStream& index, OutputStream& core, const Collection
 			MobyClassEntry entry = {0};
 			entry.o_class = child.id();
 			if(child.has_core()) {
-				entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child, config, 0x40, FMT_MOBY_CLASS_FAT).offset;
+				entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child, config, 0x40, FMT_MOBY_CLASS_PHAT).offset;
 			}
 			if(!g_asset_packer_dry_run) {
 				write_level_texture_indices(entry.textures, textures, texture_index, MOBY_TEXTURE_TABLE);

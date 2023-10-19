@@ -28,7 +28,7 @@ void prepare_skin_matrices(const std::vector<MobyMatrixTransfer>& preloop_matrix
 		verify(transfer.vu0_dest_addr % 4 == 0, "Unaligned pre-loop joint address 0x%llx.", transfer.vu0_dest_addr);
 		if(!animated && transfer.spr_joint_index == 0) {
 			// If the mesh isn't animated, use the blend shape matrix (identity matrix).
-			blend_cache[transfer.vu0_dest_addr / 0x4] = SkinAttributes{1, {-1, 0, 0}, {255, 0, 0}};
+			blend_cache[transfer.vu0_dest_addr / 0x4] = SkinAttributes{0, {0, 0, 0}, {0, 0, 0}};
 		} else {
 			blend_cache[transfer.vu0_dest_addr / 0x4] = SkinAttributes{1, {(s8) transfer.spr_joint_index, 0, 0}, {255, 0, 0}};
 		}
@@ -163,16 +163,15 @@ SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64], const 
 	return attribs;
 }
 
-//const Vertex& VertexLocation::find_vertex_in(const std::vector<MobyPacket>& packets) const {
-//	return packets[packet].vertex_table.vertices[vertex];
-//}
+const Vertex& VertexLocation::find_vertex_in(const std::vector<GLTF::Mesh>& packets) const {
+	return packets[packet].vertices[vertex];
+}
 
-s32 max_num_joints_referenced_per_packet(const std::vector<MobyPacket>& packets) {
-	/*
+s32 max_num_joints_referenced_per_packet(const std::vector<GLTF::Mesh>& packets) {
 	// This seems suboptimal but it's what Insomniac did.
 	s32 max_joints_per_packet = 0;
 	for(size_t i = 0; i < packets.size(); i++) {
-		const MobyPacket& packet = packets[i];
+		const GLTF::Mesh& packet = packets[i];
 		
 		std::set<u8> joints;
 		for(size_t j = 0; j < packet.vertices.size(); j++) {
@@ -185,11 +184,9 @@ s32 max_num_joints_referenced_per_packet(const std::vector<MobyPacket>& packets)
 		max_joints_per_packet = std::max(max_joints_per_packet, (s32) joints.size());
 	}
 	return max_joints_per_packet;
-	*/
 }
 
-std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobyPacket>& packets) {
-	/*
+std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<GLTF::Mesh>& packets) {
 	std::vector<VertexLocation> mapping;
 	for(size_t i = 0; i < packets.size(); i++) {
 		for(size_t j = 0; j < packets[i].vertices.size(); j++) {
@@ -202,7 +199,7 @@ std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::
 	});
 	
 	std::vector<std::vector<MatrixLivenessInfo>> liveness;
-	for(const MobyPacket& packet : packets) {
+	for(const GLTF::Mesh& packet : packets) {
 		liveness.emplace_back(packet.vertices.size(), MatrixLivenessInfo{});
 	}
 	
@@ -243,13 +240,11 @@ std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::
 		process_run(start_of_run, mapping.size());
 	}
 	
-	return liveness;*/
-	return {};
+	return liveness;
 }
 
 
-MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobyPacket& packet, MobyPacketLowLevel* last_packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness) {
-	/*
+MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const GLTF::Mesh& packet, VertexTable* last_packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness) {
 	// Determine which slots in VU0 memory are in use by the previous packet
 	// while we are trying to do transfers for the current packet.
 	std::vector<bool> slots_in_use(0x40, false);
@@ -401,8 +396,7 @@ MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobyPacket& pack
 		}
 	}
 	
-	return schedule;*/
-	return {};
+	return schedule;
 }
 
 VU0MatrixAllocator::VU0MatrixAllocator(s32 max_joints_per_packet) {

@@ -170,7 +170,7 @@ Note that the above table shows the fields in little endian order. In a hex edit
 | `ID`                | ID number (explained below).                                                                            |
 | `U`                 | Unused byte.                                                                                            |
 
-The first 9 bits of each vertex v[i] is an ID which determines at which index vertex v[i-7] will be written into an intermediate buffer if at all. There are epilogue vertices off the end of the buffer which are used to store the last few ID values. If these padding vertices are used up, the remaining IDs will be stored in the second half of the last epilogue vertex.
+The first 9 bits of each vertex v[i] is an ID which determines at which index vertex v[i-7] will be written into an intermediate buffer if at all. There are epilogue vertices off the end of the buffer which are used to store the last few ID values. If these vertices are used up, the remaining IDs will be stored in the second half of the last epilogue vertex.
 
 ### Blending
 
