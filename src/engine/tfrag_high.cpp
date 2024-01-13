@@ -128,29 +128,6 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 		// Figure out which vertices belong to which tfaces.
 		size_t tface_count = propagate_tface_information(vertices, tfrag, vertex_infos);
 		
-		// Create the vertices.
-		size_t vertex_base = mesh->vertices.size();
-		for(const TfragVertexInfo& src : vertex_infos) {
-			Vertex& dest = mesh->vertices.emplace_back();
-			s16 index = src.vertex / 2;
-			verify_fatal(index >= 0 && index < vertices.size());
-			const TfragVertexPosition& pos = *vertices[index].position;
-			dest.pos.x = (tfrag.base_position.vif1_r0 + pos.x) / 1024.f;
-			dest.pos.y = (tfrag.base_position.vif1_r1 + pos.y) / 1024.f;
-			dest.pos.z = (tfrag.base_position.vif1_r2 + pos.z) / 1024.f;
-			dest.tex_coord.s = vu_fixed12_to_float(src.s);
-			dest.tex_coord.t = vu_fixed12_to_float(src.t);
-			const TfragRgba& colour = tfrag.rgbas.at(index);
-			dest.colour.r = colour.r;
-			dest.colour.g = colour.g;
-			dest.colour.b = colour.b;
-			if(colour.a < 0x80) {
-				dest.colour.a = colour.a * 2;
-			} else {
-				dest.colour.a = 255;
-			}
-		}
-		
 		// Create the faces.
 		std::vector<s32> tfaces(tface_count, -1);
 		std::vector<TfragFace> lod_0_faces = recover_faces(tfrag.lod_0_strips, tfrag.lod_0_indices);
@@ -174,12 +151,61 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 				submesh = &mesh->submeshes.at(0);
 			}
 			
+			// create unique vertices per face
+			s32 vertex_base = mesh->vertices.size();
+			float uv_avg_s = 0.f;
+			float uv_avg_t = 0.f;
+			int face_count = 0;
+			for (s32 i = 0; i < 4; i++) {
+				if(face.indices[i] < 0) break;
+				const TfragVertexInfo& src = vertex_infos[face.indices[i]];
+
+				Vertex& dest = mesh->vertices.emplace_back();
+				s16 index = src.vertex / 2;
+				verify_fatal(index >= 0 && index < vertices.size());
+				const TfragVertexPosition& pos = *vertices[index].position;
+				dest.pos.x = (tfrag.base_position.vif1_r0 + pos.x) / 1024.f;
+				dest.pos.y = (tfrag.base_position.vif1_r1 + pos.y) / 1024.f;
+				dest.pos.z = (tfrag.base_position.vif1_r2 + pos.z) / 1024.f;
+				dest.tex_coord.s = vu_fixed12_to_float(src.s);
+				dest.tex_coord.t = vu_fixed12_to_float(src.t);
+				const TfragRgba& colour = tfrag.rgbas.at(index);
+				dest.colour.r = colour.r;
+				dest.colour.g = colour.g;
+				dest.colour.b = colour.b;
+				if(colour.a < 0x80) {
+					dest.colour.a = colour.a * 2;
+				} else {
+					dest.colour.a = 255;
+				}
+
+				uv_avg_s += dest.tex_coord.s;
+				uv_avg_t += dest.tex_coord.t;
+				face_count += 1;
+			}
+
+			// fix uv wrapping
+			uv_avg_s = uv_avg_s / (float) face_count;
+			uv_avg_t = uv_avg_t / (float) face_count;
+			for(s32 j = vertex_base; j < (s32) mesh->vertices.size(); j++) {
+				auto s = mesh->vertices[j].tex_coord.s - (int) uv_avg_s;
+				auto t = mesh->vertices[j].tex_coord.t - (int) uv_avg_t;
+
+				while(s > 1) s -= 1;
+				while(s < 0) s += 1;
+				while(t > 1) t -= 1;
+				while(t < 0) t += 1;
+
+				mesh->vertices[j].tex_coord.s = s;
+				mesh->vertices[j].tex_coord.t = t;
+			}
+
 			// Add the new face.
 			Face& f = submesh->faces.emplace_back();
-			f.v0 = vertex_base + face.indices[0];
-			f.v1 = vertex_base + face.indices[1];
-			f.v2 = vertex_base + face.indices[2];
-			f.v3 = (face.indices[3] > -1) ? (vertex_base + face.indices[3]) : -1;
+			f.v0 = vertex_base + 0;
+			f.v1 = vertex_base + 1;
+			f.v2 = vertex_base + 2;
+			f.v3 = (face.indices[3] > -1) ? (vertex_base + 3) : -1;
 		}
 	}
 	

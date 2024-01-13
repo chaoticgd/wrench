@@ -213,23 +213,44 @@ ColladaScene recover_tie_class(const TieClass& tie) {
 	
 	for(const TiePacket& packet : tie.lods[0].packets) {
 		for(const TiePrimitive& primitive : packet.primitives) {
-			s32 base_vertex = (s32) mesh.vertices.size();
 			
 			SubMesh& submesh = mesh.submeshes.emplace_back();
 			submesh.material = primitive.material_index;
 			
-			for(s32 i = 0; i < (s32) primitive.vertices.size(); i++) {
-				Vertex& dest = mesh.vertices.emplace_back();
-				const TieDinkyVertex& src = primitive.vertices[i];
-				dest.pos.x = src.x * (tie.scale / 1024.f);
-				dest.pos.y = src.y * (tie.scale / 1024.f);
-				dest.pos.z = src.z * (tie.scale / 1024.f);
-				dest.tex_coord.s = vu_fixed12_to_float(src.s);
-				dest.tex_coord.t = vu_fixed12_to_float(src.t);
-				
-				if(i >= 2) {
-					submesh.faces.emplace_back(base_vertex + i - 2, base_vertex + i - 1, base_vertex + i);
+			for(s32 i = 2; i < (s32) primitive.vertices.size(); i++) {
+				s32 base_vertex = (s32) mesh.vertices.size();
+				float uv_avg_s = 0.f;
+				float uv_avg_t = 0.f;
+
+				// create unique vertex per triangle in tristrip
+				for (s32 j = 0; j < 3; j++) {
+					Vertex& dest = mesh.vertices.emplace_back();
+					const TieDinkyVertex& src = primitive.vertices[(i - 2) + j];
+					dest.pos.x = src.x * (tie.scale / 1024.f);
+					dest.pos.y = src.y * (tie.scale / 1024.f);
+					dest.pos.z = src.z * (tie.scale / 1024.f);
+					dest.tex_coord.s = vu_fixed12_to_float(src.s);
+					dest.tex_coord.t = vu_fixed12_to_float(src.t);
+					
+					uv_avg_s += dest.tex_coord.s / 3.f;
+					uv_avg_t += dest.tex_coord.t / 3.f;
 				}
+
+				// fix uv wrapping
+				for(s32 j = 0; j < 3; j++) {
+					auto s = mesh.vertices[base_vertex + j].tex_coord.s - (int) uv_avg_s;
+					auto t = mesh.vertices[base_vertex + j].tex_coord.t - (int) uv_avg_t;
+
+					while(s > 1) s -= 1;
+					while(s < 0) s += 1;
+					while(t > 1) t -= 1;
+					while(t < 0) t += 1;
+
+					mesh.vertices[base_vertex + j].tex_coord.s = s;
+					mesh.vertices[base_vertex + j].tex_coord.t = t;
+				}
+
+				submesh.faces.emplace_back(base_vertex + 0, base_vertex + 1, base_vertex + 2);
 			}
 		}
 	}
