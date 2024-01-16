@@ -128,11 +128,6 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 		// Figure out which vertices belong to which tfaces.
 		size_t tface_count = propagate_tface_information(vertices, tfrag, vertex_infos);
 
-		if(tfrag.common_textures.size() == 2 && tfrag.common_textures[0].d1_tex0_1.data_lo == 33 &&
-			tfrag.common_textures[1].d1_tex0_1.data_lo == 51) {
-			auto a = false;
-		}
-
 		// Create the faces.
 		std::vector<s32> tfaces(tface_count, -1);
 		std::vector<TfragFace> lod_0_faces = recover_faces(tfrag.lod_0_strips, tfrag.lod_0_indices);
