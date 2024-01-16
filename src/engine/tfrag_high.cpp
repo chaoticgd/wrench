@@ -127,14 +127,22 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 		
 		// Figure out which vertices belong to which tfaces.
 		size_t tface_count = propagate_tface_information(vertices, tfrag, vertex_infos);
-		
+
+		if(tfrag.common_textures.size() == 2 && tfrag.common_textures[0].d1_tex0_1.data_lo == 33 &&
+			tfrag.common_textures[1].d1_tex0_1.data_lo == 51) {
+			auto a = false;
+		}
+
 		// Create the faces.
 		std::vector<s32> tfaces(tface_count, -1);
 		std::vector<TfragFace> lod_0_faces = recover_faces(tfrag.lod_0_strips, tfrag.lod_0_indices);
 		for(const TfragFace& face : lod_0_faces) {
 			// Identify which tface this face is a part of.
 			s32 tface_index = map_face_to_tface(face, vertices, vertex_infos);
-			
+			auto texture = tfrag.common_textures.at(face.ad_gif);
+			bool clamp_u = texture.d3_clamp_1.data_lo == 1;
+			bool clamp_v = texture.d3_clamp_1.data_hi == 1;
+
 			// Create a submesh for this tface if it doesn't already exist.
 			SubMesh* submesh = nullptr;
 			if(tface_index > -1) {
@@ -143,7 +151,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 				if(submesh_index == -1) {
 					submesh_index = (s32) mesh->submeshes.size();
 					submesh = &mesh->submeshes.emplace_back();
-					submesh->material = tfrag.common_textures.at(face.ad_gif).d1_tex0_1.data_lo;
+					submesh->material = texture.d1_tex0_1.data_lo;
 				} else {
 					submesh = &mesh->submeshes.at(submesh_index);
 				}
@@ -185,21 +193,32 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 			}
 
 			// fix uv wrapping
+			// if negative, shift over 1 so that [-1,0] becomes [0,1]
 			uv_avg_s = uv_avg_s / (float) face_count;
 			uv_avg_t = uv_avg_t / (float) face_count;
+			if(uv_avg_s < 0) uv_avg_s -= 1;
+			if(uv_avg_t < 0) uv_avg_t -= 1;
 			for(s32 j = vertex_base; j < (s32) mesh->vertices.size(); j++) {
 				auto s = mesh->vertices[j].tex_coord.s - (int) uv_avg_s;
 				auto t = mesh->vertices[j].tex_coord.t - (int) uv_avg_t;
 
-				while(s > 1) s -= 1;
-				while(s < 0) s += 1;
-				while(t > 1) t -= 1;
-				while(t < 0) t += 1;
+				if(clamp_u) {
+					while(s > 1)
+						s -= 1;
+					while(s < 0)
+						s += 1;
+				}
+				if(clamp_v) {
+					while(t > 1)
+						t -= 1;
+					while(t < 0)
+						t += 1;
+				}
 
 				mesh->vertices[j].tex_coord.s = s;
 				mesh->vertices[j].tex_coord.t = t;
 			}
-
+			
 			// Add the new face.
 			Face& f = submesh->faces.emplace_back();
 			f.v0 = vertex_base + 0;
@@ -270,7 +289,7 @@ static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strip
 		if(vertex_count <= 0) {
 			if(vertex_count == 0) {
 				break;
-			} else if(strip.end_of_packet_flag >= 0) {
+			} else if(strip.ad_gif_offset >= 0) {
 				active_ad_gif = strip.ad_gif_offset / 0x5;
 			}
 			vertex_count += 128;

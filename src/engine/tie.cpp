@@ -216,6 +216,8 @@ ColladaScene recover_tie_class(const TieClass& tie) {
 			
 			SubMesh& submesh = mesh.submeshes.emplace_back();
 			submesh.material = primitive.material_index;
+			auto clamp_u = tie.ad_gifs[primitive.material_index].d4_clamp_1.data_lo == 1;
+			auto clamp_v = tie.ad_gifs[primitive.material_index].d4_clamp_1.data_hi == 1;
 			
 			for(s32 i = 2; i < (s32) primitive.vertices.size(); i++) {
 				s32 base_vertex = (s32) mesh.vertices.size();
@@ -237,14 +239,25 @@ ColladaScene recover_tie_class(const TieClass& tie) {
 				}
 
 				// fix uv wrapping
+				// if negative, shift over 1 so that [-1,0] becomes [0,1]
+				if(uv_avg_s < 0) uv_avg_s -= 1;
+				if(uv_avg_t < 0) uv_avg_t -= 1;
 				for(s32 j = 0; j < 3; j++) {
 					auto s = mesh.vertices[base_vertex + j].tex_coord.s - (int) uv_avg_s;
 					auto t = mesh.vertices[base_vertex + j].tex_coord.t - (int) uv_avg_t;
 
-					while(s > 1) s -= 1;
-					while(s < 0) s += 1;
-					while(t > 1) t -= 1;
-					while(t < 0) t += 1;
+					if(clamp_u) {
+						while(s > 1)
+							s -= 1;
+						while(s < 0)
+							s += 1;
+					}
+					if(clamp_v) {
+						while(t > 1)
+							t -= 1;
+						while(t < 0)
+							t += 1;
+					}
 
 					mesh.vertices[base_vertex + j].tex_coord.s = s;
 					mesh.vertices[base_vertex + j].tex_coord.t = t;
