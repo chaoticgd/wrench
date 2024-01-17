@@ -201,6 +201,8 @@ ColladaScene recover_tie_class(const TieClass& tie) {
 		ColladaMaterial& material = scene.materials.emplace_back();
 		material.name = stringf("%d", i);
 		material.surface = MaterialSurface(i);
+		material.wrap_mode_s = tie.ad_gifs[i].d4_clamp_1.data_lo == 1 ? WrapMode::CLAMP : WrapMode::REPEAT;
+		material.wrap_mode_t = tie.ad_gifs[i].d4_clamp_1.data_hi == 1 ? WrapMode::CLAMP : WrapMode::REPEAT;
 	}
 	
 	for(s32 i = 0; i < (s32) tie.ad_gifs.size(); i++) {
@@ -216,13 +218,9 @@ ColladaScene recover_tie_class(const TieClass& tie) {
 			
 			SubMesh& submesh = mesh.submeshes.emplace_back();
 			submesh.material = primitive.material_index;
-			auto clamp_u = tie.ad_gifs[primitive.material_index].d4_clamp_1.data_lo == 1;
-			auto clamp_v = tie.ad_gifs[primitive.material_index].d4_clamp_1.data_hi == 1;
 			
 			for(s32 i = 2; i < (s32) primitive.vertices.size(); i++) {
 				s32 base_vertex = (s32) mesh.vertices.size();
-				float uv_avg_s = 0.f;
-				float uv_avg_t = 0.f;
 
 				// create unique vertex per triangle in tristrip
 				for (s32 j = 0; j < 3; j++) {
@@ -231,36 +229,8 @@ ColladaScene recover_tie_class(const TieClass& tie) {
 					dest.pos.x = src.x * (tie.scale / 1024.f);
 					dest.pos.y = src.y * (tie.scale / 1024.f);
 					dest.pos.z = src.z * (tie.scale / 1024.f);
-					dest.tex_coord.s = vu_fixed12_to_float(src.s);
-					dest.tex_coord.t = vu_fixed12_to_float(src.t);
-					
-					uv_avg_s += dest.tex_coord.s / 3.f;
-					uv_avg_t += dest.tex_coord.t / 3.f;
-				}
-
-				// fix uv wrapping
-				// if negative, shift over 1 so that [-1,0] becomes [0,1]
-				if(uv_avg_s < 0) uv_avg_s -= 1;
-				if(uv_avg_t < 0) uv_avg_t -= 1;
-				for(s32 j = 0; j < 3; j++) {
-					auto s = mesh.vertices[base_vertex + j].tex_coord.s - (int) uv_avg_s;
-					auto t = mesh.vertices[base_vertex + j].tex_coord.t - (int) uv_avg_t;
-
-					if(clamp_u) {
-						while(s > 1)
-							s -= 1;
-						while(s < 0)
-							s += 1;
-					}
-					if(clamp_v) {
-						while(t > 1)
-							t -= 1;
-						while(t < 0)
-							t += 1;
-					}
-
-					mesh.vertices[base_vertex + j].tex_coord.s = s;
-					mesh.vertices[base_vertex + j].tex_coord.t = t;
+					dest.tex_coord.s = vu_fixed12_to_float((s16) src.s);
+					dest.tex_coord.t = vu_fixed12_to_float((s16) src.t);
 				}
 
 				submesh.faces.emplace_back(base_vertex + 0, base_vertex + 1, base_vertex + 2);

@@ -29,6 +29,8 @@
 struct ColladaMaterial {
 	std::string name;
 	MaterialSurface surface;
+	WrapMode wrap_mode_s = WrapMode::REPEAT;
+	WrapMode wrap_mode_t = WrapMode::REPEAT;
 	s32 collision_id = -1; // Only used by the collision code.
 	ColladaMaterial() {}
 	ColladaMaterial(const Material& material)
@@ -38,6 +40,8 @@ struct ColladaMaterial {
 		Material material;
 		material.name = name;
 		material.surface = surface;
+		material.wrap_mode_s = wrap_mode_s;
+		material.wrap_mode_t = wrap_mode_t;
 		return material;
 	}
 };

@@ -135,8 +135,6 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 			// Identify which tface this face is a part of.
 			s32 tface_index = map_face_to_tface(face, vertices, vertex_infos);
 			auto texture = tfrag.common_textures.at(face.ad_gif);
-			bool clamp_u = texture.d3_clamp_1.data_lo == 1;
-			bool clamp_v = texture.d3_clamp_1.data_hi == 1;
 
 			// Create a submesh for this tface if it doesn't already exist.
 			SubMesh* submesh = nullptr;
@@ -156,9 +154,6 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 			
 			// create unique vertices per face
 			s32 vertex_base = mesh->vertices.size();
-			float uv_avg_s = 0.f;
-			float uv_avg_t = 0.f;
-			int face_count = 0;
 			for (s32 i = 0; i < 4; i++) {
 				if(face.indices[i] < 0) break;
 				const TfragVertexInfo& src = vertex_infos[face.indices[i]];
@@ -170,8 +165,8 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 				dest.pos.x = (tfrag.base_position.vif1_r0 + pos.x) / 1024.f;
 				dest.pos.y = (tfrag.base_position.vif1_r1 + pos.y) / 1024.f;
 				dest.pos.z = (tfrag.base_position.vif1_r2 + pos.z) / 1024.f;
-				dest.tex_coord.s = vu_fixed12_to_float(src.s);
-				dest.tex_coord.t = vu_fixed12_to_float(src.t);
+				dest.tex_coord.s = vu_fixed12_to_float((s16) src.s);
+				dest.tex_coord.t = vu_fixed12_to_float((s16) src.t);
 				const TfragRgba& colour = tfrag.rgbas.at(index);
 				dest.colour.r = colour.r;
 				dest.colour.g = colour.g;
@@ -181,39 +176,8 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 				} else {
 					dest.colour.a = 255;
 				}
-
-				uv_avg_s += dest.tex_coord.s;
-				uv_avg_t += dest.tex_coord.t;
-				face_count += 1;
 			}
 
-			// fix uv wrapping
-			// if negative, shift over 1 so that [-1,0] becomes [0,1]
-			uv_avg_s = uv_avg_s / (float) face_count;
-			uv_avg_t = uv_avg_t / (float) face_count;
-			if(uv_avg_s < 0) uv_avg_s -= 1;
-			if(uv_avg_t < 0) uv_avg_t -= 1;
-			for(s32 j = vertex_base; j < (s32) mesh->vertices.size(); j++) {
-				auto s = mesh->vertices[j].tex_coord.s - (int) uv_avg_s;
-				auto t = mesh->vertices[j].tex_coord.t - (int) uv_avg_t;
-
-				if(clamp_u) {
-					while(s > 1)
-						s -= 1;
-					while(s < 0)
-						s += 1;
-				}
-				if(clamp_v) {
-					while(t > 1)
-						t -= 1;
-					while(t < 0)
-						t += 1;
-				}
-
-				mesh->vertices[j].tex_coord.s = s;
-				mesh->vertices[j].tex_coord.t = t;
-			}
-			
 			// Add the new face.
 			Face& f = submesh->faces.emplace_back();
 			f.v0 = vertex_base + 0;
