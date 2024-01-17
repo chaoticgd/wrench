@@ -244,7 +244,7 @@ static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strip
 		if(vertex_count <= 0) {
 			if(vertex_count == 0) {
 				break;
-			} else if(strip.end_of_packet_flag >= 0) {
+			} else if(strip.ad_gif_offset >= 0) {
 				active_ad_gif = strip.ad_gif_offset / 0x5;
 			}
 			vertex_count += 128;
