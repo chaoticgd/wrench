@@ -21,7 +21,7 @@
 
 #include <core/buffer.h>
 
-#define vu_fixed12_to_float(i) ((i) * (1.f / 4096.f))
+#define vu_fixed12_to_float(i) (((s16)i) * (1.f / 4096.f))
 #define vu_float_to_fixed12(f) ((u16) roundf((f) * 4096.f))
 
 enum class VifCmd {
