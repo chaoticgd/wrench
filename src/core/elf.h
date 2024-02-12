@@ -22,7 +22,7 @@
 #include <core/buffer.h>
 
 enum ElfSectionType : u32 {
-	SHT_NULL_SECTION = 0x0,
+	SHT_NULL = 0x0,
 	SHT_PROGBITS = 0x1,
 	SHT_SYMTAB = 0x2,
 	SHT_STRTAB = 0x3,

@@ -1,3 +1,21 @@
+/*
+	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
+	Copyright (C) 2019-2024 chaoticgd
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "elf.h"
 
 enum class ElfIdentClass : u8 {
@@ -71,10 +89,7 @@ ElfFile read_elf_file(Buffer src) {
 		}
 	}
 	
-	for(const ElfProgramHeader& program_header : program_headers) {
-		ElfProgramHeader& segment = elf.segments.emplace_back(program_header);
-	}
-	
+	elf.segments = program_headers.copy();
 	elf.entry_point = file_header.entry;
 	
 	return elf;
@@ -96,6 +111,9 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf) {
 	dest.pad(0x1000);
 	for(size_t i = 0; i < elf.sections.size(); i++) {
 		const ElfSection& section = elf.sections[i];
+		if(section.data.empty())
+			continue;
+		
 		// Insert padding.
 		if(section.segment > -1) {
 			if(i > 0) {
@@ -118,13 +136,14 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf) {
 				dest.pad(0x80);
 			}
 		}
+		
 		// Write the data and fill in the section headers.
 		s64 offset = dest.write_multiple(section.data);
 		section_headers[i].offset = (s32) offset;
 		section_headers[i].size = (s32) section.data.size();
 	}
+	
 	s64 section_header_names_ofs = dest.tell();
-	dest.write<char>('\0');
 	for(size_t i = 0; i < elf.sections.size(); i++) {
 		s64 offset = dest.tell();
 		dest.writesf("%s", elf.sections[i].name.c_str());
@@ -215,6 +234,11 @@ packed_struct(RatchetSectionHeader,
 
 ElfFile read_ratchet_executable(Buffer src) {
 	ElfFile elf;
+	
+	// Add the null section to the beginning. This is a convention for ELF files
+	// so that a section index of zero can be reserved to mean null.
+	elf.sections.emplace_back();
+	
 	s32 ofs = 0;
 	for(s32 i = 0; ofs < src.size(); i++) {
 		// Read the block header, set the entry point, and check for EOF.
@@ -244,6 +268,7 @@ ElfFile read_ratchet_executable(Buffer src) {
 		
 		ofs += header.copy_size;
 	}
+	
 	return elf;
 }
 
@@ -296,6 +321,7 @@ static const u32 WAX = SHF_WRITE | SHF_ALLOC | SHF_EXECINSTR;
 const ElfFile DONOR_UYA_BOOT_ELF_HEADERS = {
 	{
 		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		{""           , -1, {0, SHT_NULL        ,   0, 0, 0, 0, 0, 0,  0,  0}},
 		{".reginfo"   , -1, {0, SHT_MIPS_REGINFO,   0, 0, 0, 0, 0, 0,  4,  1}},
 		{".vutext"    ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  16, 0}},
 		{"core.text"  ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  64, 0}},
@@ -325,6 +351,7 @@ const ElfFile DONOR_UYA_BOOT_ELF_HEADERS = {
 extern const ElfFile DONOR_DL_BOOT_ELF_HEADERS = {
 	{
 		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		{""           , -1, {0, SHT_NULL        ,   0, 0, 0, 0, 0, 0,  0,  0}},
 		{".reginfo"   , -1, {0, SHT_MIPS_REGINFO,   0, 0, 0, 0, 0, 0,   4, 1}},
 		{".vutext"    ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  16, 0}},
 		{"core.text"  ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  64, 0}},
@@ -353,6 +380,7 @@ extern const ElfFile DONOR_DL_BOOT_ELF_HEADERS = {
 extern const ElfFile DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS = {
 	{
 		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		{""           , -1, {0, SHT_NULL        ,   0, 0, 0, 0, 0, 0,  0,  0}},
 		{".lit"       ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,  64, 0}},
 		{".bss"       ,  0, {0, SHT_NOBITS      , WAP, 0, 0, 0, 0, 0,  64, 0}},
 		{".data"      ,  0, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,  64, 0}},
@@ -370,6 +398,7 @@ extern const ElfFile DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS = {
 extern const ElfFile DONOR_DL_LEVEL_ELF_NOBITS_HEADERS = {
 	{
 		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		{""           , -1, {0, SHT_NULL        ,   0, 0, 0, 0, 0, 0,  0,  0}},
 		{".lit"       ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,  64, 0}},
 		{".bss"       ,  0, {0, SHT_NOBITS      , WAP, 0, 0, 0, 0, 0,  64, 0}},
 		{".data"      ,  0, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,  64, 0}},
@@ -390,6 +419,7 @@ extern const ElfFile DONOR_DL_LEVEL_ELF_NOBITS_HEADERS = {
 extern const ElfFile DONOR_DL_LEVEL_ELF_PROGBITS_HEADERS = {
 	{
 		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		{""           , -1, {0, SHT_NULL        ,   0, 0, 0, 0, 0, 0,  0,  0}},
 		{".lit"       ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,  64, 0}},
 		{".bss"       ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,  64, 0}},
 		{".data"      ,  0, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,  64, 0}},
