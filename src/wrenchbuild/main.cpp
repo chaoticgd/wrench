@@ -533,15 +533,30 @@ static void extract_tfrags(const fs::path& input_path, const fs::path& output_pa
 	Tfrags tfrags = read_tfrags(bin, game);
 	ColladaScene scene = recover_tfrags(tfrags, TFRAG_NO_FLAGS);
 	auto xml = write_collada(scene);
-	write_file(output_path, xml, "w");
+	write_file(output_path, xml, true);
 }
 
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game) {
 	auto bin = read_file(input_path.string().c_str());
 	MOBY::MobyClassData moby = MOBY::read_class(bin, game);
-	ColladaScene scene = recover_moby_class(moby, 0, 0);
-	auto xml = write_collada(scene);
-	write_file(output_path, xml, "w");
+	
+	std::vector<GLTF::Mesh> packets = MOBY::recover_packets(moby.mesh.high_lod, -1, moby.scale, moby.animation.joints.size() > 0);
+	GLTF::Mesh mesh = MOBY::merge_packets(packets, "high_lod");
+	
+	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
+	
+	for(s32 i = 0; i < 16; i++) {
+		gltf.materials.emplace_back();
+	}
+	
+	scene->nodes.emplace_back((s32) gltf.nodes.size());
+	GLTF::Node& node = gltf.nodes.emplace_back();
+	
+	node.mesh = (s32) gltf.meshes.size();
+	gltf.meshes.emplace_back(std::move(mesh));
+	
+	auto glb = GLTF::write_glb(gltf);
+	write_file(output_path, glb, false);
 }
 
 static void extract_tie(const fs::path& input_path, const fs::path& output_path, Game game) {
@@ -549,7 +564,7 @@ static void extract_tie(const fs::path& input_path, const fs::path& output_path,
 	TieClass tie = read_tie_class(bin, game);
 	ColladaScene scene = recover_tie_class(tie);
 	auto xml = write_collada(scene);
-	write_file(output_path, xml, "w");
+	write_file(output_path, xml, true);
 }
 
 static void extract_shrub(const fs::path& input_path, const fs::path& output_path) {
@@ -561,7 +576,7 @@ static void extract_shrub(const fs::path& input_path, const fs::path& output_pat
 	node.mesh = (s32) gltf.meshes.size();
 	gltf.meshes.emplace_back(recover_shrub_class(shrub));
 	auto glb = GLTF::write_glb(gltf);
-	write_file(output_path,glb, "w");
+	write_file(output_path, glb, false);
 }
 
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path) {
@@ -662,13 +677,13 @@ static void print_usage(bool developer_subcommands) {
 		puts("   Convert packed tfrags to a .dae file.");
 		puts("");
 		puts(" extract_moby <input path> -o <output path> -g <game>");
-		puts("   Convert a packed moby to a .dae file.");
+		puts("   Convert a packed moby to a .glb file.");
 		puts("");
 		puts(" extract_tie <input path> -o <output path>");
 		puts("   Convert a packed tie to a .dae file.");
 		puts("");
 		puts(" extract_shrub <input path> -o <output path>");
-		puts("   Convert a packed shrub to a .dae file.");
+		puts("   Convert a packed shrub to a .glb file.");
 	}
 }
 
