@@ -64,7 +64,7 @@ SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64], const 
 		
 		SkinAttributes src_1 = load_skin_attribs(mv.v.two_way_blend.vu0_matrix_load_addr_1);
 		SkinAttributes src_2 = load_skin_attribs(mv.v.two_way_blend.vu0_matrix_load_addr_2);
-		verify(src_1.count == 1 && src_2.count == 1, "Input to two-way matrix blend operation has already been blended.");
+		verify(src_1.count < 2 && src_2.count < 2, "Input to two-way matrix blend operation has already been blended.");
 		
 		u8 weight_1 = mv.v.two_way_blend.weight_1;
 		u8 weight_2 = mv.v.two_way_blend.weight_2;
@@ -102,7 +102,7 @@ SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64], const 
 		SkinAttributes src_1 = load_skin_attribs(mv.v.three_way_blend.vu0_matrix_load_addr_1);
 		SkinAttributes src_2 = load_skin_attribs(mv.v.three_way_blend.vu0_matrix_load_addr_2);
 		SkinAttributes src_3 = load_skin_attribs(vu0_matrix_load_addr_3);
-		verify(src_1.count == 1 && src_2.count == 1 && src_3.count == 1,
+		verify(src_1.count < 2 && src_2.count < 2 && src_3.count < 2,
 			"Input to three-way matrix blend operation has already been blended.");
 		
 		u8 weight_1 = mv.v.three_way_blend.weight_1;
