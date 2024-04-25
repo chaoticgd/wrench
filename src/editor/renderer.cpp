@@ -684,7 +684,7 @@ static void draw_moby_icons(Level& lvl, InstanceList<MobyInstance>& instances) {
 			end = i;
 			auto iter = lvl.moby_classes.find(last_class);
 			if(iter == lvl.moby_classes.end() || !iter->second.render_mesh.has_value()) {
-				if(iter->second.icon.has_value()) {
+				if(iter != lvl.moby_classes.end() && iter->second.icon.has_value()) {
 					draw_mesh_instanced(quad, &(*iter->second.icon), 1, moby_inst_buffer, begin, end - begin);
 				} else {
 					draw_icon_instanced(INST_MOBY, moby_inst_buffer, begin, end - begin);

@@ -404,7 +404,7 @@ void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<:
 	// Apply mapping.
 	for(Mesh& mesh : gltf.meshes) {
 		for(MeshPrimitive& primitive : mesh.primitives) {
-			if(primitive.material.has_value()) {
+			if(primitive.material.has_value() && *primitive.material >= 0 && *primitive.material < gltf.materials.size()) {
 				primitive.material = mapping[*primitive.material];
 			}
 		}

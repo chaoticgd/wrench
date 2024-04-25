@@ -137,7 +137,7 @@ static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	stream->write_v(glb);
 	
 	MeshAsset& editor_mesh = dest.editor_mesh();
-	editor_mesh.set_name("high_lod");
+	editor_mesh.set_name("moby");
 	editor_mesh.set_src(ref);
 }
 
