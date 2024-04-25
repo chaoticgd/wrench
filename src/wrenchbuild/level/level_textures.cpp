@@ -103,16 +103,19 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_materials, 
 	shared.moby_range.table = MOBY_TEXTURE_TABLE;
 	shared.moby_range.begin = shared.textures.size();
 	mobies.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& cls) {
-		const CollectionAsset& textures = cls.get_materials();
-		for(s32 i = 0; i < 16; i++) {
-			if(textures.has_child(i)) {
-				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
-				auto stream = asset.src().open_binary_file_for_reading();
-				bool stashed = cls.stash_textures(false);
-				shared.textures.emplace_back(LevelTexture{read_png(*stream), stashed});
-			} else {
-				shared.textures.emplace_back();
-			}
+		const CollectionAsset& materials = cls.get_materials();
+		MaterialSet material_set = read_material_assets(materials);
+		verify(material_set.textures.size() <= 15,
+			"Too many textures on moby class '%s'!",
+			cls.tag().c_str());
+		s32 i = 0;
+		for(; i < (s32) material_set.textures.size(); i++) {
+			FileReference& texture = material_set.textures[i];
+			auto stream = texture.open_binary_file_for_reading();
+			shared.textures.emplace_back(LevelTexture{read_png(*stream)});
+		}
+		for(; i < 16; i++) {
+			shared.textures.emplace_back();
 		}
 	});
 	shared.moby_range.end = shared.textures.size();

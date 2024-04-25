@@ -262,6 +262,10 @@ std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, const std::vector<
 			continue;
 		}
 		std::vector<s32> indices = zero_area_tris_to_restart_bit_strip(primitive.indices);
+		//verify(*primitive.material >= 0 && *primitive.material < material_to_effective.size(), "Material index out of range.");
+		if(!(*primitive.material >= 0 && *primitive.material < material_to_effective.size())) {
+			continue;
+		}
 		s32 effective_material = material_to_effective.at(*primitive.material);
 		generator.add_primitive(indices.data(), (s32) indices.size(), GeometryType::TRIANGLE_STRIP, effective_material);
 	}
