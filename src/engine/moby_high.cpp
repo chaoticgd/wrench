@@ -199,10 +199,10 @@ std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const
 				s32 mapped_index = index_mapping.at(index);
 				if(use_secret_index) {
 					dest.vif.indices.emplace_back(0);
-					dest.vif.secret_indices.emplace_back(mapped_index);
+					dest.vif.secret_indices.emplace_back(mapped_index + 1);
 					use_secret_index = false;
 				} else {
-					dest.vif.indices.emplace_back(mapped_index | (restart_bit << 7));
+					dest.vif.indices.emplace_back((mapped_index + 1) | (restart_bit << 7));
 				}
 			}
 		}

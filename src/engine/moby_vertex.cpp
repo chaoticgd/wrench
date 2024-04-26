@@ -304,7 +304,7 @@ PackVerticesOutput pack_vertices(s32 smi, const std::vector<Vertex>& input_verti
 	// Pack vertices that should issue a 2-way matrix blend operation on VU0.
 	for(size_t i = 0; i < input_vertices.size(); i++) {
 		const Vertex& vertex = input_vertices[i];
-		if(vertex.skin.count == 2) {
+		if(false&&vertex.skin.count == 2) {
 			MatrixAllocation allocation;
 			if(liveness[i].population_count != 1) {
 				auto alloc_opt = mat_alloc.get_allocation(vertex.skin, smi);
@@ -345,7 +345,7 @@ PackVerticesOutput pack_vertices(s32 smi, const std::vector<Vertex>& input_verti
 	// Pack vertices that should issue a 3-way matrix blend operation on VU0.
 	for(size_t i = 0; i < input_vertices.size(); i++) {
 		const Vertex& vertex = input_vertices[i];
-		if(vertex.skin.count == 3) {
+		if(false&&vertex.skin.count == 3) {
 			MatrixAllocation allocation;
 			if(liveness[i].population_count != 1) {
 				auto alloc_opt = mat_alloc.get_allocation(vertex.skin, smi);
@@ -389,7 +389,7 @@ PackVerticesOutput pack_vertices(s32 smi, const std::vector<Vertex>& input_verti
 	// Pack vertices that use unblended matrices.
 	for(size_t i = 0; i < input_vertices.size(); i++) {
 		const Vertex& vertex = input_vertices[i];
-		if(vertex.skin.count == 1) {
+		if(false&&vertex.skin.count == 1) {
 			output.vertex_table.main_vertex_count++;
 			output.index_mapping[i] = output.vertex_table.vertices.size();
 			
@@ -408,7 +408,7 @@ PackVerticesOutput pack_vertices(s32 smi, const std::vector<Vertex>& input_verti
 	// Pack vertices that use previously blended matrices.
 	for(size_t i = 0; i < input_vertices.size(); i++) {
 		const Vertex& vertex = input_vertices[i];
-		if(vertex.skin.count > 1 && !first_uses[i]) {
+		if(true||vertex.skin.count > 1 && !first_uses[i]) {
 			output.vertex_table.main_vertex_count++;
 			output.index_mapping[i] = output.vertex_table.vertices.size();
 			
