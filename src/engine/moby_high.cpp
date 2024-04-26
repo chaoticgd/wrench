@@ -215,9 +215,8 @@ std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const
 		dest.vif.indices.push_back(0);
 		
 		for(const Vertex& vertex : src.vertices) {
-			const glm::vec2& tex_coord = {0,0};//input.vertices[vertex.tex_coord].tex_coord;
-			s16 s = vu_float_to_fixed12(tex_coord.x);
-			s16 t = vu_float_to_fixed12(tex_coord.y);
+			s16 s = vu_float_to_fixed12(vertex.tex_coord.x);
+			s16 t = vu_float_to_fixed12(vertex.tex_coord.y);
 			dest.sts.push_back({s, t});
 		}
 	}
