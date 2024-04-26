@@ -17,9 +17,6 @@
 */
 
 #include <cstdio>
-#include <mutex>
-#include <thread>
-#include <fstream>
 
 #include <core/util.h>
 #include <core/timer.h>
@@ -81,6 +78,7 @@ static void decompress(const fs::path& input_path, const fs::path& output_path, 
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_tfrags(const fs::path& input_path, const fs::path& output_path, Game game);
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
+static void extract_mesh_only_moby(const fs::path& input_path, const fs::path& output_path, Game game);
 static void extract_tie(const fs::path& input_path, const fs::path& output_path, Game game);
 static void extract_shrub(const fs::path& input_path, const fs::path& output_path);
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path);
@@ -210,6 +208,12 @@ static int wrenchbuild(int argc, char** argv) {
 	if(mode == "extract_moby") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
 		extract_moby(args.input_paths[0], args.output_path, args.game);
+		return 0;
+	}
+	
+	if(mode == "extract_mesh_only_moby") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
+		extract_mesh_only_moby(args.input_paths[0], args.output_path, args.game);
 		return 0;
 	}
 	
@@ -559,6 +563,29 @@ static void extract_moby(const fs::path& input_path, const fs::path& output_path
 	write_file(output_path, glb, false);
 }
 
+static void extract_mesh_only_moby(const fs::path& input_path, const fs::path& output_path, Game game) {
+	auto bin = read_file(input_path.string().c_str());
+	MOBY::MobyMeshSection moby = MOBY::read_mesh_only_class(bin, game);
+	
+	std::vector<GLTF::Mesh> packets = MOBY::recover_packets(moby.high_lod, -1, 1.f, true);
+	GLTF::Mesh mesh = MOBY::merge_packets(packets, "high_lod");
+	
+	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
+	
+	for(s32 i = 0; i < 16; i++) {
+		gltf.materials.emplace_back();
+	}
+	
+	scene->nodes.emplace_back((s32) gltf.nodes.size());
+	GLTF::Node& node = gltf.nodes.emplace_back();
+	
+	node.mesh = (s32) gltf.meshes.size();
+	gltf.meshes.emplace_back(std::move(mesh));
+	
+	auto glb = GLTF::write_glb(gltf);
+	write_file(output_path, glb, false);
+}
+
 static void extract_tie(const fs::path& input_path, const fs::path& output_path, Game game) {
 	auto bin = read_file(input_path.string().c_str());
 	TieClass tie = read_tie_class(bin, game);
@@ -677,6 +704,9 @@ static void print_usage(bool developer_subcommands) {
 		puts("   Convert packed tfrags to a .dae file.");
 		puts("");
 		puts(" extract_moby <input path> -o <output path> -g <game>");
+		puts("   Convert a packed moby to a .glb file.");
+		puts("");
+		puts(" extract_mesh_only_moby <input path> -o <output path> -g <game>");
 		puts("   Convert a packed moby to a .glb file.");
 		puts("");
 		puts(" extract_tie <input path> -o <output path>");

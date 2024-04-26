@@ -202,7 +202,7 @@ std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const
 					dest.vif.secret_indices.emplace_back(mapped_index);
 					use_secret_index = false;
 				} else {
-					dest.vif.indices.emplace_back(index | (restart_bit << 7));
+					dest.vif.indices.emplace_back(mapped_index | (restart_bit << 7));
 				}
 			}
 		}
@@ -215,10 +215,10 @@ std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const
 		dest.vif.indices.push_back(0);
 		
 		for(const Vertex& vertex : src.vertices) {
-			//const glm::vec2& tex_coord = mesh.vertices[vertex.tex_coord].tex_coord;
-			//s16 s = vu_float_to_fixed12(tex_coord.x);
-			//s16 t = vu_float_to_fixed12(tex_coord.y);
-			//low.sts.push_back({s, t});
+			const glm::vec2& tex_coord = {0,0};//input.vertices[vertex.tex_coord].tex_coord;
+			s16 s = vu_float_to_fixed12(tex_coord.x);
+			s16 t = vu_float_to_fixed12(tex_coord.y);
+			dest.sts.push_back({s, t});
 		}
 	}
 	

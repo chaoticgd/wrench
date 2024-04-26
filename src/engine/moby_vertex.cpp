@@ -296,7 +296,7 @@ std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes
 
 PackVerticesOutput pack_vertices(s32 smi, const std::vector<Vertex>& input_vertices, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale) {
 	PackVerticesOutput output;
-	output.index_mapping.resize(input_vertices.size());
+	output.index_mapping.resize(input_vertices.size(), 0xff);
 	
 	f32 inverse_scale = 1024.f / scale;
 	std::vector<bool> first_uses(input_vertices.size(), false);

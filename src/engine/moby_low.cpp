@@ -302,9 +302,9 @@ void write_mesh_only_class(OutBuffer dest, const MobyMeshSection& moby, f32 scal
 	
 	MobyArmorHeader header = {};
 	class_header_ofs = dest.alloc<MobyArmorHeader>();
-	s64 table_ofs = allocate_packet_table(dest, moby, 0);
+	header.packet_table_offset = (s32) allocate_packet_table(dest, moby, 0);
 	std::vector<MobyGifUsage> gif_usage;
-	header.info = write_moby_mesh_section(dest, gif_usage, table_ofs, moby, scale, format);
+	header.info = write_moby_mesh_section(dest, gif_usage, header.packet_table_offset, moby, scale, format);
 	if(gif_usage.size() > 0) {
 		gif_usage.back().offset_and_terminator |= 0x80000000;
 		header.gif_usage = dest.write_multiple(gif_usage) - class_header_ofs;
