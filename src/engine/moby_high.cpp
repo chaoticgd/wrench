@@ -195,7 +195,7 @@ std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const
 			
 			for(size_t j = 0; j < indices.size(); j++) {
 				s32 index = indices[j] & ~(1 << 31);
-				bool restart_bit = (indices[j] & (1 << 31)) != 0;
+				bool restart_bit = j < 2 || (indices[j] & (1 << 31)) != 0;
 				s32 mapped_index = index_mapping.at(index);
 				if(use_secret_index) {
 					dest.vif.indices.emplace_back(0);
