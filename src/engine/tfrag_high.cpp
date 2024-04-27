@@ -140,6 +140,12 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 			dest.pos.z = (tfrag.base_position.vif1_r2 + pos.z) / 1024.f;
 			dest.tex_coord.s = vu_fixed12_to_float(src.s);
 			dest.tex_coord.t = vu_fixed12_to_float(src.t);
+
+			if(dest.tex_coord.s < 0)
+				dest.tex_coord.s *= 0.5f;
+			if(dest.tex_coord.t < 0)
+				dest.tex_coord.t *= 0.5f;
+
 			const TfragRgba& colour = tfrag.rgbas.at(index);
 			dest.colour.r = colour.r;
 			dest.colour.g = colour.g;
@@ -244,7 +250,7 @@ static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strip
 		if(vertex_count <= 0) {
 			if(vertex_count == 0) {
 				break;
-			} else if(strip.end_of_packet_flag >= 0) {
+			} else if(strip.ad_gif_offset >= 0) {
 				active_ad_gif = strip.ad_gif_offset / 0x5;
 			}
 			vertex_count += 128;
