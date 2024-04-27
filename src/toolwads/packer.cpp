@@ -152,7 +152,6 @@ static void pack_launcher_wad() {
 	wad.alloc<LauncherWadHeader>();
 	
 	header.logo = pack_compressed_image(wad, "data/launcher/logo.png");
-	header.placeholder_images[0] = pack_compressed_image(wad, "data/launcher/my_mod.png");
 	header.oobe = pack_oobe_wad(wad);
 	
 	wad.pad(SECTOR_SIZE, 0);
