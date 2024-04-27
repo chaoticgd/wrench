@@ -201,10 +201,9 @@ static void update_mod_images() {
 			}
 		}
 		if(successful_loads < 1) {
-			const Texture& placeholder = g_launcher.placeholder_image;
 			GlTexture texture;
-			texture.upload(placeholder.data.data(), placeholder.width, placeholder.height);
-			g_mod_images.emplace_back(std::move(texture), placeholder.width, placeholder.height, "Placeholder");
+			texture.upload(g_launcher.logo.data.data(), g_launcher.logo.width, g_launcher.logo.height);
+			g_mod_images.emplace_back(std::move(texture), g_launcher.logo.width, g_launcher.logo.height, "Logo");
 		}
 	} else {
 		const Texture& logo = g_launcher.logo;

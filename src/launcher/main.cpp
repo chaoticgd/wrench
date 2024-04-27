@@ -69,7 +69,6 @@ int main(int argc, char** argv) {
 				g_launcher.font_regular = gui::load_font(wadinfo.gui.fonts[0], 22);
 				g_launcher.font_italic = gui::load_font(wadinfo.gui.fonts[1], 22);
 				g_launcher.logo = load_image_from_launcher_wad(wadinfo.launcher.logo);
-				g_launcher.placeholder_image = load_image_from_launcher_wad(wadinfo.launcher.placeholder_images[0]);
 				
 				load_game_list(g_config.paths.games_folder);
 				load_mod_list(g_config.paths.mods_folders);
@@ -82,7 +81,7 @@ int main(int argc, char** argv) {
 					}
 				}
 				
-				g_launcher.placeholder_image.destroy();
+				g_launcher.logo.destroy();
 				
 				free_game_list();
 				free_mod_list();
