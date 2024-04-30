@@ -1,0 +1,54 @@
+Game rac {
+	
+}
+
+Game gc {
+	
+}
+
+Game uya {
+	
+}
+
+Game dl {
+	File net {
+		Block gameModeOptions                     { iff: 7000 type: "gameModeStruct" }
+		Block mpProfiles                          { iff: 7001 type: "mpProfiles" }
+	}
+	
+	File game {
+		Block Level                               { iff: 0    type: "int" }
+		Block HeroSave                            { iff: 39   type: "_HeroSave" }
+		Block ElapsedTime                         { iff: 3    type: "int" }
+		Block LastSaveTime                        { iff: 4    type: "sceCdCLOCK" }
+		Block TotalPlayTime                       { iff: 1003 type: "unsigned int" }
+		Block TN_savedDifficultyLevel             { iff: 7016 type: "int" }
+		Block GlobalFlags                         { iff: 5    type: "GlobalFlags" }
+		Block CheatsActivated                     { iff: 7    type: "CheatsActivated" }
+		Block CheatsEverActivated                 { iff: 37   type: "CheatsEverActivated" }
+		Block SkillPoints                         { iff: 8    type: "SkillPoints" }
+		Block g_HeroGadgetBox                     { iff: 7008 type: "g_HeroGadgetBox" }
+		Block HelpDataMessages                    { iff: 16   type: "HelpDataMessages" }
+		Block HelpDataMisc                        { iff: 17   type: "HelpDataMisc" }
+		Block HelpDataGadgets                     { iff: 18   type: "HelpDataGadgets" }
+		Block Settings                            { iff: 38   type: "GameSettings" }
+		Block FirstPersonDesiredMode              { iff: 7015 type: "FirstPersonDesiredMode" }
+		Block MoviesPlayedRecord                  { iff: 43   type: "MoviesPlayedRecord" }
+		Block TotalDeaths                         { iff: 1005 type: "int" }
+		Block HelpLog                             { iff: 1010 type: "HelpLog" }
+		Block HelpLogPos                          { iff: 1011 type: "int" }
+		Block g_PurchaseableGadgets               { iff: 7010 type: "g_PurchaseableGadgets" }
+		Block g_PurchaseableBotUpgrades           { iff: 7011 type: "g_PurchaseableBotUpgrades" }
+		Block g_PurchaseableWrenchLevel           { iff: 7012 type: "unsigned char" }
+		Block g_PurchaseablePostFXMods            { iff: 7013 type: "g_PurchaseablePostFXMods" }
+		Block BotSave                             { iff: 7014 type: "_BotSave" }
+		Block ST_PlayerStatistics                 { iff: 7017 type: "ST_PlayerStatistics" }
+		Block ST_BattledomeWinsAndLosses          { iff: 7018 type: "ST_BattledomeWinsAndLosses" }
+		Block ST_EnemyKills                       { iff: 7019 type: "ST_EnemyKills" }
+		Block g_QuickSwitchGadgets                { iff: 7020 type: "g_QuickSwitchGadgets" }
+	}
+	
+	File level {
+		Block mf_levelSaveData                    { iff: 7009 type: "MF_LevelSave" }
+	}
+}

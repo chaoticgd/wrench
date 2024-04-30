@@ -36,7 +36,8 @@ enum License {
 	LICENSE_IMGUIZMO = 11,
 	LICENSE_ZLIB = 12,
 	LICENSE_LIBZIP = 13,
-	MAX_LICENSE = 14
+	LICENSE_IMGUI_CLUB = 14,
+	MAX_LICENSE = 15
 };
 
 packed_struct(BuildWadHeader,
@@ -73,11 +74,19 @@ packed_struct(EditorWadHeader,
 	/* 0x108 */ SectorRange instance_3d_view_icons[32];
 )
 
+packed_struct(MemcardWadHeader,
+	/* 0x0 */ s32 header_size;
+	/* 0x4 */ Sector32 sector;
+	/* 0x8 */ SectorRange savegame;
+	/* 0xc */ SectorRange types[4];
+)
+
 packed_struct(ToolWadInfo,
 	BuildWadHeader build;
 	GuiWadHeader gui;
 	LauncherWadHeader launcher;
 	EditorWadHeader editor;
+	MemcardWadHeader memcard;
 )
 
 packed_struct(OobeWadHeader,
@@ -94,6 +103,7 @@ struct WadPaths {
 	std::string editor;
 	std::string underlay;
 	std::string overlay;
+	std::string memcard;
 };
 
 WadPaths find_wads(const char* bin_path);

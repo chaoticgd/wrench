@@ -13,6 +13,7 @@ WadPaths find_wads(const char* bin_path) {
 	wads.gui = find_wad(directory, "gui.wad");
 	wads.launcher = find_wad(directory, "launcher.wad");
 	wads.editor = find_wad(directory, "editor.wad");
+	wads.memcard = find_wad(directory, "memcard.wad");
 	wads.underlay = find_bank(directory, "underlay");
 	wads.overlay = find_bank(directory, "overlay");
 	return wads;

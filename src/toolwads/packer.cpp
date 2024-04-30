@@ -27,6 +27,7 @@ static void pack_gui_wad();
 static void pack_launcher_wad();
 static SectorRange pack_oobe_wad(OutputStream& dest);
 static void pack_editor_wad();
+static void pack_memcard_wad();
 static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path);
 static SectorRange pack_file(OutputStream& dest, const char* src_path);
 static SectorRange pack_compressed_image(OutputStream& dest, const char* src_path);
@@ -43,18 +44,27 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 	build_dir = argv[1];
+	
 	printf("Packing build wad...\n");
 	fflush(stdout);
 	pack_build_wad();
+	
 	printf("Packing gui wad...\n");
 	fflush(stdout);
 	pack_gui_wad();
+	
 	printf("Packing launcher wad...\n");
 	fflush(stdout);
 	pack_launcher_wad();
+	
 	printf("Packing editor wad...\n");
 	fflush(stdout);
 	pack_editor_wad();
+	
+	printf("Packing memcard wad...\n");
+	fflush(stdout);
+	pack_memcard_wad();
+	
 	return 0;
 }
 
@@ -253,6 +263,24 @@ static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path) {
 	range.offset = Sector32::size_from_bytes(offset);
 	range.size = Sector32::size_from_bytes(dest.tell() - offset);
 	return range;
+}
+
+static void pack_memcard_wad() {
+	FileOutputStream wad;
+	verify_fatal(wad.open(build_dir + "/memcard.wad"));
+	
+	MemcardWadHeader header = {};
+	header.header_size = sizeof(header);
+	wad.alloc<MemcardWadHeader>();
+	
+	header.savegame = pack_file(wad, "data/memcard/savegame.wtf");
+	header.types[0] = pack_file(wad, "data/memcard/types_dl.h");
+	header.types[1] = pack_file(wad, "data/memcard/types_dl.h");
+	header.types[2] = pack_file(wad, "data/memcard/types_dl.h");
+	header.types[3] = pack_file(wad, "data/memcard/types_dl.h");
+	
+	wad.pad(SECTOR_SIZE, 0);
+	wad.write<MemcardWadHeader>(0, header);
 }
 
 // *****************************************************************************

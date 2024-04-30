@@ -46,7 +46,7 @@ target_link_libraries(unpackbin wrenchcore wrenchengine)
 add_executable(memcard
 	memcard.cpp
 )
-target_link_libraries(memcard wrenchcore wrenchgui)
+target_link_libraries(memcard wrenchcore wrenchengine wrenchgui)
 
 # Set the windows codepage to UTF-8.
 if(WIN32)

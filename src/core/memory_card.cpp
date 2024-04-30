@@ -18,7 +18,9 @@
 
 #include "memory_card.h"
 
-namespace memory_card {
+#include <wtf/wtf.h>
+
+namespace memcard {
 
 packed_struct(SaveSlotFileHeader,
 	/* 0x0 */ s32 game_data_size;
@@ -48,7 +50,7 @@ File read(Buffer src, const fs::path& path) {
 			break;
 		}
 		case FileType::NET: {
-			file.net.sections = read_sections(&file.checksum_does_not_match, src, pos);
+			file.net.blocks = read_blocks(&file.checksum_does_not_match, src, pos);
 			break;
 		}
 		case FileType::PATCH: {
@@ -56,12 +58,11 @@ File read(Buffer src, const fs::path& path) {
 			break;
 		}
 		case FileType::SLOT: {
-			const SaveSlotFileHeader& file_header = src.read<SaveSlotFileHeader>(pos, "file header");
 			pos += sizeof(SaveSlotFileHeader);
 			
-			file.slot.sections = read_sections(&file.checksum_does_not_match, src, pos);
+			file.slot.blocks = read_blocks(&file.checksum_does_not_match, src, pos);
 			while(pos + 3 < src.size()) {
-				file.slot.levels.emplace_back(read_sections(&file.checksum_does_not_match, src, pos));
+				file.slot.levels.emplace_back(read_blocks(&file.checksum_does_not_match, src, pos));
 			}
 			break;
 		}
@@ -91,8 +92,8 @@ FileType identify(std::string filename) {
 	}
 }
 
-std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src, s64& pos) {
-	std::vector<Section> sections;
+std::vector<Block> read_blocks(bool* checksum_does_not_match_out, Buffer src, s64& pos) {
+	std::vector<Block> blocks;
 	
 	const ChecksumHeader& checksum_header = src.read<ChecksumHeader>(pos, "checksum header");
 	pos += sizeof(ChecksumHeader);
@@ -112,7 +113,7 @@ std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src
 		// Preserve uninitialised padding.
 		s32 read_size = align64(section_header.size, 4);
 		
-		Section& section = sections.emplace_back();
+		Block& section = blocks.emplace_back();
 		section.offset = (s32) pos;
 		section.type = section_header.type;
 		section.unpadded_size = section_header.size;
@@ -120,7 +121,7 @@ std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src
 		pos += read_size;
 	}
 	
-	return sections;
+	return blocks;
 }
 
 void write(OutBuffer dest, File& file) {
@@ -130,7 +131,7 @@ void write(OutBuffer dest, File& file) {
 			break;
 		}
 		case FileType::NET: {
-			write_sections(dest, file.net.sections);
+			write_blocks(dest, file.net.blocks);
 			break;
 		}
 		case FileType::PATCH: {
@@ -140,10 +141,10 @@ void write(OutBuffer dest, File& file) {
 		case FileType::SLOT: {
 			s64 file_header_ofs = dest.alloc<SaveSlotFileHeader>();
 			SaveSlotFileHeader file_header;
-			file_header.game_data_size = (s32) write_sections(dest, file.slot.sections);
+			file_header.game_data_size = (s32) write_blocks(dest, file.slot.blocks);
 			file_header.level_data_size = 0;
-			for(std::vector<Section>& sections : file.slot.levels) {
-				u32 data_size = (s32) write_sections(dest, sections);
+			for(std::vector<Block>& blocks : file.slot.levels) {
+				u32 data_size = (s32) write_blocks(dest, blocks);
 				if(file_header.level_data_size == 0) {
 					file_header.level_data_size = data_size;
 				} else {
@@ -160,11 +161,11 @@ void write(OutBuffer dest, File& file) {
 	}
 }
 
-s64 write_sections(OutBuffer dest, std::vector<Section>& sections) {
+s64 write_blocks(OutBuffer dest, std::vector<Block>& blocks) {
 	s64 checksum_header_ofs = dest.alloc<ChecksumHeader>();
 	s64 checksum_start_ofs = dest.tell();
 	
-	for(Section& section : sections) {
+	for(Block& section : blocks) {
 		s64 size_difference = section.data.size() - section.unpadded_size;
 		verify_fatal(size_difference > -1 && size_difference < 4);
 		
@@ -192,7 +193,6 @@ s64 write_sections(OutBuffer dest, std::vector<Section>& sections) {
 }
 
 u32 checksum(Buffer src) {
-	const u8* ptr = src.lo;
 	u32 value = 0xedb88320;
 	for(const u8* ptr = src.lo; ptr < src.hi; ptr++) {
 		value ^= (u32) *ptr << 8;
@@ -207,351 +207,68 @@ u32 checksum(Buffer src) {
 	return value & 0xffff;
 }
 
-SaveGame parse(const File& file) {
-	SaveGame save;
-	switch(file.type) {
-		case FileType::MAIN: break;
-		case FileType::NET: save = parse_net(file); break;
-		case FileType::PATCH: break;
-		case FileType::SLOT: save = parse_slot(file); break;
-		case FileType::SYS: break;
-	}
-	save.type = file.type;
-	return save;
-}
+// *****************************************************************************
 
-void update(File& dest, const SaveGame& save) {
-	switch(dest.type) {
-		case FileType::MAIN: break;
-		case FileType::NET: update_net(dest, save); break;
-		case FileType::PATCH: break;
-		case FileType::SLOT: update_slot(dest, save); break;
-		case FileType::SYS: break;
-	}
-}
-
-template <u8 valid_games, typename T>
-static void parse_section(u8 current_game, const memory_card::Section& section, GameOpt<valid_games, T>& dest) {
-	if(dest.check(current_game)) {
-		ERROR_CONTEXT("%s section", section_type(section.type));
-		verify(section.unpadded_size == sizeof(T), "Section has unexpected size.");
-		dest.data = Buffer(section.data).read<T>(0);
-	}
-}
-
-template <u8 valid_games, typename T>
-static void update_section(u8 current_game, OutBuffer dest, const GameOpt<valid_games, T>& src) {
-	if(src.check(current_game)) {
-		dest.write(0, *src);
-	}
-}
-
-template <u8 valid_games, typename T>
-static void parse_section_array(u8 current_game, const memory_card::Section& section, GameOpt<valid_games, T>& dest) {
-	if(dest.check(current_game)) {
-		ERROR_CONTEXT("%s section", section_type(section.type));
-		verify(section.unpadded_size == sizeof(T), "Array section has unexpected size.");
-		dest.data = Buffer(section.data).read_multiple<typename T::value_type>(0, T::element_count, "array");
-	}
-}
-
-template <u8 valid_games, typename T>
-static void update_section_array(u8 current_game, OutBuffer dest, const GameOpt<valid_games, T>& src) {
-	if(src.check(current_game)) {
-		dest.write_multiple(0, *src);
-	}
-}
-
-SaveGame parse_net(const File& file) {
-	verify_fatal(file.type == FileType::NET);
-	SaveGame save;
-	save.loaded = true;
-	save.game = identify_game(file);
-	for(const Section& section : file.net.sections) {
-		Buffer buffer = section.data;
-		switch(section.type) {
-			case ST_GAMEMODEOPTIONS: parse_section      (save.game, section, save.game_mode_options); break;
-			case ST_MPPROFILES:      parse_section_array(save.game, section, save.mp_profiles);       break;
+BlockSchema* FileSchema::block(s32 iff) {
+	for(BlockSchema& block : blocks) {
+		if(block.iff == iff) {
+			return &block;
 		}
 	}
-	return save;
+	return nullptr;
 }
 
-void update_net(File& dest, const SaveGame& save) {
-	for(Section& section : dest.net.sections) {
-		OutBuffer buffer = section.data;
-		switch(section.type) {
-			case ST_GAMEMODEOPTIONS: update_section      (save.game, buffer, save.game_mode_options); break;
-			case ST_MPPROFILES:      update_section_array(save.game, buffer, save.mp_profiles);       break;
-		}
+GameSchema* Schema::game(Game g) {
+	switch(g) {
+		case Game::RAC: return &rac;
+		case Game::GC: return &gc;
+		case Game::UYA: return &uya;
+		case Game::DL: return &dl;
 	}
+	return nullptr;
 }
 
-SaveGame parse_slot(const File& file) {
-	verify_fatal(file.type == FileType::SLOT);
-	SaveGame save;
-	save.loaded = true;
-	save.game = identify_game(file);
-	for(const Section& section : file.slot.sections) {
-		switch(section.type) {
-			case ST_LEVEL:                parse_section      (save.game, section, save.level);                     break;
-			case ST_ELAPSEDTIME:          parse_section      (save.game, section, save.elapsed_time);              break;
-			case ST_LASTSAVETIME:         parse_section      (save.game, section, save.last_save_time);            break;
-			case ST_GLOBALFLAGS:          parse_section_array(save.game, section, save.global_flags);              break;
-			case ST_CHEATSACTIVATED:      parse_section_array(save.game, section, save.cheats_activated);          break;
-			case ST_SKILLPOINTS:          parse_section_array(save.game, section, save.skill_points);              break;
-			case ST_HELPDATAMESSAGES:     parse_section_array(save.game, section, save.help_data_messages);        break;
-			case ST_HELPDATAMISC:         parse_section_array(save.game, section, save.help_data_misc);            break;
-			case ST_HELPDATAGADGETS:      parse_section_array(save.game, section, save.help_data_gadgets);         break;
-			case ST_CHEATSEVERACTIVATED:  parse_section_array(save.game, section, save.cheats_ever_activated);     break;
-			case ST_SETTINGS:             parse_section      (save.game, section, save.settings);                  break;
-			case ST_HEROSAVE:
-				parse_section(save.game, section, save.hero_save_uya);
-				parse_section(save.game, section, save.hero_save_dl);
-				break;
-			case ST_MOVIESPLAYEDRECORD:   parse_section_array(save.game, section, save.movies_played_record);      break;
-			case ST_TOTALPLAYTIME:        parse_section      (save.game, section, save.total_play_time);           break;
-			case ST_TOTALDEATHS:          parse_section      (save.game, section, save.total_deaths);              break;
-			case ST_HELPLOG:              parse_section_array(save.game, section, save.help_log);                  break;
-			case ST_HELPLOGPOS:           parse_section      (save.game, section, save.help_log_pos);              break;
-			case ST_HEROGADGETBOX:        parse_section      (save.game, section, save.hero_gadget_box);           break;
-			case ST_PURCHASEABLEGADGETS:  parse_section      (save.game, section, save.purchaseable_gadgets);      break;
-			case ST_PURCHASEABLEBOTUPGRD: parse_section      (save.game, section, save.purchaseable_bot_upgrades); break;
-			case ST_PURCHASEABLEWRENCH:   parse_section      (save.game, section, save.purchaseable_wrench_level); break;
-			case ST_PURCHASEABLEPOSTMODS: parse_section_array(save.game, section, save.purchaseable_post_fx_mods); break;
-			case ST_BOTSAVE:              parse_section      (save.game, section, save.bot_save);                  break;
-			case ST_FIRSTPERSONMODE:      parse_section_array(save.game, section, save.first_person_desired_mode); break;
-			case ST_SAVEDDIFFICULTYLEVEL: parse_section      (save.game, section, save.saved_difficulty_level);    break;
-			case ST_PLAYERSTATISTICS:     parse_section_array(save.game, section, save.player_statistics);         break;
-			case ST_BATTLEDOMEWINSLOSSES: parse_section_array(save.game, section, save.battledome_wins_and_losses); break;
-			case ST_ENEMYKILLS:           parse_section_array(save.game, section, save.enemy_kills);               break;
-			case ST_QUICKSWITCHGADGETS:   parse_section      (save.game, section, save.quick_switch_gadgets);      break;
-		}
-	}
-	for(const std::vector<Section>& sections : file.slot.levels) {
-		LevelSaveGame& level_save_game = save.levels.emplace_back();
-		for(const Section& section : sections) {
-			Buffer buffer = section.data;
-			switch(section.type) {
-				case ST_LEVELSAVEDATA: parse_section(save.game, section, level_save_game.level); break;
+Schema parse_schema(char* input) {
+	char* error;
+	WtfNode* root = wtf_parse(input, &error);
+	verify(root, "%s", error);
+	defer([&]() { wtf_free(root); });
+	
+	Schema schema;
+	
+	for(const WtfNode* game = root->first_child; game != nullptr; game = game->next_sibling) {
+		Game g = game_from_string(game->tag);
+		GameSchema* game_schema = schema.game(g);
+		verify(game_schema, "Failed to parse memcard schema: Invalid game tag '%s'.", game->tag);
+		
+		for(const WtfNode* file = game->first_child; file != nullptr; file = file->next_sibling) {
+			FileSchema* file_schema = nullptr;
+			if(strcmp(file->tag, "net") == 0) {
+				file_schema = &game_schema->net;
+			} else if(strcmp(file->tag, "game") == 0) {
+				file_schema = &game_schema->game;
+			} else if(strcmp(file->tag, "level") == 0) {
+				file_schema = &game_schema->level;
 			}
-		}
-	}
-	return save;
-}
-
-void update_slot(File& dest, const SaveGame& save) {
-	for(Section& section : dest.slot.sections) {
-		OutBuffer buffer = section.data;
-		switch(section.type) {
-			case ST_LEVEL:                update_section      (save.game, buffer, save.level);                      break;
-			case ST_ELAPSEDTIME:          update_section      (save.game, buffer, save.elapsed_time);               break;
-			case ST_LASTSAVETIME:         update_section      (save.game, buffer, save.last_save_time);             break;
-			case ST_GLOBALFLAGS:          update_section_array(save.game, buffer, save.global_flags);               break;
-			case ST_CHEATSACTIVATED:      update_section_array(save.game, buffer, save.cheats_activated);           break;
-			case ST_SKILLPOINTS:          update_section_array(save.game, buffer, save.skill_points);               break;
-			case ST_HELPDATAMESSAGES:     update_section_array(save.game, buffer, save.help_data_messages);         break;
-			case ST_HELPDATAMISC:         update_section_array(save.game, buffer, save.help_data_misc);             break;
-			case ST_HELPDATAGADGETS:      update_section_array(save.game, buffer, save.help_data_gadgets);          break;
-			case ST_CHEATSEVERACTIVATED:  update_section_array(save.game, buffer, save.cheats_ever_activated);      break;
-			case ST_SETTINGS:             update_section      (save.game, buffer, save.settings);                   break;
-			case ST_HEROSAVE:
-				update_section(save.game, buffer, save.hero_save_uya);
-			    update_section(save.game, buffer, save.hero_save_dl);
-				break;
-			case ST_MOVIESPLAYEDRECORD:   update_section_array(save.game, buffer, save.movies_played_record);       break;
-			case ST_TOTALPLAYTIME:        update_section      (save.game, buffer, save.total_play_time);            break;
-			case ST_TOTALDEATHS:          update_section      (save.game, buffer, save.total_deaths);               break;
-			case ST_HELPLOG:              update_section_array(save.game, buffer, save.help_log);                   break;
-			case ST_HELPLOGPOS:           update_section      (save.game, buffer, save.help_log_pos);               break;
-			case ST_HEROGADGETBOX:        update_section      (save.game, buffer, save.hero_gadget_box);            break;
-			case ST_PURCHASEABLEGADGETS:  update_section_array(save.game, buffer, save.purchaseable_gadgets);       break;
-			case ST_PURCHASEABLEBOTUPGRD: update_section_array(save.game, buffer, save.purchaseable_bot_upgrades);  break;
-			case ST_PURCHASEABLEWRENCH:   update_section      (save.game, buffer, save.purchaseable_wrench_level);  break;
-			case ST_PURCHASEABLEPOSTMODS: update_section_array(save.game, buffer, save.purchaseable_post_fx_mods);  break;
-			case ST_BOTSAVE:              update_section      (save.game, buffer, save.bot_save);                   break;
-			case ST_FIRSTPERSONMODE:      update_section_array(save.game, buffer, save.first_person_desired_mode);  break;
-			case ST_SAVEDDIFFICULTYLEVEL: update_section      (save.game, buffer, save.saved_difficulty_level);     break;
-			case ST_PLAYERSTATISTICS:     update_section_array(save.game, buffer, save.player_statistics);          break;
-			case ST_BATTLEDOMEWINSLOSSES: update_section_array(save.game, buffer, save.battledome_wins_and_losses); break;
-			case ST_ENEMYKILLS:           update_section_array(save.game, buffer, save.enemy_kills);                break;
-			case ST_QUICKSWITCHGADGETS:   update_section      (save.game, buffer, save.quick_switch_gadgets);       break;
-		}
-	}
-	verify_fatal(dest.slot.levels.size() == save.levels.size());
-	for(size_t i = 0; i < dest.slot.levels.size(); i++) {
-		for(Section& section : dest.slot.levels[i]) {
-			OutBuffer buffer = section.data;
-			switch(section.type) {
-				case ST_LEVELSAVEDATA: update_section(save.game, buffer, save.levels[i].level); break;
+			verify(file_schema, "Failed to parse memcard schema: Invalid file tag '%s'.", file->tag);
+			
+			for(const WtfNode* block = file->first_child; block != nullptr; block = block->next_sibling) {
+				BlockSchema& block_schema = file_schema->blocks.emplace_back();
+				
+				block_schema.name = block->tag;
+				
+				const WtfAttribute* iff = wtf_attribute(block, "iff");
+				verify(iff && iff->type == WTF_NUMBER, "Failed to parse memcard schema: Missing iff attribute on block node '%s'.", block->tag);
+				block_schema.iff = iff->number.i;
+				
+				const WtfAttribute* type = wtf_attribute(block, "type");
+				verify(type && type->type == WTF_STRING, "Failed to parse memcard schema: Missing iff attribute on block node '%s'.", block->tag);
+				block_schema.type = type->string.begin;
 			}
-		}
-	}
-}
-
-GameBitfield identify_game(const File& file) {
-	const std::vector<Section>* sections = nullptr;
-	switch(file.type) {
-		case FileType::NET: {
-			sections = &file.net.sections;
-			break;
-		}
-		case FileType::SLOT: {
-			sections = &file.slot.sections;
-			break;
-		}
-		case FileType::MAIN:
-		case FileType::PATCH:
-		case FileType::SYS: {
-			verify_not_reached_fatal("identify_format called on incorrect file type.");
 		}
 	}
 	
-	for(const FileFormat& format : FILE_FORMATS) {
-		if(format.type != file.type || format.sections.size() != sections->size()) {
-			continue;
-		}
-		
-		bool matching = true;
-		for(size_t i = 0; i < format.sections.size(); i++) {
-			if(format.sections[i] != (*sections)[i].type) {
-				matching = false;
-			}
-		}
-		
-		if(matching) {
-			return format.game;
-		}
-	}
-	
-	std::string error_message;
-	for(const Section& section : *sections) {
-		error_message += stringf("section %d (%s)\n", section.type, section_type(section.type));
-	}
-	fprintf(stderr, "Unable to identify game:\n");
-	fprintf(stderr, "%s", error_message.c_str());
-	verify_not_reached("Unable to identify game:\n%s", error_message.c_str());
+	return schema;
 }
-
-const char* section_type(u32 type) {
-	switch(type) {
-		case ST_LEVEL: return "level ID";
-		case ST_ELAPSEDTIME: return "elapsed time";
-		case ST_LASTSAVETIME: return "last save time";
-		case ST_GLOBALFLAGS: return "global flags";
-		case ST_CHEATSACTIVATED: return "cheats activated";
-		case ST_SKILLPOINTS: return "skill points";
-		case ST_HELPDATAMESSAGES: return "help data messages";
-		case ST_HELPDATAMISC: return "help data misc";
-		case ST_HELPDATAGADGETS: return "help data gadgets";
-		case ST_CHEATSEVERACTIVATED: return "cheats ever activated";
-		case ST_SETTINGS: return "settings";
-		case ST_HEROSAVE: return "hero save";
-		case ST_MOVIESPLAYEDRECORD: return "movies played record";
-		case ST_TOTALPLAYTIME: return "total play time";
-		case ST_TOTALDEATHS: return "total deaths";
-		case ST_HELPLOG: return "help log";
-		case ST_HELPLOGPOS: return "help log pos";
-		case ST_GAMEMODEOPTIONS: return "game mode options";
-		case ST_MPPROFILES: return "mp profiles";
-		case ST_HEROGADGETBOX: return "hero gadget box";
-		case ST_LEVELSAVEDATA: return "level save data";
-		case ST_PURCHASEABLEGADGETS: return "purchaseable gadgets";
-		case ST_PURCHASEABLEBOTUPGRD: return "purchaseable bot upgrades";
-		case ST_PURCHASEABLEWRENCH: return "purchaseable wrench level";
-		case ST_PURCHASEABLEPOSTMODS: return "purchaseable post fx mods";
-		case ST_BOTSAVE: return "bot save";
-		case ST_FIRSTPERSONMODE: return "first person mode";
-		case ST_SAVEDDIFFICULTYLEVEL: return "saved difficulty level";
-		case ST_PLAYERSTATISTICS: return "player statistics";
-		case ST_BATTLEDOMEWINSLOSSES: return "battle dome wins and losses";
-		case ST_ENEMYKILLS: return "enemy kills";
-		case ST_QUICKSWITCHGADGETS: return "quick select gadgets";
-	}
-	return "???";
-}
-
-const std::vector<FileFormat> FILE_FORMATS = {
-	{UYA, FileType::SLOT, {
-		ST_LEVEL,
-		ST_HEROSAVE,
-		ST_ELAPSEDTIME,
-		ST_LASTSAVETIME,
-		ST_TOTALPLAYTIME,
-		ST_GLOBALFLAGS,
-		ST_CHEATSACTIVATED,
-		ST_SKILLPOINTS,
-		ST_9,
-		ST_10,
-		ST_11,
-		ST_40,
-		ST_12,
-		ST_13,
-		ST_14,
-		ST_20,
-		ST_15,
-		ST_HELPDATAMESSAGES,
-		ST_HELPDATAMISC,
-		ST_HELPDATAGADGETS,
-		ST_SETTINGS,
-		ST_30,
-		ST_32,
-		ST_CHEATSEVERACTIVATED,
-		ST_41,
-		ST_42,
-		ST_45,
-		ST_MOVIESPLAYEDRECORD,
-		ST_44,
-		ST_46,
-		ST_47,
-		ST_TOTALDEATHS,
-		ST_HELPLOG,
-		ST_HELPLOGPOS,
-		ST_7002,
-		ST_7003,
-		ST_7004,
-		ST_7005,
-		ST_7006,
-		ST_7007
-	}},
-	{DL, FileType::NET, {
-		ST_GAMEMODEOPTIONS,
-		ST_MPPROFILES
-	}},
-	{DL, FileType::SLOT, {
-		ST_LEVEL,
-		ST_HEROSAVE,
-		ST_ELAPSEDTIME,
-		ST_LASTSAVETIME,
-		ST_TOTALPLAYTIME,
-		ST_SAVEDDIFFICULTYLEVEL,
-		ST_GLOBALFLAGS,
-		ST_CHEATSACTIVATED,
-		ST_CHEATSEVERACTIVATED,
-		ST_SKILLPOINTS,
-		ST_HEROGADGETBOX,
-		ST_HELPDATAMESSAGES,
-		ST_HELPDATAMISC,
-		ST_HELPDATAGADGETS,
-		ST_SETTINGS,
-		ST_FIRSTPERSONMODE,
-		ST_MOVIESPLAYEDRECORD,
-		ST_TOTALDEATHS,
-		ST_HELPLOG,
-		ST_HELPLOGPOS,
-		ST_PURCHASEABLEGADGETS,
-		ST_PURCHASEABLEBOTUPGRD,
-		ST_PURCHASEABLEWRENCH,
-		ST_PURCHASEABLEPOSTMODS,
-		ST_BOTSAVE,
-		ST_PLAYERSTATISTICS,
-		ST_BATTLEDOMEWINSLOSSES,
-		ST_ENEMYKILLS,
-		ST_QUICKSWITCHGADGETS
-	}, {
-		ST_LEVELSAVEDATA
-	}}
-};
-
 
 }
