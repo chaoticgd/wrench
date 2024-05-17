@@ -67,12 +67,12 @@ Sector32 calculate_table_of_contents_size(const table_of_contents& toc, Game gam
 
 table_of_contents read_table_of_contents_rac(InputStream& src) {
 	s32 magic, toc_size;
-	src.seek(RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	src.seek(RAC_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	verify(src.read_n((u8*) &magic, 4) == 1, "Failed to read R&C1 table of contents.");
 	verify(src.read_n((u8*) &toc_size, 4) == 1, "Failed to read R&C1 table of contents.");
 	verify(toc_size > 0 && toc_size < 1024 * 1024 * 1024, "Invalid R&C1 table of contents.");
 	verify(magic == 1, "Invalid R&C1 table of contents.");
-	src.seek(RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	src.seek(RAC_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	std::vector<u8> bytes = src.read_multiple<u8>(toc_size);
 	Buffer buffer(bytes);
 	
@@ -129,7 +129,7 @@ s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc,
 		sector.sectors += global.sector.sectors;
 	}
 	
-	s64 wad_info_ofs = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+	s64 wad_info_ofs = RAC_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
 	
 	s64 level_headers_start_ofs = wad_info_ofs + sizeof(RacWadInfo);
 	iso.seek(level_headers_start_ofs);
@@ -355,7 +355,7 @@ static Sector32 get_lz_size(InputStream& src, Sector32 sector) {
 }
 
 table_of_contents read_table_of_contents_rac234(InputStream& src) {
-	src.seek(RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	src.seek(GC_UYA_DL_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	std::vector<u8> bytes = src.read_multiple<u8>(TOC_MAX_SIZE);
 	Buffer buffer(bytes);
 	
@@ -405,7 +405,7 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 			part.header_lba = entry.parts[j].offset;
 			part.file_size = entry.parts[j].size;
 			
-			Sector32 sector = {part.header_lba.sectors - (s32) RAC234_TABLE_OF_CONTENTS_LBA};
+			Sector32 sector = {part.header_lba.sectors - (s32) GC_UYA_DL_TABLE_OF_CONTENTS_LBA};
 			if(sector.sectors <= 0) {
 				continue;
 			}
@@ -440,7 +440,7 @@ static s64 get_rac234_level_table_offset(Buffer src) {
 		int parts = 0;
 		for(int j = 0; j < 6; j++) {
 			Sector32 lsn = src.read<Sector32>((i + j * 2) * 4, "table of contents");
-			s64 header_offset = lsn.bytes() - RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+			s64 header_offset = lsn.bytes() - GC_UYA_DL_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
 			if(lsn.sectors == 0 || header_offset > TOC_MAX_SIZE - 4) {
 				break;
 			}
@@ -463,7 +463,7 @@ static s64 get_rac234_level_table_offset(Buffer src) {
 }
 
 s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& toc, Game game) {
-	iso.seek(RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	iso.seek(GC_UYA_DL_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	
 	for(const GlobalWadInfo& global : toc.globals) {
 		verify_fatal(global.header.size() > 8);
@@ -476,7 +476,7 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 	std::vector<SectorRange> level_table(toc.levels.size() * 3, {{0}, {0}});
 	iso.write_v(level_table);
 	
-	s64 toc_start_size_bytes = iso.tell() - RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+	s64 toc_start_size_bytes = iso.tell() - GC_UYA_DL_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
 	Sector32 toc_start_size = Sector32::size_from_bytes(toc_start_size_bytes);
 	
 	// Size limits hardcoded in the boot ELF.

@@ -182,9 +182,10 @@ packed_struct(LzHeader,
 	s32 compressed_size;
 )
 
-static const uint32_t SYSTEM_CNF_LBA = 1000;
-static const uint32_t RAC1_TABLE_OF_CONTENTS_LBA = 1500;
-static const uint32_t RAC234_TABLE_OF_CONTENTS_LBA = 1001;
+static const uint32_t RAC_SYSTEM_CNF_LBA = 289;
+static const uint32_t GC_UYA_DL_SYSTEM_CNF_LBA = 1000;
+static const uint32_t RAC_TABLE_OF_CONTENTS_LBA = 1500;
+static const uint32_t GC_UYA_DL_TABLE_OF_CONTENTS_LBA = 1001;
 
 static const std::size_t TOC_MAX_SIZE       = 0x200000;
 static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
