@@ -1,5 +1,67 @@
 Game rac {
+	File game {
+		Block Level                               { iff: 0    type: "int" desc: "The ID number of the current level." }
+		Block bolt_count                          { iff: 1    type: "int" }
+		Block game_completes                      { iff: 2    type: "int" desc: "The number of times the game has been completed on this file." }
+		Block ElapsedTime                         { iff: 3    type: "int" }
+		Block LastSaveTime                        { iff: 4    type: "sceCdCLOCK" }
+		Block GlobalFlags                         { iff: 5    type: "global_flags" }
+		Block CheatsActivated                     { iff: 7    type: "CheatsActivated" }
+		Block SkillPoints                         { iff: 8    type: "SkillPoints" }
+		Block ammo                                { iff: 9    type: "ammo" }
+		Block unlocks                             { iff: 10   type: "unlocks" }
+		Block items                               { iff: 11   type: "items" }
+		Block purchasable_vendor_items            { iff: 12   type: "???" }
+		Block unknown_13                          { iff: 13   type: "???" }
+		Block unknown_19                          { iff: 19   type: "???" }
+		Block seen_planets                        { iff: 14   type: "???" }
+		Block galactic_map                        { iff: 20   type: "galactic_map" }
+		Block unknown_15                          { iff: 15   type: "???" }
+		Block HelpDataMessages                    { iff: 16   type: "HelpDataMessages" }
+		Block HelpDataMisc                        { iff: 17   type: "HelpDataMisc" }
+		Block HelpDataGadgets                     { iff: 18   type: "HelpDataGadgets" }
+		Block unknown_21                          { iff: 21   type: "???" }
+		Block unknown_22                          { iff: 22   type: "???" }
+		Block unknown_23                          { iff: 23   type: "???" }
+		Block unknown_24                          { iff: 24   type: "???" }
+		Block camera_up_down_mode                 { iff: 25   type: "int" }
+		Block camera_left_right_mode              { iff: 26   type: "int" }
+		Block camera_rotation_speed               { iff: 27   type: "int" }
+		Block unknown_28                          { iff: 28   type: "???" }
+		Block unknown_29                          { iff: 29   type: "???" }
+		Block unknown_30                          { iff: 30   type: "???" }
+		Block unknown_31                          { iff: 31   type: "???" }
+		Block unknown_32                          { iff: 32   type: "???" }
+		Block unknown_33                          { iff: 33   type: "???" }
+		Block unknown_34                          { iff: 34   type: "???" }
+		Block unknown_35                          { iff: 35   type: "???" }
+		Block unknown_36                          { iff: 36   type: "???" }
+		Block CheatsEverActivated                 { iff: 37   type: "CheatsEverActivated" }
+		Block unknown_1000                        { iff: 1000 type: "???" }
+		Block unknown_1001                        { iff: 1001 type: "???" }
+		Block unknown_1002                        { iff: 1002 type: "???" }
+		Block TotalPlayTime                       { iff: 1003 type: "int" }
+		Block unknown_1004                        { iff: 1004 type: "???" } // XYZ whole game
+		Block TotalDeaths                         { iff: 1005 type: "int" }
+		Block unknown_1008                        { iff: 1008 type: "???" }
+		Block total_bolts_collected               { iff: 1009 type: "???" } // double check this
+		Block HelpLog                             { iff: 1010 type: "HelpLog" }
+		Block HelpLogPos                          { iff: 1011 type: "int" }
+	}
 	
+	File level {
+		Block visited                             { iff: 3001 type: "char" } // 0 = unvisited, 1 = visited, 2 = completed
+		Block map_mask                            { iff: 3002 type: "map_mask" }
+		Block gold_bolts                          { iff: 3003 type: "gold_bolts" }
+		Block segments_completed                  { iff: 3004 type: "segments_completed" }
+		Block unknown_3005                        { iff: 3005 type: "???" }
+		Block unknown_3006                        { iff: 3006 type: "???" }
+		Block unknown_3007                        { iff: 3007 type: "???" }
+		Block unknown_3008                        { iff: 3008 type: "???" }
+		Block total_bolts_collected_this_level    { iff: 4000 type: "???" } // double check this
+		Block unknown_4001                        { iff: 4001 type: "???" } // XYZ per level
+		Block total_deaths_this_level             { iff: 4002 type: "int" }
+	}
 }
 
 Game gc {
