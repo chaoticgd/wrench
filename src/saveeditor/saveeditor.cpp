@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2023 chaoticgd
+	Copyright (C) 2019-2024 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,10 +19,10 @@
 #include <algorithm>
 
 #include <core/filesystem.h>
-#include <core/memory_card.h>
 #include <engine/compression.h>
 #include <gui/gui.h>
 #include <toolwads/wads.h>
+#include <saveeditor/memory_card.h>
 
 #include "imgui_club/imgui_memory_editor.h"
 
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
 	
 	u64 frame = 0;
 	
-	GLFWwindow* window = gui::startup("Wrench Memory Card Editor", 1280, 720);
+	GLFWwindow* window = gui::startup("Wrench Save Editor", 1280, 720);
 	gui::load_font(wadinfo.gui.fonts[0], 22);
 	while(!glfwWindowShouldClose(window)) {
 		gui::run_frame(window, update_gui);
@@ -201,7 +201,9 @@ static void files() {
 }
 
 static void sections() {
-	
+	if(ImGui::Button("Save Current File")) {
+		should_save_now = true;
+	}
 }
 
 static void editor() {
@@ -294,10 +296,9 @@ static void do_load() {
 static void do_save() {
 	if(file.has_value()) {
 		try {
-			//memory_card::update(*file, save);
-			//std::vector<u8> buffer;
-			//memcard::write(buffer, *file);
-			//write_file(file->path, buffer);
+			std::vector<u8> buffer;
+			memcard::write(buffer, *file);
+			write_file(file->path, buffer);
 		} catch(RuntimeError& error) {
 			error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
 		}
@@ -310,7 +311,7 @@ static bool blocks_page(bool draw_gui) {
 		return file.has_value() && (file->type == memcard::FileType::NET || file->type == memcard::FileType::SLOT);
 	}
 	
-	memcard::GameSchema* gs = schema.game(Game::DL);
+	memcard::GameSchema* gs = schema.game(Game::RAC);
 	
 	switch(file->type) {
 		case memcard::FileType::NET: {
@@ -353,16 +354,16 @@ static void blocks_sub_page(std::vector<memcard::Block>& blocks, memcard::FileSc
 		if(file_schema) {
 			memcard::BlockSchema* block_schema = file_schema->block(block.type);
 			if(block_schema) {
-				name = stringf("%4d: %s", block.type, block_schema->name.c_str());
+				name = stringf("%4d: %s (%d bytes)", block.type, block_schema->name.c_str(), block.unpadded_size);
 			}
 		}
 		if(name.empty()) {
-			name = stringf("%4d: unknown", block.type);
+			name = stringf("%4d: unknown (%d bytes)", block.type, block.unpadded_size);
 		}
 		if(ImGui::CollapsingHeader(name.c_str())) {
 			ImGui::BeginChild("hexedit", ImVec2(0, ImGui::GetFontSize() * 20));
 			editors[i].OptShowOptions = false;
-			editors[i].DrawContents(block.data.data(), block.data.size(), 0);
+			editors[i].DrawContents(block.data.data(), block.unpadded_size, 0);
 			ImGui::EndChild();
 		}
 		ImGui::PopID();

@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2023 chaoticgd
+	Copyright (C) 2019-2024 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CORE_MEMORY_CARD_H
-#define CORE_MEMORY_CARD_H
+#ifndef SAVEEDITOR_MEMORY_CARD_H
+#define SAVEEDITOR_MEMORY_CARD_H
 
 #include <core/buffer.h>
 #include <core/filesystem.h>

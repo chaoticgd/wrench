@@ -53,12 +53,12 @@ add_subdirectory(thirdparty)
 
 set(RELEASE_FILES
 	$<TARGET_FILE:asset2json>
-	$<TARGET_FILE:memcard>
 	$<TARGET_FILE:memmap>
 	$<TARGET_FILE:vif>
 	$<TARGET_FILE:wrenchbuild>
 	$<TARGET_FILE:wrencheditor>
 	$<TARGET_FILE:wrenchlauncher>
+	$<TARGET_FILE:wrenchsaveeditor>
 	$<TARGET_FILE:wrenchvis>
 	"${CMAKE_BINARY_DIR}/editor.wad"
 	"${CMAKE_BINARY_DIR}/gui.wad"
