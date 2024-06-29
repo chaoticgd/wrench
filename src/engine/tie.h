@@ -126,7 +126,7 @@ packed_struct(TieStrip,
 	/* 0x00 0x00 */ u8 vertex_count;
 	/* 0x01 0x04 */ u8 pad_1;
 	/* 0x02 0x08 */ u8 gif_tag_offset;
-	/* 0x03 0x0c */ u8 pad_3;
+	/* 0x03 0x0c */ u8 rc34_winding_order;
 )
 
 packed_struct(TieDinkyVertex,
@@ -160,6 +160,7 @@ packed_struct(TieFatVertex,
 struct TiePrimitive {
 	s32 material_index;
 	std::vector<TieDinkyVertex> vertices;
+	s32 winding_order;
 };
 
 struct TiePacket {
