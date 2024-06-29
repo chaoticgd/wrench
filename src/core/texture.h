@@ -58,6 +58,7 @@ public:
 	void to_8bit_paletted();
 	void to_4bit_paletted();
 	
+	void reswizzle();
 	void swizzle();
 	void swizzle_palette();
 	
