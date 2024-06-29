@@ -97,7 +97,7 @@ GeometryPrimitives weave_tristrips(const GLTF::Mesh& mesh, const std::vector<Eff
 	}
 	verify_face_strips(face_strips.strips, face_strips.faces, "weave_multiple_strips_and_pick_the_best", graph);
 	GeometryPrimitives tri_strips = facestrips_to_tristrips(face_strips, effectives);
-	batch_single_triangles_together(tri_strips);
+	//batch_single_triangles_together(tri_strips);
 	return tri_strips;
 }
 

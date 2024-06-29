@@ -265,6 +265,30 @@ void Texture::to_8bit_paletted() {
 	format = PixelFormat::PALETTED_8;
 }
 
+void Texture::reswizzle() {
+	switch(format) {
+		case PixelFormat::PALETTED_4: {
+			verify_not_reached("Swizzling this type of texture not yet implemented.");
+			break;
+		}
+		case PixelFormat::PALETTED_8: {
+			std::vector<u8> swizzled(data.size());
+			for(s32 i = 0; i < data.size(); i++) {
+				s32 map = map_pixel_index_rac4(i, width);
+				if(map >= data.size()) {
+					map = data.size() - 1;
+				}
+				swizzled[i] = data[map];
+			}
+			data = std::move(swizzled);
+			break;
+		}
+		default: {
+			verify_not_reached("Can't swizzle this type of texture.");
+		}
+	}
+}
+
 void Texture::swizzle() {
 	switch(format) {
 		case PixelFormat::PALETTED_4: {
