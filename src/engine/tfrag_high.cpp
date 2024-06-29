@@ -260,10 +260,11 @@ static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strip
 				TfragFace& face = tfaces.emplace_back();
 				face.ad_gif = active_ad_gif;
 				for(s32 j = 0; j < 4; j++) {
-					// 1 - 3    1 - 4
+					// 1 - 3    4 - 1
 					// | / | -> |   |
-					// 2 - 4    2 - 3
-					s32 index = next_strip + i + (j ^ (j > 1));
+					// 2 - 4    3 - 2
+					s32 k = 3 - j;
+					s32 index = next_strip + i + (k ^ (k > 1));
 					face.indices[j] = indices.at(index);
 				}
 			}
