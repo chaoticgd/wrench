@@ -19,20 +19,20 @@
 #include "release.h"
 
 static const Release RELEASES[] = {
-	{"pbpx_955.16", Game::RAC, Region::JAPAN, "Ratchet & Clank"}, // japan original
+	{"scps_150.37", Game::RAC, Region::JAPAN, "Ratchet & Clank"}, // japan original
 	{"sced_510.75", Game::RAC, Region::EU, "Ratchet & Clank"}, // eu demo
 	{"sces_509.16", Game::RAC, Region::EU, "Ratchet & Clank"}, // eu black label/plantinum
 	{"scus_971.99", Game::RAC, Region::US, "Ratchet & Clank"}, // us original/greatest hits
 	{"scus_972.09", Game::RAC, Region::US, "Ratchet & Clank"}, // us demo 1
 	{"scus_972.40", Game::RAC, Region::US, "Ratchet & Clank"}, // us demo 2
-	{"scaj_200.52", Game::GC, Region::JAPAN, "Ratchet & Clank: Going Commando"}, // japan original
+	{"scps_150.56", Game::GC, Region::JAPAN, "Ratchet & Clank: Going Commando"}, // japan original
 	{"sces_516.07", Game::GC, Region::EU, "Ratchet & Clank 2"}, // eu original/platinum
 	{"scus_972.68", Game::GC, Region::US, "Ratchet & Clank: Going Commando"}, // us greatest hits
 	{"scus_972.68", Game::GC, Region::US, "Ratchet & Clank: Going Commando"}, // us original
 	{"scus_973.22", Game::GC, Region::US, "Ratchet & Clank: Going Commando"}, // us demo
 	{"scus_973.23", Game::GC, Region::US, "Ratchet & Clank: Going Commando"}, // us retail employees demo
 	{"scus_973.74", Game::GC, Region::US, "Ratchet & Clank: Going Commando"}, // us rac2 + jak demo
-	{"pcpx_966.53", Game::UYA, Region::JAPAN, "Ratchet & Clank: Up Your Arsenal"}, // japan promotional
+	{"papx_905.20", Game::UYA, Region::JAPAN, "Ratchet & Clank: Up Your Arsenal"}, // japan promotional
 	{"sced_528.47", Game::UYA, Region::EU, "Ratchet & Clank 3"}, // eu demo
 	{"sced_528.48", Game::UYA, Region::EU, "Ratchet & Clank 3"}, // r&c3 + sly 2 demo
 	{"sces_524.56", Game::UYA, Region::EU, "Ratchet & Clank 3"}, // eu original/plantinum
@@ -45,7 +45,7 @@ static const Release RELEASES[] = {
 	{"sced_536.60", Game::DL, Region::EU, "Ratchet: Gladiator"}, // jak x glaiator demo
 	{"sces_532.85", Game::DL, Region::EU, "Ratchet: Gladiator"}, // eu original/platinum
 	{"scps_150.99", Game::DL, Region::JAPAN, "Ratchet & Clank 4"}, // japan special gift package
-	{"scps_193.28", Game::DL, Region::JAPAN, "Ratchet & Clank 4"}, // japan reprint
+	{"scps_151.00", Game::DL, Region::JAPAN, "Ratchet & Clank 4"}, // japan reprint
 	{"scus_974.65", Game::DL, Region::US, "Ratchet: Deadlocked"}, // us original
 	{"scus_974.85", Game::DL, Region::US, "Ratchet: Deadlocked"}, // us demo
 	{"scus_974.87", Game::DL, Region::US, "Ratchet: Deadlocked"} // us public beta
