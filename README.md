@@ -6,7 +6,7 @@ A set of modding tools for the Ratchet & Clank PS2 games. Compatible with R&C1, 
 - [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable)
 - [Documentation](docs/README.md)
 
-Most members of the modding community for these games use Discord ([invite link](https://discord.gg/FY4Gwv8EuK)). Alternatively, feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
+Most members of the modding community for these games use Discord. Alternatively, feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
 
 Features currently include:
 - Launcher
