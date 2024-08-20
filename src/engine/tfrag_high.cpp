@@ -135,11 +135,28 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 			s16 index = src.vertex / 2;
 			verify_fatal(index >= 0 && index < vertices.size());
 			const TfragVertexPosition& pos = *vertices[index].position;
+			const TfragLight& light = tfrag.lights[index];
+
+			// The normals are stored in spherical coordinates, then there's a
+			// cosine/sine lookup table at the top of the scratchpad.
+			f32 normal_azimuth_radians = light.azimuth * (WRENCH_PI / 128.f);
+			f32 normal_elevation_radians = light.elevation * (WRENCH_PI / 128.f);
+			f32 cos_azimuth = cosf(normal_azimuth_radians);
+			f32 sin_azimuth = sinf(normal_azimuth_radians);
+			f32 cos_elevation = cosf(normal_elevation_radians);
+			f32 sin_elevation = sinf(normal_elevation_radians);
+
+			// This bit is done on VU0.
+			f32 nx = cos_azimuth * cos_elevation;
+			f32 ny = sin_azimuth * cos_elevation;
+			f32 nz = sin_elevation;
+
 			dest.pos.x = (tfrag.base_position.vif1_r0 + pos.x) / 1024.f;
 			dest.pos.y = (tfrag.base_position.vif1_r1 + pos.y) / 1024.f;
 			dest.pos.z = (tfrag.base_position.vif1_r2 + pos.z) / 1024.f;
 			dest.tex_coord.s = vu_fixed12_to_float(src.s);
 			dest.tex_coord.t = vu_fixed12_to_float(src.t);
+			dest.normal = glm::vec3(nx, ny, nz);
 
 			if(dest.tex_coord.s < 0)
 				dest.tex_coord.s *= 0.5f;
@@ -188,7 +205,11 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 			f.v3 = (face.indices[3] > -1) ? (vertex_base + face.indices[3]) : -1;
 		}
 	}
-	
+
+	for(size_t i = 0; i < scene.meshes.size(); i++) {
+		fix_winding_orders_of_triangles_based_on_normals(scene.meshes[i]);
+	}
+
 	return scene;
 }
 
