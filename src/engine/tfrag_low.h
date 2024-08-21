@@ -98,6 +98,15 @@ packed_struct(TfragCube,
 	TfragVec4i vectors[8];
 )
 
+packed_struct(TfragLight,
+	/* 0x0 */ s8 unknown_0;
+	/* 0x1 */ s8 intensity;
+	/* 0x2 */ s8 azimuth;
+	/* 0x3 */ s8 elevation;
+	/* 0x4 */ s16 color;
+	/* 0x6 */ s16 pad;
+)
+
 packed_struct(TfragHeaderUnpack,
 	/* PACK UNPK */
 	/* 0x00 0x00 */ u16 positions_common_count;
@@ -193,7 +202,7 @@ struct Tfrag {
 	std::vector<u8> lod_0_unknown_indices_2;
 	std::vector<TfragVertexInfo> lod_0_vertex_info;
 	std::vector<TfragRgba> rgbas;
-	std::vector<u8> light;
+	std::vector<TfragLight> lights;
 	std::vector<Vec4f> msphere;
 	TfragCube cube;
 	TfragMemoryMap memory_map;

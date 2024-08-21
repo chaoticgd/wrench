@@ -55,7 +55,7 @@ Tfrags read_tfrags(Buffer src, Game game) {
 		read_tfrag_command_lists(tfrag, header, data);
 		
 		tfrag.rgbas = data.read_multiple<TfragRgba>(header.rgba_ofs, header.rgba_size * 4, "rgbas").copy();
-		tfrag.light = data.read_multiple<u8>(header.light_ofs, header.msphere_ofs - header.light_ofs, "light").copy();
+		tfrag.lights = data.read_multiple<TfragLight>(header.light_ofs + 0x10, header.vert_count, "light").copy();
 		tfrag.msphere = data.read_multiple<Vec4f>(header.msphere_ofs, header.msphere_count, "mspheres").copy();
 		tfrag.cube = data.read<TfragCube>(header.cube_ofs, "cube");
 		
@@ -124,7 +124,8 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 		
 		dest.pad(0x10, 0);
 		header.light_ofs = checked_int_cast<u16>(dest.tell() - tfrag_ofs);
-		dest.write_multiple(tfrag.light);
+		dest.write(tfrag.base_position);
+		dest.write_multiple(tfrag.lights);
 		
 		dest.pad(0x10);
 		header.msphere_ofs = checked_int_cast<u16>(dest.tell() - tfrag_ofs);
