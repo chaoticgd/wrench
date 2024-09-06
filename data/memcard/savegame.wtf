@@ -2,46 +2,46 @@ Game rac {
 	File game {
 		Block Level                               { iff: 0    type: "int" desc: "The ID number of the current level." }
 		Block bolt_count                          { iff: 1    type: "int" }
-		Block game_completes                      { iff: 2    type: "int" desc: "The number of times the game has been completed on this file." }
+		Block Completes                           { iff: 2    type: "int" desc: "The number of times the game has been completed on this file." }
 		Block ElapsedTime                         { iff: 3    type: "int" }
 		Block LastSaveTime                        { iff: 4    type: "sceCdCLOCK" }
-		Block GlobalFlags                         { iff: 5    type: "global_flags" }
+		Block GlobalFlags                         { iff: 5    type: "global_flags" } // flag 33 = show special areas/has mapomatic?
 		Block CheatsActivated                     { iff: 7    type: "CheatsActivated" }
 		Block SkillPoints                         { iff: 8    type: "SkillPoints" }
 		Block ammo                                { iff: 9    type: "ammo" }
 		Block unlocks                             { iff: 10   type: "unlocks" }
 		Block items                               { iff: 11   type: "items" }
 		Block purchasable_vendor_items            { iff: 12   type: "???" }
-		Block unknown_13                          { iff: 13   type: "???" }
-		Block unknown_19                          { iff: 19   type: "???" }
+		Block quick_select                        { iff: 13   type: "quick_select" }
+		Block max_hp                              { iff: 19   type: "int" }
 		Block seen_planets                        { iff: 14   type: "???" }
 		Block galactic_map                        { iff: 20   type: "galactic_map" }
-		Block unknown_15                          { iff: 15   type: "???" }
+		Block map_landmarks                       { iff: 15   type: "map_landmark" }
 		Block HelpDataMessages                    { iff: 16   type: "HelpDataMessages" }
 		Block HelpDataMisc                        { iff: 17   type: "HelpDataMisc" }
 		Block HelpDataGadgets                     { iff: 18   type: "HelpDataGadgets" }
-		Block unknown_21                          { iff: 21   type: "???" }
+		Block last_equipped_gadget                { iff: 21   type: "int" }
 		Block unknown_22                          { iff: 22   type: "???" }
 		Block unknown_23                          { iff: 23   type: "???" }
 		Block unknown_24                          { iff: 24   type: "???" }
-		Block camera_up_down_mode                 { iff: 25   type: "int" }
-		Block camera_left_right_mode              { iff: 26   type: "int" }
-		Block camera_rotation_speed               { iff: 27   type: "int" }
-		Block unknown_28                          { iff: 28   type: "???" }
-		Block unknown_29                          { iff: 29   type: "???" }
-		Block unknown_30                          { iff: 30   type: "???" }
+		Block CameraElevationDir                  { iff: 25   type: "int" }
+		Block CameraAzimuthDir                    { iff: 26   type: "int" }
+		Block CameraRotateSpeed                   { iff: 27   type: "int" }
+		Block HelpVoiceOn                         { iff: 28   type: "char" }
+		Block HelpTextOn                          { iff: 29   type: "char" }
+		Block gold_gadgets                        { iff: 30   type: "???" } // for GC this is the "item redirection table" but not here.
 		Block unknown_31                          { iff: 31   type: "???" }
-		Block unknown_32                          { iff: 32   type: "???" }
-		Block unknown_33                          { iff: 33   type: "???" }
-		Block unknown_34                          { iff: 34   type: "???" }
-		Block unknown_35                          { iff: 35   type: "???" }
-		Block unknown_36                          { iff: 36   type: "???" }
+		Block equipped_gadgets                    { iff: 32   type: "equipped_gadgets" }
+		Block SubtitlesActive                     { iff: 33   type: "???" }
+		Block Stereo                              { iff: 34   type: "???" }
+		Block MusicVolume                         { iff: 35   type: "int" }
+		Block EffectsVolume                       { iff: 36   type: "int" }
 		Block CheatsEverActivated                 { iff: 37   type: "CheatsEverActivated" }
-		Block unknown_1000                        { iff: 1000 type: "???" }
+		Block ammo_purchased                      { iff: 1000 type: "ammo_purchased" desc: "The quantity of ammo ever purchased for each weapon." }
 		Block unknown_1001                        { iff: 1001 type: "???" }
 		Block unknown_1002                        { iff: 1002 type: "???" }
 		Block TotalPlayTime                       { iff: 1003 type: "int" }
-		Block unknown_1004                        { iff: 1004 type: "???" } // XYZ whole game
+		Block total_hits_taken                    { iff: 1004 type: "???" }
 		Block TotalDeaths                         { iff: 1005 type: "int" }
 		Block unknown_1008                        { iff: 1008 type: "???" }
 		Block total_bolts_collected               { iff: 1009 type: "???" } // double check this
@@ -53,31 +53,131 @@ Game rac {
 		Block visited                             { iff: 3001 type: "char" } // 0 = unvisited, 1 = visited, 2 = completed
 		Block map_mask                            { iff: 3002 type: "map_mask" }
 		Block gold_bolts                          { iff: 3003 type: "gold_bolts" }
-		Block segments_completed                  { iff: 3004 type: "segments_completed" }
-		Block unknown_3005                        { iff: 3005 type: "???" }
-		Block unknown_3006                        { iff: 3006 type: "???" }
-		Block unknown_3007                        { iff: 3007 type: "???" }
-		Block unknown_3008                        { iff: 3008 type: "???" }
-		Block total_bolts_collected_this_level    { iff: 4000 type: "???" } // double check this
-		Block unknown_4001                        { iff: 4001 type: "???" } // XYZ per level
-		Block total_deaths_this_level             { iff: 4002 type: "int" }
+		Block SegmentsCompleted                   { iff: 3004 type: "SegmentsCompleted" }
+		Block unknown_3005                        { iff: 3005 type: "???" } // stores memcard state for moby instances (indexed by uid?)
+		Block unknown_3006                        { iff: 3006 type: "unknown_3006" }
+		Block time_per_level                      { iff: 3007 type: "???" } // double check this
+		Block metal_detector                      { iff: 3008 type: "???" }
+		Block bolts_collected_per_level           { iff: 4000 type: "???" } // double check this
+		Block hits_taken_per_level                { iff: 4001 type: "???" }
+		Block DeathsPerLevel                      { iff: 4002 type: "int" }
 	}
 }
 
 Game gc {
-	
+	File game {
+		Block Level                               { iff: 0    size: 4    type: "int" }
+		Block HeroSave                            { iff: 39   size: 64   type: "HeroSave" }
+		Block ElapsedTime                         { iff: 3    size: 4    type: "int" }
+		Block LastSaveTime                        { iff: 4    size: 8    type: "???" }
+		Block TotalPlayTime                       { iff: 1003 size: 4    type: "???" }
+		Block GlobalFlags                         { iff: 5    size: 205  type: "???" }
+		Block CheatsActivated                     { iff: 7    size: 12   type: "???" }
+		Block SkillPoints                         { iff: 8    size: 32   type: "???" }
+		Block ammo                                { iff: 9    size: 224  type: "???" }
+		Block unlocks                             { iff: 10   size: 56   type: "???" }
+		Block items                               { iff: 11   size: 56   type: "???" }
+		Block unknown_40                          { iff: 40   size: 224  type: "???" }
+		Block purchasable_vendor_items            { iff: 12   size: 32   type: "???" }
+		Block quick_select                        { iff: 13   size: 32   type: "???" }
+		Block seen_planets                        { iff: 14   size: 28   type: "???" }
+		Block galactic_map                        { iff: 20   size: 112  type: "???" }
+		Block map_landmarks                       { iff: 15   size: 1824 type: "???" }
+		Block HelpDataMessages                    { iff: 16   size: 1932 type: "???" }
+		Block HelpDataMisc                        { iff: 17   size: 516  type: "???" }
+		Block HelpDataGadgets                     { iff: 18   size: 672  type: "???" }
+		Block unknown_38                          { iff: 38   size: 40   type: "???" }
+		Block gadget_lookup                       { iff: 30   size: 80   type: "???" }
+		Block equipped_gadgets                    { iff: 32   size: 28   type: "???" }
+		Block CheatsEverActivated                 { iff: 37   size: 12   type: "???" }
+		Block unknown_41                          { iff: 41   size: 76   type: "???" }
+		Block unknown_42                          { iff: 42   size: 56   type: "???" }
+		Block unknown_45                          { iff: 45   size: 56   type: "???" }
+		Block unknown_43                          { iff: 43   size: 256  type: "???" }
+		Block unknown_44                          { iff: 44   size: 4    type: "???" }
+		Block unknown_46                          { iff: 46   size: 40   type: "???" }
+		Block unknown_47                          { iff: 47   size: 256  type: "???" }
+		Block TotalDeaths                         { iff: 1005 size: 4    type: "???" }
+		Block HelpLog                             { iff: 1010 size: 170  type: "???" }
+		Block HelpLogPos                          { iff: 1011 size: 4    type: "int" }
+	}
+	File level {
+		Block visited                             { iff: 3001 size: 1    type: "char" }
+		Block map_mask                            { iff: 3002 size: 2048 type: "???" }
+		Block gold_bolts                          { iff: 3003 size: 4    type: "???" }
+		Block SegmentsCompleted                   { iff: 3004 size: 16   type: "???" }
+		Block unknown_3005                        { iff: 3005 size: 1024 type: "???" }
+		Block unknown_3007                        { iff: 3007 size: 12   type: "???" }
+		Block unknown_4002                        { iff: 4002 size: 4    type: "???" }
+		Block unknown_4005                        { iff: 4005 size: 64   type: "???" }
+		Block unknown_4007                        { iff: 4007 size: 4    type: "???" }
+		Block unknown_4008                        { iff: 4008 size: 4    type: "???" }
+	}
 }
 
 Game uya {
+	File game {
+		Block Level                               { iff: 0    size: 4    type: "int" }
+		Block HeroSave                            { iff: 39   size: 128  type: "HeroSave" }
+		Block ElapsedTime                         { iff: 3    size: 4    type: "int" }
+		Block LastSaveTime                        { iff: 4    size: 8    type: "???" }
+		Block TotalPlayTime                       { iff: 1003 size: 4    type: "???" }
+		Block GlobalFlags                         { iff: 5    size: 272  type: "???" }
+		Block CheatsActivated                     { iff: 7    size: 19   type: "???" }
+		Block SkillPoints                         { iff: 8    size: 32   type: "???" }
+		Block ammo                                { iff: 9    size: 624  type: "???" }
+		Block unlocks                             { iff: 10   size: 156  type: "???" }
+		Block items                               { iff: 11   size: 156  type: "???" }
+		Block unknown_40                          { iff: 40   size: 624  type: "???" }
+		Block purchasable_vendor_items            { iff: 12   size: 64   type: "???" }
+		Block quick_select                        { iff: 13   size: 32   type: "???" }
+		Block seen_planets                        { iff: 14   size: 60   type: "???" }
+		Block galactic_map                        { iff: 20   size: 240  type: "???" }
+		Block map_landmarks                       { iff: 15   size: 1824 type: "???" }
+		Block HelpDataMessages                    { iff: 16   size: 4272 type: "???" }
+		Block HelpDataMisc                        { iff: 17   size: 516  type: "???" }
+		Block HelpDataGadgets                     { iff: 18   size: 1872 type: "???" }
+		Block unknown_38                          { iff: 38   size: 188  type: "???" }
+		Block gadget_lookup                       { iff: 30   size: 160  type: "???" }
+		Block equipped_gadgets                    { iff: 32   size: 28   type: "???" }
+		Block CheatsEverActivated                 { iff: 37   size: 19   type: "???" }
+		Block unknown_41                          { iff: 41   size: 268  type: "???" }
+		Block unknown_42                          { iff: 42   size: 156  type: "???" }
+		Block unknown_45                          { iff: 45   size: 156  type: "???" }
+		Block unknown_43                          { iff: 43   size: 256  type: "???" }
+		Block unknown_44                          { iff: 44   size: 4    type: "???" }
+		Block unknown_46                          { iff: 46   size: 40   type: "???" }
+		Block unknown_47                          { iff: 47   size: 256  type: "???" }
+		Block TotalDeaths                         { iff: 1005 size: 4    type: "???" }
+		Block HelpLog                             { iff: 1010 size: 800  type: "???" }
+		Block HelpLogPos                          { iff: 1011 size: 4    type: "???" }
+		Block unknown_7002                        { iff: 7002 size: 32   type: "???" }
+		Block unknown_7003                        { iff: 7003 size: 12   type: "???" }
+		Block unknown_7004                        { iff: 7004 size: 6    type: "???" }
+		Block unknown_7005                        { iff: 7005 size: 192  type: "???" }
+		Block unknown_7006                        { iff: 7006 size: 192  type: "???" }
+		Block unknown_7007                        { iff: 7007 size: 192  type: "???" }
+	}
 	
+	File level {
+		Block visited                             { iff: 3001 size: 1    type: "???" }
+		Block map_mask                            { iff: 3002 size: 2048 type: "???" }
+		Block gold_bolts                          { iff: 3003 size: 8    type: "???" }
+		Block SegmentsCompleted                   { iff: 3004 size: 16   type: "???" }
+		Block unknown_3005                        { iff: 3005 size: 1024 type: "???" }
+		Block unknown_4002                        { iff: 4002 size: 4    type: "???" }
+		Block unknown_4005                        { iff: 4005 size: 64   type: "???" }
+		Block unknown_4007                        { iff: 4007 size: 4    type: "???" }
+		Block unknown_4008                        { iff: 4008 size: 4    type: "???" }
+	}
+	
+	File net {
+		Block gameModeOptions                     { iff: 7000 size: 28   type: "???" }
+		Block mpProfiles                          { iff: 7001 size: 3968 type: "???" }
+	}
 }
 
 Game dl {
-	File net {
-		Block gameModeOptions                     { iff: 7000 type: "gameModeStruct" }
-		Block mpProfiles                          { iff: 7001 type: "mpProfiles" }
-	}
-	
 	File game {
 		Block Level                               { iff: 0    type: "int" }
 		Block HeroSave                            { iff: 39   type: "_HeroSave" }
@@ -112,5 +212,10 @@ Game dl {
 	
 	File level {
 		Block mf_levelSaveData                    { iff: 7009 type: "MF_LevelSave" }
+	}
+	
+	File net {
+		Block gameModeOptions                     { iff: 7000 type: "gameModeStruct" }
+		Block mpProfiles                          { iff: 7001 type: "mpProfiles" }
 	}
 }

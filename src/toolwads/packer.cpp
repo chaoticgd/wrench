@@ -275,8 +275,8 @@ static void pack_memcard_wad() {
 	
 	header.savegame = pack_file(wad, "data/memcard/savegame.wtf");
 	header.types[0] = pack_file(wad, "data/memcard/types_rac.h");
-	header.types[1] = pack_file(wad, "data/memcard/types_dl.h");
-	header.types[2] = pack_file(wad, "data/memcard/types_dl.h");
+	header.types[1] = pack_file(wad, "data/memcard/types_gc.h");
+	header.types[2] = pack_file(wad, "data/memcard/types_uya.h");
 	header.types[3] = pack_file(wad, "data/memcard/types_dl.h");
 	
 	wad.pad(SECTOR_SIZE, 0);

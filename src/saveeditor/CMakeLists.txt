@@ -6,4 +6,4 @@ add_executable(wrenchsaveeditor
 	saveeditor.cpp
 	memory_card.cpp
 )
-target_link_libraries(wrenchsaveeditor wrenchcore wrenchengine wrenchgui)
+target_link_libraries(wrenchsaveeditor wrenchcore wrenchcppparser wrenchengine wrenchgui)

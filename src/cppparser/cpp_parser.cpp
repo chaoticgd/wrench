@@ -185,7 +185,8 @@ static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
 		dest.struct_or_union.fields.emplace_back(std::move(field_type));
 		
 		const CppToken& semicolon = parser.cur();
-		verify(semicolon.type == CPP_OPERATOR && semicolon.type == CPP_OPERATOR && semicolon.op == CPP_OP_SEMICOLON, "Expected ';' on line %d.", semicolon.line);
+		verify(semicolon.type == CPP_OPERATOR && semicolon.type == CPP_OPERATOR && semicolon.op == CPP_OP_SEMICOLON,
+			"Expected ';' on line %d, got %s.", semicolon.line, cpp_token_type(semicolon.type));
 		parser.advance();
 	}
 	parser.advance();
@@ -259,6 +260,7 @@ static CppType parse_type_name(CppParserState& parser) {
 			if(token.type != CPP_KEYWORD) break;
 			
 			bool good = false;
+			if(token.keyword == CPP_KEYWORD_bool) good = true;
 			if(token.keyword == CPP_KEYWORD_char) good = true;
 			if(token.keyword == CPP_KEYWORD_short) good = true;
 			if(token.keyword == CPP_KEYWORD_int) good = true;
