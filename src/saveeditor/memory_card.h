@@ -80,7 +80,7 @@ u32 checksum(Buffer src);
 struct BlockSchema {
 	s32 iff;
 	std::string name;
-	std::string type;
+	std::string page;
 };
 
 struct FileSchema {

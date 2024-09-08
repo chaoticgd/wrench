@@ -17,6 +17,7 @@
 */
 
 #include <algorithm>
+#include <functional>
 #include <span>
 
 #include <nfd.h>
@@ -31,20 +32,38 @@
 #include <imgui_club/imgui_memory_editor.h>
 
 static void update_gui(f32 delta_time);
+
 static void files();
 static void controls();
 static void editor();
+
 static void begin_dock_space();
 static void create_dock_layout();
+
 static void do_load();
 static void do_save();
-static void slot_page();
+
+static void game_page();
+static void global_flags_page();
+static void gadgets_page();
 static void blocks_page();
 static void blocks_sub_page(std::vector<memcard::Block>& blocks, memcard::FileSchema* file_schema);
-static void draw_editor(const CppType& type, std::span<u8> data);
-static void draw_editor_rows(
+
+static void draw_tree_page(const char* page, std::vector<memcard::Block>& blocks, memcard::FileSchema& file_schema);
+static void draw_tree(
 	const CppType& type, const std::string& name, std::span<u8> data, s32 index, s32 offset, s32 depth, s32 indent);
-static void draw_build_in_editor(const CppType& type, std::span<u8> data, s32 offset);
+	
+static void draw_table_page(
+	const char* page, const char* names, std::vector<memcard::Block>& blocks, memcard::FileSchema& file_schema);
+static void draw_table_editor(const CppType& type, std::span<u8> data, s32 offset);
+
+static void draw_built_in_editor(const CppType& type, std::span<u8> data, s32 offset);
+static void draw_enum_editor(const CppType& type, const CppType& underlying_type, std::span<u8> data, s32 offset);
+
+using BlockCallback = std::function<void(memcard::Block&, memcard::BlockSchema&, CppType&)>;
+static void for_each_block_from_page(
+	const char* page, std::vector<memcard::Block>& blocks, memcard::FileSchema& file_schema, BlockCallback callback);
+
 static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type);
 static u8 from_bcd(u8 value);
 static u8 to_bcd(u8 value);
@@ -80,12 +99,17 @@ static Page PAGES[] = {
 	// {"Profile Statistics", &profile_stats_page},
 	// {"Game Modes", &game_modes_page},
 	// slot
-	{"Slot", &slot_page, []() {
+	{"Game", &game_page, []() {
+		return file.has_value() && file->type == memcard::FileType::SLOT;
+	}},
+	{"Global Flags", &global_flags_page, []() {
+		return file.has_value() && file->type == memcard::FileType::SLOT;
+	}},
+	{"Gadgets", &gadgets_page, []() {
 		return file.has_value() && file->type == memcard::FileType::SLOT;
 	}},
 	// {"Bots", &bots_page},
 	// {"Enemy Kills", &enemy_kills_page},
-	// {"Gadgets", &gadget_page},
 	// {"Help", &help_page},
 	// {"Hero", &hero_page<memory_card::UyaHeroSave>},
 	// {"Hero", &hero_page<memory_card::DlHeroSave>},
@@ -233,7 +257,7 @@ static void controls()
 	
 	if(ImGui::Button("Save As")) {
 		nfdchar_t* path = nullptr;
-		nfdresult_t result = NFD_OpenDialog("iso", nullptr, &path);
+		nfdresult_t result = NFD_SaveDialog(nullptr, directory.c_str(), &path);
 		if(result != NFD_OKAY) {
 			if(result != NFD_CANCEL) {
 				printf("error: %s\n", NFD_GetError());
@@ -382,6 +406,17 @@ static void do_load()
 				
 				for(auto& [name, type] : game_types) {
 					layout_cpp_type(type, game_types, CPP_PS2_ABI);
+					
+					// Make enums get displayed a little nicer.
+					if(type.descriptor == CPP_ENUM) {
+						for(auto& [value, constant_name] : type.enumeration.constants) {
+							for(char& c : constant_name) {
+								if(c == '_') {
+									c = ' ';
+								}
+							}
+						}
+					}
 				}
 			}
 		} catch(RuntimeError& error) {
@@ -404,35 +439,31 @@ static void do_save()
 	}
 }
 
-static void slot_page()
+static void game_page()
 {
 	if(!game_schema) {
 		return;
 	}
 	
-	for(size_t i = 0; i < file->slot.blocks.size(); i++) {
-		memcard::Block& block = file->slot.blocks[i];
-		ImGui::PushID((int) i);
-		
-		const memcard::BlockSchema* block_schema = game_schema->game.block(block.type);
-		if(!block_schema) {
-			ImGui::PopID();
-			continue;
-		}
-		
-		ImGui::Text("%s", block_schema->name.c_str());
-		
-		auto type_iter = game_types.find(block_schema->type);
-		if(type_iter == game_types.end()) {
-			ImGui::PopID();
-			continue;
-		}
-		
-		const CppType& type = type_iter->second;
-		draw_editor(type, block.data);
-		
-		ImGui::PopID();
+	draw_tree_page("game", file->slot.blocks, game_schema->game);
+}
+
+static void global_flags_page()
+{
+	if(!game_schema) {
+		return;
 	}
+	
+	draw_table_page("globalflags", "GlobalFlag", file->slot.blocks, game_schema->game);
+}
+
+static void gadgets_page()
+{
+	if(!game_schema) {
+		return;
+	}
+	
+	draw_table_page("gadgets", "Gadget", file->slot.blocks, game_schema->game);
 }
 
 static void blocks_page()
@@ -495,44 +526,55 @@ static void blocks_sub_page(std::vector<memcard::Block>& blocks, memcard::FileSc
 	}
 }
 
-static void draw_editor(const CppType& type, std::span<u8> data)
+static void draw_tree_page(const char* page, std::vector<memcard::Block>& blocks, memcard::FileSchema& file_schema)
 {
-	ImGui::BeginChild("editor", ImVec2(0, 200));
-	
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
-	if(ImGui::BeginTable("table", 3, ImGuiTableFlags_RowBg)) {
-		draw_editor_rows(type, type.name, data, -1, 0, 0, 0);
+	if(ImGui::BeginTable("table", 2, ImGuiTableFlags_RowBg)) {
+		for(size_t i = 0; i < blocks.size(); i++) {
+			memcard::Block& block = blocks[i];
+			
+			const memcard::BlockSchema* block_schema = file_schema.block(block.type);
+			if(!block_schema) {
+				continue;
+			}
+			
+			if(block_schema->page != page) {
+				continue;
+			}
+			
+			auto type_iter = game_types.find(block_schema->name);
+			if(type_iter == game_types.end()) {
+				continue;
+			}
+			
+			const CppType& type = type_iter->second;
+			draw_tree(type, type.name, block.data, i, 0, 0, 0);
+		}
+		
 		ImGui::EndTable();
 	}
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleColor();
-	
-	ImGui::EndChild();
 }
 
-static void draw_editor_rows(
+static void draw_tree(
 	const CppType& type, const std::string& name, std::span<u8> data, s32 index, s32 offset, s32 depth, s32 indent)
 {
 	ImGui::PushID(index);
 	defer([&]() { ImGui::PopID(); });
 	
-	if(depth > 0 && type.descriptor != CPP_TYPE_NAME) {
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%x", offset);
-		ImGui::TableNextColumn();
-		for(s32 i = 0; i < indent - 1; i++) {
-			ImGui::Text(" ");
-			ImGui::SameLine();
-		}
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%s", name.c_str());
-		ImGui::TableNextColumn();
+	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
+	for(s32 i = 0; i < indent - 1; i++) {
+		ImGui::Text(" ");
+		ImGui::SameLine();
 	}
+	ImGui::AlignTextToFramePadding();
+	ImGui::Text("%s", name.c_str());
+	ImGui::TableNextColumn();
 	
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
@@ -547,17 +589,17 @@ static void draw_editor_rows(
 			if(expanded) {
 				for(s32 i = 0; i < type.array.element_count; i++) {
 					std::string element_name = std::to_string(i);
-					draw_editor_rows(*type.array.element_type, element_name, data, i, offset + i * type.array.element_type->size, depth + 1, indent + 1);
+					draw_tree(*type.array.element_type, element_name, data, i, offset + i * type.array.element_type->size, depth + 1, indent + 1);
 				}
 			}
 			break;
 		}
 		case CPP_BUILT_IN: {
-			draw_build_in_editor(type, data, offset);
+			draw_built_in_editor(type, data, offset);
 			break;
 		}
 		case CPP_ENUM: {
-			//generate_enum_input(type, data, offset);
+			draw_enum_editor(type, type, data, offset);
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
@@ -573,7 +615,7 @@ static void draw_editor_rows(
 			if(expanded || depth == 0) {
 				for(s32 i = 0; i < type.struct_or_union.fields.size(); i++) {
 					const CppType& field = type.struct_or_union.fields[i];
-					draw_editor_rows(field, field.name, data, i, offset + field.offset, depth + 1, indent + 1);
+					draw_tree(field, field.name, data, i, offset + field.offset, depth + 1, indent + 1);
 				}
 			}
 			
@@ -582,7 +624,7 @@ static void draw_editor_rows(
 		case CPP_TYPE_NAME: {
 			auto iter = game_types.find(type.type_name.string);
 			if(iter != game_types.end()) {
-				draw_editor_rows(iter->second, name, data, -1, offset, depth + 1, indent);
+				draw_tree(iter->second, name, data, -1, offset, depth + 1, indent);
 			} else {
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -605,10 +647,111 @@ static void draw_editor_rows(
 	}
 }
 
-static void draw_build_in_editor(const CppType& type, std::span<u8> data, s32 offset)
+static void draw_table_page(
+	const char* page, const char* names, std::vector<memcard::Block>& blocks, memcard::FileSchema& file_schema)
+{
+	// Determine the number of block columns to draw.
+	std::vector<memcard::Block*> active_blocks;
+	std::vector<CppType*> block_types;
+	s32 element_count = -1;
+	for_each_block_from_page(
+		page, blocks, file_schema,
+		[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
+			verify_fatal(type.descriptor == CPP_ARRAY);
+			
+			active_blocks.emplace_back(&block);
+			block_types.emplace_back(type.array.element_type.get());
+			
+			if(element_count == -1) {
+				element_count = type.array.element_count;
+			} else {
+				verify_fatal(element_count == type.array.element_count);
+			}
+		}
+	);
+	
+	auto names_type_iter = game_types.find(names);
+	verify_fatal(names_type_iter != game_types.end());
+	CppType& names_type = names_type_iter->second;
+	verify_fatal(names_type.descriptor == CPP_ENUM);
+	
+	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
+	if(ImGui::BeginTable("table", 1 + (s32) active_blocks.size(), ImGuiTableFlags_RowBg)) {
+		ImGui::TableSetupColumn(names, ImGuiTableColumnFlags_None);
+		for_each_block_from_page(
+			page, blocks, file_schema,
+			[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
+				ImGui::TableSetupColumn(block_schema.name.c_str(), ImGuiTableColumnFlags_None);
+			}
+		);
+		ImGui::TableHeadersRow();
+		
+		for(s32 row = 0; row < element_count; row++) {
+			std::string row_name;
+			for(auto& [value, name] : names_type.enumeration.constants) {
+				if(value == row) {
+					row_name = name;
+				}
+			}
+			
+			if(row_name.empty()) {
+				row_name = stringf("%d", row);
+			}
+			
+			ImGui::TableNextRow();
+			
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%s", row_name.c_str());
+			
+			ImGui::PushID(row);
+			
+			for(s32 column = 0; column < (s32) active_blocks.size(); column++) {
+				ImGui::PushID(column);
+				
+				ImGui::TableNextColumn();
+				draw_table_editor(*block_types[column], active_blocks[column]->data, row * block_types[column]->size);
+				
+				ImGui::PopID();
+			}
+			
+			ImGui::PopID();
+		}
+		
+		ImGui::EndTable();
+	}
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+}
+
+static void draw_table_editor(const CppType& type, std::span<u8> data, s32 offset) {
+	switch(type.descriptor) {
+		case CPP_BUILT_IN: {
+			draw_built_in_editor(type, data, offset);
+			break;
+		}
+		case CPP_ENUM: {
+			draw_enum_editor(type, type, data, offset);
+			break;
+		}
+		case CPP_TYPE_NAME: {
+			auto iter = game_types.find(type.type_name.string);
+			if(iter != game_types.end()) {
+				draw_table_editor(type, data, offset);
+			}
+			break;
+		}
+		default: {}
+	}
+}
+
+static void draw_built_in_editor(const CppType& type, std::span<u8> data, s32 offset)
 {
 	u8 temp[16];
-	verify_fatal(offset >= 0 && offset + type.size <= data.size())
+	verify_fatal(offset >= 0 && offset + type.size <= data.size());
 	verify_fatal(type.size >= 0 && type.size <= 16);
 	memcpy(temp, &data[offset], type.size);
 	
@@ -622,6 +765,47 @@ static void draw_build_in_editor(const CppType& type, std::span<u8> data, s32 of
 		if(ImGui::DataTypeApplyFromText(data_as_string, imgui_type, temp, format)) {
 			memcpy(&data[offset], temp, type.size);
 		}
+	}
+}
+
+static void draw_enum_editor(const CppType& type, const CppType& underlying_type, std::span<u8> data, s32 offset)
+{
+	s32 value = 0;
+	verify_fatal(offset >= 0 && offset + type.size <= data.size())
+	verify_fatal(type.size >= 0 && type.size <= 4);
+	memcpy(&value, &data[offset], type.size);
+	
+	std::string name;
+	for(auto& [other_value, other_name] : type.enumeration.constants) {
+		if(other_value == value) {
+			name = other_name.c_str();
+		}
+	}
+	
+	ImGui::SetNextItemWidth(-1.f);
+	if(ImGui::BeginCombo("##enum", name.c_str())) {
+		for(auto& [other_value, other_name] : type.enumeration.constants) {
+			if(ImGui::Selectable(other_name.c_str(), other_value == value)) {
+				memcpy(&data[offset], &value, type.size);
+			}
+		}
+		ImGui::EndCombo();
+	}
+}
+
+static void for_each_block_from_page(
+	const char* page, std::vector<memcard::Block>& blocks, memcard::FileSchema& file_schema, BlockCallback callback)
+{
+	for(memcard::Block& block : blocks) {
+		memcard::BlockSchema* block_schema = file_schema.block(block.type);
+		if(!block_schema || block_schema->page != page) {
+			continue;
+		}
+		
+		auto type = game_types.find(block_schema->name);
+		verify_fatal(type != game_types.end());
+		
+		callback(block, *block_schema, type->second);
 	}
 }
 

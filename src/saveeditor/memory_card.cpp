@@ -261,9 +261,10 @@ Schema parse_schema(char* input) {
 				verify(iff && iff->type == WTF_NUMBER, "Failed to parse memcard schema: Missing iff attribute on block node '%s'.", block->tag);
 				block_schema.iff = iff->number.i;
 				
-				const WtfAttribute* type = wtf_attribute(block, "type");
-				verify(type && type->type == WTF_STRING, "Failed to parse memcard schema: Missing iff attribute on block node '%s'.", block->tag);
-				block_schema.type = type->string.begin;
+				const WtfAttribute* page = wtf_attribute(block, "page");
+				if(page && page->type == WTF_STRING) {
+					block_schema.page = page->string.begin;
+				}
 			}
 		}
 	}
