@@ -29,14 +29,16 @@ namespace memcard {
 // Container format
 // *****************************************************************************
 
-struct Block {
+struct Block
+{
 	s32 offset;
 	s32 type;
 	s32 unpadded_size;
 	std::vector<u8> data;
 };
 
-enum class FileType {
+enum class FileType
+{
 	MAIN,
 	NET,
 	PATCH,
@@ -44,26 +46,14 @@ enum class FileType {
 	SYS
 };
 
-struct File {
+struct File
+{
 	fs::path path;
 	bool checksum_does_not_match = false;
 	FileType type;
-	struct {
-		std::vector<u8> data;
-	} main;
-	struct {
-		std::vector<Block> blocks;
-	} net;
-	struct {
-		std::vector<u8> data;
-	} patch;
-	struct {
-		std::vector<Block> blocks;
-		std::vector<std::vector<Block>> levels;
-	} slot;
-	struct {
-		std::vector<u8> data;
-	} sys;
+	std::vector<Block> blocks; // NET, SLOT
+	std::vector<std::vector<Block>> levels; // SLOT
+	std::vector<u8> data; // MAIN, PATCH, SYS
 };
 
 File read(Buffer src, const fs::path& path);
@@ -77,25 +67,43 @@ u32 checksum(Buffer src);
 // Schema format
 // *****************************************************************************
 
-struct BlockSchema {
+enum class PageLayout
+{
+	TREE, TABLE, LEVEL_TABLE, DATA_BLOCKS
+};
+
+struct Page
+{
+	std::string tag;
+	std::string name;
+	PageLayout layout;
+	std::string element_names;
+};
+
+struct BlockSchema
+{
 	s32 iff;
 	std::string name;
 	std::string page;
 };
 
-struct FileSchema {
+struct FileSchema
+{
 	std::vector<BlockSchema> blocks;
 	
 	BlockSchema* block(s32 iff);
 };
 
-struct GameSchema {
+struct GameSchema
+{
 	FileSchema net;
 	FileSchema game;
 	FileSchema level;
 };
 
-struct Schema {
+struct Schema
+{
+	std::vector<Page> pages;
 	GameSchema rac;
 	GameSchema gc;
 	GameSchema uya;

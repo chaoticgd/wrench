@@ -37,7 +37,8 @@ packed_struct(SectionHeader,
 	/* 0x4 */ s32 size;
 )
 
-File read(Buffer src, const fs::path& path) {
+File read(Buffer src, const fs::path& path)
+{
 	File file;
 	s64 pos = 0;
 	
@@ -46,28 +47,28 @@ File read(Buffer src, const fs::path& path) {
 	
 	switch(file.type) {
 		case FileType::MAIN: {
-			file.main.data = src.read_all<u8>().copy();
+			file.data = src.read_all<u8>().copy();
 			break;
 		}
 		case FileType::NET: {
-			file.net.blocks = read_blocks(&file.checksum_does_not_match, src, pos);
+			file.blocks = read_blocks(&file.checksum_does_not_match, src, pos);
 			break;
 		}
 		case FileType::PATCH: {
-			file.patch.data = src.read_all<u8>().copy();
+			file.data = src.read_all<u8>().copy();
 			break;
 		}
 		case FileType::SLOT: {
 			pos += sizeof(SaveSlotFileHeader);
 			
-			file.slot.blocks = read_blocks(&file.checksum_does_not_match, src, pos);
+			file.blocks = read_blocks(&file.checksum_does_not_match, src, pos);
 			while(pos + 3 < src.size()) {
-				file.slot.levels.emplace_back(read_blocks(&file.checksum_does_not_match, src, pos));
+				file.levels.emplace_back(read_blocks(&file.checksum_does_not_match, src, pos));
 			}
 			break;
 		}
 		case FileType::SYS: {
-			file.sys.data = src.read_all<u8>().copy();
+			file.data = src.read_all<u8>().copy();
 			break;
 		}
 	}
@@ -75,7 +76,8 @@ File read(Buffer src, const fs::path& path) {
 	return file;
 }
 
-FileType identify(std::string filename) {
+FileType identify(std::string filename)
+{
 	for(char& c : filename) c = tolower(c);
 	if(filename.find("ratchet") != std::string::npos) {
 		return FileType::MAIN;
@@ -92,7 +94,8 @@ FileType identify(std::string filename) {
 	}
 }
 
-std::vector<Block> read_blocks(bool* checksum_does_not_match_out, Buffer src, s64& pos) {
+std::vector<Block> read_blocks(bool* checksum_does_not_match_out, Buffer src, s64& pos)
+{
 	std::vector<Block> blocks;
 	
 	const ChecksumHeader& checksum_header = src.read<ChecksumHeader>(pos, "checksum header");
@@ -124,26 +127,27 @@ std::vector<Block> read_blocks(bool* checksum_does_not_match_out, Buffer src, s6
 	return blocks;
 }
 
-void write(OutBuffer dest, File& file) {
+void write(OutBuffer dest, File& file)
+{
 	switch(file.type) {
 		case FileType::MAIN: {
-			dest.write_multiple(file.main.data);
+			dest.write_multiple(file.data);
 			break;
 		}
 		case FileType::NET: {
-			write_blocks(dest, file.net.blocks);
+			write_blocks(dest, file.blocks);
 			break;
 		}
 		case FileType::PATCH: {
-			dest.write_multiple(file.patch.data);
+			dest.write_multiple(file.data);
 			break;
 		}
 		case FileType::SLOT: {
 			s64 file_header_ofs = dest.alloc<SaveSlotFileHeader>();
 			SaveSlotFileHeader file_header;
-			file_header.game_data_size = (s32) write_blocks(dest, file.slot.blocks);
+			file_header.game_data_size = (s32) write_blocks(dest, file.blocks);
 			file_header.level_data_size = 0;
-			for(std::vector<Block>& blocks : file.slot.levels) {
+			for(std::vector<Block>& blocks : file.levels) {
 				u32 data_size = (s32) write_blocks(dest, blocks);
 				if(file_header.level_data_size == 0) {
 					file_header.level_data_size = data_size;
@@ -155,13 +159,14 @@ void write(OutBuffer dest, File& file) {
 			break;
 		}
 		case FileType::SYS: {
-			dest.write_multiple(file.sys.data);
+			dest.write_multiple(file.data);
 			break;
 		}
 	}
 }
 
-s64 write_blocks(OutBuffer dest, std::vector<Block>& blocks) {
+s64 write_blocks(OutBuffer dest, std::vector<Block>& blocks)
+{
 	s64 checksum_header_ofs = dest.alloc<ChecksumHeader>();
 	s64 checksum_start_ofs = dest.tell();
 	
@@ -192,7 +197,8 @@ s64 write_blocks(OutBuffer dest, std::vector<Block>& blocks) {
 	return dest.tell() - checksum_header_ofs;
 }
 
-u32 checksum(Buffer src) {
+u32 checksum(Buffer src)
+{
 	u32 value = 0xedb88320;
 	for(const u8* ptr = src.lo; ptr < src.hi; ptr++) {
 		value ^= (u32) *ptr << 8;
@@ -209,7 +215,8 @@ u32 checksum(Buffer src) {
 
 // *****************************************************************************
 
-BlockSchema* FileSchema::block(s32 iff) {
+BlockSchema* FileSchema::block(s32 iff)
+{
 	for(BlockSchema& block : blocks) {
 		if(block.iff == iff) {
 			return &block;
@@ -218,7 +225,8 @@ BlockSchema* FileSchema::block(s32 iff) {
 	return nullptr;
 }
 
-GameSchema* Schema::game(Game g) {
+GameSchema* Schema::game(Game g)
+{
 	switch(g) {
 		case Game::RAC: return &rac;
 		case Game::GC: return &gc;
@@ -228,7 +236,11 @@ GameSchema* Schema::game(Game g) {
 	return nullptr;
 }
 
-Schema parse_schema(char* input) {
+#define VERIFY_SCHEMA(cond, ...) verify(cond, "Failed to parse memcard schema: " __VA_ARGS__)
+#define VERIFY_NOT_REACHED_SCHEMA(...) verify_not_reached("Failed to parse memcard schema: " __VA_ARGS__)
+
+Schema parse_schema(char* input)
+{
 	char* error;
 	WtfNode* root = wtf_parse(input, &error);
 	verify(root, "%s", error);
@@ -236,10 +248,47 @@ Schema parse_schema(char* input) {
 	
 	Schema schema;
 	
+	for(const WtfNode* page = root->first_child; page != nullptr; page = page->next_sibling) {
+		if(strcmp(page->type_name, "Page") != 0) {
+			continue;
+		}
+		
+		Page& page_schema = schema.pages.emplace_back();
+		
+		page_schema.tag = page->tag;
+		
+		const WtfAttribute* name = wtf_attribute(page, "name");
+		VERIFY_SCHEMA(name && name->type == WTF_STRING, "Missing name attribute on page node '%s'.", page->tag);
+		page_schema.name = name->string.begin;
+	
+		const WtfAttribute* layout = wtf_attribute(page, "layout");
+		VERIFY_SCHEMA(layout && layout->type == WTF_STRING, "Missing layout attribute on page node '%s'.", page->tag);
+		if(strcmp(layout->string.begin, "tree") == 0) {
+			page_schema.layout = PageLayout::TREE;
+		} else if(strcmp(layout->string.begin, "table") == 0) {
+			page_schema.layout = PageLayout::TABLE;
+		} else if(strcmp(layout->string.begin, "leveltable") == 0) {
+			page_schema.layout = PageLayout::LEVEL_TABLE;
+		} else if(strcmp(layout->string.begin, "datablocks") == 0) {
+			page_schema.layout = PageLayout::DATA_BLOCKS;
+		} else {
+			VERIFY_NOT_REACHED_SCHEMA("Invalid layout attribute on page node '%s'.", page->tag);
+		}
+		
+		const WtfAttribute* element_names = wtf_attribute(page, "element_names");
+		if(element_names && element_names->type == WTF_STRING) {
+			page_schema.element_names = element_names->string.begin;
+		}
+	}
+	
 	for(const WtfNode* game = root->first_child; game != nullptr; game = game->next_sibling) {
+		if(strcmp(game->type_name, "Game") != 0) {
+			continue;
+		}
+		
 		Game g = game_from_string(game->tag);
 		GameSchema* game_schema = schema.game(g);
-		verify(game_schema, "Failed to parse memcard schema: Invalid game tag '%s'.", game->tag);
+		VERIFY_SCHEMA(game_schema, "Invalid game tag '%s'.", game->tag);
 		
 		for(const WtfNode* file = game->first_child; file != nullptr; file = file->next_sibling) {
 			FileSchema* file_schema = nullptr;
@@ -250,7 +299,7 @@ Schema parse_schema(char* input) {
 			} else if(strcmp(file->tag, "level") == 0) {
 				file_schema = &game_schema->level;
 			}
-			verify(file_schema, "Failed to parse memcard schema: Invalid file tag '%s'.", file->tag);
+			VERIFY_SCHEMA(file_schema, "Invalid file tag '%s'.", file->tag);
 			
 			for(const WtfNode* block = file->first_child; block != nullptr; block = block->next_sibling) {
 				BlockSchema& block_schema = file_schema->blocks.emplace_back();
@@ -258,7 +307,7 @@ Schema parse_schema(char* input) {
 				block_schema.name = block->tag;
 				
 				const WtfAttribute* iff = wtf_attribute(block, "iff");
-				verify(iff && iff->type == WTF_NUMBER, "Failed to parse memcard schema: Missing iff attribute on block node '%s'.", block->tag);
+				VERIFY_SCHEMA(iff && iff->type == WTF_NUMBER, "Missing iff attribute on block node '%s'.", block->tag);
 				block_schema.iff = iff->number.i;
 				
 				const WtfAttribute* page = wtf_attribute(block, "page");

@@ -2,21 +2,24 @@
 
 // mc_netdata
 
-struct timeDeathMatch {
+struct timeDeathMatch
+{
 	int timeLimit;
 	bool vehiclesOn;
 	bool friendlyFireOn;
 	bool suicideOn;
 };
 
-struct fragDeathMatch {
+struct fragDeathMatch
+{
 	int fragLimit;
 	bool vechiclesOn;
 	bool suicideOn;
 	bool friendlyFireOn;
 };
 
-struct siegeMatch {
+struct siegeMatch
+{
 	int timeLimit;
 	bool nodesOn;
 	bool aisOn;
@@ -24,14 +27,16 @@ struct siegeMatch {
 	bool friendlyfireOn;
 };
 
-struct gameModeStruct {
+struct gameModeStruct
+{
 	int modeChosen;
 	siegeMatch siegeOptions;
 	timeDeathMatch timeDeathMatchOptions;
 	fragDeathMatch fragDeathMatchOptions;
 };
 
-struct generalStatStruct {
+struct generalStatStruct
+{
 	int noofGamesPlayed;
 	int noofGamesWon;
 	int noofGamesLost;
@@ -39,7 +44,8 @@ struct generalStatStruct {
 	int noofDeaths;
 };
 
-struct siegeMatchStatStruct {
+struct siegeMatchStatStruct
+{
 	int noofWins;
 	int noofLosses;
 	int winsPerLevel[6];
@@ -49,7 +55,8 @@ struct siegeMatchStatStruct {
 	int noofDeaths;
 };
 
-struct deadMatchStatStruct {
+struct deadMatchStatStruct
+{
 	int noofWins;
 	int noofLosses;
 	int winsPerLevel[6];
@@ -58,13 +65,15 @@ struct deadMatchStatStruct {
 	int noofDeaths;
 };
 
-struct cameraMode {
+struct cameraMode
+{
 	bool normalLeftRightMode;
 	bool normalUpDownMode;
 	int cameraSpeed;
 };
 
-struct profileStruct {
+struct profileStruct
+{
 	int skin;
 	cameraMode camerOptions[3];
 	unsigned char FirstPersonModeOn;
@@ -90,7 +99,8 @@ typedef profileStruct mpProfiles[8];
 
 // mc_gamedata
 
-struct _HeroSave {
+struct _HeroSave
+{
 	int bolts;
 	int boltDeficit;
 	int xp;
@@ -117,7 +127,8 @@ struct _HeroSave {
 	int startLimitBreakDiff;
 };
 
-struct sceCdCLOCK {
+struct sceCdCLOCK
+{
 	unsigned char stat;
 	unsigned char second;
 	unsigned char minute;
@@ -133,20 +144,23 @@ typedef char CheatsActivated[14];
 typedef char CheatsEverActivated[14];
 typedef int SkillPoints[15];
 
-struct vec3 {
+struct vec3
+{
 	float x;
 	float y;
 	float z;
 };
 
-struct alignas(16) vec4 {
+struct alignas(16) vec4
+{
 	float x;
 	float y;
 	float z;
 	float w;
 };
 
-struct tNW_GadgetEventMessage {
+struct tNW_GadgetEventMessage
+{
 	short int gadgetId;
 	char playerIndex;
 	char gadgetEventType;
@@ -157,7 +171,8 @@ struct tNW_GadgetEventMessage {
 	vec3 targetDir;
 };
 
-struct GadgetEvent {
+struct GadgetEvent
+{
 	unsigned char gadgetID;
 	unsigned char cPlayerIndex;
 	char cGadgetType;
@@ -169,7 +184,8 @@ struct GadgetEvent {
 	tNW_GadgetEventMessage gadgetEventMsg;
 };
 
-enum eModBasicType {
+enum eModBasicType
+{
 	MOD_BSC_UNDEFINED = 0,
 	MOD_BSC_SPEED = 1,
 	MOD_BSC_AMMO = 2,
@@ -183,7 +199,8 @@ enum eModBasicType {
 	TOTAL_MOD_BSC_DEFS_SIZE = 9
 };
 
-enum eModPostFXType {
+enum eModPostFXType
+{
 	MOD_PFX_UNDEFINED = 0,
 	MOD_PFX_NAPALM = 1,
 	MOD_PFX_ELECTRICDOOM = 2,
@@ -197,7 +214,8 @@ enum eModPostFXType {
 	TOTAL_MOD_PFX_DEFS_SIZE = 9
 };
 
-enum eModWeaponType {
+enum eModWeaponType
+{
 	MOD_WPN_UNDEFINED = 0,
 	MOD_WPN_ROCKET_GUIDANCE = 1,
 	MOD_WPN_SHOTGUN_WIDTH = 2,
@@ -209,19 +227,23 @@ enum eModWeaponType {
 	TOTAL_MOD_WPN_DEFS_SIZE = 7
 };
 
-struct ModBasicEntry {
+struct ModBasicEntry
+{
 	eModBasicType ID;
 };
 
-struct ModPostFXEntry {
+struct ModPostFXEntry
+{
 	eModPostFXType ID;
 };
 
-struct ModWeaponEntry {
+struct ModWeaponEntry
+{
 	eModWeaponType ID;
 };
 
-struct GadgetEntry {
+struct GadgetEntry
+{
 	short int level;
 	short int sAmmo;
 	unsigned int sXP;
@@ -232,7 +254,8 @@ struct GadgetEntry {
 	ModWeaponEntry modWeapon[2];
 };
 
-struct GadgetBox {
+struct GadgetBox
+{
 	char initialized;
 	char level;
 	char bButtonDown[10];
@@ -247,7 +270,8 @@ struct GadgetBox {
 
 typedef GadgetBox g_HeroGadgetBox[10];
 
-struct HelpDatum {
+struct HelpDatum
+{
 	short unsigned int timesUsed;
 	short unsigned int counter;
 	unsigned int lastTime;
@@ -258,7 +282,8 @@ typedef HelpDatum HelpDataMessages[2088];
 typedef HelpDatum HelpDataGadgets[20];
 typedef HelpDatum HelpDataMisc[16];
 
-struct GameSettings {
+struct GameSettings
+{
 	int PalMode;
 	char HelpVoiceOn;
 	char HelpTextOn;
@@ -289,7 +314,8 @@ typedef unsigned char g_PurchaseableGadgets[20];
 typedef unsigned char g_PurchaseableBotUpgrades[17];
 typedef unsigned char g_PurchaseablePostFXMods[9];
 
-struct _BotSave {
+struct _BotSave
+{
 	char botUpgrades[17];
 	char botPaintjobs[11];
 	char botHeads[8];
@@ -297,7 +323,8 @@ struct _BotSave {
 	char curBotHead[2];
 };
 
-struct ST_PlayerData {
+struct ST_PlayerData
+{
 	unsigned int healthReceived;
 	unsigned int damageReceived;
 	unsigned int ammoReceived;
@@ -323,7 +350,8 @@ struct ST_PlayerData {
 typedef ST_PlayerData ST_PlayerStatistics[2];
 typedef int ST_BattledomeWinsAndLosses[2];
 
-struct ST_EnemyKillInfo {
+struct ST_EnemyKillInfo
+{
 	int oClass;
 	int kills;
 };
@@ -333,7 +361,8 @@ typedef int g_QuickSwitchGadgets[4][3];
 
 // mc_leveldata
 
-struct MF_MissionSave {
+struct MF_MissionSave
+{
 	int xp;
 	int bolts;
 	unsigned char status;
@@ -341,7 +370,8 @@ struct MF_MissionSave {
 	unsigned char difficulty;
 };
 
-struct MF_LevelSave {
+struct MF_LevelSave
+{
 	MF_MissionSave mission[64];
 	unsigned char status;
 	unsigned char jackpot;
