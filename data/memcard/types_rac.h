@@ -218,7 +218,7 @@ typedef int TotalHitsTaken;
 typedef int TotalDeaths;
 typedef int Unknown1008;
 typedef int TotalBoltsCollected;
-typedef unsigned short HelpLog[75];
+typedef unsigned char HelpLog[150];
 typedef int HelpLogPos;
 
 // mc_leveldata

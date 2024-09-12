@@ -113,10 +113,10 @@ Game gc {
 		Block GlobalFlags                         { iff: 5    size: 205   page: "globalflags" }
 		Block CheatsActivated                     { iff: 7    size: 12    page: "game" }
 		Block SkillPoints                         { iff: 8    size: 32    page: "game" }
-		Block Ammo                                { iff: 9    size: 224   page: "game" }
-		Block Unlocks                             { iff: 10   size: 56    page: "game" }
-		Block Items                               { iff: 11   size: 56    page: "game" }
-		Block Unknown40                           { iff: 40   size: 224   page: "game" }
+		Block Ammo                                { iff: 9    size: 224   page: "gadgets" }
+		Block Unlocks                             { iff: 10   size: 56    page: "gadgets" }
+		Block Items                               { iff: 11   size: 56    page: "gadgets" }
+		Block Unknown40                           { iff: 40   size: 224   page: "gadgets" }
 		Block PurchasableVendorItems              { iff: 12   size: 32    page: "game" }
 		Block QuickSelect                         { iff: 13   size: 32    page: "game" }
 		Block VisitedPlanets                      { iff: 14   size: 28    page: "game" }
@@ -165,44 +165,44 @@ Game uya {
 		Block GlobalFlags                         { iff: 5    size: 272   page: "globalflags" }
 		Block CheatsActivated                     { iff: 7    size: 19    page: "game" }
 		Block SkillPoints                         { iff: 8    size: 32    page: "game" }
-		Block ammo                                { iff: 9    size: 624   page: "game" }
-		Block unlocks                             { iff: 10   size: 156   page: "game" }
-		Block items                               { iff: 11   size: 156   page: "game" }
-		Block unknown_40                          { iff: 40   size: 624   page: "game" }
-		Block purchasable_vendor_items            { iff: 12   size: 64    page: "game" }
-		Block quick_select                        { iff: 13   size: 32    page: "game" }
-		Block seen_planets                        { iff: 14   size: 60    page: "game" }
-		Block galactic_map                        { iff: 20   size: 240   page: "game" }
-		Block map_landmarks                       { iff: 15   size: 1824  page: "game" }
+		Block Ammo                                { iff: 9    size: 624   page: "gadgets" }
+		Block Unlocks                             { iff: 10   size: 156   page: "gadgets" }
+		Block Items                               { iff: 11   size: 156   page: "gadgets" }
+		Block Unknown40                           { iff: 40   size: 624   page: "gadgets" }
+		Block PurchasableVendorItems              { iff: 12   size: 64    page: "game" }
+		Block QuickSelect                         { iff: 13   size: 32    page: "game" }
+		Block VisitedPlanets                      { iff: 14   size: 60    page: "game" }
+		Block GalacticMap                         { iff: 20   size: 240   page: "game" }
+		Block MapLandmarks                        { iff: 15   size: 1824  page: "game" }
 		Block HelpDataMessages                    { iff: 16   size: 4272  page: "game" }
 		Block HelpDataMisc                        { iff: 17   size: 516   page: "game" }
 		Block HelpDataGadgets                     { iff: 18   size: 1872  page: "game" }
-		Block unknown_38                          { iff: 38   size: 188   page: "game" }
-		Block gadget_lookup                       { iff: 30   size: 160   page: "game" }
-		Block equipped_gadgets                    { iff: 32   size: 28    page: "game" }
+		Block Unknown38                           { iff: 38   size: 188   page: "game" }
+		Block GadgetLookup                        { iff: 30   size: 160   page: "game" }
+		Block EquippedGadgets                     { iff: 32   size: 28    page: "game" }
 		Block CheatsEverActivated                 { iff: 37   size: 19    page: "game" }
-		Block unknown_41                          { iff: 41   size: 268   page: "game" }
-		Block unknown_42                          { iff: 42   size: 156   page: "game" }
-		Block unknown_45                          { iff: 45   size: 156   page: "game" }
-		Block unknown_43                          { iff: 43   size: 256   page: "game" }
-		Block unknown_44                          { iff: 44   size: 4     page: "game" }
-		Block unknown_46                          { iff: 46   size: 40    page: "game" }
-		Block unknown_47                          { iff: 47   size: 256   page: "game" }
+		Block Unknown41                           { iff: 41   size: 268   page: "game" }
+		Block Unknown42                           { iff: 42   size: 156   page: "game" }
+		Block Unknown45                           { iff: 45   size: 156   page: "game" }
+		Block Unknown43                           { iff: 43   size: 256   page: "game" }
+		Block Unknown44                           { iff: 44   size: 4     page: "game" }
+		Block Unknown46                           { iff: 46   size: 40    page: "game" }
+		Block Unknown47                           { iff: 47   size: 256   page: "game" }
 		Block TotalDeaths                         { iff: 1005 size: 4     page: "game" }
 		Block HelpLog                             { iff: 1010 size: 800   page: "game" }
 		Block HelpLogPos                          { iff: 1011 size: 4     page: "game" }
-		Block unknown_7002                        { iff: 7002 size: 32    page: "game" }
-		Block unknown_7003                        { iff: 7003 size: 12    page: "game" }
-		Block unknown_7004                        { iff: 7004 size: 6     page: "game" }
-		Block unknown_7005                        { iff: 7005 size: 192   page: "game" }
-		Block unknown_7006                        { iff: 7006 size: 192   page: "game" }
-		Block unknown_7007                        { iff: 7007 size: 192   page: "game" }
+		Block SecondaryQuickSelect                { iff: 7002 size: 32    page: "game" }
+		Block Unknown7003                         { iff: 7003 size: 12    page: "game" }
+		Block Unknown7004                         { iff: 7004 size: 6     page: "game" }
+		Block Unknown7005                         { iff: 7005 size: 192   page: "game" }
+		Block Unknown7006                         { iff: 7006 size: 192   page: "game" }
+		Block Unknown7007                         { iff: 7007 size: 192   page: "game" }
 	}
 	
 	File level {
-		Block visited                             { iff: 3001 size: 1     page: "game" }
-		Block map_mask                            { iff: 3002 size: 2048  page: "game" }
-		Block gold_bolts                          { iff: 3003 size: 8     page: "game" }
+		Block Visited                             { iff: 3001 size: 1     page: "game" }
+		Block MapMask                             { iff: 3002 size: 2048  page: "game" }
+		Block GoldBolts                           { iff: 3003 size: 8     page: "game" }
 		Block SegmentsCompleted                   { iff: 3004 size: 16    page: "game" }
 		Block unknown_3005                        { iff: 3005 size: 1024  page: "game" }
 		Block unknown_4002                        { iff: 4002 size: 4     page: "game" }
