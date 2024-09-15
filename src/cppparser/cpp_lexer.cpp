@@ -543,6 +543,7 @@ const char* cpp_token_type(CppTokenType type) {
 		case CPP_POINTER_LITERAL: return "pointer literal";
 		case CPP_STRING_LITERAL: return "string literal";
 		case CPP_OPERATOR: return "operator";
+		case CPP_PREPROCESSOR_DIRECTIVE: return "preprocessor directive";
 	}
 	return "(invalid token)";
 }
