@@ -33,10 +33,84 @@ enum Level
 	INSOMNIAC_MUSEUM = 30
 };
 
+// Gadget list from: https://creepnt.stream/rc/rccombo.html
+enum Gadget
+{
+	// UNKNOWN_0 = 0,
+	// UNKNOWN_1 = 1,
+	HELI_PACK = 2,
+	THRUSTER_PACK = 3,
+	HYDRO_PACK = 4,
+	MAPPER = 5,
+	COMMANDO_SUIT = 6,
+	BOLT_GRABBER = 7,
+	LEVITATOR = 8,
+	CLANK_ZAPPER = 9,
+	WRENCH = 10,
+	// UNKNOWN_11 = 11,
+	BOMB_GLOVE = 12,
+	SWINGSHOT = 13,
+	VISIBOMB = 14,
+	// UNKNOWN_15 = 15,
+	SHEEPINATOR = 16,
+	DECOY_GLOVE = 17,
+	TESLA_CLAW = 18,
+	GRAVITY_BOOTS = 19,
+	GRINDBOOTS = 20,
+	GLIDER = 21,
+	CHOPPER = 22,
+	PULSE_RIFLE = 23,
+	SEEKER_GUN = 24,
+	HOVERBOMB_GUN = 25,
+	BLITZ_GUN = 26,
+	MINIROCKET_TUBE = 27,
+	PLASMA_COIL = 28,
+	LAVA_GUN = 29,
+	LANCER = 30,
+	SYNTHENOID = 31,
+	SPIDERBOT = 32,
+	// UNKNOWN_33 = 33,
+	// UNKNOWN_34 = 34,
+	// UNKNOWN_35 = 35,
+	DYNAMO = 36,
+	BOUNCER = 37,
+	ELECTROLYZER = 38,
+	THERMANATOR = 39,
+	// UNKNOWN_40 = 40,
+	MINITURRET_GLOVE = 41,
+	GRAVITY_BOMB = 42,
+	ZODIAC = 43,
+	RYNO = 44,
+	SHIELD_CHARGER = 45,
+	TRACTOR_BEAM = 46,
+	// UNKNOWN_47 = 47,
+	BIKER_HELMET = 48,
+	QWARK_STATUETTE = 49,
+	BOX_BREAKER = 50,
+	INFILTRATOR = 51,
+	// UNKNOWN_52 = 52,
+	WALLOPER = 53,
+	CHARGE_BOOTS = 54,
+	HYPNOMATIC = 55
+};
+
 struct HeroSave
 {
 	int Bolts;
-	char Unknown[60];
+	int Raritanium;
+	int Health;
+	Gadget HandGadget;
+	short FootGadget;
+	short F_12;
+	int XP;
+	int F_18;
+	int F_1C;
+	short PlatinumBoltsFound;
+	short CrystalsFound;
+	int MoonstonesFound;
+	int F_28;
+	int F_2C;
+	char Unknown[16];
 };
 
 typedef int ElapsedTime;
@@ -64,82 +138,61 @@ typedef bool GlobalFlags[205];
 
 enum Cheat
 {
-
+	ACTORS_HAVE_OVERSIZED_CRANIUMS = 0,
+	RATCHET_HAS_A_BIG_HEAD = 1,
+	SNOW_DUDE = 2,
+	CLANK_HAS_A_LARGE_NOGGIN = 3,
+	LEVELS_ARE_MIRRORED = 4,
+	// UNKNOWN_5 = 5,
+	// UNKNOWN_6 = 6,
+	ENEMIES_HAVE_MASSIVE_DOMES = 7,
+	// UNKNOWN_8 = 8,
+	RATCHET_SHOWS_HIS_FUNNY_SIDE = 9,
+	RATCHET_IN_A_TUX = 10,
+	BEACH_BOY = 11
 };
 
-typedef char CheatsActivated[12];
+typedef bool CheatsActivated[12];
 
 enum SkillPoint
 {
-
+	THATS_IMPOSSIBLE = 0,
+	WRENCH_NINJA_BLADE_TO_BLADE = 1,
+	SPEED_DEMON = 2,
+	HOW_FAST_WAS_THAT = 3,
+	NO_SHOCKING_DEVELOPMENTS = 4,
+	HEAL_YOUR_CHI = 5,
+	BE_A_MOON_CHILD = 6,
+	MIDTOWN_INSANITY = 7,
+	DUKES_UP = 8,
+	NOTHING_TO_SEE_HERE = 9,
+	YOURE_MY_HERO = 10,
+	MOVING_VIOLATION = 11,
+	OLD_SKOOL = 12,
+	PREHISTORIC_RAMPAGE = 13,
+	VANDALIZE = 14,
+	SMASH_AND_GRAB = 15,
+	YOU_CAN_BREAK_A_SNOW_DAN = 16,
+	PLANET_BUSTER = 17,
+	WRENCH_NINJA_II_MASSACRE = 18,
+	_2B_OR_NOT_2B_HIT = 19,
+	BYE_BYE_BIRDIES = 20,
+	DESTROY_ALL_BREAKABLES = 21,
+	TRY_TO_SLEEP = 22,
+	NANO_TO_THE_MAX = 23,
+	ROBO_RAMPAGE = 24,
+	CLANK_NEEDS_A_NEW_PAIR_OF_SHOES = 25,
+	WEAPON_ENVY = 26,
+	SAFETY_DEPOSIT = 27,
+	OPERATE_HEAVY_MACHINERY = 28,
+	NICE_RIDE = 29
 };
 
-typedef char SkillPoints[32];
-
-// Gadget list from: https://creepnt.stream/rc/rccombo.html
-enum Gadget
-{
-	UNKNOWN_0 = 0,
-	UNKNOWN_1 = 1,
-	HELI_PACK = 2,
-	THRUSTER_PACK = 3,
-	HYDRO_PACK = 4,
-	MAPPER = 5,
-	COMMANDO_SUIT = 6,
-	BOLT_GRABBER = 7,
-	LEVITATOR = 8,
-	CLANK_ZAPPER = 9,
-	WRENCH = 10,
-	UNKNOWN_11 = 11,
-	BOMB_GLOVE = 12,
-	SWINGSHOT = 13,
-	VISIBOMB = 14,
-	UNKNOWN_15 = 15,
-	SHEEPINATOR = 16,
-	DECOY_GLOVE = 17,
-	TESLA_CLAW = 18,
-	GRAVITY_BOOTS = 19,
-	GRINDBOOTS = 20,
-	GLIDER = 21,
-	CHOPPER = 22,
-	PULSE_RIFLE = 23,
-	SEEKER_GUN = 24,
-	HOVERBOMB_GUN = 25,
-	BLITZ_GUN = 26,
-	MINIROCKET_TUBE = 27,
-	PLASMA_COIL = 28,
-	LAVA_GUN = 29,
-	LANCER = 30,
-	SYNTHENOID = 31,
-	SPIDERBOT = 32,
-	UNKNOWN_33 = 33,
-	UNKNOWN_34 = 34,
-	UNKNOWN_35 = 35,
-	DYNAMO = 36,
-	BOUNCER = 37,
-	ELECTROLYZER = 38,
-	THERMANATOR = 39,
-	UNKNOWN_40 = 40,
-	MINITURRET_GLOVE = 41,
-	GRAVITY_BOMB = 42,
-	ZODIAC = 43,
-	RYNO = 44,
-	SHIELD_CHARGER = 45,
-	TRACTOR_BEAM = 46,
-	UNKNOWN_47 = 47,
-	BIKER_HELMET = 48,
-	QWARK_STATUETTE = 49,
-	BOX_BREAKER = 50,
-	INFILTRATOR = 51,
-	UNKNOWN_52 = 52,
-	WALLOPER = 53,
-	CHARGE_BOOTS = 54,
-	HYPNOMATIC = 55
-};
+typedef bool SkillPoints[32];
 
 typedef int Ammo[56];
-typedef char Unlocks[56];
-typedef char Items[56];
+typedef bool Unlocks[56];
+typedef bool Items[56];
 typedef int Unknown40[56];
 
 #pragma wrench enum Gadget
@@ -151,10 +204,10 @@ typedef Level GalacticMap[28];
 
 struct MapLandmark
 {
-	float pos_x;
-	float pos_y;
-	float rot_z;
-	int flags;
+	float PosX;
+	float PosY;
+	float RotZ;
+	int Flags;
 };
 
 typedef MapLandmark MapLandmarks[114];
@@ -170,19 +223,25 @@ typedef char GadgetLookup[80];
 
 struct EquippedGadgets
 {
-	int hand;
-	int foot;
-	int head;
-	int backpack;
-	int unknown[3];
+	Gadget Hand;
+	Gadget Foot;
+	Gadget Head;
+	Gadget Back;
+	Gadget Unknown[3];
 };
 
-typedef char CheatsEverActivated[12];
+typedef bool CheatsEverActivated[12];
 
-typedef char Unknown41[76];
+typedef int ChallengeCompletes[19];
 typedef char Unknown42[56];
 typedef char Unknown45[56];
-typedef char Unknown43[256];
+
+enum Movie
+{
+	
+};
+
+typedef char MoviesPlayedRecord[256];
 typedef int Unknown44;
 typedef char Unknown46[40];
 typedef char Unknown47[256];
@@ -194,7 +253,33 @@ typedef int HelpLogPos;
 
 enum SaveLevel
 {
-	
+	_ARANOS_TUTORIAL = 0,
+	_OOZLA = 1,
+	_MAKTAR_NEBULA = 2,
+	_ENDAKO = 3,
+	_BARLOW = 4,
+	_FELTZIN_SYSTEM = 5,
+	_NOTAK = 6,
+	_SIBERIUS = 7,
+	_TABORA = 8,
+	_DOBBO = 9,
+	_HRUGIS_CLOUD = 10,
+	_JOBA = 11,
+	_TODANO = 12,
+	_BOLDAN = 13,
+	_ARANOS_PRISON = 14,
+	_GORN = 15,
+	_SNIVELAK = 16,
+	_SMOLG = 17,
+	_DAMOSEL = 18,
+	_GRELBIN = 19,
+	_YEEDIL = 20,
+	_DOBBO_ORBIT = 22,
+	_DAMOSEL_ORBIT = 23,
+	_SHIP_SHACK = 24,
+	_WUPASH_NEBULA = 25,
+	_JAMMING_ARRAY = 26,
+	_INSOMNIAC_MUSEUM = 27
 };
 
 enum VisitedEnum

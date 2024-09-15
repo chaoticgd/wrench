@@ -1,105 +1,59 @@
 #pragma wrench parser on
 
-// mc_netdata
-
-struct timeDeathMatch
-{
-	int timeLimit;
-	bool vehiclesOn;
-	bool friendlyFireOn;
-	bool suicideOn;
-};
-
-struct fragDeathMatch
-{
-	int fragLimit;
-	bool vechiclesOn;
-	bool suicideOn;
-	bool friendlyFireOn;
-};
-
-struct siegeMatch
-{
-	int timeLimit;
-	bool nodesOn;
-	bool aisOn;
-	bool vehiclesOn;
-	bool friendlyfireOn;
-};
-
-struct gameModeStruct
-{
-	int modeChosen;
-	siegeMatch siegeOptions;
-	timeDeathMatch timeDeathMatchOptions;
-	fragDeathMatch fragDeathMatchOptions;
-};
-
-struct generalStatStruct
-{
-	int noofGamesPlayed;
-	int noofGamesWon;
-	int noofGamesLost;
-	int noofKills;
-	int noofDeaths;
-};
-
-struct siegeMatchStatStruct
-{
-	int noofWins;
-	int noofLosses;
-	int winsPerLevel[6];
-	int lossesPerLevel[6];
-	int noofBaseCaptures;
-	int noofKills;
-	int noofDeaths;
-};
-
-struct deadMatchStatStruct
-{
-	int noofWins;
-	int noofLosses;
-	int winsPerLevel[6];
-	int lossesPerLevel[6];
-	int noofkills;
-	int noofDeaths;
-};
-
-struct cameraMode
-{
-	bool normalLeftRightMode;
-	bool normalUpDownMode;
-	int cameraSpeed;
-};
-
-struct profileStruct
-{
-	int skin;
-	cameraMode camerOptions[3];
-	unsigned char FirstPersonModeOn;
-	char name[16];
-	char password[16];
-	char mapAccess;
-	char palServer;
-	char helpMsgOff;
-	char savePassword;
-	char locationIdx;
-	generalStatStruct generalStats;
-	siegeMatchStatStruct siegeMatchStats;
-	deadMatchStatStruct deadMatchStats;
-	char active;
-	int help_data[32];
-	char netEnabled;
-	char vibration;
-	short int musicVolume;
-	int extraDataPadding[31];
-};
-
-typedef profileStruct mpProfiles[8];
-
 // mc_gamedata
 
-struct _HeroSave
+enum Level
+{
+	MULTIPLAYER_MENU = 0,
+	DREADZONE_STATION = 1,
+	CATACROM_GRAVEYARD = 2,
+	SARATHOS_SWAMP = 4,
+	DARK_CATHEDRAL = 5,
+	TEMPLE_OF_SHAAR = 6,
+	VALIX_LIGHTHOUSE = 7,
+	MINING_FACILITY = 8,
+	TORVAL_RUINS = 10,
+	TEMPUS_STATION = 11,
+	MARAXUS_PRISON = 13,
+	GHOST_STATION = 14,
+	CONTROL_LEVEL = 15,
+	DREADZONE_STATION_SPLIT_SCREEN = 21,
+	CATACROM_GRAVEYARD_SPLIT_SCREEN = 22,
+	SARATHOS_SWAMP_SPLIT_SCREEN = 24,
+	DARK_CATHEDRAL_SPLIT_SCREEN = 25,
+	TEMPLE_OF_SHAAR_SPLIT_SCREEN = 26,
+	VALIX_LIGHTHOUSE_SPLIT_SCREEN = 27,
+	MINING_FACILITY_SPLIT_SCREEN = 28,
+	TORVAL_RUINS_SPLIT_SCREEN = 30,
+	TEMPUS_STATION_SPLIT_SCREEN = 31,
+	MARAXUS_PRISON_SPLIT_SCREEN = 33,
+	GHOST_STATION_SPLIT_SCREEN = 34,
+	CONTROL_LEVEL_SPLIT_SCREEN = 35,
+	MULTIPLAYER_BATTLEDOME_TOWER = 41,
+	MULTIPLAYER_CATACROM_GRAVEYARD = 42,
+	MULTIPLAYER_SARATHOS_SWAMP = 44,
+	MULTIPLAYER_DARK_CATHEDRAL = 45,
+	MULTIPLAYER_TEMPLE_OF_SHAAR = 46,
+	MULTIPLAYER_VALIX_LIGHTHOUSE = 47,
+	MULTIPLAYER_MINING_FACILITY = 48,
+	MULTIPLAYER_TORVAL_RUINS = 50,
+	MULTIPLAYER_TEMPUS_STATION = 51,
+	MULTIPLAYER_MARAXUS_PRISON = 53,
+	MULTIPLAYER_GHOST_STATION = 54,
+	MULTIPLAYER_BATTLEDOME_TOWER_SPLIT_SCREEN = 61,
+	MULTIPLAYER_CATACROM_GRAVEYARD_SPLIT_SCREEN = 62,
+	MULTIPLAYER_SARATHOS_SWAMP_SPLIT_SCREEN = 64,
+	MULTIPLAYER_DARK_CATHEDRAL_SPLIT_SCREEN = 65,
+	MULTIPLAYER_TEMPLE_OF_SHAAR_SPLIT_SCREEN = 66,
+	MULTIPLAYER_VALIX_LIGHTHOUSE_SPLIT_SCREEN = 67,
+	MULTIPLAYER_MINING_FACILITY_SPLIT_SCREEN = 68,
+	MULTIPLAYER_TORVAL_RUINS_SPLIT_SCREEN = 70,
+	MULTIPLAYER_TEMPUS_STATION_SPLIT_SCREEN = 71,
+	MULTIPLAYER_MARAXUS_PRISON_SPLIT_SCREEN = 73,
+	MULTIPLAYER_GHOST_STATION_SPLIT_SCREEN = 74
+};
+
+struct HeroSave
 {
 	int bolts;
 	int boltDeficit;
@@ -127,6 +81,8 @@ struct _HeroSave
 	int startLimitBreakDiff;
 };
 
+typedef int ElapsedTime;
+
 struct sceCdCLOCK
 {
 	unsigned char stat;
@@ -139,9 +95,30 @@ struct sceCdCLOCK
 	unsigned char year;
 };
 
+typedef sceCdCLOCK LastSaveTime;
+typedef unsigned int TotalPlayTime;
+typedef int TN_savedDifficultyLevel;
+
+enum GlobalFlag
+{
+	
+};
+
 typedef char GlobalFlags[12];
-typedef char CheatsActivated[14];
-typedef char CheatsEverActivated[14];
+
+enum Cheat
+{
+	
+};
+
+typedef bool CheatsActivated[14];
+typedef bool CheatsEverActivated[14];
+
+enum SkillPoint
+{
+	
+};
+
 typedef int SkillPoints[15];
 
 struct vec3
@@ -307,14 +284,23 @@ struct GameSettings
 	char AutoSaveOn;
 };
 
+typedef GameSettings Settings;
+
 typedef int FirstPersonDesiredMode[10];
+
+enum Movie
+{
+	
+};
+
 typedef unsigned int MoviesPlayedRecord[64];
 typedef short unsigned int HelpLog[2100];
 typedef unsigned char g_PurchaseableGadgets[20];
 typedef unsigned char g_PurchaseableBotUpgrades[17];
+typedef unsigned char g_PurchaseableWrenchLevel;
 typedef unsigned char g_PurchaseablePostFXMods[9];
 
-struct _BotSave
+struct BotSave
 {
 	char botUpgrades[17];
 	char botPaintjobs[11];
@@ -376,3 +362,104 @@ struct MF_LevelSave
 	unsigned char status;
 	unsigned char jackpot;
 };
+
+typedef MF_LevelSave mf_levelSaveData;
+
+// mc_netdata
+
+struct timeDeathMatch
+{
+	int timeLimit;
+	bool vehiclesOn;
+	bool friendlyFireOn;
+	bool suicideOn;
+};
+
+struct fragDeathMatch
+{
+	int fragLimit;
+	bool vechiclesOn;
+	bool suicideOn;
+	bool friendlyFireOn;
+};
+
+struct siegeMatch
+{
+	int timeLimit;
+	bool nodesOn;
+	bool aisOn;
+	bool vehiclesOn;
+	bool friendlyfireOn;
+};
+
+struct gameModeStruct
+{
+	int modeChosen;
+	siegeMatch siegeOptions;
+	timeDeathMatch timeDeathMatchOptions;
+	fragDeathMatch fragDeathMatchOptions;
+};
+
+typedef gameModeStruct gameModeOptions;
+
+struct generalStatStruct
+{
+	int noofGamesPlayed;
+	int noofGamesWon;
+	int noofGamesLost;
+	int noofKills;
+	int noofDeaths;
+};
+
+struct siegeMatchStatStruct
+{
+	int noofWins;
+	int noofLosses;
+	int winsPerLevel[6];
+	int lossesPerLevel[6];
+	int noofBaseCaptures;
+	int noofKills;
+	int noofDeaths;
+};
+
+struct deadMatchStatStruct
+{
+	int noofWins;
+	int noofLosses;
+	int winsPerLevel[6];
+	int lossesPerLevel[6];
+	int noofkills;
+	int noofDeaths;
+};
+
+struct cameraMode
+{
+	bool normalLeftRightMode;
+	bool normalUpDownMode;
+	int cameraSpeed;
+};
+
+struct profileStruct
+{
+	int skin;
+	cameraMode camerOptions[3];
+	unsigned char FirstPersonModeOn;
+	char name[16];
+	char password[16];
+	char mapAccess;
+	char palServer;
+	char helpMsgOff;
+	char savePassword;
+	char locationIdx;
+	generalStatStruct generalStats;
+	siegeMatchStatStruct siegeMatchStats;
+	deadMatchStatStruct deadMatchStats;
+	char active;
+	int help_data[32];
+	char netEnabled;
+	char vibration;
+	short int musicVolume;
+	int extraDataPadding[31];
+};
+
+typedef profileStruct mpProfiles[8];

@@ -227,7 +227,8 @@ static void controls()
 		file->path = path;
 		should_save_now = true;
 		
-		directory = file->path.parent_path().string();
+		selected_file_path = file->path;
+		directory = selected_file_path.parent_path().string();
 		should_reload_file_list = true;
 		
 		free(path);
@@ -417,6 +418,10 @@ static void do_load()
 					// Make enums get displayed a little nicer.
 					if(type.descriptor == CPP_ENUM) {
 						for(auto& [value, constant_name] : type.enumeration.constants) {
+							if(constant_name.starts_with("_")) {
+								constant_name = constant_name.substr(1);
+							}
+							
 							for(char& c : constant_name) {
 								if(c == '_') {
 									c = ' ';
@@ -508,7 +513,6 @@ static void blocks_sub_page(std::vector<memcard::Block>& blocks, memcard::FileSc
 
 static void draw_tree(const char* page, std::vector<memcard::Block>& blocks, memcard::FileSchema& file_schema)
 {
-	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
 	if(ImGui::BeginTable("table", 2, ImGuiTableFlags_RowBg)) {
@@ -537,7 +541,6 @@ static void draw_tree(const char* page, std::vector<memcard::Block>& blocks, mem
 	}
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
-	ImGui::PopStyleColor();
 }
 
 static void draw_tree_node(
@@ -656,7 +659,6 @@ static void draw_table(const char* page, const char* names)
 	CppType& names_type = names_type_iter->second;
 	verify_fatal(names_type.descriptor == CPP_ENUM);
 	
-	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
 	if(ImGui::BeginTable("table", 1 + (s32) active_blocks.size(), ImGuiTableFlags_RowBg)) {
@@ -705,7 +707,6 @@ static void draw_table(const char* page, const char* names)
 	}
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
-	ImGui::PopStyleColor();
 }
 static void draw_level_table(const char* page, const char* names, void (*first_row_callback)())
 {
@@ -734,7 +735,6 @@ static void draw_level_table(const char* page, const char* names, void (*first_r
 	CppType& names_type = names_type_iter->second;
 	verify_fatal(names_type.descriptor == CPP_ENUM);
 	
-	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
 	if(ImGui::BeginTable("table", 1 + (s32) active_blocks.size(), ImGuiTableFlags_RowBg)) {
@@ -785,7 +785,6 @@ static void draw_level_table(const char* page, const char* names, void (*first_r
 	}
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
-	ImGui::PopStyleColor();
 }
 
 static void draw_table_editor(const CppType& type, std::span<u8> data, s32 offset)
@@ -817,16 +816,27 @@ static void draw_built_in_editor(const CppType& type, std::span<u8> data, s32 of
 	verify_fatal(type.size >= 0 && type.size <= 16);
 	memcpy(temp, &data[offset], type.size);
 	
-	ImGuiDataType imgui_type = cpp_built_in_type_to_imgui_data_type(type);
-	const char* format = ImGui::DataTypeGetInfo(imgui_type)->PrintFmt;
-	
-	char data_as_string[64];
-	ImGui::DataTypeFormatString(data_as_string, ARRAY_SIZE(data_as_string), imgui_type, temp, format);
-	
-	if(ImGui::InputText("##input", data_as_string, ARRAY_SIZE(data_as_string))) {
-		if(ImGui::DataTypeApplyFromText(data_as_string, imgui_type, temp, format)) {
-			memcpy(&data[offset], temp, type.size);
+	if(type.built_in == CPP_BOOL) {
+		bool value = temp[0];
+		if(ImGui::Checkbox("##input", &value)) {
+			memcpy(&data[offset], &value, 1);
 		}
+	} else {
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
+		
+		ImGuiDataType imgui_type = cpp_built_in_type_to_imgui_data_type(type);
+		const char* format = ImGui::DataTypeGetInfo(imgui_type)->PrintFmt;
+		
+		char data_as_string[64];
+		ImGui::DataTypeFormatString(data_as_string, ARRAY_SIZE(data_as_string), imgui_type, temp, format);
+		
+		if(ImGui::InputText("##input", data_as_string, ARRAY_SIZE(data_as_string))) {
+			if(ImGui::DataTypeApplyFromText(data_as_string, imgui_type, temp, format)) {
+				memcpy(&data[offset], temp, type.size);
+			}
+		}
+		
+		ImGui::PopStyleColor();
 	}
 }
 

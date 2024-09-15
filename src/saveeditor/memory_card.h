@@ -69,7 +69,10 @@ u32 checksum(Buffer src);
 
 enum class PageLayout
 {
-	TREE, TABLE, LEVEL_TABLE, DATA_BLOCKS
+	TREE,
+	TABLE,
+	LEVEL_TABLE,
+	DATA_BLOCKS
 };
 
 struct Page

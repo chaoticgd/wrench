@@ -57,21 +57,21 @@ typedef bool GlobalFlags[128];
 
 enum Cheat
 {
-	BIG_HEAD_NPCS = 0,
-	BIG_HEAD_RATCHET = 1,
+	ACTORS_HAVE_OVERSIZED_CRANIUMS = 0,
+	RATCHET_HAS_A_BIG_HEAD = 1,
 	TRIPPY_CONTRAINS = 2,
-	BIG_HEAD_CLANK = 3,
-	MIRRORED_LEVELS = 4,
+	CLANK_HAS_A_LARGE_NOGGIN = 3,
+	LEVELS_ARE_MIRRORED = 4,
 	// UNKNOWN_5 = 5,
-	INVINCIBILITY = 6,
-	BIG_HEAD_ENEMIES = 7,
+	HEALTH_GIVES_INVINCIBILITY_AT_MAX = 6,
+	ENEMIES_HAVE_MASSIVE_DOMES = 7,
 	// UNKNOWN_8 = 8,
 	// UNKNOWN_9 = 9,
 	// UNKNOWN_10 = 10,
 	// UNKNOWN_11 = 11
 };
 
-typedef char CheatsActivated[12];
+typedef bool CheatsActivated[12];
 
 enum SkillPoint
 {
@@ -107,7 +107,7 @@ enum SkillPoint
 	GOING_COMMANDO = 29
 };
 
-typedef char SkillPoints[32];
+typedef bool SkillPoints[32];
 
 // Gadget list from: https://creepnt.stream/rc/rccombo.html
 enum Gadget
@@ -152,8 +152,8 @@ enum Gadget
 };
 
 typedef int Ammo[37];
-typedef char Unlocks[37];
-typedef char Items[37];
+typedef bool Unlocks[37];
+typedef bool Items[37];
 
 #pragma wrench enum Gadget
 typedef char PurchasableVendorItems[12];
@@ -165,10 +165,10 @@ typedef Level GalacticMap[20];
 
 struct MapLandmark
 {
-	float pos_x;
-	float pos_y;
-	float rot_z;
-	int flags;
+	float PosX;
+	float PosY;
+	float RotZ;
+	int Flags;
 };
 
 typedef MapLandmark MapLandmarks[121];
@@ -198,18 +198,18 @@ typedef int Unknown31;
 
 struct EquippedGadgets
 {
-	int hand;
-	int foot;
-	int head;
-	int backpack;
-	int unknown[3];
+	Gadget Hand;
+	Gadget Foot;
+	Gadget Head;
+	Gadget Back;
+	Gadget Unknown[3];
 };
 
 typedef bool SubtitlesActive;
 typedef int Stereo;
 typedef int MusicVolume;
 typedef int EffectsVolume;
-typedef char CheatsEverActivated[12];
+typedef bool CheatsEverActivated[12];
 typedef int AmmoPurchased[37];
 typedef int Unknown1001[37];
 typedef int Unknown1002[37];
@@ -225,25 +225,25 @@ typedef int HelpLogPos;
 
 enum SaveLevel
 {
-	VELDIN_TUTORIAL_ = 0,
-	NOVALIS_ = 1,
-	ARIDIA_ = 2,
-	KERWAN_ = 3,
-	EUDORA_ = 4,
-	RILGAR_ = 5,
-	NEBULA_G34_ = 6,
-	UMBRIS_ = 7,
-	BATALIA_ = 8,
-	GASPAR_ = 9,
-	ORXON_ = 10,
-	POKITARU_ = 11,
-	HOVEN_ = 12,
-	OLTANIS_ORBIT_ = 13,
-	OLTANIS_ = 14,
-	QUARTU_ = 15,
-	KALEBO_III_ = 16,
-	VELDIN_ORBIT_ = 17,
-	VELDIN_FINALE_ = 18
+	_VELDIN_TUTORIAL = 0,
+	_NOVALIS = 1,
+	_ARIDIA = 2,
+	_KERWAN = 3,
+	_EUDORA = 4,
+	_RILGAR = 5,
+	_NEBULA_G34 = 6,
+	_UMBRIS = 7,
+	_BATALIA = 8,
+	_GASPAR = 9,
+	_ORXON = 10,
+	_POKITARU = 11,
+	_HOVEN = 12,
+	_OLTANIS_ORBIT = 13,
+	_OLTANIS = 14,
+	_QUARTU = 15,
+	_KALEBO_III = 16,
+	_VELDIN_ORBIT = 17,
+	_VELDIN_FINALE = 18
 };
 
 enum VisitedEnum
