@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 	Json json = node_to_json(root);
 	
 	std::string output = json.dump(1, '\t');
-	write_file("/", argv[2], Buffer(output), "w");
+	write_file(argv[2], Buffer(output), true);
 	
 	wtf_free(root);
 }
