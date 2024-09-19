@@ -1110,7 +1110,7 @@ No children.
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | name | The name of the material being referenced. | String | Yes | RAC/GC/UYA/DL |
-| wrap_mode | The UV wrapping mode, stored as an array of two strings. Possible values are ["repeat", "repeat"] (the default), ["repeat", "clamp"], ["clamp", "repeat"] and ["clamp", "clamp"]. | Array | No | RAC/GC/UYA/DL |
+| wrap_mode | The UV wrapping mode, stored as an array of two strings. Possible values are ["repeat" "repeat"] (the default), ["repeat" "clamp"], ["clamp" "repeat"] and ["clamp" "clamp"]. | Array | No | RAC/GC/UYA/DL |
 | glass | Only for mobies. Make the material shiny, like glass? | Boolean | *Not yet documented.* | *Not yet documented.*  |
 | chrome | Only for mobies. Make the material shiny, like chrome? | Boolean | *Not yet documented.* | *Not yet documented.*  |
 
