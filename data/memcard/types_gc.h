@@ -128,6 +128,7 @@ struct sceCdCLOCK
 };
 
 typedef sceCdCLOCK LastSaveTime;
+typedef int TotalPlayTime;
 
 enum GlobalFlag
 {
@@ -193,7 +194,7 @@ typedef bool SkillPoints[32];
 typedef int Ammo[56];
 typedef bool Unlocks[56];
 typedef bool Items[56];
-typedef int Unknown40[56];
+typedef int GadgetXP[56];
 
 #pragma wrench enum Gadget
 typedef char PurchasableVendorItems[32];
@@ -216,7 +217,10 @@ typedef char HelpDataMessages[1932];
 typedef char HelpDataMisc[516];
 typedef char HelpDataGadgets[672];
 
-typedef char Unknown38[40];
+struct Settings
+{
+	char unknown[40];
+};
 
 #pragma wrench enum Gadget
 typedef char GadgetLookup[80];
@@ -231,10 +235,10 @@ struct EquippedGadgets
 };
 
 typedef bool CheatsEverActivated[12];
-
+typedef int EnemiesKilled[19];
 typedef int ChallengeCompletes[19];
-typedef char Unknown42[56];
-typedef char Unknown45[56];
+typedef char GadgetMods[56];
+typedef char Gadget45[56];
 
 enum Movie
 {
@@ -242,7 +246,7 @@ enum Movie
 };
 
 typedef char MoviesPlayedRecord[256];
-typedef int Unknown44;
+typedef int ShipUpgrades;
 typedef char Unknown46[40];
 typedef char Unknown47[256];
 typedef int TotalDeaths;
@@ -298,7 +302,7 @@ typedef char SegmentsCompleted[16];
 
 typedef char Unknown3005[1024];
 typedef char Unknown3007[12];
-typedef int Unknown4002;
+typedef int DeathsPerLevel;
 typedef char Unknown4005[64];
 typedef int Unknown4007;
 typedef int Unknown4008;

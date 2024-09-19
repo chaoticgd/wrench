@@ -32,7 +32,7 @@ namespace memcard {
 struct Block
 {
 	s32 offset;
-	s32 type;
+	s32 iff;
 	s32 unpadded_size;
 	std::vector<u8> data;
 };
@@ -81,6 +81,8 @@ struct Page
 	std::string name;
 	PageLayout layout;
 	std::string element_names;
+	bool display_stored_totals = false;
+	bool display_calculated_int_totals = false;
 };
 
 struct BlockSchema
@@ -88,6 +90,7 @@ struct BlockSchema
 	s32 iff;
 	std::string name;
 	std::string page;
+	std::string buddy; // Links two blocks so they can be displayed in the same column.
 };
 
 struct FileSchema
@@ -95,6 +98,7 @@ struct FileSchema
 	std::vector<BlockSchema> blocks;
 	
 	BlockSchema* block(s32 iff);
+	BlockSchema* block(const std::string& name);
 };
 
 struct GameSchema

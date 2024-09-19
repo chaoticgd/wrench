@@ -118,7 +118,7 @@ std::vector<Block> read_blocks(bool* checksum_does_not_match_out, Buffer src, s6
 		
 		Block& section = blocks.emplace_back();
 		section.offset = (s32) pos;
-		section.type = section_header.type;
+		section.iff = section_header.type;
 		section.unpadded_size = section_header.size;
 		section.data = src.read_bytes(pos, read_size, "section data");
 		pos += read_size;
@@ -175,7 +175,7 @@ s64 write_blocks(OutBuffer dest, std::vector<Block>& blocks)
 		verify_fatal(size_difference > -1 && size_difference < 4);
 		
 		SectionHeader header;
-		header.type = section.type;
+		header.type = section.iff;
 		header.size = section.unpadded_size;
 		dest.write(header);
 		section.offset = (s32) dest.tell();
@@ -219,6 +219,16 @@ BlockSchema* FileSchema::block(s32 iff)
 {
 	for(BlockSchema& block : blocks) {
 		if(block.iff == iff) {
+			return &block;
+		}
+	}
+	return nullptr;
+}
+
+BlockSchema* FileSchema::block(const std::string& name)
+{
+	for(BlockSchema& block : blocks) {
+		if(block.name == name) {
 			return &block;
 		}
 	}
@@ -279,6 +289,16 @@ Schema parse_schema(char* input)
 		if(element_names && element_names->type == WTF_STRING) {
 			page_schema.element_names = element_names->string.begin;
 		}
+		
+		const WtfAttribute* display_stored_totals = wtf_attribute(page, "display_stored_totals");
+		if(display_stored_totals && display_stored_totals->type == WTF_BOOLEAN) {
+			page_schema.display_stored_totals = display_stored_totals->boolean;
+		}
+		
+		const WtfAttribute* display_calculated_int_totals = wtf_attribute(page, "display_calculated_int_totals");
+		if(display_calculated_int_totals && display_calculated_int_totals->type == WTF_BOOLEAN) {
+			page_schema.display_calculated_int_totals = display_calculated_int_totals->boolean;
+		}
 	}
 	
 	for(const WtfNode* game = root->first_child; game != nullptr; game = game->next_sibling) {
@@ -313,6 +333,20 @@ Schema parse_schema(char* input)
 				const WtfAttribute* page = wtf_attribute(block, "page");
 				if(page && page->type == WTF_STRING) {
 					block_schema.page = page->string.begin;
+					
+					bool valid_page = false;
+					for(Page& page : schema.pages) {
+						if(page.tag == block_schema.page) {
+							valid_page = true;
+						}
+					}
+					
+					VERIFY_SCHEMA(valid_page, "Invalid page '%s'.", block_schema.page.c_str());
+				}
+				
+				const WtfAttribute* buddy = wtf_attribute(block, "buddy");
+				if(buddy && buddy->type == WTF_STRING) {
+					block_schema.buddy = buddy->string.begin;
 				}
 			}
 		}

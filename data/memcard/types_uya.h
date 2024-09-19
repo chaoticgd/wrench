@@ -283,7 +283,7 @@ enum Gadget
 typedef int Ammo[156];
 typedef bool Unlocks[156];
 typedef bool Items[156];
-typedef int Unknown40[156];
+typedef int GadgetXP[156];
 
 #pragma wrench enum Gadget
 typedef char PurchasableVendorItems[64];
@@ -306,7 +306,10 @@ typedef char HelpDataMessages[4272];
 typedef char HelpDataMisc[516];
 typedef char HelpDataGadgets[1872];
 
-typedef char Unknown38[188];
+struct Settings
+{
+	char unknown[188];
+};
 
 #pragma wrench enum Gadget
 typedef char GadgetLookup[160];
@@ -322,9 +325,9 @@ struct EquippedGadgets
 
 typedef bool CheatsEverActivated[19];
 
-typedef char Unknown41[268];
-typedef char Unknown42[156];
-typedef char Unknown45[156];
+typedef char EnemiesKilled[67];
+typedef char GadgetMods[156];
+typedef char Gadget45[156];
 
 enum Movie
 {
@@ -332,7 +335,7 @@ enum Movie
 };
 
 typedef char MoviesPlayedRecord[256];
-typedef int Unknown44;
+typedef int ShipUpgrades;
 typedef char Unknown46[40];
 typedef char Unknown47[256];
 typedef int TotalDeaths;
@@ -367,7 +370,7 @@ typedef char GoldBolts[8];
 typedef char SegmentsCompleted[16];
 
 typedef char Unknown3005[1024];
-typedef int Unknown4002;
+typedef int DeathsPerLevel;
 typedef char Unknown4005[64];
 typedef int Unknown4007;
 typedef int Unknown4008;
