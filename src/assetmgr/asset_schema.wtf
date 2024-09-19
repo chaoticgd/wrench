@@ -1717,7 +1717,7 @@ AssetType Material {
 	}
 	
 	ArrayAttribute wrap_mode {
-		desc: "The UV wrapping mode, stored as an array of two strings. Possible values are [\"repeat\", \"repeat\"] (the default), [\"repeat\", \"clamp\"], [\"clamp\", \"repeat\"] and [\"clamp\", \"clamp\"]."
+		desc: "The UV wrapping mode, stored as an array of two strings. Possible values are [\"repeat\" \"repeat\"] (the default), [\"repeat\" \"clamp\"], [\"clamp\" \"repeat\"] and [\"clamp\" \"clamp\"]."
 		required: false
 		games: [1 2 3 4]
 		StringAttribute element {}

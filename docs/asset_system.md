@@ -8,11 +8,11 @@ An **asset bank** is a collection of source assets that represent either a mod o
 
 	thing.textures {
 		Texture 0 {
-			src: 'texture_0.png'
+			src: "texture_0.png"
 		}
 		
 		Texture 1 {
-			src: 'texture_1.png'
+			src: "texture_1.png"
 		}
 	}
 
@@ -22,11 +22,11 @@ Now, suppose there was a second asset file like so:
 
 	thing.textures {
 		Texture 1 {
-			src: 'texture_1_final.png'
+			src: "texture_1_final.png"
 		}
 		
 		Texture 2 {
-			src: 'texture_2.png'
+			src: "texture_2.png"
 		}
 	}
 
@@ -34,15 +34,15 @@ If these asset files are then both packed by Wrench, the logical tree that will 
 
 	thing.textures {
 		Texture 0 {
-			src: 'texture_0.png'
+			src: "texture_0.png"
 		}
 		
 		Texture 1 {
-			src: 'texture_1_final.png'
+			src: "texture_1_final.png"
 		}
 		
 		Texture 2 {
-			src: 'texture_2.png'
+			src: "texture_2.png"
 		}
 	}
 
