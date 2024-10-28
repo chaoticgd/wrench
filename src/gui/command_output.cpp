@@ -34,6 +34,8 @@ void gui::command_output_screen(const char* id, CommandThread& command, void (*c
 	if(ImGui::BeginPopupModal(id)) {
 		ImGui::SetNextItemWidth(-1);
 		ImGui::InputTextMultiline("output", &command.get_last_output_lines(), size, ImGuiInputTextFlags_Multiline | ImGuiInputTextFlags_ReadOnly);
+		ImGui::GetCurrentContext()->InputTextState.ReloadUserBufAndKeepSelection();
+		
 		if(command.is_running()) {
 			if(ImGui::Button("Cancel")) {
 				close_callback();

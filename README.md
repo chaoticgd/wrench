@@ -56,8 +56,14 @@ Features currently include:
 	- git
 	- cmake
 	- g++
-	- xorg-dev (needed to build GLFW)
 	- zenity
+	- extra-cmake-modules *
+	- libwayland-dev *
+	- libxkbcommon-dev *
+	- wayland-protocols *
+	- xorg-dev *
+	
+	\* Needed to build GLFW.
 
 2.	cd into the directory above where you want Wrench to live e.g. `cd ~/programs`.
 

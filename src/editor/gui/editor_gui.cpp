@@ -364,17 +364,19 @@ static void tool_bar() {
 	}
 	
 	for(s32 i = 0; i < g_tool_count; i++) {
+		ImGui::PushID(i);
+		
 		bool active = i == g_active_tool;
 		if(!active) {
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		}
 
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) icon_textures[i].id,
+			"##icon",
+			(ImTextureID) icon_textures[i].id,
 			ImVec2(32 * g_config.ui.scale, 32 * g_config.ui.scale),
 			ImVec2(0, 0),
-			ImVec2(1, 1),
-			-1);
+			ImVec2(1, 1));
 		if(!active) {
 			ImGui::PopStyleColor();
 		}
@@ -383,6 +385,8 @@ static void tool_bar() {
 			g_active_tool = i;
 			g_tools[g_active_tool]->funcs.activate();
 		}
+		
+		ImGui::PopID();
 	}
 	
 	if(g_app->last_frame) {
