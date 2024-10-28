@@ -69,7 +69,7 @@ void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<Re
 		}
 	});
 	
-	ImGui::Image((void*) (intptr_t) *texture, view_size);
+	ImGui::Image((ImTextureID) *texture, view_size);
 	bool image_hovered = ImGui::IsItemHovered();
 	
 	static bool is_dragging = false;

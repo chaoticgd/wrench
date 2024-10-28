@@ -35,7 +35,7 @@ void image_viewer(const std::vector<ModImage>& images) {
 		ImVec2 image_size(image.width, image.height);
 		
 		ImGui::SetCursorPos(image_pos);
-		ImGui::Image((void*) (intptr_t) image.texture.id, image_size);
+		ImGui::Image((ImTextureID) image.texture.id, image_size);
 		
 		ImGui::SetCursorPos(ImVec2(0, viewport.y));
 		ImGui::NewLine();
