@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 	Json json = node_to_json(root);
 	
 	std::string output = json.dump(1, '\t');
-	write_file("/", argv[2], Buffer(output), "w");
+	write_file(argv[2], Buffer(output), true);
 	
 	wtf_free(root);
 }
@@ -67,16 +67,23 @@ static Json node_to_json(WtfNode* node) {
 }
 
 static Json attribute_to_json(WtfAttribute* attribute) {
-	if(attribute->type == WTF_NUMBER) {
-		return attribute->number.f;
-	} else if(attribute->type == WTF_STRING) {
-		return attribute->string.begin;
-	} else if(attribute->type == WTF_ARRAY) {
-		Json array = Json::array();
-		for(WtfAttribute* element = attribute->first_array_element; element != NULL; element = attribute->next) {
-			array.emplace_back(attribute_to_json(element));
+	switch(attribute->type) {
+		case WTF_NUMBER: {
+			return attribute->number.f;
 		}
-		return array;
+		case WTF_BOOLEAN: {
+			return (bool) attribute->boolean;
+		}
+		case WTF_STRING: {
+			return attribute->string.begin;
+		}
+		case WTF_ARRAY: {
+			Json array = Json::array();
+			for(WtfAttribute* element = attribute->first_array_element; element != NULL; element = attribute->next) {
+				array.emplace_back(attribute_to_json(element));
+			}
+			return array;
+		}
 	}
 	return {};
 }

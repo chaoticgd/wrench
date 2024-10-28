@@ -25,7 +25,7 @@ jobs:
 
     - name: Install Dependencies
       if: ${{ matrix.sys.os == 'ubuntu-latest' }}
-      run: sudo apt update && sudo apt install xorg-dev zenity
+      run: sudo apt update && sudo apt install extra-cmake-modules libwayland-dev libxkbcommon-dev wayland-protocols xorg-dev zenity
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DZIP_RELEASE=1

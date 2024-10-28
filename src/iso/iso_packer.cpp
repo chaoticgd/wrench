@@ -38,13 +38,6 @@ static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, Lev
 void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char* hint, AssetPackerFunc pack) {
 	BuildConfig config(src.game(), src.region());
 	
-	s64 toc_sector;
-	if(config.game() == Game::RAC) {
-		toc_sector = RAC1_TABLE_OF_CONTENTS_LBA;
-	} else {
-		toc_sector = RAC234_TABLE_OF_CONTENTS_LBA;
-	}
-	
 	std::string single_level_tag;
 	bool no_mpegs = false;
 	
@@ -84,17 +77,33 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	std::vector<IsoFileRecord*> files;
 	flatten_files(files, root_dir);
 	
+	u32 system_cnf_lba, table_of_contents_lba;
+	if(config.game() == Game::RAC) {
+		system_cnf_lba = RAC_SYSTEM_CNF_LBA;
+		table_of_contents_lba = RAC_TABLE_OF_CONTENTS_LBA;
+	} else {
+		system_cnf_lba = GC_UYA_DL_SYSTEM_CNF_LBA;
+		table_of_contents_lba = GC_UYA_DL_TABLE_OF_CONTENTS_LBA;
+	}
+	
 	// Write out blank sectors that are to be filled in later.
 	iso.pad(SECTOR_SIZE, 0);
 	static const u8 null_sector[SECTOR_SIZE] = {0};
-	while(iso.tell() < SYSTEM_CNF_LBA * SECTOR_SIZE) {
+	while(iso.tell() < system_cnf_lba * SECTOR_SIZE) {
 		iso.write_n(null_sector, SECTOR_SIZE);
 	}
 	
-	// SYSTEM.CNF must be written out at sector 1000 (the game hardcodes this).
+	// SYSTEM.CNF must be written out at a specific sector (the game hardcodes
+	// this and if it's not as it expects the wrong directory will be used on
+	// the memory card).
 	IsoFileRecord system_cnf_record = pack_system_cnf(iso, src, config.game());
 	
-	// Then the table of contents at sector 1001 (also hardcoded).
+	iso.pad(SECTOR_SIZE, 0);
+	while(iso.tell() < system_cnf_lba * SECTOR_SIZE) {
+		iso.write_n(null_sector, SECTOR_SIZE);
+	}
+	
+	// Then the table of contents (also hardcoded).
 	IsoFileRecord toc_record;
 	{
 		iso.pad(SECTOR_SIZE, 0);
@@ -105,7 +114,7 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 			case Game::DL:      toc_record.name = "rc4.hdr";     break;
 			case Game::UNKNOWN: toc_record.name = "unknown.hdr"; break;
 		}
-		toc_record.lba = {(s32) toc_sector};
+		toc_record.lba = {(s32) table_of_contents_lba};
 		toc_record.size = toc_size.bytes();
 		toc_record.modified_time = fs::file_time_type::clock::now();
 	}
@@ -113,9 +122,9 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	// Write out blank sectors that are to be filled in by the table of contents later.
 	iso.pad(SECTOR_SIZE, 0);
 	if(config.game() != Game::RAC) {
-		verify_fatal(iso.tell() == toc_sector * SECTOR_SIZE);
+		verify_fatal(iso.tell() == table_of_contents_lba * SECTOR_SIZE);
 	}
-	while(iso.tell() < toc_sector * SECTOR_SIZE + toc_size.bytes()) {
+	while(iso.tell() < table_of_contents_lba * SECTOR_SIZE + toc_size.bytes()) {
 		iso.write_n(null_sector, SECTOR_SIZE);
 	}
 	
@@ -140,7 +149,7 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	
 	iso.seek(0);
 	write_iso_filesystem(iso, &root_dir);
-	verify_fatal(iso.tell() <= toc_sector * SECTOR_SIZE);
+	verify_fatal(iso.tell() <= table_of_contents_lba * SECTOR_SIZE);
 	iso.write<IsoLsbMsb32>(0x8050, IsoLsbMsb32::from_scalar(volume_size));
 	
 	s64 toc_end = write_table_of_contents(iso, toc, config.game());

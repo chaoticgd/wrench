@@ -37,7 +37,7 @@ std::vector<u8> Buffer::read_bytes(s64 offset, s64 size, const char* subject) co
 }
 
 std::string Buffer::read_string(s64 offset, bool is_korean) const {
-	verify(offset > 0, "Failed to read string: Offset cannot be negative.");
+	verify(offset >= 0, "Failed to read string: Offset cannot be negative.");
 	verify(lo + offset <= hi, "Failed to read string: Attempted to read past end of buffer.");
 	std::string result;
 	if(!is_korean) {
@@ -61,7 +61,7 @@ std::string Buffer::read_string(s64 offset, bool is_korean) const {
 }
 
 std::string Buffer::read_fixed_string(s64 offset, s64 size) const {
-	verify(offset > 0, "Failed to read string: Offset cannot be negative.");
+	verify(offset >= 0, "Failed to read string: Offset cannot be negative.");
 	verify(lo + offset + size <= hi, "Failed to read string: Attempted to read past end of buffer.");
 	std::string string;
 	string.resize(size);

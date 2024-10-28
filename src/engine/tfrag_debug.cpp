@@ -35,7 +35,7 @@ struct TfragLod {
 	std::vector<TfragVertexInfo> vertex_info;
 	std::vector<TfragVertexPosition> positions;
 	std::vector<TfragRgba> rgbas;
-	std::vector<u8> light;
+	std::vector<TfragLight> lights;
 	std::vector<Vec4f> msphere;
 	TfragCube cube;
 };
@@ -140,7 +140,7 @@ static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag) {
 	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.lod_01_positions));
 	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.lod_0_positions));
 	lod.rgbas = tfrag.rgbas;
-	lod.light = tfrag.light;
+	lod.lights = tfrag.lights;
 	lod.msphere = tfrag.msphere;
 	lod.cube = tfrag.cube;
 	return lod;
@@ -159,7 +159,7 @@ static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag) {
 	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.common_positions));
 	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.lod_01_positions));
 	lod.rgbas = tfrag.rgbas;
-	lod.light = tfrag.light;
+	lod.lights = tfrag.lights;
 	lod.msphere = tfrag.msphere;
 	lod.cube = tfrag.cube;
 	return lod;
@@ -176,7 +176,7 @@ static TfragLod extract_low_tfrag_lod(const Tfrag& tfrag) {
 	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
 	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.common_positions));
 	lod.rgbas = tfrag.rgbas;
-	lod.light = tfrag.light;
+	lod.lights = tfrag.lights;
 	lod.msphere = tfrag.msphere;
 	lod.cube = tfrag.cube;
 	return lod;

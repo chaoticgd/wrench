@@ -18,6 +18,8 @@
 
 #include "inspector.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+
 #include <functional>
 #include <imgui.h>
 
@@ -472,7 +474,7 @@ static InspectorFieldFuncs camera_collision_funcs() {
 		changed |= ImGui::Checkbox("##cam_coll_enabled", &first_params.enabled);
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 		ImGui::SameLine();
-		ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
+		ImGuiInputTextFlags flags = ImGuiInputTextFlags_None;
 		if(!first_params.enabled) {
 			flags |= ImGuiInputTextFlags_ReadOnly;
 		}
@@ -518,7 +520,7 @@ static InspectorFieldFuncs moby_rooted_funcs() {
 		changed |= ImGui::Checkbox("##is_rooted", &is_rooted);
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 		ImGui::SameLine();
-		ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
+		ImGuiInputTextFlags flags = ImGuiInputTextFlags_None;
 		if(!is_rooted) {
 			flags |= ImGuiInputTextFlags_ReadOnly;
 		}

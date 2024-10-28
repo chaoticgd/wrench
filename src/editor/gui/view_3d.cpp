@@ -60,7 +60,7 @@ void view_3d() {
 		g_tools[g_active_tool]->funcs.draw();
 	});
 	
-	ImGui::Image((void*) (intptr_t) frame_buffer_texture, *view_size);
+	ImGui::Image((ImTextureID) frame_buffer_texture, *view_size);
 	
 	g_tools[g_active_tool]->funcs.update();
 }

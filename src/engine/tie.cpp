@@ -156,6 +156,8 @@ static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header) {
 		if(next_strip < strips.size() && strips[next_strip].gif_tag_offset == next_offset) {
 			prim = &packet.primitives.emplace_back();
 			prim->material_index = material_index;
+			// for RC3/4 this is used to indicate which faces need their winding order flipped for backface culling
+			prim->winding_order = strips[next_strip].rc34_winding_order != 0;
 			
 			next_strip++;
 			next_offset += 1;
@@ -228,7 +230,11 @@ ColladaScene recover_tie_class(const TieClass& tie) {
 				dest.tex_coord.t = vu_fixed12_to_float(src.t);
 				
 				if(i >= 2) {
-					submesh.faces.emplace_back(base_vertex + i - 2, base_vertex + i - 1, base_vertex + i);
+					if(i % 2 == primitive.winding_order) {
+						submesh.faces.emplace_back(base_vertex + i - 2, base_vertex + i - 1, base_vertex + i);
+					} else {
+						submesh.faces.emplace_back(base_vertex + i - 0, base_vertex + i - 1, base_vertex + i - 2);
+					}
 				}
 			}
 		}

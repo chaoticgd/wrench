@@ -61,7 +61,7 @@ static void oobe(f32 delta_time) {
 	ImDrawList& background = *ImGui::GetBackgroundDrawList();
 	background.AddRectFilledMultiColor(ImVec2(0, 0), ImGui::GetMainViewport()->Size,
 		0xffff0000, 0xffff0000, 0xff000000, 0xff000000);
-	background.AddImage((void*) (intptr_t) welcome.id, ImVec2(0, 0), ImVec2(512, 128));
+	background.AddImage((ImTextureID) welcome.id, ImVec2(0, 0), ImVec2(512, 128));
 	
 	ImVec2 centre = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));

@@ -83,6 +83,15 @@ static void update() {
 	ImGuizmo::AllowAxisFlip(false);
 	ImGuizmo::SetGizmoSizeClipSpace(0.2f);
 	
+	ImGuizmo::Style& style = ImGuizmo::GetStyle();
+	style.TranslationLineThickness = 4.f;
+	style.TranslationLineArrowSize = 11.f;
+	style.RotationLineThickness = 4.f;
+	style.Colors[ImGuizmo::DIRECTION_X] = ImColor(0xff, 0x33, 0x52, 0xff);
+	style.Colors[ImGuizmo::DIRECTION_Y] = ImColor(0x8b, 0xdc, 0x00, 0xff);
+	style.Colors[ImGuizmo::DIRECTION_Z] = ImColor(0x28, 0x90, 0xff, 0xff);
+	style.Colors[ImGuizmo::SELECTION] = ImColor(0xff, 0xff, 0xff, 0xff);
+	
 	Level& lvl = *g_app->get_level();
 	
 	static glm::mat4 RATCHET_TO_IMGUIZMO = {
