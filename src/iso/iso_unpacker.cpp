@@ -118,7 +118,7 @@ static void add_missing_levels_from_filesystem(table_of_contents& toc, const Iso
 					info.level.emplace();
 					info.level->header_lba = record.lba;
 					info.level->file_lba = record.lba;
-					info.level->file_size = record.size;
+					info.level->file_size = Sector32::size_from_bytes(record.size);
 					s32 header_size = iso.read<s32>(record.lba.bytes());
 					info.level->header = iso.read_multiple<u8>(record.lba.bytes(), header_size);
 					info.level->prepend_header = false;
