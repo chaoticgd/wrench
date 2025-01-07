@@ -28,7 +28,7 @@ static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(InputStream& src, Rac1Amalg
 static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header);
 static Sector32 get_lz_size(InputStream& src, Sector32 sector);
 
-static s64 get_rac234_level_table_offset(Buffer src);
+static s64 guess_rac234_level_table_offset(Buffer src);
 
 static SectorRange add_sector_range(SectorRange range, Sector32 lsn);
 static SectorByteRange add_sector_byte_range(SectorByteRange range, Sector32 lsn);
@@ -361,15 +361,15 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 	
 	table_of_contents toc;
 	
-	s64 level_table_offset = get_rac234_level_table_offset(buffer);
-	if(level_table_offset == 0x0) {
+	s64 approximate_level_table_offset = guess_rac234_level_table_offset(buffer);
+	if(approximate_level_table_offset == 0x0) {
 		// We've failed to find the level table, at least try to find some of the other tables.
-		level_table_offset = 0xffff;
+		approximate_level_table_offset = 0xffff;
 	}
 	
 	s64 global_index = 0;
 	s64 ofs = 0;
-	while(ofs + 4 * 6 < level_table_offset) {
+	while(ofs + 4 * 6 < approximate_level_table_offset) {
 		GlobalWadInfo global;
 		global.index = global_index++;
 		global.offset_in_toc = ofs;
@@ -383,20 +383,13 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 		ofs += header_size;
 	}
 	
-	// This fixes an off-by-one error with R&C3 where since the first entry of
-	// the level table is supposed to be zeroed out, this code would otherwise
-	// think that the level table starts 0x18 bytes later than it actually does.
-	if(ofs + 0x18 == level_table_offset) {
-		level_table_offset -= 0x18;
-	}
-	
-	auto level_table = buffer.read_multiple<toc_level_table_entry>(level_table_offset, TOC_MAX_LEVELS, "level table");
+	auto level_table = buffer.read_multiple<toc_level_table_entry>(ofs, TOC_MAX_LEVELS, "level table");
 	for(s32 i = 0; i < TOC_MAX_LEVELS; i++) {
 		toc_level_table_entry entry = level_table[i];
 		
 		LevelInfo level;
 		level.level_table_index = i;
-		level.level_table_entry_offset = (s32) level_table_offset + i * sizeof(toc_level_table_entry);
+		level.level_table_entry_offset = (s32) ofs + i * sizeof(toc_level_table_entry);
 		
 		// The games have the fields in different orders, so we check the type
 		// of what each field points to so we can support them all.
@@ -433,7 +426,7 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 	return toc;
 }
 
-static s64 get_rac234_level_table_offset(Buffer src) {
+static s64 guess_rac234_level_table_offset(Buffer src) {
 	// Check that the two next entries are valid. This is necessary to
 	// get past a false positive in Deadlocked.
 	for(s64 i = 0; i < src.size() / 4 - 12; i++) {
