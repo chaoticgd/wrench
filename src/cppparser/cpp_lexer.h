@@ -55,7 +55,6 @@ extern const CppOperatorTableEntry CPP_OPERATORS[];
 extern const s32 CPP_OPERATOR_COUNT;
 
 enum CppTokenType {
-	CPP_COMMENT,
 	CPP_IDENTIFIER,
 	CPP_KEYWORD,
 	CPP_BOOLEAN_LITERAL,
@@ -78,7 +77,7 @@ struct CppToken {
 	f32 f = 0.f;
 	s32 line = -1;
 	
-	// Skips comments.
+	// Skips preprocessor directives.
 	size_t prev;
 	size_t next;
 };

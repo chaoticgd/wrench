@@ -79,11 +79,6 @@ static s32 test_lexer(const char* src, std::vector<CppTokenType>&& expected) {
 
 static void print_token(const CppToken& token) {
 	switch(token.type) {
-		case CPP_COMMENT: {
-			std::string str(token.str_begin, token.str_end);
-			UNSCOPED_INFO(stringf("comment %s\n", str.c_str()));
-			break;
-		}
 		case CPP_IDENTIFIER: {
 			std::string str(token.str_begin, token.str_end);
 			UNSCOPED_INFO(stringf("identifier %s\n", str.c_str()));
