@@ -66,6 +66,10 @@ static void create_pvar_type(CppType& type) {
 			new (&type.array) CppArray;
 			break;
 		}
+		case CPP_BITFIELD: {
+			new (&type.bitfield) CppBitField;
+			break;
+		}
 		case CPP_BUILT_IN: {
 			new (&type.built_in) CppBuiltIn;
 			break;
@@ -95,6 +99,10 @@ static void move_assign_pvar_type(CppType& lhs, CppType& rhs) {
 			lhs.array = std::move(rhs.array);
 			break;
 		}
+		case CPP_BITFIELD: {
+			lhs.bitfield = std::move(rhs.bitfield);
+			break;
+		}
 		case CPP_BUILT_IN: {
 			lhs.built_in = std::move(rhs.built_in);
 			break;
@@ -122,6 +130,10 @@ static void destroy_pvar_type(CppType& type) {
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
 			type.array.~CppArray();
+			break;
+		}
+		case CPP_BITFIELD: {
+			type.bitfield.~CppBitField();
 			break;
 		}
 		case CPP_BUILT_IN: {
@@ -158,6 +170,13 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 			type.alignment = type.array.element_type->alignment;
 			break;
 		}
+		case CPP_BITFIELD: {
+			verify_fatal(type.bitfield.storage_unit_type.get());
+			layout_cpp_type(*type.bitfield.storage_unit_type, types, abi);
+			type.size = type.bitfield.storage_unit_type->size;
+			type.alignment = type.bitfield.storage_unit_type->alignment;
+			break;
+		};
 		case CPP_BUILT_IN: {
 			verify_fatal(type.built_in < CPP_BUILT_IN_COUNT);
 			type.size = abi.built_in_sizes[type.built_in];
@@ -170,6 +189,7 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
+			// TODO: Add support for bitfields.
 			bool has_custom_alignment = type.alignment > -1;
 			s32 offset = 0;
 			if(!has_custom_alignment) {
@@ -241,6 +261,10 @@ static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDu
 			context.array_subscripts.emplace_back(type.array.element_count);
 			verify_fatal(type.array.element_type.get());
 			dump_cpp_type_impl(dest, *type.array.element_type, context);
+			break;
+		}
+		case CPP_BITFIELD: {
+			verify_not_reached("Dumping bitfields not yet supported.");
 			break;
 		}
 		case CPP_BUILT_IN: {

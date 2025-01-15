@@ -27,6 +27,7 @@
 
 enum CppTypeDescriptor {
 	CPP_ARRAY,
+	CPP_BITFIELD,
 	CPP_BUILT_IN,
 	CPP_ENUM,
 	CPP_STRUCT_OR_UNION,
@@ -39,6 +40,12 @@ struct CppType;
 struct CppArray {
 	s32 element_count = 0;
 	std::unique_ptr<CppType> element_type;
+};
+
+struct CppBitField {
+	s32 bit_offset;
+	s32 bit_size;
+	std::unique_ptr<CppType> storage_unit_type;
 };
 
 enum CppBuiltIn {
@@ -112,6 +119,7 @@ struct CppType {
 	CppTypeDescriptor descriptor;
 	union {
 		CppArray array;
+		CppBitField bitfield;
 		CppBuiltIn built_in;
 		CppEnum enumeration;
 		CppStructOrUnion struct_or_union;

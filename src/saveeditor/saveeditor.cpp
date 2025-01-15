@@ -585,6 +585,10 @@ static void draw_tree_node(
 			}
 			break;
 		}
+		case CPP_BITFIELD: {
+			ImGui::Text("Bitfield editor not yet implemented.");
+			break;
+		}
 		case CPP_BUILT_IN: {
 			draw_built_in_editor(type, data, offset);
 			break;
