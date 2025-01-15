@@ -81,7 +81,7 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 		ElfFile elf = read_ratchet_executable(ratchet_bytes);
 		const ElfFile* donor_elf = nullptr;
 		if(config.game() == Game::DL) {
-			if(elf.sections.size() >= 2 && elf.sections[1].header.type == SHT_NOBITS) {
+			if(elf.sections.size() >= 3 && elf.sections[2].header.type == SHT_NOBITS) {
 				donor_elf = &DONOR_DL_LEVEL_ELF_NOBITS_HEADERS;
 			} else {
 				donor_elf = &DONOR_DL_LEVEL_ELF_PROGBITS_HEADERS;

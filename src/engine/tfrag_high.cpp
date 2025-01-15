@@ -20,9 +20,9 @@
 
 #include <set>
 
-#define MAX_TFACES_TOUCHING_VERTEX 12
+#define MAX_TFACES_TOUCHING_VERTEX 16
 #define INIT_TFACE_INDICES \
-	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 
 struct TfragFace {
 	s32 ad_gif;
