@@ -43,8 +43,8 @@ struct CppArray {
 };
 
 struct CppBitField {
-	s32 bit_offset;
-	s32 bit_size;
+	s32 bit_offset = 0;
+	s32 bit_size = 0;
 	std::unique_ptr<CppType> storage_unit_type;
 };
 
@@ -110,12 +110,25 @@ struct CppPointerOrReference {
 	std::unique_ptr<CppType> value_type;
 };
 
+enum CppPreprocessorDirectiveType {
+	CPP_PREPROCESSOR_BITFLAGS,
+	CPP_PREPROCESSOR_ENUM
+};
+
+struct CppPreprocessorDirective {
+	CppPreprocessorDirectiveType type;
+	std::string value;
+	
+	bool operator==(const CppPreprocessorDirective& rhs) const { return type == rhs.type && value == rhs.value; }
+};
+
 struct CppType {
 	std::string name;
 	s32 offset = -1;
 	s32 size = -1;
 	s32 alignment = -1;
 	s32 precedence = -1; // Used decide if a type should be overwritten by a new type.
+	std::vector<CppPreprocessorDirective> preprocessor_directives;
 	CppTypeDescriptor descriptor;
 	union {
 		CppArray array;

@@ -46,6 +46,7 @@ static void parse_enum(CppType& dest, CppParserState& parser);
 static void parse_struct_or_union(CppType& dest, CppParserState& parser);
 static CppType parse_field(CppParserState& parser);
 static CppType parse_type_name(CppParserState& parser);
+static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppParserState& parser, size_t token);
 
 bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<CppToken>& tokens) {
 	CppParserState parser{tokens};
@@ -134,8 +135,10 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 		}
 		
 		if(tokens[parser.pos].keyword == CPP_KEYWORD_typedef) {
+			std::vector<CppPreprocessorDirective> directives = parse_preprocessor_directives(parser, parser.pos);
 			parser.advance();
 			CppType type = parse_field(parser);
+			type.preprocessor_directives = std::move(directives);
 			types.emplace(type.name, std::move(type));
 		}
 		
@@ -193,6 +196,7 @@ static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
 }
 
 static CppType parse_field(CppParserState& parser) {
+	std::vector<CppPreprocessorDirective> directives = parse_preprocessor_directives(parser, parser.pos);
 	CppType field_type = parse_type_name(parser);
 	
 	// Parse pointers.
@@ -241,7 +245,7 @@ static CppType parse_field(CppParserState& parser) {
 	}
 	
 	field_type.name = name;
-	
+	field_type.preprocessor_directives = std::move(directives);
 	return field_type;
 }
 
@@ -352,4 +356,27 @@ static CppType parse_type_name(CppParserState& parser) {
 		return type;
 	}
 	verify_not_reached("Expected type name on line %d, got %s.", first.line, cpp_token_type(first.type));
+}
+
+static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppParserState& parser, size_t token) {
+	std::vector<CppPreprocessorDirective> directives;
+	
+	while(token > 0 && parser.tokens[token - 1].type == CPP_PREPROCESSOR_DIRECTIVE) {
+		std::string line(parser.tokens[token - 1].str_begin, parser.tokens[token - 1].str_end);
+		if(line.starts_with("pragma wrench ")) {
+			line = line.substr(14);
+			if(line.starts_with("bitflags ")) {
+				CppPreprocessorDirective& directive = directives.emplace_back();
+				directive.type = CPP_PREPROCESSOR_BITFLAGS;
+				directive.value = line.substr(9);
+			} else if(line.starts_with("enum ")) {
+				CppPreprocessorDirective& directive = directives.emplace_back();
+				directive.type = CPP_PREPROCESSOR_ENUM;
+				directive.value = line.substr(5);
+			}
+		}
+		token--;
+	}
+	
+	return directives;
 }
