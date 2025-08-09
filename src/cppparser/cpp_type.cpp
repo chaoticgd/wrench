@@ -191,19 +191,53 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
-			// TODO: Add support for bitfields.
+			for(CppType& field : type.struct_or_union.fields) {
+				if(field.descriptor == CPP_BITFIELD) {
+					verify(!type.struct_or_union.is_union, "Union '%s' contains a bitfield.", type.name.c_str());
+				}
+			}
+			
+			s32 bit_offset = 0;
+			
 			bool has_custom_alignment = type.alignment > -1;
 			s32 offset = 0;
 			if(!has_custom_alignment) {
 				type.alignment = 1;
 			}
-			for(CppType& field : type.struct_or_union.fields) {
+			for(size_t i = 0; i < type.struct_or_union.fields.size(); i++) {
+				CppType& field = type.struct_or_union.fields[i];
+				
 				layout_cpp_type(field, types, abi);
 				if(!has_custom_alignment) {
 					type.alignment = std::max(field.alignment, type.alignment);
 				}
 				field.offset = align32(offset, field.alignment);
-				if(!type.struct_or_union.is_union) {
+				
+				bool add_offset = !type.struct_or_union.is_union;
+				if(field.descriptor == CPP_BITFIELD) {
+					// Check if this is the last bitfield for the storage unit.
+					bool end_of_group = true;
+					if (i + 1 < type.struct_or_union.fields.size()) {
+						CppType& next_field = type.struct_or_union.fields[i + 1];
+						end_of_group = field.descriptor != next_field.descriptor
+							|| (field.descriptor == CPP_BUILT_IN && field.built_in != next_field.built_in)
+							|| (bit_offset + field.bitfield.bit_size >= field.bitfield.storage_unit_type->size * 8);
+					}
+					
+					field.bitfield.bit_offset = bit_offset;
+					bit_offset += field.bitfield.bit_size;
+					
+					if(end_of_group) {
+						verify(bit_offset == field.bitfield.storage_unit_type->size * 8,
+							"Sum of bitfield sizes (%d) not equal to size of storage unit (%d) for type '%s'.",
+							bit_offset, field.bitfield.storage_unit_type->size * 8, type.name.c_str());
+						bit_offset = 0;
+					}
+					
+					add_offset &= end_of_group;
+				}
+				
+				if(add_offset) {
 					offset = field.offset + field.size;
 				}
 			}

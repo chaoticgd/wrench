@@ -221,8 +221,8 @@ static CppType parse_field(CppParserState& parser) {
 	// Parse bitfields.
 	const CppToken& bitfield_operator = parser.cur();
 	if(bitfield_operator.type == CPP_OPERATOR && bitfield_operator.op == CPP_OP_COLON) {
-		verify(field_type.descriptor == CPP_BUILT_IN || field_type.descriptor == CPP_ENUM,
-			"A bitfield storage unit can only be a built-in type or an enum (line %d).\n", bitfield_operator.line);
+		verify(field_type.descriptor == CPP_BUILT_IN,
+			"A bitfield storage unit can only be a built-in type (line %d).\n", bitfield_operator.line);
 		parser.advance();
 		
 		const CppToken& bitfield_literal = parser.cur();

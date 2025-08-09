@@ -26,13 +26,13 @@ All code between these two delimiters must conform to the limitations of the par
 - Fixed width integer types: `s8`, `u8`, `s16`, `u16`, `s32`, `u32`, `s64`, `u64`, `u128`, `s128`.
 - Pointers, references and C arrays.
 - `alignas` expression on a struct or union with an integer literal.
+- Bit fields (only built-in types are allowed, and sizes must sum to the storage unit size)
 
 A (probably incomplete) list of language features that are currently unsupported is provided below:
 
 - Anything that isn't a type.
 - Inline structs or unions (use named types instead).
 - Most C++-specific features such as inheritance, member functions, templates, etc.
-- Bit fields.
 - Comma-separated lists of variables.
 - Function pointers.
 
