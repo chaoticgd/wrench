@@ -218,6 +218,27 @@ static CppType parse_field(CppParserState& parser) {
 	std::string_view name(name_token.str_begin, name_token.str_end);
 	parser.advance();
 	
+	// Parse bitfields.
+	const CppToken& bitfield_operator = parser.cur();
+	if(bitfield_operator.type == CPP_OPERATOR && bitfield_operator.op == CPP_OP_COLON) {
+		verify(field_type.descriptor == CPP_BUILT_IN || field_type.descriptor == CPP_ENUM,
+			"A bitfield storage unit can only be a built-in type or an enum (line %d).\n", bitfield_operator.line);
+		parser.advance();
+		
+		const CppToken& bitfield_literal = parser.cur();
+		verify(bitfield_literal.type == CPP_INTEGER_LITERAL,
+			"Expected integer literal on line %d, got %s.",
+			bitfield_literal.line, cpp_token_type(bitfield_literal.type));
+		parser.advance();
+		
+		CppType bitfield_type(CPP_BITFIELD);
+		bitfield_type.name = name;
+		bitfield_type.preprocessor_directives = std::move(directives);
+		bitfield_type.bitfield.bit_size = bitfield_literal.i;
+		bitfield_type.bitfield.storage_unit_type = std::make_unique<CppType>(std::move(field_type));
+		return bitfield_type;
+	}
+	
 	// Parse array subscripts.
 	std::vector<s32> array_indices;
 	while(true) {

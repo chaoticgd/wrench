@@ -239,6 +239,19 @@ TEST_CASE("c++ parser" "[cpp]") {
 			return type;
 		}()
 	));
+	CHECK(test_parser(
+		"struct S { int x : 12; };",
+		[]() {
+			CppType type(CPP_STRUCT_OR_UNION);
+			type.name = "S";
+			CppType& field = type.struct_or_union.fields.emplace_back(CPP_BITFIELD);
+			field.name = "x";
+			field.bitfield.bit_size = 12;
+			field.bitfield.storage_unit_type = std::make_unique<CppType>(CPP_BUILT_IN);
+			field.bitfield.storage_unit_type->built_in = CPP_INT;
+			return type;
+		}()
+	));
 }
 
 static bool test_parser(const char* src, CppType&& expected) {
