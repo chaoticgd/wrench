@@ -2,6 +2,8 @@
 
 // mc_gamedata
 
+// Note: The Insomniac Museum is at a different position compared to the normal
+// level numbers.
 enum Level
 {
 	ARANOS_TUTORIAL = 0,
@@ -25,12 +27,12 @@ enum Level
 	DAMOSEL = 18,
 	GRELBIN = 19,
 	YEEDIL = 20,
+	INSOMNIAC_MUSEUM = 21,
 	DOBBO_ORBIT = 22,
 	DAMOSEL_ORBIT = 23,
 	SHIP_SHACK = 24,
 	WUPASH_NEBULA = 25,
-	JAMMING_ARRAY = 26,
-	INSOMNIAC_MUSEUM = 30
+	JAMMING_ARRAY = 26
 };
 
 // Gadget list from: https://creepnt.stream/rc/rccombo.html
@@ -314,37 +316,6 @@ typedef unsigned char HelpLog[170];
 typedef int HelpLogPos;
 
 // mc_leveldata
-
-enum SaveLevel
-{
-	_ARANOS_TUTORIAL = 0,
-	_OOZLA = 1,
-	_MAKTAR_NEBULA = 2,
-	_ENDAKO = 3,
-	_BARLOW = 4,
-	_FELTZIN_SYSTEM = 5,
-	_NOTAK = 6,
-	_SIBERIUS = 7,
-	_TABORA = 8,
-	_DOBBO = 9,
-	_HRUGIS_CLOUD = 10,
-	_JOBA = 11,
-	_TODANO = 12,
-	_BOLDAN = 13,
-	_ARANOS_PRISON = 14,
-	_GORN = 15,
-	_SNIVELAK = 16,
-	_SMOLG = 17,
-	_DAMOSEL = 18,
-	_GRELBIN = 19,
-	_YEEDIL = 20,
-	_DOBBO_ORBIT = 22,
-	_DAMOSEL_ORBIT = 23,
-	_SHIP_SHACK = 24,
-	_WUPASH_NEBULA = 25,
-	_JAMMING_ARRAY = 26,
-	_INSOMNIAC_MUSEUM = 27
-};
 
 enum VisitedEnum
 {
