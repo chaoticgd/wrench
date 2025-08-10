@@ -64,6 +64,7 @@ static void for_each_block_from_page(
 	const char* page, std::vector<memcard::Block>& blocks, memcard::FileSchema& file_schema, BlockCallback callback);
 
 static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type);
+static const CppType& lookup_save_enum(const std::string& name);
 static u8 from_bcd(u8 value);
 static u8 to_bcd(u8 value);
 
@@ -578,9 +579,26 @@ static void draw_tree_node(
 				expanded = !expanded;
 			}
 			
+			const CppType* element_names_type = nullptr;
+			if(std::optional<std::string> element_names = cpp_directive(type, CPP_PREPROCESSOR_ELEMENTNAMES)) {
+				element_names_type = &lookup_save_enum(*element_names);
+			}
+			
 			if(expanded) {
 				for(s32 i = 0; i < type.array.element_count; i++) {
-					std::string element_name = std::to_string(i);
+					std::string element_name;
+					if(element_names_type) {
+						for(const auto& [value, name] : element_names_type->enumeration.constants) {
+							if(value == i) {
+								element_name = name;
+							}
+						}
+					}
+					
+					if(element_name.empty()) {
+						element_name = std::to_string(i);
+					}
+					
 					draw_tree_node(*type.array.element_type, element_name, data, i, offset + i * type.array.element_type->size, depth + 1, indent + 1);
 				}
 			}
@@ -928,10 +946,7 @@ static void draw_built_in_editor(const CppType& type, std::span<u8> data, s32 of
 			memcpy(&data[offset], &value, 1);
 		}
 	} else if(std::optional<std::string> enum_name = cpp_directive(type, CPP_PREPROCESSOR_ENUM)) {
-		auto enum_type_iter = s_game_types.find(*enum_name);
-		verify(enum_type_iter != s_game_types.end(), "Failed to lookup enum type '%s'.\n", enum_name->c_str());
-		const CppType& enum_type = enum_type_iter->second;
-		verify(enum_type.descriptor == CPP_ENUM, "Type '%s' is not an enum.", enum_type.name.c_str());
+		const CppType& enum_type = lookup_save_enum(*enum_name);
 		
 		std::string name = std::to_string(temp);
 		for(auto& [other_value, other_name] : enum_type.enumeration.constants) {
@@ -1016,10 +1031,7 @@ static void draw_bitfield_editor(const CppType& type, std::span<u8> data, s32 of
 	
 	const CppType* enum_type = nullptr;
 	if(directive == CPP_PREPROCESSOR_BITFLAGS || directive == CPP_PREPROCESSOR_ENUM) {
-		auto enum_type_iter = s_game_types.find(directive_value);
-		verify(enum_type_iter != s_game_types.end(), "Failed to lookup enum type '%s'.\n", directive_value.c_str());
-		enum_type = &enum_type_iter->second;
-		verify(enum_type->descriptor == CPP_ENUM, "Type '%s' is not an enum.", enum_type->name.c_str());
+		enum_type = &lookup_save_enum(directive_value);
 	}
 	
 	switch(directive) {
@@ -1131,6 +1143,15 @@ static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type)
 		}
 	}
 	return ImGuiDataType_U8;
+}
+
+static const CppType& lookup_save_enum(const std::string& name)
+{
+	auto enum_type_iter = s_game_types.find(name);
+	verify(enum_type_iter != s_game_types.end(), "Failed to lookup enum type '%s'.\n", name.c_str());
+	const CppType& enum_type = enum_type_iter->second;
+	verify(enum_type.descriptor == CPP_ENUM, "Type '%s' is not an enum.", enum_type.name.c_str());
+	return enum_type;
 }
 
 static u8 from_bcd(u8 value)

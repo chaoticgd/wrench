@@ -390,6 +390,10 @@ static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppPa
 				CppPreprocessorDirective& directive = directives.emplace_back();
 				directive.type = CPP_PREPROCESSOR_BITFLAGS;
 				directive.value = line.substr(9);
+			} else if(line.starts_with("elementnames ")) {
+				CppPreprocessorDirective& directive = directives.emplace_back();
+				directive.type = CPP_PREPROCESSOR_ELEMENTNAMES;
+				directive.value = line.substr(13);
 			} else if(line.starts_with("enum ")) {
 				CppPreprocessorDirective& directive = directives.emplace_back();
 				directive.type = CPP_PREPROCESSOR_ENUM;

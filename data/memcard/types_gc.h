@@ -202,6 +202,8 @@ typedef int GadgetXP[56];
 typedef char PurchasableVendorItems[32];
 
 typedef Gadget QuickSelect[8];
+
+#pragma wrench elementnames Level
 typedef bool VisitedPlanets[28];
 typedef Level GalacticMap[28];
 

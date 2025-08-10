@@ -137,6 +137,7 @@ struct CppPointerOrReference {
 
 enum CppPreprocessorDirectiveType {
 	CPP_PREPROCESSOR_BITFLAGS,
+	CPP_PREPROCESSOR_ELEMENTNAMES,
 	CPP_PREPROCESSOR_ENUM
 };
 
