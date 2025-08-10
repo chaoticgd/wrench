@@ -917,15 +917,38 @@ static void draw_table_editor(const CppType& type, std::span<u8> data, s32 offse
 
 static void draw_built_in_editor(const CppType& type, std::span<u8> data, s32 offset)
 {
-	u8 temp[16];
+	u64 temp = 0;
 	verify_fatal(offset >= 0 && offset + type.size <= data.size());
-	verify_fatal(type.size >= 0 && type.size <= 16);
-	memcpy(temp, &data[offset], type.size);
+	verify_fatal(type.size >= 0 && type.size <= 8);
+	memcpy(&temp, &data[offset], type.size);
 	
 	if(type.built_in == CPP_BOOL) {
-		bool value = temp[0];
+		bool value = temp;
 		if(ImGui::Checkbox("##input", &value)) {
 			memcpy(&data[offset], &value, 1);
+		}
+	} else if(std::optional<std::string> enum_name = cpp_directive(type, CPP_PREPROCESSOR_ENUM)) {
+		auto enum_type_iter = s_game_types.find(*enum_name);
+		verify(enum_type_iter != s_game_types.end(), "Failed to lookup enum type '%s'.\n", enum_name->c_str());
+		const CppType& enum_type = enum_type_iter->second;
+		verify(enum_type.descriptor == CPP_ENUM, "Type '%s' is not an enum.", enum_type.name.c_str());
+		
+		std::string name = std::to_string(temp);
+		for(auto& [other_value, other_name] : enum_type.enumeration.constants) {
+			if(other_value == temp) {
+				name = other_name.c_str();
+			}
+		}
+		
+		ImGui::SetNextItemWidth(-1.f);
+		if(ImGui::BeginCombo("##enum", name.c_str())) {
+			for(auto& [other_value, other_name] : enum_type.enumeration.constants) {
+				if(ImGui::Selectable(other_name.c_str(), other_value == temp)) {
+					temp = other_value;
+					memcpy(&data[offset], &temp, type.size);
+				}
+			}
+			ImGui::EndCombo();
 		}
 	} else {
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
@@ -934,11 +957,11 @@ static void draw_built_in_editor(const CppType& type, std::span<u8> data, s32 of
 		const char* format = ImGui::DataTypeGetInfo(imgui_type)->PrintFmt;
 		
 		char data_as_string[64];
-		ImGui::DataTypeFormatString(data_as_string, ARRAY_SIZE(data_as_string), imgui_type, temp, format);
+		ImGui::DataTypeFormatString(data_as_string, ARRAY_SIZE(data_as_string), imgui_type, &temp, format);
 		
 		if(ImGui::InputText("##input", data_as_string, ARRAY_SIZE(data_as_string))) {
-			if(ImGui::DataTypeApplyFromText(data_as_string, imgui_type, temp, format)) {
-				memcpy(&data[offset], temp, type.size);
+			if(ImGui::DataTypeApplyFromText(data_as_string, imgui_type, &temp, format)) {
+				memcpy(&data[offset], &temp, type.size);
 			}
 		}
 		

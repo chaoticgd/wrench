@@ -186,6 +186,7 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 void dump_cpp_type(OutBuffer& dest, const CppType& type);
 void destructively_merge_cpp_structs(CppType& dest, CppType& src);
 const char* cpp_built_in(CppBuiltIn built_in);
+std::optional<std::string> cpp_directive(const CppType& type, CppPreprocessorDirectiveType directive_type);
 
 extern CppABI NATIVE_ABI;
 extern CppABI CPP_PS2_ABI;
