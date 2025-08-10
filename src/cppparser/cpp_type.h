@@ -48,6 +48,31 @@ struct CppBitField {
 	std::unique_ptr<CppType> storage_unit_type;
 };
 
+inline u64 cpp_unpack_unsigned_bitfield(u64 storage_unit, s32 bit_offset, s32 bit_size)
+{
+	return (storage_unit >> bit_offset) & ((static_cast<u64>(1) << bit_size) - 1);
+}
+
+inline s64 cpp_unpack_signed_bitfield(u64 storage_unit, s32 bit_offset, s32 bit_size)
+{
+	return static_cast<s64>(storage_unit << (64 - (bit_offset + bit_size))) >> (64 - bit_size);
+}
+
+inline u64 cpp_pack_unsigned_bitfield(u64 bitfield, s32 bit_offset, s32 bit_size)
+{
+	return (bitfield & ((static_cast<u64>(1) << bit_size) - 1)) << bit_offset;
+}
+
+inline u64 cpp_pack_signed_bitfield(s64 bitfield, s32 bit_offset, s32 bit_size)
+{
+	return static_cast<u64>((bitfield & ((static_cast<u64>(1) << bit_size) - 1)) << (64 - bit_size)) >> (64 - bit_offset - bit_size);
+}
+
+inline u64 cpp_zero_bitfield(u64 storage_unit, s32 bit_offset, s32 bit_size)
+{
+	return storage_unit & ~(((static_cast<u64>(1) << bit_size) - 1) << bit_offset);
+}
+
 enum CppBuiltIn {
 	CPP_VOID,
 	CPP_CHAR, CPP_UCHAR, CPP_SCHAR,

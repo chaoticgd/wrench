@@ -402,6 +402,12 @@ TEST_CASE("c++ layout" "[cpp]") {
 	));
 }
 
+TEST_CASE("c++ bitfield operations" "[cpp]") {
+	CHECK(cpp_unpack_unsigned_bitfield(0xff00, 8, 4) == 0xf);
+	CHECK(cpp_pack_unsigned_bitfield(0xf, 8, 8) == 0xf00);
+	CHECK(cpp_zero_bitfield(0xffff, 4, 4) == 0xff0f);
+}
+
 static bool test_layout(const char* src, CppType&& expected) {
 	std::string str;
 	str += "#pragma wrench parser on\n";

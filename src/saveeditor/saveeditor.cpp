@@ -57,6 +57,7 @@ static void draw_table_editor(const CppType& type, std::span<u8> data, s32 offse
 
 static void draw_built_in_editor(const CppType& type, std::span<u8> data, s32 offset);
 static void draw_enum_editor(const CppType& type, const CppType& underlying_type, std::span<u8> data, s32 offset);
+static void draw_bitfield_editor(const CppType& type, std::span<u8> data, s32 offset);
 
 using BlockCallback = std::function<void(memcard::Block&, memcard::BlockSchema&, CppType&)>;
 static void for_each_block_from_page(
@@ -586,7 +587,7 @@ static void draw_tree_node(
 			break;
 		}
 		case CPP_BITFIELD: {
-			ImGui::Text("Bitfield editor not yet implemented.");
+			draw_bitfield_editor(type, data, offset);
 			break;
 		}
 		case CPP_BUILT_IN: {
@@ -952,7 +953,7 @@ static void draw_enum_editor(const CppType& type, const CppType& underlying_type
 	verify_fatal(type.size >= 0 && type.size <= 4);
 	memcpy(&value, &data[offset], type.size);
 	
-	std::string name;
+	std::string name = std::to_string(value);
 	for(auto& [other_value, other_name] : type.enumeration.constants) {
 		if(other_value == value) {
 			name = other_name.c_str();
@@ -968,6 +969,109 @@ static void draw_enum_editor(const CppType& type, const CppType& underlying_type
 			}
 		}
 		ImGui::EndCombo();
+	}
+}
+
+static void draw_bitfield_editor(const CppType& type, std::span<u8> data, s32 offset)
+{
+	verify(type.bitfield.storage_unit_type->descriptor == CPP_BUILT_IN, "Bitfield has bad storage unit type.");
+	verify(!cpp_is_built_in_signed(type.bitfield.storage_unit_type->built_in), "Bitfield can't be signed");
+	
+	u64 storage_unit = 0;
+	verify_fatal(offset >= 0 && offset + type.size <= data.size());
+	verify_fatal(type.size >= 0 && type.size <= 8);
+	memcpy(&storage_unit, &data[offset], type.size);
+	
+	u64 bitfield = cpp_unpack_unsigned_bitfield(storage_unit, type.bitfield.bit_offset, type.bitfield.bit_size);
+	
+	s32 directive = -1;
+	std::string directive_value;
+	if(!type.preprocessor_directives.empty()) {
+		directive = type.preprocessor_directives[0].type;
+		directive_value = type.preprocessor_directives[0].value;
+	}
+	
+	const CppType* enum_type = nullptr;
+	if(directive == CPP_PREPROCESSOR_BITFLAGS || directive == CPP_PREPROCESSOR_ENUM) {
+		auto enum_type_iter = game_types.find(directive_value);
+		verify(enum_type_iter != game_types.end(), "Failed to lookup enum type '%s'.\n", directive_value.c_str());
+		enum_type = &enum_type_iter->second;
+		verify(enum_type->descriptor == CPP_ENUM, "Type '%s' is not an enum.", enum_type->name.c_str());
+	}
+	
+	switch(directive) {
+		case CPP_PREPROCESSOR_BITFLAGS: {
+			std::string flags;
+			for(auto& [flag_pos, flag_name] : enum_type->enumeration.constants) {
+				if(bitfield & flag_pos) {
+					if(!flags.empty()) {
+						flags += " | ";
+					}
+					flags += flag_name;
+				}
+			}
+			
+			// Create a combo box containing a check box for each bit flag
+			// defined by the enum.
+			ImGui::SetNextItemWidth(-1.f);
+			if(ImGui::BeginCombo("##enum", flags.c_str())) {
+				for(auto& [flag_pos, flag_name] : enum_type->enumeration.constants) {
+					bool flag = bitfield & flag_pos;
+					if(ImGui::Checkbox(flag_name.c_str(), &flag)) {
+						bitfield = (bitfield & ~flag_pos) | (flag ? flag_pos : 0);
+						storage_unit = cpp_zero_bitfield(storage_unit, type.bitfield.bit_offset, type.bitfield.bit_size);
+						storage_unit |= cpp_pack_unsigned_bitfield(bitfield, type.bitfield.bit_offset, type.bitfield.bit_size);
+						memcpy(&data[offset], &storage_unit, type.size);
+					}
+				}
+				ImGui::EndCombo();
+			}
+			
+			break;
+		}
+		case CPP_PREPROCESSOR_ENUM: {
+			std::string name = std::to_string(bitfield);
+			for(auto& [other_value, other_name] : enum_type->enumeration.constants) {
+				if(other_value == bitfield) {
+					name = other_name.c_str();
+				}
+			}
+			
+			ImGui::SetNextItemWidth(-1.f);
+			if(ImGui::BeginCombo("##enum", name.c_str())) {
+				for(auto& [other_value, other_name] : enum_type->enumeration.constants) {
+					if(ImGui::Selectable(other_name.c_str(), other_value == bitfield)) {
+						bitfield = other_value;
+						storage_unit = cpp_zero_bitfield(storage_unit, type.bitfield.bit_offset, type.bitfield.bit_size);
+						storage_unit |= cpp_pack_unsigned_bitfield(bitfield, type.bitfield.bit_offset, type.bitfield.bit_size);
+						memcpy(&data[offset], &storage_unit, type.size);
+					}
+				}
+				ImGui::EndCombo();
+			}
+			
+			break;
+		}
+		default: {
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
+			
+			ImGuiDataType imgui_type = cpp_built_in_type_to_imgui_data_type(*type.bitfield.storage_unit_type);
+			const char* format = ImGui::DataTypeGetInfo(imgui_type)->PrintFmt;
+			
+			char bitfield_as_string[64];
+			ImGui::DataTypeFormatString(bitfield_as_string, ARRAY_SIZE(bitfield_as_string), imgui_type, &bitfield, format);
+			
+			if(ImGui::InputText("##input", bitfield_as_string, ARRAY_SIZE(bitfield_as_string))) {
+				if(ImGui::DataTypeApplyFromText(bitfield_as_string, imgui_type, &bitfield, format)) {
+					storage_unit = cpp_zero_bitfield(storage_unit, type.bitfield.bit_offset, type.bitfield.bit_size);
+					storage_unit |= cpp_pack_unsigned_bitfield(bitfield, type.bitfield.bit_offset, type.bitfield.bit_size);
+					memcpy(&data[offset], &storage_unit, type.size);
+				}
+			}
+			
+			ImGui::PopStyleColor();
+			break;
+		}
 	}
 }
 

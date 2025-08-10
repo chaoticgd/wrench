@@ -166,7 +166,7 @@ Game gc {
 		Block GadgetMods                          { iff: 42   size: 56    page: "gadgetstats" }
 		Block Gadget45                            { iff: 45   size: 56    page: "gadgetstats" }
 		Block MoviesPlayedRecord                  { iff: 43   size: 256   page: "movies" }
-		Block ShipUpgrades                        { iff: 44   size: 4     page: "game" }
+		Block ShipMods                            { iff: 44   size: 4     page: "game" }
 		Block Unknown46                           { iff: 46   size: 40    page: "game" }
 		Block Unknown47                           { iff: 47   size: 256   page: "game" }
 		Block TotalDeaths                         { iff: 1005 size: 4     page: "game" }
@@ -218,7 +218,7 @@ Game uya {
 		Block GadgetMods                          { iff: 42   size: 156   page: "gadgetstats" }
 		Block Gadget45                            { iff: 45   size: 156   page: "gadgetstats" }
 		Block MoviesPlayedRecord                  { iff: 43   size: 256   page: "movies" }
-		Block ShipUpgrades                        { iff: 44   size: 4     page: "game" }
+		Block ShipMods                            { iff: 44   size: 4     page: "game" }
 		Block Unknown46                           { iff: 46   size: 40    page: "game" }
 		Block Unknown47                           { iff: 47   size: 256   page: "game" }
 		Block TotalDeaths                         { iff: 1005 size: 4     page: "game" }

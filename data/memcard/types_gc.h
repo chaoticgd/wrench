@@ -246,7 +246,67 @@ enum Movie
 };
 
 typedef char MoviesPlayedRecord[256];
-typedef int ShipUpgrades;
+enum ShipNose
+{
+	STANDARD_NOSE = 0,
+	SPLIT_NOSE = 1,
+	SCOOP_NOSE = 2
+};
+
+enum ShipWings
+{
+	STANDARD_WINGS = 0,
+	HIGH_LIFT_WINGS = 1,
+	HEAVY_ORDINANCE_WINGS = 2
+};
+
+enum ShipUpgrades
+{
+	TRIPLE_BOOST_ACCELERATION_ENGINE = 1,
+	FUSION_LASER_CANNONS = 4,
+	ELECTRO_MINE_LAUNCHER = 8,
+	MEGA_MINE_LAUNCHER = 16,
+	FAST_LOCK_MISSILE_LAUNCHER = 32,
+	TORPEDO_LAUNCHER = 64,
+	MULTI_TORPEDO_LAUNCHER = 128,
+	NUCLEAR_DETONATION_DEVICE = 256,
+	HYPERSPACE_WARP_SYSTEM = 512,
+	ADVANCED_SHIELDING_SYSTEM = 1024
+};
+
+enum ShipPaintJob
+{
+	BLARGIAN_RED = 0,
+	ORXON_GREEN = 1,
+	BOGON_BLUE = 2,
+	INSOMNIAC_SPECIAL = 3,
+	DARK_NEBULA = 4,
+	DREKS_BLACK_HEART = 5,
+	SPACE_STORM = 6,
+	LUNAR_ECLIPSE = 7,
+	PLAIDTASTIC = 8,
+	SUPERNOVA = 9,
+	SOLAR_WIND = 10,
+	CLOWNER = 11,
+	SILENT_STRIKE = 12,
+	PREPSTER = 13,
+	LOMBAX_ORANGE = 14,
+	NEUTRON_STAR = 15,
+	STAR_TRAVELLER = 16
+};
+
+struct ShipMods
+{
+	#pragma wrench enum ShipNose
+	unsigned short Nose : 2;
+	#pragma wrench enum ShipWings
+	unsigned short Wings : 2;
+	#pragma wrench bitflags ShipUpgrades
+	unsigned short Upgrades : 12;
+	#pragma wrench enum ShipPaintJob
+	unsigned short PaintJob;
+};
+
 typedef char Unknown46[40];
 typedef char Unknown47[256];
 typedef int TotalDeaths;
