@@ -67,40 +67,40 @@ static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type);
 static u8 from_bcd(u8 value);
 static u8 to_bcd(u8 value);
 
-static FileInputStream memcardwad;
-static memcard::Schema schema;
+static FileInputStream s_memcardwad;
+static memcard::Schema s_schema;
 
-static std::string directory;
-static std::vector<fs::path> file_paths;
-static bool should_reload_file_list = true;
-static fs::path selected_file_path;
-static bool should_load_now = false;
-static bool should_save_now = false;
-static Opt<memcard::File> file;
-static std::string error_message;
+static std::string s_directory;
+static std::vector<fs::path> s_file_paths;
+static bool s_should_reload_file_list = true;
+static fs::path s_selected_file_path;
+static bool s_should_load_now = false;
+static bool s_should_save_now = false;
+static Opt<memcard::File> s_file;
+static std::string s_error_message;
 
-static Game game = Game::UNKNOWN;
-static memcard::GameSchema* game_schema = nullptr;
-static std::map<std::string, CppType> game_types;
+static Game s_game = Game::UNKNOWN;
+static memcard::GameSchema* s_game_schema = nullptr;
+static std::map<std::string, CppType> s_game_types;
 
-static std::map<ImGuiID, bool> node_expanded;
+static std::map<ImGuiID, bool> s_node_expanded;
 
 int main(int argc, char** argv)
 {
 	WadPaths wads = find_wads(argv[0]);
 	verify(g_guiwad.open(wads.gui), "Failed to open gui wad.");
-	verify(memcardwad.open(wads.memcard), "Failed to open memcard wad.");
+	verify(s_memcardwad.open(wads.memcard), "Failed to open memcard wad.");
 	
-	memcardwad.seek(wadinfo.memcard.savegame.offset.bytes());
-	std::vector<u8> schema_compressed = memcardwad.read_multiple<u8>(wadinfo.memcard.savegame.size.bytes());
+	s_memcardwad.seek(wadinfo.memcard.savegame.offset.bytes());
+	std::vector<u8> schema_compressed = s_memcardwad.read_multiple<u8>(wadinfo.memcard.savegame.size.bytes());
 	
 	std::vector<u8> schema_wtf;
 	decompress_wad(schema_wtf, schema_compressed);
 
-	schema = memcard::parse_schema((char*) schema_wtf.data());
+	s_schema = memcard::parse_schema((char*) schema_wtf.data());
 	
 	if(argc > 1) {
-		directory = argv[1];
+		s_directory = argv[1];
 	}
 	
 	u64 frame = 0;
@@ -110,18 +110,18 @@ int main(int argc, char** argv)
 	while(!glfwWindowShouldClose(window)) {
 		gui::run_frame(window, update_gui);
 		
-		if(should_load_now) {
+		if(s_should_load_now) {
 			do_load();
-			should_load_now = false;
+			s_should_load_now = false;
 		}
 		
-		if(should_save_now) {
+		if(s_should_save_now) {
 			do_save();
-			should_save_now = false;
+			s_should_save_now = false;
 		}
 		
 		if((frame % 60) == 0) {
-			should_reload_file_list = true;
+			s_should_reload_file_list = true;
 		}
 		
 		frame++;
@@ -164,43 +164,43 @@ static void files()
 {
 	static std::string listing_error;
 	
-	if(gui::input_folder_path(&directory, "##directory", nullptr) || should_reload_file_list) {
-		file_paths.clear();
+	if(gui::input_folder_path(&s_directory, "##directory", nullptr) || s_should_reload_file_list) {
+		s_file_paths.clear();
 		try {
-			for(auto entry : fs::directory_iterator(directory)) {
-				file_paths.emplace_back(entry.path());
+			for(auto entry : fs::directory_iterator(s_directory)) {
+				s_file_paths.emplace_back(entry.path());
 			}
 			listing_error.clear();
 		} catch(std::filesystem::filesystem_error& error) {
 			listing_error = error.code().message();
 		}
-		std::sort(BEGIN_END(file_paths));
-		should_reload_file_list = false;
+		std::sort(BEGIN_END(s_file_paths));
+		s_should_reload_file_list = false;
 	}
 	
 	if(listing_error.empty()) {
 		ImGui::BeginChild("##files");
 		if(ImGui::Selectable("[DIR] .")) {
-			should_reload_file_list = true;
+			s_should_reload_file_list = true;
 		}
 		if(ImGui::Selectable("[DIR] ..")) {
-			directory = fs::weakly_canonical(fs::path(directory)).parent_path().string();
-			should_reload_file_list = true;
+			s_directory = fs::weakly_canonical(fs::path(s_directory)).parent_path().string();
+			s_should_reload_file_list = true;
 		}
-		for(auto& path : file_paths) {
+		for(auto& path : s_file_paths) {
 			if(fs::is_directory(path)) {
 				std::string label = stringf("[DIR] %s", path.filename().string().c_str());
 				if(ImGui::Selectable(label.c_str())) {
-					directory = path.string();
-					should_reload_file_list = true;
+					s_directory = path.string();
+					s_should_reload_file_list = true;
 				}
 			}
 		}
-		for(auto& path : file_paths) {
+		for(auto& path : s_file_paths) {
 			if(fs::is_regular_file(path)) {
-				if(ImGui::Selectable(path.filename().string().c_str(), path == selected_file_path)) {
-					should_load_now = true;
-					selected_file_path = path;
+				if(ImGui::Selectable(path.filename().string().c_str(), path == s_selected_file_path)) {
+					s_should_load_now = true;
+					s_selected_file_path = path;
 				}
 			}
 		}
@@ -213,12 +213,12 @@ static void files()
 static void controls()
 {
 	if(ImGui::Button("Save")) {
-		should_save_now = true;
+		s_should_save_now = true;
 	}
 	
 	if(ImGui::Button("Save As")) {
 		nfdchar_t* path = nullptr;
-		nfdresult_t result = NFD_SaveDialog(nullptr, directory.c_str(), &path);
+		nfdresult_t result = NFD_SaveDialog(nullptr, s_directory.c_str(), &path);
 		if(result != NFD_OKAY) {
 			if(result != NFD_CANCEL) {
 				printf("error: %s\n", NFD_GetError());
@@ -226,12 +226,12 @@ static void controls()
 			return;
 		}
 		
-		file->path = path;
-		should_save_now = true;
+		s_file->path = path;
+		s_should_save_now = true;
 		
-		selected_file_path = file->path;
-		directory = selected_file_path.parent_path().string();
-		should_reload_file_list = true;
+		s_selected_file_path = s_file->path;
+		s_directory = s_selected_file_path.parent_path().string();
+		s_should_reload_file_list = true;
 		
 		free(path);
 	}
@@ -239,26 +239,26 @@ static void controls()
 
 static void editor()
 {
-	if(!error_message.empty()) {
-		ImGui::Text("%s", error_message.c_str());
+	if(!s_error_message.empty()) {
+		ImGui::Text("%s", s_error_message.c_str());
 		return;
 	}
 	
-	if(!file.has_value()) {
+	if(!s_file.has_value()) {
 		ImGui::Text("No file loaded.");
 		return;
 	}
 	
-	if(file->checksum_does_not_match) {
+	if(s_file->checksum_does_not_match) {
 		ImGui::Text("Save game checksum doesn't match!");
 		ImGui::SameLine();
 		if(ImGui::Button("Dismiss")) {
-			file->checksum_does_not_match = false;
+			s_file->checksum_does_not_match = false;
 		}
 	}
 	
 	if(ImGui::BeginTabBar("##tabs")) {
-		for(memcard::Page& page : schema.pages) {
+		for(memcard::Page& page : s_schema.pages) {
 			bool should_display = should_display_page(page.tag, page.layout);
 			
 			if(should_display && ImGui::BeginTabItem(page.name.c_str())) {
@@ -266,7 +266,7 @@ static void editor()
 				
 				switch(page.layout) {
 					case memcard::PageLayout::TREE: {
-						draw_tree(page.tag.c_str(), file->blocks, game_schema->game);
+						draw_tree(page.tag.c_str(), s_file->blocks, s_game_schema->game);
 						break;
 					}
 					case memcard::PageLayout::TABLE: {
@@ -298,12 +298,12 @@ static bool should_display_page(const std::string& tag, memcard::PageLayout layo
 		return true;
 	}
 	
-	if(game_schema) {
-		for(memcard::Block& block : file->blocks) {
-			memcard::BlockSchema* block_schema = game_schema->game.block(block.iff);
+	if(s_game_schema) {
+		for(memcard::Block& block : s_file->blocks) {
+			memcard::BlockSchema* block_schema = s_game_schema->game.block(block.iff);
 			
 			if(!block_schema) {
-				block_schema = game_schema->net.block(block.iff);
+				block_schema = s_game_schema->net.block(block.iff);
 			}
 			
 			if(block_schema && block_schema->page == tag) {
@@ -311,9 +311,9 @@ static bool should_display_page(const std::string& tag, memcard::PageLayout layo
 			}
 		}
 		
-		if(!file->levels.empty()) {
-			for(memcard::Block& block : file->levels[0]) {
-				memcard::BlockSchema* block_schema = game_schema->level.block(block.iff);
+		if(!s_file->levels.empty()) {
+			for(memcard::Block& block : s_file->levels[0]) {
+				memcard::BlockSchema* block_schema = s_game_schema->level.block(block.iff);
 				
 				if(block_schema && block_schema->page == tag) {
 					return true;
@@ -371,57 +371,57 @@ static void create_dock_layout()
 
 static void do_load()
 {
-	if(!selected_file_path.empty()) {
+	if(!s_selected_file_path.empty()) {
 		try {
-			std::vector<u8> buffer = read_file(selected_file_path);
-			file = memcard::read(buffer, selected_file_path);
-			error_message.clear();
+			std::vector<u8> buffer = read_file(s_selected_file_path);
+			s_file = memcard::read(buffer, s_selected_file_path);
+			s_error_message.clear();
 			
 			s32 type_index = -1;
-			switch(file->blocks.size()) {
+			switch(s_file->blocks.size()) {
 				case 47: {
-					game = Game::RAC;
+					s_game = Game::RAC;
 					type_index = 0;
 					break;
 				}
 				case 34: {
-					game = Game::GC;
+					s_game = Game::GC;
 					type_index = 1;
 					break;
 				}
 				case 40: {
-					game = Game::UYA;
+					s_game = Game::UYA;
 					type_index = 2;
 					break;
 				}
 				case 29: {
-					game = Game::DL;
+					s_game = Game::DL;
 					type_index = 3;
 					break;
 				}
 				default: {
-					game = Game::RAC;
+					s_game = Game::RAC;
 				}
 			}
 			
-			game_types.clear();
-			game_schema = schema.game(game);
+			s_game_types.clear();
+			s_game_schema = s_schema.game(s_game);
 			
 			// Load type information used by the editor.
 			if(type_index > -1) {
-				memcardwad.seek(wadinfo.memcard.types[type_index].offset.bytes());
+				s_memcardwad.seek(wadinfo.memcard.types[type_index].offset.bytes());
 				std::vector<u8> types_compressed =
-					memcardwad.read_multiple<u8>(wadinfo.memcard.types[type_index].size.bytes());
+					s_memcardwad.read_multiple<u8>(wadinfo.memcard.types[type_index].size.bytes());
 				
 				std::vector<u8> types_cpp;
 				decompress_wad(types_cpp, types_compressed);
 				types_cpp.emplace_back(0);
 				
 				std::vector<CppToken> tokens = eat_cpp_file((char*) types_cpp.data());
-				parse_cpp_types(game_types, std::move(tokens));
+				parse_cpp_types(s_game_types, std::move(tokens));
 				
-				for(auto& [name, type] : game_types) {
-					layout_cpp_type(type, game_types, CPP_PS2_ABI);
+				for(auto& [name, type] : s_game_types) {
+					layout_cpp_type(type, s_game_types, CPP_PS2_ABI);
 					
 					// Make enums get displayed a little nicer.
 					if(type.descriptor == CPP_ENUM) {
@@ -440,44 +440,44 @@ static void do_load()
 				}
 			}
 		} catch(RuntimeError& error) {
-			error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
+			s_error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
 		}
 	}
 }
 
 static void do_save()
 {
-	if(file.has_value()) {
+	if(s_file.has_value()) {
 		try {
 			std::vector<u8> buffer;
-			memcard::write(buffer, *file);
-			write_file(file->path, buffer);
+			memcard::write(buffer, *s_file);
+			write_file(s_file->path, buffer);
 		} catch(RuntimeError& error) {
-			error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
+			s_error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
 		}
-		should_reload_file_list = true;
+		s_should_reload_file_list = true;
 	}
 }
 
 static void draw_blocks_page()
 {
-	memcard::GameSchema* gs = game_schema;
+	memcard::GameSchema* gs = s_game_schema;
 	
-	switch(file->type) {
+	switch(s_file->type) {
 		case memcard::FileType::NET: {
-			blocks_sub_page(file->blocks, gs ? &gs->net : nullptr);
+			blocks_sub_page(s_file->blocks, gs ? &gs->net : nullptr);
 			break;
 		}
 		case memcard::FileType::SLOT: {
 			if(ImGui::BeginTabBar("subpages")) {
 				if(ImGui::BeginTabItem("Game")) {
-					blocks_sub_page(file->blocks, gs ? &gs->game : nullptr);
+					blocks_sub_page(s_file->blocks, gs ? &gs->game : nullptr);
 					ImGui::EndTabItem();
 				}
 				
-				for(size_t i = 0; i < file->levels.size(); i++) {
+				for(size_t i = 0; i < s_file->levels.size(); i++) {
 					if(ImGui::BeginTabItem(stringf("L%d", (s32) i).c_str())) {
-						blocks_sub_page(file->levels[i], gs ? &gs->level : nullptr);
+						blocks_sub_page(s_file->levels[i], gs ? &gs->level : nullptr);
 						ImGui::EndTabItem();
 					}
 				}
@@ -536,8 +536,8 @@ static void draw_tree(const char* page, std::vector<memcard::Block>& blocks, mem
 				continue;
 			}
 			
-			auto type_iter = game_types.find(block_schema->name);
-			verify(type_iter != game_types.end(), "Cannot find type '%s'.", block_schema->name.c_str());
+			auto type_iter = s_game_types.find(block_schema->name);
+			verify(type_iter != s_game_types.end(), "Cannot find type '%s'.", block_schema->name.c_str());
 			
 			const CppType& type = type_iter->second;
 			draw_tree_node(type, type.name, block.data, i, 0, 0, 0);
@@ -569,7 +569,7 @@ static void draw_tree_node(
 	
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
-			bool& expanded = node_expanded[ImGui::GetID("expanded")];
+			bool& expanded = s_node_expanded[ImGui::GetID("expanded")];
 			
 			verify_fatal(type.array.element_type.get());
 			ImGui::AlignTextToFramePadding();
@@ -599,7 +599,7 @@ static void draw_tree_node(
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
-			bool& expanded = node_expanded[ImGui::GetID("expanded")];
+			bool& expanded = s_node_expanded[ImGui::GetID("expanded")];
 			
 			ImGui::AlignTextToFramePadding();
 			std::string struct_name = stringf("struct %s", type.name.c_str());
@@ -617,8 +617,8 @@ static void draw_tree_node(
 			break;
 		}
 		case CPP_TYPE_NAME: {
-			auto iter = game_types.find(type.type_name.string);
-			if(iter != game_types.end()) {
+			auto iter = s_game_types.find(type.type_name.string);
+			if(iter != s_game_types.end()) {
 				draw_tree_node(iter->second, name, data, -1, offset, depth + 1, indent);
 			} else {
 				ImGui::TableNextRow();
@@ -649,7 +649,7 @@ static void draw_table(const char* page, const char* names)
 	std::vector<CppType*> block_types;
 	s32 element_count = -1;
 	for_each_block_from_page(
-		page, file->blocks, game_schema->game,
+		page, s_file->blocks, s_game_schema->game,
 		[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
 			verify_fatal(type.descriptor == CPP_ARRAY);
 			
@@ -664,8 +664,8 @@ static void draw_table(const char* page, const char* names)
 		}
 	);
 	
-	auto names_type_iter = game_types.find(names);
-	verify_fatal(names_type_iter != game_types.end());
+	auto names_type_iter = s_game_types.find(names);
+	verify_fatal(names_type_iter != s_game_types.end());
 	CppType& names_type = names_type_iter->second;
 	verify_fatal(names_type.descriptor == CPP_ENUM);
 	
@@ -674,7 +674,7 @@ static void draw_table(const char* page, const char* names)
 	if(ImGui::BeginTable("table", 1 + (s32) active_blocks.size(), ImGuiTableFlags_RowBg)) {
 		ImGui::TableSetupColumn(names, ImGuiTableColumnFlags_None);
 		for_each_block_from_page(
-			page, file->blocks, game_schema->game,
+			page, s_file->blocks, s_game_schema->game,
 			[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
 				ImGui::TableSetupColumn(block_schema.name.c_str(), ImGuiTableColumnFlags_None);
 			}
@@ -721,21 +721,21 @@ static void draw_table(const char* page, const char* names)
 
 static void draw_level_table(const memcard::Page& page)
 {
-	if(file->levels.empty()) {
+	if(s_file->levels.empty()) {
 		return;
 	}
 	
 	// Determine the number of block columns to draw.
 	s32 block_count = 0;
 	for_each_block_from_page(
-		page.tag.c_str(), file->levels[0], game_schema->level,
+		page.tag.c_str(), s_file->levels[0], s_game_schema->level,
 		[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
 			block_count++;
 		}
 	);
 	
-	auto names_type_iter = game_types.find("Level");
-	verify(names_type_iter != game_types.end(), "Cannot find type 'Level'.");
+	auto names_type_iter = s_game_types.find("Level");
+	verify(names_type_iter != s_game_types.end(), "Cannot find type 'Level'.");
 	CppType& names_type = names_type_iter->second;
 	verify_fatal(names_type.descriptor == CPP_ENUM);
 	
@@ -744,7 +744,7 @@ static void draw_level_table(const memcard::Page& page)
 	if(ImGui::BeginTable("table", 1 + block_count, ImGuiTableFlags_RowBg)) {
 		ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_None);
 		for_each_block_from_page(
-			page.tag.c_str(), file->levels[0], game_schema->level,
+			page.tag.c_str(), s_file->levels[0], s_game_schema->level,
 			[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
 				ImGui::TableSetupColumn(block_schema.name.c_str(), ImGuiTableColumnFlags_None);
 			}
@@ -760,15 +760,15 @@ static void draw_level_table(const memcard::Page& page)
 			
 			s32 column = 0;
 			for_each_block_from_page(
-				page.tag.c_str(), file->levels[0], game_schema->level,
+				page.tag.c_str(), s_file->levels[0], s_game_schema->level,
 				[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
 					ImGui::PushID(column);
 					
-					memcard::BlockSchema* total_block_schema = game_schema->game.block(block_schema.buddy);
+					memcard::BlockSchema* total_block_schema = s_game_schema->game.block(block_schema.buddy);
 					
 					memcard::Block* total_block = nullptr;
 					if(total_block_schema) {
-						for(memcard::Block& block : file->blocks) {
+						for(memcard::Block& block : s_file->blocks) {
 							if(block.iff == total_block_schema->iff) {
 								total_block = &block;
 								break;
@@ -799,10 +799,10 @@ static void draw_level_table(const memcard::Page& page)
 			ImGui::Text("TOTALS  (CALCULATED)");
 			
 			std::vector<s32> totals(block_count, 0);
-			for(size_t row = 0; row < file->levels.size(); row++) {
+			for(size_t row = 0; row < s_file->levels.size(); row++) {
 				s32 column = 0;
 				for_each_block_from_page(
-					page.tag.c_str(), file->levels[row], game_schema->level,
+					page.tag.c_str(), s_file->levels[row], s_game_schema->level,
 					[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
 						verify_fatal(column < block_count);
 						verify_fatal(block.data.size() >= 4);
@@ -816,7 +816,7 @@ static void draw_level_table(const memcard::Page& page)
 			
 			s32 column = 0;
 			for_each_block_from_page(
-				page.tag.c_str(), file->levels[0], game_schema->level,
+				page.tag.c_str(), s_file->levels[0], s_game_schema->level,
 				[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
 					verify_fatal(column < block_count);
 					
@@ -841,7 +841,7 @@ static void draw_level_table(const memcard::Page& page)
 			ImGui::AlignTextToFramePadding();
 			ImGui::Text("---");
 			for_each_block_from_page(
-				page.tag.c_str(), file->levels[0], game_schema->level,
+				page.tag.c_str(), s_file->levels[0], s_game_schema->level,
 				[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
 					ImGui::TableNextColumn();
 					ImGui::AlignTextToFramePadding();
@@ -851,7 +851,7 @@ static void draw_level_table(const memcard::Page& page)
 		}
 		
 		// Generate the level rows.
-		for(size_t row = 0; row < file->levels.size(); row++) {
+		for(size_t row = 0; row < s_file->levels.size(); row++) {
 			std::string row_name;
 			for(auto& [value, name] : names_type.enumeration.constants) {
 				if(value == row) {
@@ -873,7 +873,7 @@ static void draw_level_table(const memcard::Page& page)
 			
 			s32 column = 0;
 			for_each_block_from_page(
-				page.tag.c_str(), file->levels[row], game_schema->level,
+				page.tag.c_str(), s_file->levels[row], s_game_schema->level,
 				[&](memcard::Block& block, memcard::BlockSchema& block_schema, CppType& type) {
 					ImGui::PushID(column++);
 					
@@ -905,8 +905,8 @@ static void draw_table_editor(const CppType& type, std::span<u8> data, s32 offse
 			break;
 		}
 		case CPP_TYPE_NAME: {
-			auto iter = game_types.find(type.type_name.string);
-			if(iter != game_types.end()) {
+			auto iter = s_game_types.find(type.type_name.string);
+			if(iter != s_game_types.end()) {
 				draw_table_editor(type, data, offset);
 			}
 			break;
@@ -993,8 +993,8 @@ static void draw_bitfield_editor(const CppType& type, std::span<u8> data, s32 of
 	
 	const CppType* enum_type = nullptr;
 	if(directive == CPP_PREPROCESSOR_BITFLAGS || directive == CPP_PREPROCESSOR_ENUM) {
-		auto enum_type_iter = game_types.find(directive_value);
-		verify(enum_type_iter != game_types.end(), "Failed to lookup enum type '%s'.\n", directive_value.c_str());
+		auto enum_type_iter = s_game_types.find(directive_value);
+		verify(enum_type_iter != s_game_types.end(), "Failed to lookup enum type '%s'.\n", directive_value.c_str());
 		enum_type = &enum_type_iter->second;
 		verify(enum_type->descriptor == CPP_ENUM, "Type '%s' is not an enum.", enum_type->name.c_str());
 	}
@@ -1084,8 +1084,8 @@ static void for_each_block_from_page(
 			continue;
 		}
 		
-		auto type = game_types.find(block_schema->name);
-		verify_fatal(type != game_types.end());
+		auto type = s_game_types.find(block_schema->name);
+		verify_fatal(type != s_game_types.end());
 		
 		callback(block, *block_schema, type->second);
 	}
