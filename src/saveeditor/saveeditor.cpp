@@ -65,6 +65,7 @@ static void for_each_block_from_page(
 
 static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type);
 static const CppType& lookup_save_enum(const std::string& name);
+static std::string lookup_level_name(s32 level_number);
 static u8 from_bcd(u8 value);
 static u8 to_bcd(u8 value);
 
@@ -470,21 +471,43 @@ static void draw_blocks_page()
 			break;
 		}
 		case memcard::FileType::SLOT: {
-			if(ImGui::BeginTabBar("subpages")) {
-				if(ImGui::BeginTabItem("Game")) {
-					blocks_sub_page(s_file->blocks, gs ? &gs->game : nullptr);
-					ImGui::EndTabItem();
+			static size_t selected_level = SIZE_MAX;
+			
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Blocks:");
+			ImGui::SameLine();
+			
+			std::string label;
+			if(selected_level >= 0 && selected_level < s_file->levels.size()) {
+				label = "Level " + std::to_string(selected_level) + " " + lookup_level_name(static_cast<s32>(selected_level));
+			} else {
+				label = "Global";
+			}
+			
+			ImGui::SetNextItemWidth(-1);
+			if(ImGui::BeginCombo("##enum", label.c_str())) {
+				if(ImGui::Selectable("Global")) {
+					selected_level = SIZE_MAX;
 				}
 				
 				for(size_t i = 0; i < s_file->levels.size(); i++) {
-					if(ImGui::BeginTabItem(stringf("L%d", (s32) i).c_str())) {
-						blocks_sub_page(s_file->levels[i], gs ? &gs->level : nullptr);
-						ImGui::EndTabItem();
+					std::string level_label = "Level " + std::to_string(i) + " " + lookup_level_name(static_cast<s32>(i));
+					if(ImGui::Selectable(level_label.c_str())) {
+						selected_level = i;
 					}
 				}
 				
-				ImGui::EndTabBar();
+				ImGui::EndCombo();
 			}
+			
+			ImGui::BeginChild("##blocks");
+			if(selected_level >= 0 && selected_level < s_file->levels.size()) {
+				blocks_sub_page(s_file->levels[selected_level], gs ? &gs->level : nullptr);
+			} else {
+				blocks_sub_page(s_file->blocks, gs ? &gs->game : nullptr);
+			}
+			ImGui::EndChild();
+			
 			break;
 		}
 		default: {
@@ -1152,6 +1175,18 @@ static const CppType& lookup_save_enum(const std::string& name)
 	const CppType& enum_type = enum_type_iter->second;
 	verify(enum_type.descriptor == CPP_ENUM, "Type '%s' is not an enum.", enum_type.name.c_str());
 	return enum_type;
+}
+
+static std::string lookup_level_name(s32 level_number)
+{
+	const CppType& level_enum = lookup_save_enum("Level");
+	for(auto& [value, name] : level_enum.enumeration.constants) {
+		if(value == level_number) {
+			return name;
+		}
+	}
+	
+	return "UNKNOWN";
 }
 
 static u8 from_bcd(u8 value)
