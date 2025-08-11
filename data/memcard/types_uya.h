@@ -289,7 +289,10 @@ typedef int GadgetXP[156];
 typedef char PurchasableVendorItems[64];
 
 typedef Gadget QuickSelect[8];
+
+#pragma wrench elementnames Level
 typedef bool VisitedPlanets[60];
+
 typedef Level GalacticMap[60];
 
 struct MapLandmark

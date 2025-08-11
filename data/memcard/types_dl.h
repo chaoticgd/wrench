@@ -294,7 +294,9 @@ enum Movie
 };
 
 typedef unsigned int MoviesPlayedRecord[64];
+typedef int TotalDeaths;
 typedef short unsigned int HelpLog[2100];
+typedef int HelpLogPos;
 typedef unsigned char g_PurchaseableGadgets[20];
 typedef unsigned char g_PurchaseableBotUpgrades[17];
 typedef unsigned char g_PurchaseableWrenchLevel;
