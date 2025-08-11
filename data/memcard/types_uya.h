@@ -97,7 +97,25 @@ typedef bool GlobalFlags[272];
 
 enum Cheat
 {
-
+	// UNKNOWN_0 = 0,
+	// UNKNOWN_1 = 1,
+	// UNKNOWN_2 = 2,
+	// UNKNOWN_3 = 3,
+	// UNKNOWN_4 = 4,
+	// UNKNOWN_5 = 5,
+	// UNKNOWN_6 = 6,
+	// UNKNOWN_7 = 7,
+	BIG_HEAD_HEROES_CLANK = 8,
+	BIG_HEAD_HEROES_ENEMIES_1 = 9,
+	BIG_HEAD_RATCHET = 10,
+	BIG_HEAD_ENEMIES_2 = 11,
+	TIME_FREEZE = 12,
+	SECRET_AGENT_CLANK = 13,
+	SHIPS_TO_DUCKS = 14,
+	MIRROR_UNIVERSE = 15,
+	// UNKNOWN_16 = 16,
+	WRENCH_REPLACEMENT = 17
+	// UNKNOWN_18 = 18
 };
 
 typedef bool CheatsActivated[19];
