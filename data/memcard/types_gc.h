@@ -250,6 +250,7 @@ enum Movie
 };
 
 typedef char MoviesPlayedRecord[256];
+
 enum ShipNose
 {
 	STANDARD_NOSE = 0,

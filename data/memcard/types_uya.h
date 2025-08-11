@@ -335,7 +335,67 @@ enum Movie
 };
 
 typedef char MoviesPlayedRecord[256];
-typedef int ShipUpgrades;
+
+enum ShipNose
+{
+	STANDARD_NOSE = 0,
+	SPLIT_NOSE = 1,
+	SCOOP_NOSE = 2
+};
+
+enum ShipWings
+{
+	STANDARD_WINGS = 0,
+	HIGH_LIFT_WINGS = 1,
+	HEAVY_ORDINANCE_WINGS = 2
+};
+
+enum ShipPaintJob
+{
+	BLARGIAN_RED = 0,
+	ORXON_GREEN = 1,
+	BOGON_BLUE = 2,
+	INSOMNIAC_SPECIAL = 3,
+	DARK_NEBULA = 4,
+	DREKS_BLACK_HEART = 5,
+	SPACE_STORM = 6,
+	LUNAR_ECLIPSE = 7,
+	PLAIDTASTIC = 8,
+	SUPERNOVA = 9,
+	SOLAR_WIND = 10,
+	CLOWNER = 11,
+	SILENT_STRIKE = 12,
+	LOMBAX_ORANGE = 13,
+	NEUTRON_STAR = 14,
+	STAR_TRAVELLER = 15,
+	HOOKED_ON_ONYX = 16,
+	TYHRRANOID_VOID = 17,
+	ZELDREN_SUNSET = 18,
+	GHOST_PIRATE_PURPLE = 19,
+	QWARK_GREEN = 20,
+	AGENT_ORANGE = 21,
+	HELGA_HUES = 22,
+	AMOEBOID_GREEN = 23,
+	OBANI_ORANGE = 24,
+	PULSING_PURPLE = 25,
+	LOW_RIDER = 26,
+	BLACK_HOLE = 27,
+	SUN_STORM = 28,
+	SASHA_SCARLET = 29,
+	FLORANA_BREEZE = 30,
+	OZZY_KAMIKAZE = 31
+};
+
+struct ShipMods
+{
+	#pragma wrench enum ShipNose
+	unsigned short Nose : 2;
+	#pragma wrench enum ShipWings
+	unsigned short Wings : 14;
+	#pragma wrench enum ShipPaintJob
+	unsigned short PaintJob;
+};
+
 typedef char Unknown46[40];
 typedef char Unknown47[256];
 typedef int TotalDeaths;
