@@ -136,16 +136,17 @@ struct CppPointerOrReference {
 };
 
 enum CppPreprocessorDirectiveType {
-	CPP_PREPROCESSOR_BITFLAGS,
-	CPP_PREPROCESSOR_ELEMENTNAMES,
-	CPP_PREPROCESSOR_ENUM
+	CPP_DIRECTIVE_BCD,
+	CPP_DIRECTIVE_BITFLAGS,
+	CPP_DIRECTIVE_ELEMENTNAMES,
+	CPP_DIRECTIVE_ENUM
 };
 
 struct CppPreprocessorDirective {
 	CppPreprocessorDirectiveType type;
-	std::string value;
+	std::string string;
 	
-	bool operator==(const CppPreprocessorDirective& rhs) const { return type == rhs.type && value == rhs.value; }
+	bool operator==(const CppPreprocessorDirective& rhs) const { return type == rhs.type && string == rhs.string; }
 };
 
 struct CppType {
@@ -187,7 +188,7 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 void dump_cpp_type(OutBuffer& dest, const CppType& type);
 void destructively_merge_cpp_structs(CppType& dest, CppType& src);
 const char* cpp_built_in(CppBuiltIn built_in);
-std::optional<std::string> cpp_directive(const CppType& type, CppPreprocessorDirectiveType directive_type);
+const CppPreprocessorDirective* cpp_directive(const CppType& type, CppPreprocessorDirectiveType directive_type);
 
 extern CppABI NATIVE_ABI;
 extern CppABI CPP_PS2_ABI;

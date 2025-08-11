@@ -222,7 +222,7 @@ TEST_CASE("c++ parser" "[cpp]") {
 		[]() {
 			CppType type(CPP_BUILT_IN);
 			type.name = "Thing";
-			type.preprocessor_directives.emplace_back(CPP_PREPROCESSOR_BITFLAGS, "ThingFlags");
+			type.preprocessor_directives.emplace_back(CPP_DIRECTIVE_BITFLAGS, "ThingFlags");
 			type.built_in = CPP_INT;
 			return type;
 		}()
@@ -234,7 +234,7 @@ TEST_CASE("c++ parser" "[cpp]") {
 			type.name = "S";
 			CppType& field = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
 			field.name = "var";
-			field.preprocessor_directives.emplace_back(CPP_PREPROCESSOR_ENUM, "Enum");
+			field.preprocessor_directives.emplace_back(CPP_DIRECTIVE_ENUM, "Enum");
 			field.built_in = CPP_INT;
 			return type;
 		}()

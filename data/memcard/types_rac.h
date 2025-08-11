@@ -32,12 +32,18 @@ typedef int ElapsedTime;
 struct sceCdCLOCK
 {
 	unsigned char stat;
+	#pragma wrench bcd
 	unsigned char second;
+	#pragma wrench bcd
 	unsigned char minute;
+	#pragma wrench bcd
 	unsigned char hour;
 	unsigned char pad;
+	#pragma wrench bcd
 	unsigned char day;
+	#pragma wrench bcd
 	unsigned char month;
+	#pragma wrench bcd
 	unsigned char year;
 };
 

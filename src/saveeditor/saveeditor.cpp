@@ -603,8 +603,8 @@ static void draw_tree_node(
 			}
 			
 			const CppType* element_names_type = nullptr;
-			if(std::optional<std::string> element_names = cpp_directive(type, CPP_PREPROCESSOR_ELEMENTNAMES)) {
-				element_names_type = &lookup_save_enum(*element_names);
+			if(const CppPreprocessorDirective* element_names = cpp_directive(type, CPP_DIRECTIVE_ELEMENTNAMES)) {
+				element_names_type = &lookup_save_enum(element_names->string);
 			}
 			
 			if(expanded) {
@@ -968,8 +968,8 @@ static void draw_built_in_editor(const CppType& type, std::span<u8> data, s32 of
 		if(ImGui::Checkbox("##input", &value)) {
 			memcpy(&data[offset], &value, 1);
 		}
-	} else if(std::optional<std::string> enum_name = cpp_directive(type, CPP_PREPROCESSOR_ENUM)) {
-		const CppType& enum_type = lookup_save_enum(*enum_name);
+	} else if(const CppPreprocessorDirective* enum_name = cpp_directive(type, CPP_DIRECTIVE_ENUM)) {
+		const CppType& enum_type = lookup_save_enum(enum_name->string);
 		
 		std::string name = std::to_string(temp);
 		for(auto& [other_value, other_name] : enum_type.enumeration.constants) {
@@ -994,11 +994,20 @@ static void draw_built_in_editor(const CppType& type, std::span<u8> data, s32 of
 		ImGuiDataType imgui_type = cpp_built_in_type_to_imgui_data_type(type);
 		const char* format = ImGui::DataTypeGetInfo(imgui_type)->PrintFmt;
 		
+		bool bcd = cpp_directive(type, CPP_DIRECTIVE_BCD);
+		if(bcd) {
+			temp = from_bcd(static_cast<u8>(temp));
+		}
+		
 		char data_as_string[64];
 		ImGui::DataTypeFormatString(data_as_string, ARRAY_SIZE(data_as_string), imgui_type, &temp, format);
 		
 		if(ImGui::InputText("##input", data_as_string, ARRAY_SIZE(data_as_string))) {
 			if(ImGui::DataTypeApplyFromText(data_as_string, imgui_type, &temp, format)) {
+				if(bcd) {
+					temp = to_bcd(static_cast<u8>(temp));
+				}
+				
 				memcpy(&data[offset], &temp, type.size);
 			}
 		}
@@ -1046,19 +1055,19 @@ static void draw_bitfield_editor(const CppType& type, std::span<u8> data, s32 of
 	u64 bitfield = cpp_unpack_unsigned_bitfield(storage_unit, type.bitfield.bit_offset, type.bitfield.bit_size);
 	
 	s32 directive = -1;
-	std::string directive_value;
+	std::string directive_string;
 	if(!type.preprocessor_directives.empty()) {
 		directive = type.preprocessor_directives[0].type;
-		directive_value = type.preprocessor_directives[0].value;
+		directive_string = type.preprocessor_directives[0].string;
 	}
 	
 	const CppType* enum_type = nullptr;
-	if(directive == CPP_PREPROCESSOR_BITFLAGS || directive == CPP_PREPROCESSOR_ENUM) {
-		enum_type = &lookup_save_enum(directive_value);
+	if(directive == CPP_DIRECTIVE_BITFLAGS || directive == CPP_DIRECTIVE_ENUM) {
+		enum_type = &lookup_save_enum(directive_string);
 	}
 	
 	switch(directive) {
-		case CPP_PREPROCESSOR_BITFLAGS: {
+		case CPP_DIRECTIVE_BITFLAGS: {
 			std::string flags;
 			for(auto& [flag_pos, flag_name] : enum_type->enumeration.constants) {
 				if(bitfield & flag_pos) {
@@ -1087,7 +1096,7 @@ static void draw_bitfield_editor(const CppType& type, std::span<u8> data, s32 of
 			
 			break;
 		}
-		case CPP_PREPROCESSOR_ENUM: {
+		case CPP_DIRECTIVE_ENUM: {
 			std::string name = std::to_string(bitfield);
 			for(auto& [other_value, other_name] : enum_type->enumeration.constants) {
 				if(other_value == bitfield) {

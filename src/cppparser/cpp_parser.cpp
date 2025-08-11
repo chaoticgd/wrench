@@ -379,6 +379,13 @@ static CppType parse_type_name(CppParserState& parser) {
 	verify_not_reached("Expected type name on line %d, got %s.", first.line, cpp_token_type(first.type));
 }
 
+static const CppPreprocessorDirective CPP_DIRECTIVES[] = {
+	{CPP_DIRECTIVE_BCD, "bcd"},
+	{CPP_DIRECTIVE_BITFLAGS, "bitflags"},
+	{CPP_DIRECTIVE_ELEMENTNAMES, "elementnames"},
+	{CPP_DIRECTIVE_ENUM, "enum"}
+};
+
 static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppParserState& parser, size_t token) {
 	std::vector<CppPreprocessorDirective> directives;
 	
@@ -386,19 +393,22 @@ static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppPa
 		std::string line(parser.tokens[token - 1].str_begin, parser.tokens[token - 1].str_end);
 		if(line.starts_with("pragma wrench ")) {
 			line = line.substr(14);
-			if(line.starts_with("bitflags ")) {
-				CppPreprocessorDirective& directive = directives.emplace_back();
-				directive.type = CPP_PREPROCESSOR_BITFLAGS;
-				directive.value = line.substr(9);
-			} else if(line.starts_with("elementnames ")) {
-				CppPreprocessorDirective& directive = directives.emplace_back();
-				directive.type = CPP_PREPROCESSOR_ELEMENTNAMES;
-				directive.value = line.substr(13);
-			} else if(line.starts_with("enum ")) {
-				CppPreprocessorDirective& directive = directives.emplace_back();
-				directive.type = CPP_PREPROCESSOR_ENUM;
-				directive.value = line.substr(5);
+			
+			bool found = false;
+			for(const CppPreprocessorDirective& info : CPP_DIRECTIVES) {
+				if(line.starts_with(info.string)) {
+					CppPreprocessorDirective& directive = directives.emplace_back();
+					directive.type = info.type;
+					if(line.size() >= info.string.size() + 1 && line[info.string.size()] == ' ') {
+						directive.string = line.substr(info.string.size() + 1);
+					}
+					
+					found = true;
+					break;
+				}
 			}
+			
+			verify(found || line.starts_with("parser"), "Unkown wrench pragma directive '%s'.", line.c_str());
 		}
 		token--;
 	}

@@ -446,13 +446,13 @@ const char* cpp_built_in(CppBuiltIn built_in) {
 	return "error";
 }
 
-std::optional<std::string> cpp_directive(const CppType& type, CppPreprocessorDirectiveType directive_type) {
+const CppPreprocessorDirective* cpp_directive(const CppType& type, CppPreprocessorDirectiveType directive_type) {
 	for(const CppPreprocessorDirective& directive : type.preprocessor_directives) {
 		if(directive.type == directive_type) {
-			return directive.value;
+			return &directive;
 		}
 	}
-	return std::nullopt;
+	return nullptr;
 }
 
 enum CppDummyEnum {};
