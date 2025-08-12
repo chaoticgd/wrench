@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 	for(int i = 2; i < argc; i++) {
 		WrenchFileHandle* src = file_open(argv[i], WRENCH_FILE_MODE_READ);
 		if(!src) {
-			fprintf(stderr, "Failed to open file \"%s\".", argv[i]);
+			fprintf(stderr, "Failed to open file '%s'.\n", argv[i]);
 			return 1;
 		}
 

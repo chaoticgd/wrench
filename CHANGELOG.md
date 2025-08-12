@@ -2,6 +2,7 @@
 
 ## v0.5
 
+- Rewrote the save editor so that it now works for all the games.
 - Use glTF (.glb) to store the sky models instead of COLLADA.
 - Use glTF (.glb) to store the shrub models instead of COLLADA.
 - Sky models are now split up into clusters automatically, making custom skies much more doable.

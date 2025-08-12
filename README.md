@@ -29,8 +29,8 @@ Features currently include:
 	- Inspect objects and modify their attributes (including pvars).
 	- **New in v0.5!** Recover instanced collision for ties and shrubs.
 	- **New in v0.5!** Translate, rotate and scale objects using 3D transformation gizmos.
-- Memory Card Editor
-	- Only works properly on Deadlocked saves. Experimental.
+- Save Editor
+	- **New in v0.5!** Works for all the games, rather than just Deadlocked.
 - Asset System
 	- A system to create, distribute and load mods.
 	- Multiple mods can be loaded at a time.

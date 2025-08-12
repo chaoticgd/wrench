@@ -32,6 +32,7 @@ CppType::CppType(CppType&& rhs) {
 	size = rhs.size;
 	alignment = rhs.alignment;
 	precedence = rhs.precedence;
+	preprocessor_directives = std::move(rhs.preprocessor_directives);
 	descriptor = rhs.descriptor;
 	create_pvar_type(*this);
 	move_assign_pvar_type(*this, rhs);
@@ -53,6 +54,7 @@ CppType& CppType::operator=(CppType&& rhs) {
 	size = rhs.size;
 	alignment = rhs.alignment;
 	precedence = rhs.precedence;
+	preprocessor_directives = std::move(rhs.preprocessor_directives);
 	descriptor = rhs.descriptor;
 	create_pvar_type(*this);
 	move_assign_pvar_type(*this, rhs);
@@ -64,6 +66,10 @@ static void create_pvar_type(CppType& type) {
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
 			new (&type.array) CppArray;
+			break;
+		}
+		case CPP_BITFIELD: {
+			new (&type.bitfield) CppBitField;
 			break;
 		}
 		case CPP_BUILT_IN: {
@@ -95,6 +101,10 @@ static void move_assign_pvar_type(CppType& lhs, CppType& rhs) {
 			lhs.array = std::move(rhs.array);
 			break;
 		}
+		case CPP_BITFIELD: {
+			lhs.bitfield = std::move(rhs.bitfield);
+			break;
+		}
 		case CPP_BUILT_IN: {
 			lhs.built_in = std::move(rhs.built_in);
 			break;
@@ -122,6 +132,10 @@ static void destroy_pvar_type(CppType& type) {
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
 			type.array.~CppArray();
+			break;
+		}
+		case CPP_BITFIELD: {
+			type.bitfield.~CppBitField();
 			break;
 		}
 		case CPP_BUILT_IN: {
@@ -158,6 +172,13 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 			type.alignment = type.array.element_type->alignment;
 			break;
 		}
+		case CPP_BITFIELD: {
+			verify_fatal(type.bitfield.storage_unit_type.get());
+			layout_cpp_type(*type.bitfield.storage_unit_type, types, abi);
+			type.size = type.bitfield.storage_unit_type->size;
+			type.alignment = type.bitfield.storage_unit_type->alignment;
+			break;
+		};
 		case CPP_BUILT_IN: {
 			verify_fatal(type.built_in < CPP_BUILT_IN_COUNT);
 			type.size = abi.built_in_sizes[type.built_in];
@@ -170,18 +191,53 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
+			for(CppType& field : type.struct_or_union.fields) {
+				if(field.descriptor == CPP_BITFIELD) {
+					verify(!type.struct_or_union.is_union, "Union '%s' contains a bitfield.", type.name.c_str());
+				}
+			}
+			
+			s32 bit_offset = 0;
+			
 			bool has_custom_alignment = type.alignment > -1;
 			s32 offset = 0;
 			if(!has_custom_alignment) {
 				type.alignment = 1;
 			}
-			for(CppType& field : type.struct_or_union.fields) {
+			for(size_t i = 0; i < type.struct_or_union.fields.size(); i++) {
+				CppType& field = type.struct_or_union.fields[i];
+				
 				layout_cpp_type(field, types, abi);
 				if(!has_custom_alignment) {
 					type.alignment = std::max(field.alignment, type.alignment);
 				}
 				field.offset = align32(offset, field.alignment);
-				if(!type.struct_or_union.is_union) {
+				
+				bool add_offset = !type.struct_or_union.is_union;
+				if(field.descriptor == CPP_BITFIELD) {
+					// Check if this is the last bitfield for the storage unit.
+					bool end_of_group = true;
+					if (i + 1 < type.struct_or_union.fields.size()) {
+						CppType& next_field = type.struct_or_union.fields[i + 1];
+						end_of_group = field.descriptor != next_field.descriptor
+							|| (field.descriptor == CPP_BUILT_IN && field.built_in != next_field.built_in)
+							|| (bit_offset + field.bitfield.bit_size >= field.bitfield.storage_unit_type->size * 8);
+					}
+					
+					field.bitfield.bit_offset = bit_offset;
+					bit_offset += field.bitfield.bit_size;
+					
+					if(end_of_group) {
+						verify(bit_offset == field.bitfield.storage_unit_type->size * 8,
+							"Sum of bitfield sizes (%d) not equal to size of storage unit (%d) for type '%s'.",
+							bit_offset, field.bitfield.storage_unit_type->size * 8, type.name.c_str());
+						bit_offset = 0;
+					}
+					
+					add_offset &= end_of_group;
+				}
+				
+				if(add_offset) {
 					offset = field.offset + field.size;
 				}
 			}
@@ -241,6 +297,10 @@ static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDu
 			context.array_subscripts.emplace_back(type.array.element_count);
 			verify_fatal(type.array.element_type.get());
 			dump_cpp_type_impl(dest, *type.array.element_type, context);
+			break;
+		}
+		case CPP_BITFIELD: {
+			verify_not_reached("Dumping bitfields not yet supported.");
 			break;
 		}
 		case CPP_BUILT_IN: {
@@ -384,6 +444,15 @@ const char* cpp_built_in(CppBuiltIn built_in) {
 		default: {}
 	}
 	return "error";
+}
+
+const CppPreprocessorDirective* cpp_directive(const CppType& type, CppPreprocessorDirectiveType directive_type) {
+	for(const CppPreprocessorDirective& directive : type.preprocessor_directives) {
+		if(directive.type == directive_type) {
+			return &directive;
+		}
+	}
+	return nullptr;
 }
 
 enum CppDummyEnum {};
