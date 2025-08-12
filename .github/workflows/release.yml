@@ -43,7 +43,7 @@ jobs:
         name: ${{ github.ref }}
         tag: ${{ github.ref }}
         artifacts: build/wrench_*.zip
-        allowUpdates: false
+        allowUpdates: true
         draft: true
         omitBodyDuringUpdate: false
         omitDraftDuringUpdate: false
@@ -51,4 +51,4 @@ jobs:
         omitPrereleaseDuringUpdate: false
         prerelease: true
         replacesArtifacts: false
-        skipIfReleaseExists: true
+        skipIfReleaseExists: false
