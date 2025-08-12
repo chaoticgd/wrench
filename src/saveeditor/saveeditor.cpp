@@ -43,6 +43,7 @@ static void create_dock_layout();
 
 static void do_load();
 static void do_save();
+static void update_save_changes_dialog();
 
 static void draw_blocks_page();
 static void blocks_sub_page(std::vector<memcard::Block>& blocks, memcard::FileSchema* file_schema);
@@ -77,8 +78,8 @@ static std::vector<fs::path> s_file_paths;
 static bool s_should_reload_file_list = true;
 static fs::path s_selected_file_path;
 static bool s_should_load_now = false;
-static bool s_should_save_now = false;
 static Opt<memcard::File> s_file;
+static std::vector<u8> s_last_loaded_buffer;
 static std::string s_error_message;
 
 static Game s_game = Game::UNKNOWN;
@@ -86,6 +87,18 @@ static memcard::GameSchema* s_game_schema = nullptr;
 static std::map<std::string, CppType> s_game_types;
 
 static std::map<ImGuiID, bool> s_node_expanded;
+
+enum class SaveChangesDialogState
+{
+	CLOSED,
+	OPENING,
+	OPENED,
+	CLOSING_YES,
+	CLOSING_NO
+};
+
+static SaveChangesDialogState s_save_changes_dialog_state = SaveChangesDialogState::CLOSED;
+static std::function<void()> s_save_changes_dialog_callback;
 
 int main(int argc, char** argv)
 {
@@ -109,6 +122,16 @@ int main(int argc, char** argv)
 	
 	GLFWwindow* window = gui::startup("Wrench Save Editor", 1280, 720);
 	gui::load_font(wadinfo.gui.fonts[0], 22);
+	
+	glfwSetWindowCloseCallback(window, [](GLFWwindow* window) {
+		glfwSetWindowShouldClose(window, GLFW_FALSE);
+		
+		s_save_changes_dialog_state = SaveChangesDialogState::OPENING;
+		s_save_changes_dialog_callback = [window]() {
+			glfwSetWindowShouldClose(window, GLFW_TRUE);
+		};
+	});
+	
 	while(!glfwWindowShouldClose(window)) {
 		gui::run_frame(window, update_gui);
 		
@@ -117,17 +140,13 @@ int main(int argc, char** argv)
 			s_should_load_now = false;
 		}
 		
-		if(s_should_save_now) {
-			do_save();
-			s_should_save_now = false;
-		}
-		
 		if((frame % 60) == 0) {
 			s_should_reload_file_list = true;
 		}
 		
 		frame++;
 	}
+	
 	gui::shutdown(window);
 }
 
@@ -160,6 +179,8 @@ static void update_gui(f32 delta_time)
 	}
 	
 	ImGui::End(); // dock space
+	
+	update_save_changes_dialog();
 }
 
 static void files()
@@ -201,8 +222,11 @@ static void files()
 		for(auto& path : s_file_paths) {
 			if(fs::is_regular_file(path)) {
 				if(ImGui::Selectable(path.filename().string().c_str(), path == s_selected_file_path)) {
-					s_should_load_now = true;
-					s_selected_file_path = path;
+					s_save_changes_dialog_state = SaveChangesDialogState::OPENING;
+					s_save_changes_dialog_callback = [path]() {
+						s_should_load_now = true;
+						s_selected_file_path = path;
+					};
 				}
 			}
 		}
@@ -215,7 +239,7 @@ static void files()
 static void controls()
 {
 	if(ImGui::Button("Save")) {
-		s_should_save_now = true;
+		do_save();
 	}
 	
 	if(ImGui::Button("Save As")) {
@@ -229,7 +253,7 @@ static void controls()
 		}
 		
 		s_file->path = path;
-		s_should_save_now = true;
+		do_save();
 		
 		s_selected_file_path = s_file->path;
 		s_directory = s_selected_file_path.parent_path().string();
@@ -375,8 +399,8 @@ static void do_load()
 {
 	if(!s_selected_file_path.empty()) {
 		try {
-			std::vector<u8> buffer = read_file(s_selected_file_path);
-			s_file = memcard::read(buffer, s_selected_file_path);
+			s_last_loaded_buffer = read_file(s_selected_file_path);
+			s_file = memcard::read(s_last_loaded_buffer, s_selected_file_path);
 			s_error_message.clear();
 			
 			s32 type_index = -1;
@@ -458,6 +482,69 @@ static void do_save()
 			s_error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
 		}
 		s_should_reload_file_list = true;
+	}
+}
+
+static void update_save_changes_dialog()
+{
+	switch(s_save_changes_dialog_state) {
+		case SaveChangesDialogState::CLOSED: {
+			break;
+		}
+		case SaveChangesDialogState::OPENING: {
+			if(s_file.has_value()) {
+				std::vector<u8> buffer;
+				memcard::write(buffer, *s_file);
+				if(buffer != s_last_loaded_buffer) {
+					// The save file has been modified, so we need to show the
+					// save changes dialog.
+					ImGui::OpenPopup("Confirmation##save_changes_dialog");
+					s_save_changes_dialog_state = SaveChangesDialogState::OPENED;
+					break;
+				}
+			}
+			// There are no changes, or a file hasn't been loaded, so skip
+			// showing the dialog and run the callback immediately.
+			s_save_changes_dialog_state = SaveChangesDialogState::CLOSING_NO;
+			break;
+		}
+		case SaveChangesDialogState::OPENED: {
+			if(ImGui::BeginPopupModal("Confirmation##save_changes_dialog")) {
+				ImGui::Text("Save changes to '%s'?", s_selected_file_path.string().c_str());
+				
+				if(ImGui::Button("Yes")) {
+					s_save_changes_dialog_state = SaveChangesDialogState::CLOSING_YES;
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::SameLine();
+				
+				if(ImGui::Button("No")) {
+					s_save_changes_dialog_state = SaveChangesDialogState::CLOSING_NO;
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::SameLine();
+				
+				if(ImGui::Button("Cancel")) {
+					s_save_changes_dialog_state = SaveChangesDialogState::CLOSED;
+					ImGui::CloseCurrentPopup();
+				}
+				
+				ImGui::EndPopup();
+			}
+			
+			break;
+		}
+		case SaveChangesDialogState::CLOSING_YES: {
+			do_save();
+			s_save_changes_dialog_callback();
+			s_save_changes_dialog_state = SaveChangesDialogState::CLOSED;
+			break;
+		}
+		case SaveChangesDialogState::CLOSING_NO: {
+			s_save_changes_dialog_callback();
+			s_save_changes_dialog_state = SaveChangesDialogState::CLOSED;
+			break;
+		}
 	}
 }
 

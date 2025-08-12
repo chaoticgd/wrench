@@ -25,7 +25,7 @@ namespace fs = std::filesystem;
 #include "buffer.h"
 #include <platform/fileio.h>
 
-// These functions all call exit on error.
+// These functions all throw on error.
 std::vector<u8> read_file(WrenchFileHandle* file, s64 offset, s64 size);
 std::vector<u8> read_file(fs::path path, bool text_mode = false);
 void write_file(const fs::path& path, Buffer buffer, bool text_mode = false);
