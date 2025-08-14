@@ -3,15 +3,15 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 # GLAD
-add_subdirectory(glad)
+add_subdirectory(glad EXCLUDE_FROM_ALL)
 include_directories(glad/include)
 
 # GLFW
-add_subdirectory(glfw)
+add_subdirectory(glfw EXCLUDE_FROM_ALL)
 include_directories(glfw/include)
 
 # GLM
-add_subdirectory(glm)
+add_subdirectory(glm EXCLUDE_FROM_ALL)
 
 # Dear ImGui
 include_directories(imgui)
@@ -52,7 +52,7 @@ include_directories(nativefiledialog/src/include)
 
 # zlib
 set(SKIP_INSTALL_ALL ON)
-add_subdirectory(zlib)
+add_subdirectory(zlib EXCLUDE_FROM_ALL)
 include_directories(zlib)
 include_directories(${CMAKE_BINARY_DIR}/thirdparty/zlib)
 set(ZLIB_FOUND TRUE)
@@ -77,7 +77,7 @@ option(PNG_STATIC "" ON)
 option(PNG_EXECUTABLES "" OFF)
 option(PNG_TESTS "" OFF)
 set(SKIP_INSTALL_EXPORT ON FORCE)
-add_subdirectory(libpng)
+add_subdirectory(libpng EXCLUDE_FROM_ALL)
 
 # libzip
 set(LIBZIP_DO_INSTALL OFF CACHE BOOL "")
@@ -93,13 +93,13 @@ set(BUILD_TOOLS OFF CACHE BOOL "")
 set(BUILD_REGRESS OFF CACHE BOOL "")
 set(BUILD_EXAMPLES OFF CACHE BOOL "")
 set(BUILD_DOC OFF CACHE BOOL "")
-add_subdirectory(libzip)
+add_subdirectory(libzip EXCLUDE_FROM_ALL)
 if(WIN32)
 	add_dependencies(zip copy_zlib_lib_hack)
 endif()
 
 # Catch2
-add_subdirectory(catch2)
+add_subdirectory(catch2 EXCLUDE_FROM_ALL)
 
 # ImGuizmo
 add_library(imguizmo STATIC
