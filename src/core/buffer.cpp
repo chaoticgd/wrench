@@ -187,7 +187,7 @@ void OutBuffer::writesf(s32 indent_level, const char* format, va_list args) {
 	
 	size_t write_ofs = vec.size();
 	vec.resize(vec.size() + count);
-	memcpy(&vec[write_ofs], temp, count);
+	memcpy(vec.data() + write_ofs, temp, count);
 }
 
 void OutBuffer::writelf(s32 indent_level, const char* format, va_list args) {
@@ -203,7 +203,7 @@ void OutBuffer::writelf(s32 indent_level, const char* format, va_list args) {
 	
 	size_t write_ofs = vec.size();
 	vec.resize(write_ofs + count + 1);
-	memcpy(&vec[write_ofs], temp, count);
+	memcpy(vec.data() + write_ofs, temp, count);
 	vec[write_ofs + count] = '\n';
 }
 
