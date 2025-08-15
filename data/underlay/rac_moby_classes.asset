@@ -433,7 +433,7 @@ MobyClass rac.moby_classes.1005  { category: "Gadget"       name: "Tresspasser" 
 MobyClass rac.moby_classes.1006  { category: "Gadget"       name: "Blaster Ammo" }
 MobyClass rac.moby_classes.1007  { category: "Gameplay"     name: "Camera Object" }
 MobyClass rac.moby_classes.1012  { category: "Vehicles"     name: "Taxi" }
-MobyClass rac.moby_classes.1015  { category: "Gameplay"     name: "Door" }
+// 1015 level_design.asset
 MobyClass rac.moby_classes.1016  { category: "Gadget"       name: "Hydrodisplacer" }
 MobyClass rac.moby_classes.1018  { category: "Water"        name: "Ocean (Umbris)"        Texture editor_icon { src: "icons/ocean.png" strongly_deleted: false } }
 MobyClass rac.moby_classes.1023  { category: "Enemies"      name: "Blarg Paratrooper" }
@@ -457,6 +457,7 @@ MobyClass rac.moby_classes.1068  { category: "Enemies"      name: "Blarg Space C
 MobyClass rac.moby_classes.1071  { category: "Prop"         name: "Qwark Statue" }
 MobyClass rac.moby_classes.1075  { category: "Vehicles"     name: "Pokitaru Boat" }
 MobyClass rac.moby_classes.1099  { category: "Prop"         name: "Qwark's Trailer" }
+// 1100 level_design.asset
 MobyClass rac.moby_classes.1101  { category: "Gameplay"     name: "Upper Door" }
 MobyClass rac.moby_classes.1102  { category: "Gameplay"     name: "Lower Door" }
 MobyClass rac.moby_classes.1105  { category: "NPCs"         name: "Fred" }
@@ -474,7 +475,7 @@ MobyClass rac.moby_classes.1134  { category: "Gameplay"     name: "Gold Bolt" }
 MobyClass rac.moby_classes.1135  { category: "Gameplay"     name: "Teleporter" }
 MobyClass rac.moby_classes.1139  { category: "Gameplay"     name: "Hoverboard Ring" }
 MobyClass rac.moby_classes.1140  { category: "Gameplay"     name: "Hoverboard Boost Pad" }
-MobyClass rac.moby_classes.1141  { category: "Gameplay"     name: "Elevator" }
+// 1141 level_design.asset
 MobyClass rac.moby_classes.1143  { category: "Prop"         name: "Vendor Orb" }
 MobyClass rac.moby_classes.1144  { category: "NPCs"         name: "Batalia Deserter" }
 MobyClass rac.moby_classes.1146  { category: "Gadget"       name: "Helipack" }
@@ -504,7 +505,7 @@ MobyClass rac.moby_classes.1190  { category: "NPCs"         name: "Lieutenant" }
 MobyClass rac.moby_classes.1195  { category: "Prop"         name: "Robot Face" }
 MobyClass rac.moby_classes.1196  { category: "Enemies"      name: "Screamer" }
 MobyClass rac.moby_classes.1199  { category: "Enemies"      name: "Darter" }
-MobyClass rac.moby_classes.1200  { category: "Prop"         name: "Fighter Jet (Damaged)" }
+// 1200 level_design.asset
 MobyClass rac.moby_classes.1201  { category: "Gameplay"     name: "Turret" }
 MobyClass rac.moby_classes.1202  { category: "Enemies"      name: "Toxic Crab" }
 MobyClass rac.moby_classes.1205  { category: "Prop"         name: "Robot Statue" }
@@ -543,7 +544,7 @@ MobyClass rac.moby_classes.1278  { category: "Bosses"       name: "PlanetBuster 
 MobyClass rac.moby_classes.1279  { category: "Bosses"       name: "PlanetBuster Maximus (Part)" }
 MobyClass rac.moby_classes.1280  { category: "Bosses"       name: "PlanetBuster Maximus (Part)" }
 MobyClass rac.moby_classes.1281  { category: "Enemies"      name: "Homing Mine Spawner" }
-MobyClass rac.moby_classes.1282  { category: "Gameplay"     name: "Door" }
+// 1282 level_design.asset
 MobyClass rac.moby_classes.1283  { category: "NPCs"         name: "The Plumber (Batalia)" }
 MobyClass rac.moby_classes.1285  { category: "Gameplay"     name: "Barrier" }
 MobyClass rac.moby_classes.1286  { category: "Gameplay"     name: "Barrier" }
@@ -555,8 +556,11 @@ MobyClass rac.moby_classes.1297  { category: "Gameplay"     name: "Energy Sphere
 MobyClass rac.moby_classes.1298  { category: "Prop"         name: "Display (Damaged)" }
 MobyClass rac.moby_classes.1299  { category: "Prop"         name: "Display (Damaged)" }
 MobyClass rac.moby_classes.1300  { category: "Prop"         name: "Display (Damaged)" }
-MobyClass rac.moby_classes.1301  { category: "Gameplay"     name: "Gadgebot Teleporter Entrance" }
-MobyClass rac.moby_classes.1302  { category: "Gameplay"     name: "Gadgebot Entrance" }
+// 1301 level_design.asset
+// 1302 level_design.asset
+// 1304 level_design.asset
+// 1305 level_design.asset
+// 1306 level_design.asset
 MobyClass rac.moby_classes.1319  { category: "Enemies"      name: "Blarg Ship" }
 MobyClass rac.moby_classes.1322  { category: "Prop"         name: "Ice Cube" }
 MobyClass rac.moby_classes.1326  { category: "Gameplay"     name: "Nanotech Upgrade Vendor" }
@@ -588,9 +592,9 @@ MobyClass rac.moby_classes.1410  { category: "Vehicles"     name: "Taxi" }
 MobyClass rac.moby_classes.1412  { category: "Prop"         name: "Asteroid" }
 MobyClass rac.moby_classes.1416  { category: "Gameplay"     name: "Button" }
 MobyClass rac.moby_classes.1417  { category: "Enemies"      name: "Blarg Heavy Interceptor" }
-MobyClass rac.moby_classes.1421  { category: "Gameplay"     name: "Gate" }
+// 1421 level_design.asset
 MobyClass rac.moby_classes.1422  { category: "Bosses"       name: "Drek Final Boss Robot" }
-MobyClass rac.moby_classes.1424  { category: "Gameplay"     name: "Gate" }
+// 1424 level_design.asset
 MobyClass rac.moby_classes.1428  { category: "Gadget"       name: "Codebot" }
 MobyClass rac.moby_classes.1430  { category: "Gameplay"     name: "Codebot Slot" }
 MobyClass rac.moby_classes.1433  { category: "Gameplay"     name: "Nanotech Can" }

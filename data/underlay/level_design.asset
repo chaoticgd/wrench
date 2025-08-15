@@ -1,0 +1,291 @@
+// *****************************************************************************
+// These are all from original R&C level design documents, which were generously
+// released by Craig Stitt and the Video Game History Foundation. Source:
+// https://archive.gamehistory.org/item/b2693332-602a-48eb-958f-aeb4b113f8a3
+// *****************************************************************************
+
+// GC Level 3 (Endako) Ties
+
+TieClass gc.tie_classes.4077        { category: "Endako"    name: "Test Bld 1" }
+TieClass gc.tie_classes.2413        { category: "Endako"    name: "Opening Columb" }
+TieClass gc.tie_classes.2414        { category: "Endako"    name: "Opening Cap" }
+TieClass gc.tie_classes.2416        { category: "Endako"    name: "Foundation Columb" }
+TieClass gc.tie_classes.2417        { category: "Endako"    name: "Swing Columb" }
+TieClass gc.tie_classes.2418        { category: "Endako"    name: "Apartment Base" }
+TieClass gc.tie_classes.2480        { category: "Endako"    name: "Bookend" }
+TieClass gc.tie_classes.2483        { category: "Endako"    name: "Smoke Stack - Out" }
+TieClass gc.tie_classes.2484        { category: "Endako"    name: "Curb Blocks" }
+TieClass gc.tie_classes.2485        { category: "Endako"    name: "Smoke Stack - In" }
+TieClass gc.tie_classes.2499        { category: "Endako"    name: "Round Tower" }
+TieClass gc.tie_classes.2500        { category: "Endako"    name: "Round Cap" }
+TieClass gc.tie_classes.2501        { category: "Endako"    name: "Factory Columb" }
+TieClass gc.tie_classes.2502        { category: "Endako"    name: "Water Grate" }
+TieClass gc.tie_classes.2503        { category: "Endako"    name: "Stair Rail" }
+TieClass gc.tie_classes.2504        { category: "Endako"    name: "Curved Rail" } // crossed out
+TieClass gc.tie_classes.2505        { category: "Endako"    name: "Straight Rail" } // crossed out
+TieClass gc.tie_classes.2506        { category: "Endako"    name: "End Rail" } // crossed out
+TieClass gc.tie_classes.2528        { category: "Endako"    name: "Ladder - Curved" }
+TieClass gc.tie_classes.2529        { category: "Endako"    name: "Ladder - Flat" }
+TieClass gc.tie_classes.2537        { category: "Endako"    name: "Ant Feet" }
+TieClass gc.tie_classes.2538        { category: "Endako"    name: "Res Door" }
+TieClass gc.tie_classes.2539        { category: "Endako"    name: "Res Hallway" }
+TieClass gc.tie_classes.2540        { category: "Endako"    name: "Bot Door Res" }
+TieClass gc.tie_classes.2541        { category: "Endako"    name: "Bot Door Factory" }
+TieClass gc.tie_classes.2543        { category: "Endako"    name: "Factory Door" }
+TieClass gc.tie_classes.2544        { category: "Endako"    name: "Factory Hallway" }
+TieClass gc.tie_classes.2548        { category: "Endako"    name: "Elevator Wall" }
+TieClass gc.tie_classes.2550        { category: "Endako"    name: "Tube End" }
+TieClass gc.tie_classes.2551        { category: "Endako"    name: "Glass Tube" }
+TieClass gc.tie_classes.2552        { category: "Endako"    name: "Glass Tube 2" }
+TieClass gc.tie_classes.2553        { category: "Endako"    name: "Control Window" }
+TieClass gc.tie_classes.2555        { category: "Endako"    name: "Door Base" }
+TieClass gc.tie_classes.2556        { category: "Endako"    name: "Straight Pipe" }
+TieClass gc.tie_classes.2928        { category: "Endako"    name: "Fade 2413" }
+TieClass gc.tie_classes.2929        { category: "Endako"    name: "Fade 2416" }
+TieClass gc.tie_classes.2930        { category: "Endako"    name: "Fade 2499" }
+TieClass gc.tie_classes.2931        { category: "Endako"    name: "Fade 2418" }
+TieClass gc.tie_classes.2932        { category: "Endako"    name: "Fade 2417" }
+TieClass gc.tie_classes.2936        { category: "Endako"    name: "Fade 2483" }
+TieClass gc.tie_classes.3094        { category: "Endako"    name: "Center Bar" }
+TieClass gc.tie_classes.3095        { category: "Endako"    name: "Center Tube" }
+TieClass gc.tie_classes.3109        { category: "Endako"    name: "Radiator Fin" } // crossed out
+TieClass gc.tie_classes.2406        { category: "Endako"    name: "Joy Tube Thing" }
+TieClass gc.tie_classes.4250        { category: "Endako"    name: "Tube Back" }
+TieClass gc.tie_classes.3116        { category: "Endako"    name: "Grind Ring" }
+TieClass gc.tie_classes.3117        { category: "Endako"    name: "Grind Post" }
+TieClass gc.tie_classes.3118        { category: "Endako"    name: "Grind Ring Wide" }
+TieClass gc.tie_classes.3119        { category: "Endako"    name: "Grind Rail End" }
+TieClass gc.tie_classes.3121        { category: "Endako"    name: "Grind Jump" }
+TieClass gc.tie_classes.2409        { category: "Endako"    name: "Odd Gate" }
+
+// GC Level 3 (Endako) Mobies
+
+MobyClass gc.moby_classes.2425      { category: "Endako"    name: "Fan" }
+MobyClass gc.moby_classes.2434      { category: "Endako"    name: "Elevator Factory" }
+MobyClass gc.moby_classes.2435      { category: "Endako"    name: "Elevator - Res" }
+MobyClass gc.moby_classes.2436      { category: "Endako"    name: "Tube Ring" }
+MobyClass gc.moby_classes.2437      { category: "Endako"    name: "Tube Start" }
+MobyClass gc.moby_classes.2452      { category: "Endako"    name: "Ant Ring" }
+MobyClass gc.moby_classes.2453      { category: "Endako"    name: "Ant Bridge" }
+MobyClass gc.moby_classes.2467      { category: "Endako"    name: "Factory Door" }
+MobyClass gc.moby_classes.2468      { category: "Endako"    name: "Factory Bot Door" }
+MobyClass gc.moby_classes.2469      { category: "Endako"    name: "Res Door" }
+MobyClass gc.moby_classes.2470      { category: "Endako"    name: "Res Bot Door" }
+MobyClass gc.moby_classes.2472      { category: "Endako"    name: "" }
+MobyClass gc.moby_classes.3138      { category: "Endako"    name: "Clanks Apt Glass" }
+MobyClass gc.moby_classes.3139      { category: "Endako"    name: "Greenhouse Glass" }
+MobyClass gc.moby_classes.3179      { category: "Endako"    name: "Tube 1" }
+MobyClass gc.moby_classes.3180      { category: "Endako"    name: "Tube 2" }
+MobyClass gc.moby_classes.3182      { category: "Endako"    name: "Clank Round Glass" }
+MobyClass gc.moby_classes.3183      { category: "Endako"    name: "Clank Bridge 1" }
+MobyClass gc.moby_classes.3184      { category: "Endako"    name: "Clank Bridge 2" }
+MobyClass gc.moby_classes.3185      { category: "Endako"    name: "Clank Bridge 3" }
+MobyClass gc.moby_classes.3186      { category: "Endako"    name: "Clank Bridge 4" }
+
+// GC Level 3 (Endako) Shrubs
+
+ShrubClass gc.shrub_classes.1046    { category: "Endako"    name: "Curved Rail" }
+ShrubClass gc.shrub_classes.1047    { category: "Endako"    name: "Straight Rail" }
+ShrubClass gc.shrub_classes.1048    { category: "Endako"    name: "End Rail" }
+ShrubClass gc.shrub_classes.1140    { category: "Endako"    name: "Radiator Fin" }
+ShrubClass gc.shrub_classes.1144    { category: "Endako"    name: "Smooth Ring" }
+
+// R&C Level 10 (Orxon) Ties
+
+TieClass rac.tie_classes.1113       { category: "Orxon"     name: "Pipe Organ Plant" }
+TieClass rac.tie_classes.1171       { category: "Orxon"     name: "Bubble Rock Tall" }
+TieClass rac.tie_classes.1172       { category: "Orxon"     name: "Bubble Rock Med" }
+TieClass rac.tie_classes.1173       { category: "Orxon"     name: "Bubble Rock Small" }
+TieClass rac.tie_classes.1221       { category: "Orxon"     name: "Short Scalup" }
+TieClass rac.tie_classes.1233       { category: "Orxon"     name: "Tall Scalup" }
+TieClass rac.tie_classes.1244       { category: "Orxon"     name: "Ribs" }
+TieClass rac.tie_classes.1248       { category: "Orxon"     name: "Cliff Flat" }
+TieClass rac.tie_classes.1249       { category: "Orxon"     name: "Cliff Narrow" }
+TieClass rac.tie_classes.1250       { category: "Orxon"     name: "Cliff Convex" }
+TieClass rac.tie_classes.1251       { category: "Orxon"     name: "Cliff Concave" }
+TieClass rac.tie_classes.1254       { category: "Orxon"     name: "Cliff Rock Single" }
+TieClass rac.tie_classes.1255       { category: "Orxon"     name: "Cliff Scalup" }
+TieClass rac.tie_classes.1256       { category: "Orxon"     name: "Dist. Mount" }
+TieClass rac.tie_classes.1258       { category: "Orxon"     name: "Dist. Mount 2" }
+TieClass rac.tie_classes.1259       { category: "Orxon"     name: "Lab Door Way" }
+TieClass rac.tie_classes.1260       { category: "Orxon"     name: "Tunnel Bounder" }
+TieClass rac.tie_classes.1261       { category: "Orxon"     name: "Tunnel Scalop" }
+TieClass rac.tie_classes.1264       { category: "Orxon"     name: "Reactor" }
+TieClass rac.tie_classes.1273       { category: "Orxon"     name: "Scalop Platform" } // crossed out
+TieClass rac.tie_classes.1275       { category: "Orxon"     name: "Maw 1" }
+TieClass rac.tie_classes.1276       { category: "Orxon"     name: "Maw 2" }
+TieClass rac.tie_classes.1279       { category: "Orxon"     name: "Pipe Chunk" }
+TieClass rac.tie_classes.1280       { category: "Orxon"     name: "Tunnel Platform" }
+TieClass rac.tie_classes.1281       { category: "Orxon"     name: "Reactor Base" }
+TieClass rac.tie_classes.1282       { category: "Orxon"     name: "Cave Rim" }
+TieClass rac.tie_classes.1283       { category: "Orxon"     name: "Path Rim" }
+TieClass rac.tie_classes.1286       { category: "Orxon"     name: "Isle Base" }
+TieClass rac.tie_classes.1310       { category: "Orxon"     name: "Tall Path Rim" }
+TieClass rac.tie_classes.1348       { category: "Orxon"     name: "Worm Skin" }
+TieClass rac.tie_classes.1403       { category: "Orxon"     name: "Roof Strut" }
+TieClass rac.tie_classes.1404       { category: "Orxon"     name: "Door Post" }
+TieClass rac.tie_classes.1405       { category: "Orxon"     name: "Equip 1" }
+TieClass rac.tie_classes.1406       { category: "Orxon"     name: "Equip 2" }
+TieClass rac.tie_classes.1407       { category: "Orxon"     name: "Interior Corner" }
+TieClass rac.tie_classes.1409       { category: "Orxon"     name: "Squat Palm" }
+TieClass rac.tie_classes.1410       { category: "Orxon"     name: "Bulb Plant" }
+TieClass rac.tie_classes.1442       { category: "Orxon"     name: "Ceiling Brace" }
+TieClass rac.tie_classes.1447       { category: "Orxon"     name: "Square Pillar" }
+TieClass rac.tie_classes.1452       { category: "Orxon"     name: "Droop Plant" }
+TieClass rac.tie_classes.1459       { category: "Orxon"     name: "Block" }
+TieClass rac.tie_classes.1482       { category: "Orxon"     name: "Blu Tree" }
+TieClass rac.tie_classes.1483       { category: "Orxon"     name: "Blu Tree 2" }
+TieClass rac.tie_classes.1521       { category: "Orxon"     name: "Lab Console" }
+TieClass rac.tie_classes.1522       { category: "Orxon"     name: "Bars" }
+TieClass rac.tie_classes.1368       { category: "Orxon"     name: "Wall" }
+TieClass rac.tie_classes.1377       { category: "Orxon"     name: "Fence" }
+TieClass rac.tie_classes.1182       { category: "Orxon"     name: "Rail Block" }
+
+// R&C Level 10 (Orxon) Tree Ties
+
+TieClass rac.tie_classes.1120       { category: "Orxon"     name: "Tree Caonopy 1" }
+TieClass rac.tie_classes.2377       { category: "Orxon"     name: "Tree Trunk 1" }
+TieClass rac.tie_classes.1124       { category: "Orxon"     name: "Tree Caonopy 2" }
+TieClass rac.tie_classes.2376       { category: "Orxon"     name: "Tree Trunk 2" }
+TieClass rac.tie_classes.1482       { category: "Orxon"     name: "Tree Caonopy 3" }
+TieClass rac.tie_classes.2379       { category: "Orxon"     name: "Tree Trunk 3" }
+TieClass rac.tie_classes.1483       { category: "Orxon"     name: "Tree Caonopy 4" }
+TieClass rac.tie_classes.2378       { category: "Orxon"     name: "Tree Trunk 4" }
+
+// R&C Level 10 (Orxon) Mobies
+
+MobyClass rac.moby_classes.1015     { category: "Orxon"     name: "Lab Door" }
+MobyClass rac.moby_classes.1100     { category: "Orxon"     name: "Block Cave" }
+MobyClass rac.moby_classes.1141     { category: "Orxon"     name: "Elevator" }
+MobyClass rac.moby_classes.1200     { category: "Orxon"     name: "Smashed Plane" } // crossed out
+MobyClass rac.moby_classes.1282     { category: "Orxon"     name: "Flame Door" }
+MobyClass rac.moby_classes.1301     { category: "Orxon"     name: "Bot Elevator" }
+MobyClass rac.moby_classes.1302     { category: "Orxon"     name: "Bot Door Lock" }
+MobyClass rac.moby_classes.1304     { category: "Orxon"     name: "Flamethrower" }
+MobyClass rac.moby_classes.1305     { category: "Orxon"     name: "Flame Nozzle" }
+MobyClass rac.moby_classes.1306     { category: "Orxon"     name: "Thrower Base" }
+MobyClass rac.moby_classes.1421     { category: "Orxon"     name: "Gate #1" }
+MobyClass rac.moby_classes.1424     { category: "Orxon"     name: "Gate #2" }
+
+// R&C Level 10 (Orxon) Shrubs
+
+ShrubClass rac.shrub_classes.302    { category: "Orxon"     name: "Wheel" }
+ShrubClass rac.shrub_classes.277    { category: "Orxon"     name: "Tooth" }
+ShrubClass rac.shrub_classes.287    { category: "Orxon"     name: "Pipe Plant" }
+ShrubClass rac.shrub_classes.305    { category: "Orxon"     name: "Uvula" }
+ShrubClass rac.shrub_classes.241    { category: "Orxon"     name: "Tree Stuff" }
+ShrubClass rac.shrub_classes.310    { category: "Orxon"     name: "Pebbles" }
+ShrubClass rac.shrub_classes.311    { category: "Orxon"     name: "Curly Fern" }
+ShrubClass rac.shrub_classes.312    { category: "Orxon"     name: "Cabbage" }
+ShrubClass rac.shrub_classes.313    { category: "Orxon"     name: "Shroom" }
+ShrubClass rac.shrub_classes.314    { category: "Orxon"     name: "Grass Overlay" }
+ShrubClass rac.shrub_classes.315    { category: "Orxon"     name: "Wart Shrub" }
+ShrubClass rac.shrub_classes.317    { category: "Orxon"     name: "Pipe Snot" }
+ShrubClass rac.shrub_classes.318    { category: "Orxon"     name: "Blue Fern" }
+ShrubClass rac.shrub_classes.319    { category: "Orxon"     name: "Frilly Grass" }
+ShrubClass rac.shrub_classes.420    { category: "Orxon"     name: "Droop Cover" }
+ShrubClass rac.shrub_classes.322    { category: "Orxon"     name: "S Pipe" }
+ShrubClass rac.shrub_classes.323    { category: "Orxon"     name: "Hang Pipe" }
+ShrubClass rac.shrub_classes.87     { category: "Orxon"     name: "Red Fern" }
+ShrubClass rac.shrub_classes.324    { category: "Orxon"     name: "Inside Wart" }
+ShrubClass rac.shrub_classes.330    { category: "Orxon"     name: "Boils" }
+ShrubClass rac.shrub_classes.332    { category: "Orxon"     name: "Tunnel Snot" }
+ShrubClass rac.shrub_classes.231    { category: "Orxon"     name: "Red Light" }
+ShrubClass rac.shrub_classes.338    { category: "Orxon"     name: "Bubble" }
+ShrubClass rac.shrub_classes.554    { category: "Orxon"     name: "Plat Top" }
+ShrubClass rac.shrub_classes.560    { category: "Orxon"     name: "Rails" }
+ShrubClass rac.shrub_classes.564    { category: "Orxon"     name: "Bar" }
+ShrubClass rac.shrub_classes.565    { category: "Orxon"     name: "Lit Box" }
+ShrubClass rac.shrub_classes.292    { category: "Orxon"     name: "X3 Pipe" }
+
+// R&C Level 10 (Orxon) Tom's Shrubs
+
+ShrubClass rac.shrub_classes.1120   { category: "Orxon"     name: "Tree" }
+ShrubClass rac.shrub_classes.1123   { category: "Orxon"     name: "Super" }
+ShrubClass rac.shrub_classes.1124   { category: "Orxon"     name: "" }
+ShrubClass rac.shrub_classes.1128   { category: "Orxon"     name: "Lumpy" }
+ShrubClass rac.shrub_classes.1130   { category: "Orxon"     name: "" }
+ShrubClass rac.shrub_classes.1389   { category: "Orxon"     name: "Pipe Long" }
+ShrubClass rac.shrub_classes.1265   { category: "Orxon"     name: "Platform" }
+ShrubClass rac.shrub_classes.1436   { category: "Orxon"     name: "Shield Tower" }
+ShrubClass rac.shrub_classes.1117   { category: "Orxon"     name: "Shield Wall" }
+ShrubClass rac.shrub_classes.1076   { category: "Orxon"     name: "Gun" }
+ShrubClass rac.shrub_classes.1346   { category: "Orxon"     name: "Gun Barrel" }
+ShrubClass rac.shrub_classes.298    { category: "Orxon"     name: "Shrub Antenna" }
+ShrubClass rac.shrub_classes.1122   { category: "Orxon"     name: "" }
+ShrubClass rac.shrub_classes.1806   { category: "Orxon"     name: "" }
+ShrubClass rac.shrub_classes.1807   { category: "Orxon"     name: "" }
+ShrubClass rac.shrub_classes.1921   { category: "Orxon"     name: "" }
+
+// GC Level 12 (Todano) Ties
+
+TieClass gc.tie_classes.91          { category: "Todano"    name: "Rock" }
+TieClass gc.tie_classes.98          { category: "Todano"    name: "Hill" }
+TieClass gc.tie_classes.3           { category: "Todano"    name: "Lt Mountain" } // crossed out
+TieClass gc.tie_classes.2           { category: "Todano"    name: "Med Mountain" }
+TieClass gc.tie_classes.199         { category: "Todano"    name: "Cliff Corner" }
+TieClass gc.tie_classes.200         { category: "Todano"    name: "Cliff Concave" }
+TieClass gc.tie_classes.203         { category: "Todano"    name: "Reservoir Rocks" }
+TieClass gc.tie_classes.237         { category: "Todano"    name: "Stone Step Concave" }
+TieClass gc.tie_classes.95          { category: "Todano"    name: "Tree" }
+TieClass gc.tie_classes.117         { category: "Todano"    name: "Tree" }
+TieClass gc.tie_classes.274         { category: "Todano"    name: "Stop Step 2" }
+TieClass gc.tie_classes.283         { category: "Todano"    name: "Saddue" }
+TieClass gc.tie_classes.325         { category: "Todano"    name: "Small Mnt Low" }
+TieClass gc.tie_classes.326         { category: "Todano"    name: "Large Mnt" }
+TieClass gc.tie_classes.327         { category: "Todano"    name: "Med Mnt Low" }
+TieClass gc.tie_classes.4010        { category: "Todano"    name: "Grn Saddue" }
+TieClass gc.tie_classes.4011        { category: "Todano"    name: "Mnt 2 Base" }
+TieClass gc.tie_classes.4012        { category: "Todano"    name: "Start Platform" }
+TieClass gc.tie_classes.4018        { category: "Todano"    name: "199 Light" }
+TieClass gc.tie_classes.4019        { category: "Todano"    name: "200 Light" }
+TieClass gc.tie_classes.4020        { category: "Todano"    name: "Landing Platform" }
+TieClass gc.tie_classes.4021        { category: "Todano"    name: "Rail - Landing" }
+TieClass gc.tie_classes.4022        { category: "Todano"    name: "Strut - Landing Vert" }
+TieClass gc.tie_classes.4023        { category: "Todano"    name: "Post - Landing" }
+TieClass gc.tie_classes.4024        { category: "Todano"    name: "Nubb - Landing" }
+TieClass gc.tie_classes.4025        { category: "Todano"    name: "Landing Strut Horiz" }
+TieClass gc.tie_classes.4026        { category: "Todano"    name: "Display Platform" }
+TieClass gc.tie_classes.4027        { category: "Todano"    name: "Landing Rings" }
+TieClass gc.tie_classes.4031        { category: "Todano"    name: "Elevator Shaft" }
+TieClass gc.tie_classes.4035        { category: "Todano"    name: "Jump Band" }
+TieClass gc.tie_classes.4041        { category: "Todano"    name: "Dam Jump" }
+TieClass gc.tie_classes.4045        { category: "Todano"    name: "Pipe Cluster 1" }
+TieClass gc.tie_classes.4046        { category: "Todano"    name: "Pipe Cluster 2" }
+TieClass gc.tie_classes.4047        { category: "Todano"    name: "Pipe Brace X3" }
+TieClass gc.tie_classes.4050        { category: "Todano"    name: "199 - Med" }
+TieClass gc.tie_classes.4051        { category: "Todano"    name: "200 - Med" }
+TieClass gc.tie_classes.4054        { category: "Todano"    name: "Pipe Jump" }
+TieClass gc.tie_classes.4055        { category: "Todano"    name: "Pipe Jump Elbow" }
+TieClass gc.tie_classes.4023        { category: "Todano"    name: "Fade" }
+TieClass gc.tie_classes.4057        { category: "Todano"    name: "2 Fade" }
+TieClass gc.tie_classes.4058        { category: "Todano"    name: "203 Fade" }
+TieClass gc.tie_classes.4059        { category: "Todano"    name: "326 Fade" }
+TieClass gc.tie_classes.4060        { category: "Todano"    name: "199 Fade" }
+TieClass gc.tie_classes.4061        { category: "Todano"    name: "200 Fade" }
+TieClass gc.tie_classes.4069        { category: "Todano"    name: "Silo Top Ring" }
+TieClass gc.tie_classes.4070        { category: "Todano"    name: "Silo Top Block" }
+TieClass gc.tie_classes.4071        { category: "Todano"    name: "Silo Thin Ring" }
+TieClass gc.tie_classes.2251        { category: "Todano"    name: "Small Cliff Rock" }
+TieClass gc.tie_classes.2557        { category: "Todano"    name: "Burn Tree 95" }
+TieClass gc.tie_classes.2559        { category: "Todano"    name: "Burn Tree 117" }
+
+// GC Level 12 (Todano) Shrubs
+
+ShrubClass gc.shrub_classes.4014    { category: "Todano"    name: "Path Lamp" }
+ShrubClass gc.shrub_classes.4017    { category: "Todano"    name: "Grate Post" }
+ShrubClass gc.shrub_classes.4018    { category: "Todano"    name: "Blue Fern" }
+ShrubClass gc.shrub_classes.4020    { category: "Todano"    name: "Red Fern" }
+ShrubClass gc.shrub_classes.4021    { category: "Todano"    name: "Green Fern" }
+ShrubClass gc.shrub_classes.4022    { category: "Todano"    name: "Grass" }
+ShrubClass gc.shrub_classes.4023    { category: "Todano"    name: "Low Lamp" }
+ShrubClass gc.shrub_classes.4024    { category: "Todano"    name: "Curly Fern 10" }
+ShrubClass gc.shrub_classes.4030    { category: "Todano"    name: "Bolt Head Brown" }
+ShrubClass gc.shrub_classes.4032    { category: "Todano"    name: "Cabbage" }
+ShrubClass gc.shrub_classes.4083    { category: "Todano"    name: "Pebbles" }
+ShrubClass gc.shrub_classes.1066    { category: "Todano"    name: "Brown Pebbles" }
+
+// GC Level 12 (Todano) Mobies
+
+MobyClass gc.moby_classes.4056      { category: "Todano"    name: "Elevator Dam" }
+MobyClass gc.moby_classes.4057      { category: "Todano"    name: "Secret Door" }
