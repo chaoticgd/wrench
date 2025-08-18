@@ -24,8 +24,11 @@
 #define CPP_TEST_PASSED -1
 static s32 test_lexer(const char* src, std::vector<CppTokenType>&& expected);
 static void print_token(const CppToken& token);
+static bool test_parser(const char* src, CppType&& expected);
+static bool test_layout(const char* src, CppType&& expected);
+static bool compare_cpp_types(const CppType& lhs, const CppType& rhs);
 
-TEST_CASE("c++ lexer" "[instancemgr]") {
+TEST_CASE("c++ lexer" "[cpp]") {
 	CHECK(CPP_TEST_PASSED == test_lexer(
 		"int dec_lit = 123;",
 		{CPP_KEYWORD, CPP_IDENTIFIER, CPP_OPERATOR, CPP_INTEGER_LITERAL, CPP_OPERATOR}));
@@ -79,11 +82,6 @@ static s32 test_lexer(const char* src, std::vector<CppTokenType>&& expected) {
 
 static void print_token(const CppToken& token) {
 	switch(token.type) {
-		case CPP_COMMENT: {
-			std::string str(token.str_begin, token.str_end);
-			UNSCOPED_INFO(stringf("comment %s\n", str.c_str()));
-			break;
-		}
 		case CPP_IDENTIFIER: {
 			std::string str(token.str_begin, token.str_end);
 			UNSCOPED_INFO(stringf("identifier %s\n", str.c_str()));
@@ -138,10 +136,7 @@ static void print_token(const CppToken& token) {
 	}
 }
 
-static bool test_parser(const char* src, CppType&& expected);
-static bool compare_pvar_types(const CppType& lhs, const CppType& rhs);
-
-TEST_CASE("c++ parser" "[instancemgr]") {
+TEST_CASE("c++ parser" "[cpp]") {
 	CHECK(test_parser(
 		"struct SomeVars { int array_of_ints[5]; };",
 		[]() {
@@ -222,6 +217,41 @@ TEST_CASE("c++ parser" "[instancemgr]") {
 			return type;
 		}()
 	));
+	CHECK(test_parser(
+		"#pragma wrench bitflags ThingFlags\ntypedef int Thing;",
+		[]() {
+			CppType type(CPP_BUILT_IN);
+			type.name = "Thing";
+			type.preprocessor_directives.emplace_back(CPP_DIRECTIVE_BITFLAGS, "ThingFlags");
+			type.built_in = CPP_INT;
+			return type;
+		}()
+	));
+	CHECK(test_parser(
+		"struct S {\n#pragma wrench enum Enum\nint var;};",
+		[]() {
+			CppType type(CPP_STRUCT_OR_UNION);
+			type.name = "S";
+			CppType& field = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			field.name = "var";
+			field.preprocessor_directives.emplace_back(CPP_DIRECTIVE_ENUM, "Enum");
+			field.built_in = CPP_INT;
+			return type;
+		}()
+	));
+	CHECK(test_parser(
+		"struct S { int x : 12; };",
+		[]() {
+			CppType type(CPP_STRUCT_OR_UNION);
+			type.name = "S";
+			CppType& field = type.struct_or_union.fields.emplace_back(CPP_BITFIELD);
+			field.name = "x";
+			field.bitfield.bit_size = 12;
+			field.bitfield.storage_unit_type = std::make_unique<CppType>(CPP_BUILT_IN);
+			field.bitfield.storage_unit_type->built_in = CPP_INT;
+			return type;
+		}()
+	));
 }
 
 static bool test_parser(const char* src, CppType&& expected) {
@@ -235,21 +265,184 @@ static bool test_parser(const char* src, CppType&& expected) {
 		UNSCOPED_INFO("types.size() != 1");
 		return false;
 	}
-	return compare_pvar_types(types.begin()->second, expected);
+	return compare_cpp_types(types.begin()->second, expected);
 }
 
-static bool compare_pvar_types(const CppType& lhs, const CppType& rhs) {
+TEST_CASE("c++ layout" "[cpp]") {
+	CHECK(test_layout(
+		"struct S { int a; int b; int c; };",
+		[]() {
+			CppType type(CPP_STRUCT_OR_UNION);
+			type.name = "S";
+			type.size = 12;
+			type.alignment = 4;
+			CppType& a = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			a.name = "a";
+			a.offset = 0;
+			a.size = 4;
+			a.alignment = 4;
+			a.built_in = CPP_INT;
+			CppType& b = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			b.name = "b";
+			b.offset = 4;
+			b.size = 4;
+			b.alignment = 4;
+			b.built_in = CPP_INT;
+			CppType& c = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			c.name = "c";
+			c.offset = 8;
+			c.size = 4;
+			c.alignment = 4;
+			c.built_in = CPP_INT;
+			return type;
+		}()
+	));
+	CHECK(test_layout(
+		"struct S { char a; int b; };",
+		[]() {
+			CppType type(CPP_STRUCT_OR_UNION);
+			type.name = "S";
+			type.size = 8;
+			type.alignment = 4;
+			CppType& a = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			a.name = "a";
+			a.offset = 0;
+			a.size = 1;
+			a.alignment = 1;
+			a.built_in = CPP_CHAR;
+			CppType& b = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			b.name = "b";
+			b.offset = 4;
+			b.size = 4;
+			b.alignment = 4;
+			b.built_in = CPP_INT;
+			return type;
+		}()
+	));
+	CHECK(test_layout(
+		"struct S { int a; int b : 12; int c : 20; };",
+		[]() {
+			CppType type(CPP_STRUCT_OR_UNION);
+			type.name = "S";
+			type.size = 8;
+			type.alignment = 4;
+			CppType& a = type.struct_or_union.fields.emplace_back(CPP_BUILT_IN);
+			a.name = "a";
+			a.offset = 0;
+			a.size = 4;
+			a.alignment = 4;
+			a.built_in = CPP_INT;
+			CppType& b = type.struct_or_union.fields.emplace_back(CPP_BITFIELD);
+			b.name = "b";
+			b.offset = 4;
+			b.size = 4;
+			b.alignment = 4;
+			b.bitfield.bit_offset = 0;
+			b.bitfield.bit_size = 12;
+			b.bitfield.storage_unit_type = std::make_unique<CppType>(CPP_BUILT_IN);
+			b.bitfield.storage_unit_type->size = 4;
+			b.bitfield.storage_unit_type->alignment = 4;
+			b.bitfield.storage_unit_type->built_in = CPP_INT;
+			CppType& c = type.struct_or_union.fields.emplace_back(CPP_BITFIELD);
+			c.name = "c";
+			c.offset = 4;
+			c.size = 4;
+			c.alignment = 4;
+			c.bitfield.bit_offset = 12;
+			c.bitfield.bit_size = 20;
+			c.bitfield.storage_unit_type = std::make_unique<CppType>(CPP_BUILT_IN);
+			c.bitfield.storage_unit_type->size = 4;
+			c.bitfield.storage_unit_type->alignment = 4;
+			c.bitfield.storage_unit_type->built_in = CPP_INT;
+			return type;
+		}()
+	));
+	CHECK(test_layout(
+		"struct S { int a : 12; int b : 20; int c : 32; };",
+		[]() {
+			CppType type(CPP_STRUCT_OR_UNION);
+			type.name = "S";
+			type.size = 8;
+			type.alignment = 4;
+			CppType& a = type.struct_or_union.fields.emplace_back(CPP_BITFIELD);
+			a.name = "a";
+			a.offset = 0;
+			a.size = 4;
+			a.alignment = 4;
+			a.bitfield.bit_offset = 0;
+			a.bitfield.bit_size = 12;
+			a.bitfield.storage_unit_type = std::make_unique<CppType>(CPP_BUILT_IN);
+			a.bitfield.storage_unit_type->size = 4;
+			a.bitfield.storage_unit_type->alignment = 4;
+			a.bitfield.storage_unit_type->built_in = CPP_INT;
+			CppType& b = type.struct_or_union.fields.emplace_back(CPP_BITFIELD);
+			b.name = "b";
+			b.offset = 0;
+			b.size = 4;
+			b.alignment = 4;
+			b.bitfield.bit_offset = 12;
+			b.bitfield.bit_size = 20;
+			b.bitfield.storage_unit_type = std::make_unique<CppType>(CPP_BUILT_IN);
+			b.bitfield.storage_unit_type->size = 4;
+			b.bitfield.storage_unit_type->alignment = 4;
+			b.bitfield.storage_unit_type->built_in = CPP_INT;
+			CppType& c = type.struct_or_union.fields.emplace_back(CPP_BITFIELD);
+			c.name = "c";
+			c.offset = 4;
+			c.size = 4;
+			c.alignment = 4;
+			c.bitfield.bit_offset = 0;
+			c.bitfield.bit_size = 32;
+			c.bitfield.storage_unit_type = std::make_unique<CppType>(CPP_BUILT_IN);
+			c.bitfield.storage_unit_type->size = 4;
+			c.bitfield.storage_unit_type->alignment = 4;
+			c.bitfield.storage_unit_type->built_in = CPP_INT;
+			return type;
+		}()
+	));
+}
+
+TEST_CASE("c++ bitfield operations" "[cpp]") {
+	CHECK(cpp_unpack_unsigned_bitfield(0xff00, 8, 4) == 0xf);
+	CHECK(cpp_pack_unsigned_bitfield(0xf, 8, 8) == 0xf00);
+	CHECK(cpp_zero_bitfield(0xffff, 4, 4) == 0xff0f);
+}
+
+static bool test_layout(const char* src, CppType&& expected) {
+	std::string str;
+	str += "#pragma wrench parser on\n";
+	str += src;
+	std::vector<CppToken> tokens = eat_cpp_file(&str[0]);
+	std::map<std::string, CppType> types;
+	parse_cpp_types(types, tokens);
+	if(types.size() != 1) {
+		UNSCOPED_INFO("types.size() != 1");
+		return false;
+	}
+	layout_cpp_type(types.begin()->second, types, CPP_PS2_ABI);
+	return compare_cpp_types(types.begin()->second, expected);
+}
+
+static bool compare_cpp_types(const CppType& lhs, const CppType& rhs) {
 	if(lhs.name != rhs.name) { UNSCOPED_INFO("name"); return false; }
 	if(lhs.offset != rhs.offset) { UNSCOPED_INFO("offset"); return false; }
 	if(lhs.size != rhs.size) { UNSCOPED_INFO("size"); return false; }
 	if(lhs.alignment != rhs.alignment) { UNSCOPED_INFO("alignment"); return false; }
+	if(lhs.preprocessor_directives != rhs.preprocessor_directives) { UNSCOPED_INFO("preprocessor_directives"); return false; }
 	if(lhs.descriptor != rhs.descriptor) { UNSCOPED_INFO("descriptor"); return false; }
 	switch(lhs.descriptor) {
 		case CPP_ARRAY: {
 			if(lhs.array.element_count != rhs.array.element_count) { UNSCOPED_INFO("array.element_count"); return false; }
 			REQUIRE((lhs.array.element_type.get() && rhs.array.element_type.get()));
-			bool comp_result = compare_pvar_types(*lhs.array.element_type.get(), *rhs.array.element_type.get());
+			bool comp_result = compare_cpp_types(*lhs.array.element_type.get(), *rhs.array.element_type.get());
 			if(!comp_result) { UNSCOPED_INFO("array.element_type"); return false; }
+			break;
+		}
+		case CPP_BITFIELD: {
+			if (lhs.bitfield.bit_offset != rhs.bitfield.bit_offset) { UNSCOPED_INFO("bitfield.bit_offset"); return false; }
+			if (lhs.bitfield.bit_size != rhs.bitfield.bit_size) { UNSCOPED_INFO("bitfield.bit_offset"); return false; }
+			bool comp_result = compare_cpp_types(*lhs.bitfield.storage_unit_type.get(), *rhs.bitfield.storage_unit_type.get());
+			if (!comp_result) { UNSCOPED_INFO("bitfield.storage_unit_type"); return false; }
 			break;
 		}
 		case CPP_BUILT_IN: {
@@ -264,7 +457,7 @@ static bool compare_pvar_types(const CppType& lhs, const CppType& rhs) {
 			if(lhs.struct_or_union.is_union != rhs.struct_or_union.is_union) { UNSCOPED_INFO("struct_or_union.is_union"); return false; }
 			if(lhs.struct_or_union.fields.size() != rhs.struct_or_union.fields.size()) { UNSCOPED_INFO("struct_or_union.fields.size()"); return false; }
 			for(s32 i = 0; i < (s32) lhs.struct_or_union.fields.size(); i++) {
-				bool comp_result = compare_pvar_types(lhs.struct_or_union.fields[i], rhs.struct_or_union.fields[i]);
+				bool comp_result = compare_cpp_types(lhs.struct_or_union.fields[i], rhs.struct_or_union.fields[i]);
 				if(!comp_result) { UNSCOPED_INFO(stringf("struct_or_union.fields[%d]", i)); return false; }
 			}
 			break;
@@ -276,7 +469,7 @@ static bool compare_pvar_types(const CppType& lhs, const CppType& rhs) {
 		case CPP_POINTER_OR_REFERENCE: {
 			if(lhs.pointer_or_reference.is_reference != rhs.pointer_or_reference.is_reference) { UNSCOPED_INFO("pointer_or_reference.is_reference"); return false; }
 			REQUIRE((lhs.pointer_or_reference.value_type.get() && rhs.pointer_or_reference.value_type.get()));
-			bool comp_result = compare_pvar_types(*lhs.pointer_or_reference.value_type.get(), *rhs.pointer_or_reference.value_type.get());
+			bool comp_result = compare_cpp_types(*lhs.pointer_or_reference.value_type.get(), *rhs.pointer_or_reference.value_type.get());
 			if(!comp_result) { UNSCOPED_INFO("pointer_or_reference.value_type"); return false; }
 			break;
 		}

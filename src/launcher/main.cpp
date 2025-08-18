@@ -16,6 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+
 #include "imgui.h"
 #include <nfd.h>
 #include <core/png.h>
@@ -187,10 +189,14 @@ static void details_window(Mod* mod) {
 	
 	ImVec2 display_size(320.f * image.width / (f32) image.height, 320.f);
 	
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+	
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - display_size.x / 2);
-	if(ImGui::ImageButton((void*) (intptr_t) image.texture.id, display_size, ImVec2(0, 0), ImVec2(1, 1), 0)) {
+	if(ImGui::ImageButton("##imageviewer", (ImTextureID) image.texture.id, display_size, ImVec2(0, 0), ImVec2(1, 1))) {
 		ImGui::OpenPopup("Image Viewer");
 	}
+	
+	ImGui::PopStyleVar();
 	
 	image_viewer(g_mod_images);
 	

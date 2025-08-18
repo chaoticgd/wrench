@@ -22,7 +22,6 @@ add_library(wrenchcore STATIC
 	material.cpp
 	tristrip_packet.cpp
 	elf.cpp
-	memory_card.cpp
 	stdout_thread.cpp
 	gltf.cpp
 	${CMAKE_SOURCE_DIR}/thirdparty/md5.cpp

@@ -281,6 +281,10 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 			}
 			break;
 		}
+		case CPP_BITFIELD: {
+			ImGui::Text("Bitfield editor not yet implemented.");
+			break;
+		}
 		case CPP_BUILT_IN: {
 			generate_built_in_input(type, inspector, offset);
 			break;

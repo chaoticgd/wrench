@@ -421,7 +421,7 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* g
 					tex_coord_offset = atoi(xml_attrib(input, "offset")->value());
 				}
 			}
-			s32 vertex_stride = std::max({position_offset, normal_offset, tex_coord_offset}) + 1;
+			s32 vertex_stride = std::max({position_offset, normal_offset, tex_coord_offset, colour_offset}) + 1;
 			verify(position_offset > -1 && vertex_stride < 10, "Invalid or missing <input> node.");
 			
 			if(normal_offset > -1) {

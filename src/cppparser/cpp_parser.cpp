@@ -46,6 +46,7 @@ static void parse_enum(CppType& dest, CppParserState& parser);
 static void parse_struct_or_union(CppType& dest, CppParserState& parser);
 static CppType parse_field(CppParserState& parser);
 static CppType parse_type_name(CppParserState& parser);
+static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppParserState& parser, size_t token);
 
 bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<CppToken>& tokens) {
 	CppParserState parser{tokens};
@@ -134,8 +135,10 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 		}
 		
 		if(tokens[parser.pos].keyword == CPP_KEYWORD_typedef) {
+			std::vector<CppPreprocessorDirective> directives = parse_preprocessor_directives(parser, parser.pos);
 			parser.advance();
 			CppType type = parse_field(parser);
+			type.preprocessor_directives = std::move(directives);
 			types.emplace(type.name, std::move(type));
 		}
 		
@@ -185,13 +188,15 @@ static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
 		dest.struct_or_union.fields.emplace_back(std::move(field_type));
 		
 		const CppToken& semicolon = parser.cur();
-		verify(semicolon.type == CPP_OPERATOR && semicolon.type == CPP_OPERATOR && semicolon.op == CPP_OP_SEMICOLON, "Expected ';' on line %d.", semicolon.line);
+		verify(semicolon.type == CPP_OPERATOR && semicolon.type == CPP_OPERATOR && semicolon.op == CPP_OP_SEMICOLON,
+			"Expected ';' on line %d, got %s.", semicolon.line, cpp_token_type(semicolon.type));
 		parser.advance();
 	}
 	parser.advance();
 }
 
 static CppType parse_field(CppParserState& parser) {
+	std::vector<CppPreprocessorDirective> directives = parse_preprocessor_directives(parser, parser.pos);
 	CppType field_type = parse_type_name(parser);
 	
 	// Parse pointers.
@@ -212,6 +217,27 @@ static CppType parse_field(CppParserState& parser) {
 	const CppToken& name_token = parser.cur();
 	std::string_view name(name_token.str_begin, name_token.str_end);
 	parser.advance();
+	
+	// Parse bitfields.
+	const CppToken& bitfield_operator = parser.cur();
+	if(bitfield_operator.type == CPP_OPERATOR && bitfield_operator.op == CPP_OP_COLON) {
+		verify(field_type.descriptor == CPP_BUILT_IN,
+			"A bitfield storage unit can only be a built-in type (line %d).\n", bitfield_operator.line);
+		parser.advance();
+		
+		const CppToken& bitfield_literal = parser.cur();
+		verify(bitfield_literal.type == CPP_INTEGER_LITERAL,
+			"Expected integer literal on line %d, got %s.",
+			bitfield_literal.line, cpp_token_type(bitfield_literal.type));
+		parser.advance();
+		
+		CppType bitfield_type(CPP_BITFIELD);
+		bitfield_type.name = name;
+		bitfield_type.preprocessor_directives = std::move(directives);
+		bitfield_type.bitfield.bit_size = bitfield_literal.i;
+		bitfield_type.bitfield.storage_unit_type = std::make_unique<CppType>(std::move(field_type));
+		return bitfield_type;
+	}
 	
 	// Parse array subscripts.
 	std::vector<s32> array_indices;
@@ -240,7 +266,7 @@ static CppType parse_field(CppParserState& parser) {
 	}
 	
 	field_type.name = name;
-	
+	field_type.preprocessor_directives = std::move(directives);
 	return field_type;
 }
 
@@ -259,6 +285,7 @@ static CppType parse_type_name(CppParserState& parser) {
 			if(token.type != CPP_KEYWORD) break;
 			
 			bool good = false;
+			if(token.keyword == CPP_KEYWORD_bool) good = true;
 			if(token.keyword == CPP_KEYWORD_char) good = true;
 			if(token.keyword == CPP_KEYWORD_short) good = true;
 			if(token.keyword == CPP_KEYWORD_int) good = true;
@@ -350,4 +377,41 @@ static CppType parse_type_name(CppParserState& parser) {
 		return type;
 	}
 	verify_not_reached("Expected type name on line %d, got %s.", first.line, cpp_token_type(first.type));
+}
+
+static const CppPreprocessorDirective CPP_DIRECTIVES[] = {
+	{CPP_DIRECTIVE_BCD, "bcd"},
+	{CPP_DIRECTIVE_BITFLAGS, "bitflags"},
+	{CPP_DIRECTIVE_ELEMENTNAMES, "elementnames"},
+	{CPP_DIRECTIVE_ENUM, "enum"}
+};
+
+static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppParserState& parser, size_t token) {
+	std::vector<CppPreprocessorDirective> directives;
+	
+	while(token > 0 && parser.tokens[token - 1].type == CPP_PREPROCESSOR_DIRECTIVE) {
+		std::string line(parser.tokens[token - 1].str_begin, parser.tokens[token - 1].str_end);
+		if(line.starts_with("pragma wrench ")) {
+			line = line.substr(14);
+			
+			bool found = false;
+			for(const CppPreprocessorDirective& info : CPP_DIRECTIVES) {
+				if(line.starts_with(info.string)) {
+					CppPreprocessorDirective& directive = directives.emplace_back();
+					directive.type = info.type;
+					if(line.size() >= info.string.size() + 1 && line[info.string.size()] == ' ') {
+						directive.string = line.substr(info.string.size() + 1);
+					}
+					
+					found = true;
+					break;
+				}
+			}
+			
+			verify(found || line.starts_with("parser"), "Unkown wrench pragma directive '%s'.", line.c_str());
+		}
+		token--;
+	}
+	
+	return directives;
 }

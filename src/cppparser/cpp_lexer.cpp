@@ -125,18 +125,18 @@ std::vector<CppToken> eat_cpp_file(char* input) {
 		verify_not_reached("Unrecognised token: %s", str.substr(0, 32).c_str());
 	}
 	
-	// Fill in prev and next indices for skipping comments.
+	// Fill in prev and next indices for skipping preprocessor directives.
 	size_t prev = lexer.tokens.size();
 	for(size_t i = 0; i < lexer.tokens.size(); i++) {
 		lexer.tokens[i].prev = prev;
-		if(lexer.tokens[i].type != CPP_COMMENT) {
+		if(lexer.tokens[i].type != CPP_PREPROCESSOR_DIRECTIVE) {
 			prev = i;
 		}
 	}
 	size_t next = lexer.tokens.size();
 	for(size_t i = lexer.tokens.size(); i > 0; i--) {
 		lexer.tokens[i - 1].next = next;
-		if(lexer.tokens[i - 1].type != CPP_COMMENT) {
+		if(lexer.tokens[i - 1].type != CPP_PREPROCESSOR_DIRECTIVE) {
 			next = i - 1;
 		}
 	}
@@ -207,15 +207,9 @@ bool CppLexer::eat_comment() {
 	// [lex.comment]
 	if(ptr[0] == '/' && ptr[1] == '*') {
 		ptr += 2;
-		const char* str_begin = ptr;
 		while(*ptr != '\0') {
 			if(ptr[0] == '*' && ptr[1] == '/') {
 				ptr += 2;
-				CppToken& token = tokens.emplace_back();
-				token.type = CPP_COMMENT;
-				token.str_begin = str_begin;
-				token.str_end = ptr;
-				token.line = get_line();
 				break;
 			}
 			ptr++;
@@ -223,15 +217,9 @@ bool CppLexer::eat_comment() {
 		return true;
 	} else if(ptr[0] == '/' && ptr[1] == '/') {
 		ptr += 2;
-		const char* str_begin = ptr;
 		while(*ptr != '\0') {
 			if(ptr[0] == '\n') {
 				ptr++;
-				CppToken& token = tokens.emplace_back();
-				token.type = CPP_COMMENT;
-				token.str_begin = str_begin;
-				token.str_end = ptr;
-				token.line = get_line();
 				break;
 			}
 			ptr++;
@@ -533,7 +521,6 @@ static bool is_literal_char(char c) {
 
 const char* cpp_token_type(CppTokenType type) {
 	switch(type) {
-		case CPP_COMMENT: return "comment";
 		case CPP_IDENTIFIER: return "identifier";
 		case CPP_KEYWORD: return "keyword";
 		case CPP_BOOLEAN_LITERAL: return "boolean literal";
@@ -543,6 +530,7 @@ const char* cpp_token_type(CppTokenType type) {
 		case CPP_POINTER_LITERAL: return "pointer literal";
 		case CPP_STRING_LITERAL: return "string literal";
 		case CPP_OPERATOR: return "operator";
+		case CPP_PREPROCESSOR_DIRECTIVE: return "preprocessor directive";
 	}
 	return "(invalid token)";
 }

@@ -18,6 +18,7 @@ add_subdirectory(gui)
 add_subdirectory(launcher)
 add_subdirectory(editor)
 add_subdirectory(wrenchbuild)
+add_subdirectory(saveeditor)
 add_subdirectory(wrenchvis)
 
 add_executable(vif
@@ -43,19 +44,14 @@ add_executable(unpackbin
 )
 target_link_libraries(unpackbin wrenchcore wrenchengine)
 
-add_executable(memcard
-	memcard.cpp
-)
-target_link_libraries(memcard wrenchcore wrenchgui)
-
 # Set the windows codepage to UTF-8.
 if(WIN32)
 	target_sources(asset2json PUBLIC utf8.manifest)
-	target_sources(memcard PUBLIC utf8.manifest)
 	target_sources(memmap PUBLIC utf8.manifest)
 	target_sources(vif PUBLIC utf8.manifest)
 	target_sources(wrenchbuild PUBLIC utf8.manifest)
 	target_sources(wrencheditor PUBLIC utf8.manifest)
 	target_sources(wrenchlauncher PUBLIC utf8.manifest)
+	target_sources(wrenchsaveeditor PUBLIC utf8.manifest)
 	target_sources(wrenchvis PUBLIC utf8.manifest)
 endif()

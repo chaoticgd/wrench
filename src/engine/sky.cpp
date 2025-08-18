@@ -110,7 +110,7 @@ static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buff
 			texture.multiply_alphas();
 			texture.swizzle_palette();
 			if(game == Game::DL) {
-				texture.swizzle();
+				texture.reswizzle();
 			}
 			
 			index = (s32) textures.size();

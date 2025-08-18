@@ -1,0 +1,294 @@
+Page game {
+	name: "Game"
+	layout: "tree"
+}
+
+Page cheats {
+	name: "Cheats"
+	layout: "table"
+	element_names: "Cheat"
+}
+
+Page gadgets {
+	name: "Gadgets"
+	layout: "tree"
+}
+
+Page gadgetstats {
+	name: "Gadget Stats"
+	layout: "table"
+	element_names: "Gadget"
+}
+
+Page globalflags {
+	name: "Global Flags"
+	layout: "table"
+	element_names: "GlobalFlag"
+}
+
+Page help {
+	name: "Help"
+	layout: "tree"
+}
+
+Page hero {
+	name: "Hero"
+	layout: "tree"
+}
+
+Page level {
+	name: "Level"
+	layout: "tree"
+}
+
+Page movies {
+	name: "Movies"
+	layout: "table"
+	element_names: "Movie"
+}
+
+Page settings {
+	name: "Settings"
+	layout: "tree"
+}
+
+Page skillpoints {
+	name: "Skill Points"
+	layout: "table"
+	element_names: "SkillPoint"
+}
+
+Page statistics {
+	name: "Statistics"
+	layout: "leveltable"
+	display_stored_totals: true
+	display_calculated_int_totals: true
+}
+
+Page datablocks {
+	name: "Data Blocks"
+	layout: "datablocks"
+}
+
+Game rac {
+	File game {
+		Block Level                               { iff: 0    size: 4     page: "game" desc: "The ID number of the current level." }
+		Block BoltCount                           { iff: 1    size: 4     page: "hero" }
+		Block Completes                           { iff: 2    size: 4     page: "game" desc: "The number of times the game has been completed on this file." }
+		Block ElapsedTime                         { iff: 3    size: 4     page: "game" }
+		Block LastSaveTime                        { iff: 4    size: 8     page: "game" }
+		Block GlobalFlags                         { iff: 5    size: 128   page: "globalflags" }
+		Block CheatsActivated                     { iff: 7    size: 12    page: "cheats" }
+		Block SkillPoints                         { iff: 8    size: 32    page: "skillpoints" }
+		Block Ammo                                { iff: 9    size: 148   page: "gadgetstats" }
+		Block Unlocks                             { iff: 10   size: 37    page: "gadgetstats" }
+		Block Items                               { iff: 11   size: 37    page: "gadgetstats" }
+		Block PurchasableVendorItems              { iff: 12   size: 12    page: "gadgets" }
+		Block QuickSelect                         { iff: 13   size: 32    page: "gadgets" }
+		Block MaxHitPoints                        { iff: 19   size: 4     page: "hero" }
+		Block VisitedPlanets                      { iff: 14   size: 20    page: "game" }
+		Block GalacticMap                         { iff: 20   size: 80    page: "game" }
+		Block MapLandmarks                        { iff: 15   size: 1936  page: "game" }
+		Block HelpDataMessages                    { iff: 16   size: 1184  page: "help" }
+		Block HelpDataMisc                        { iff: 17   size: 288   page: "help" }
+		Block HelpDataGadgets                     { iff: 18   size: 296   page: "help" }
+		Block LastEquippedGadget                  { iff: 21   size: 4     page: "gadgets" }
+		Block WrenchEquipped                      { iff: 22   size: 4     page: "gadgets" }
+		Block ThrusterPackEquippedLast            { iff: 23   size: 4     page: "gadgets" }
+		Block Unused24                            { iff: 24   size: 4     page: "game" }
+		Block CameraElevationDir                  { iff: 25   size: 4     page: "settings" }
+		Block CameraAzimuthDir                    { iff: 26   size: 4     page: "settings" }
+		Block CameraRotateSpeed                   { iff: 27   size: 4     page: "settings" }
+		Block HelpVoiceOn                         { iff: 28   size: 1     page: "settings" }
+		Block HelpTextOn                          { iff: 29   size: 1     page: "settings" }
+		Block GoldGadgets                         { iff: 30   size: 40    page: "gadgets" }
+		Block Unknown31                           { iff: 31   size: 4     page: "game" }
+		Block EquippedGadgets                     { iff: 32   size: 28    page: "gadgets" }
+		Block SubtitlesActive                     { iff: 33   size: 1     page: "settings" }
+		Block Stereo                              { iff: 34   size: 4     page: "settings" }
+		Block MusicVolume                         { iff: 35   size: 4     page: "settings" }
+		Block EffectsVolume                       { iff: 36   size: 4     page: "settings" }
+		Block CheatsEverActivated                 { iff: 37   size: 12    page: "cheats" }
+		Block AmmoPurchased                       { iff: 1000 size: 148   page: "gadgetstats" desc: "The quantity of ammo ever purchased for each weapon." }
+		Block AmmoPickedUp                        { iff: 1001 size: 148   page: "gadgetstats" }
+		Block AmmoUsed                            { iff: 1002 size: 148   page: "gadgetstats" }
+		Block TotalPlayTime                       { iff: 1003 size: 4     page: "game" }
+		Block TotalHitsTaken                      { iff: 1004 size: 4     page: "statistics" }
+		Block TotalDeaths                         { iff: 1005 size: 4     page: "statistics" }
+		Block Unknown1008                         { iff: 1008 size: 4     page: "game" } // some bolt-related timer
+		Block TotalBoltsCollected                 { iff: 1009 size: 4     page: "statistics" } // double check this
+		Block HelpLog                             { iff: 1010 size: 150   page: "help" }
+		Block HelpLogPos                          { iff: 1011 size: 4     page: "help" }
+	}
+	
+	File level {
+		Block Visited                             { iff: 3001 size: 1     page: "level" } // 0 = unvisited, 1 = visited, 2 = completed
+		Block MapMask                             { iff: 3002 size: 2048  page: "level" }
+		Block GoldBolts                           { iff: 3003 size: 4     page: "level" }
+		Block SegmentsCompleted                   { iff: 3004 size: 16    page: "level" }
+		Block Unknown3005                         { iff: 3005 size: 256   page: "level" } // stores memcard state for moby instances (indexed by uid?)
+		Block Unknown3006                         { iff: 3006 size: 256   page: "level" }
+		Block TimePerLevel                        { iff: 3007 size: 8     page: "level" } // double check this
+		Block MetalDetector                       { iff: 3008 size: 16    page: "level" }
+		Block BoltsCollectedPerLevel              { iff: 4000 size: 4     page: "statistics" buddy: "TotalBoltsCollected" } // double check this
+		Block HitsTakenPerLevel                   { iff: 4001 size: 4     page: "statistics" buddy: "TotalHitsTaken" }
+		Block DeathsPerLevel                      { iff: 4002 size: 4     page: "statistics" buddy: "TotalDeaths" }
+	}
+}
+
+Game gc {
+	File game {
+		Block Level                               { iff: 0    size: 4     page: "game" }
+		Block HeroSave                            { iff: 39   size: 64    page: "hero" }
+		Block ElapsedTime                         { iff: 3    size: 4     page: "game" }
+		Block LastSaveTime                        { iff: 4    size: 8     page: "game" }
+		Block TotalPlayTime                       { iff: 1003 size: 4     page: "game" }
+		Block GlobalFlags                         { iff: 5    size: 205   page: "globalflags" }
+		Block CheatsActivated                     { iff: 7    size: 12    page: "cheats" }
+		Block SkillPoints                         { iff: 8    size: 32    page: "skillpoints" }
+		Block Ammo                                { iff: 9    size: 224   page: "gadgetstats" }
+		Block Unlocks                             { iff: 10   size: 56    page: "gadgetstats" }
+		Block Items                               { iff: 11   size: 56    page: "gadgetstats" }
+		Block GadgetXP                            { iff: 40   size: 224   page: "gadgetstats" }
+		Block PurchasableVendorItems              { iff: 12   size: 32    page: "gadgets" }
+		Block QuickSelect                         { iff: 13   size: 32    page: "gadgets" }
+		Block VisitedPlanets                      { iff: 14   size: 28    page: "game" }
+		Block GalacticMap                         { iff: 20   size: 112   page: "game" }
+		Block MapLandmarks                        { iff: 15   size: 1824  page: "game" }
+		Block HelpDataMessages                    { iff: 16   size: 1932  page: "help" }
+		Block HelpDataMisc                        { iff: 17   size: 516   page: "help" }
+		Block HelpDataGadgets                     { iff: 18   size: 672   page: "help" }
+		Block Settings                            { iff: 38   size: 40    page: "settings" }
+		Block GadgetLookup                        { iff: 30   size: 80    page: "gadgets" }
+		Block EquippedGadgets                     { iff: 32   size: 28    page: "gadgets" }
+		Block CheatsEverActivated                 { iff: 37   size: 12    page: "cheats" }
+		Block EnemiesKilled                       { iff: 41   size: 76    page: "game" }
+		Block GadgetMods                          { iff: 42   size: 56    page: "gadgetstats" }
+		Block Gadget45                            { iff: 45   size: 56    page: "gadgetstats" }
+		Block MoviesPlayedRecord                  { iff: 43   size: 256   page: "movies" }
+		Block ShipMods                            { iff: 44   size: 4     page: "game" }
+		Block Unknown46                           { iff: 46   size: 40    page: "game" }
+		Block Unknown47                           { iff: 47   size: 256   page: "game" }
+		Block TotalDeaths                         { iff: 1005 size: 4     page: "game" }
+		Block HelpLog                             { iff: 1010 size: 170   page: "help" }
+		Block HelpLogPos                          { iff: 1011 size: 4     page: "help" }
+	}
+	
+	File level {
+		Block Visited                             { iff: 3001 size: 1     page: "game" }
+		Block MapMask                             { iff: 3002 size: 2048  page: "game" }
+		Block GoldBolts                           { iff: 3003 size: 4     page: "game" }
+		Block SegmentsCompleted                   { iff: 3004 size: 16    page: "game" }
+		Block Unknown3005                         { iff: 3005 size: 1024  page: "game" }
+		Block Unknown3007                         { iff: 3007 size: 12    page: "game" }
+		Block DeathsPerLevel                      { iff: 4002 size: 4     page: "game" buddy: "TotalDeaths" }
+		Block Unknown4005                         { iff: 4005 size: 64    page: "game" }
+		Block Unknown4007                         { iff: 4007 size: 4     page: "game" }
+		Block Unknown4008                         { iff: 4008 size: 4     page: "game" }
+	}
+}
+
+Game uya {
+	File game {
+		Block Level                               { iff: 0    size: 4     page: "game" }
+		Block HeroSave                            { iff: 39   size: 128   page: "hero" }
+		Block ElapsedTime                         { iff: 3    size: 4     page: "game" }
+		Block LastSaveTime                        { iff: 4    size: 8     page: "game" }
+		Block TotalPlayTime                       { iff: 1003 size: 4     page: "game" }
+		Block GlobalFlags                         { iff: 5    size: 272   page: "globalflags" }
+		Block CheatsActivated                     { iff: 7    size: 19    page: "cheats" }
+		Block SkillPoints                         { iff: 8    size: 32    page: "skillpoints" }
+		Block Ammo                                { iff: 9    size: 624   page: "gadgetstats" }
+		Block Unlocks                             { iff: 10   size: 156   page: "gadgetstats" }
+		Block Items                               { iff: 11   size: 156   page: "gadgetstats" }
+		Block GadgetXP                            { iff: 40   size: 624   page: "gadgetstats" }
+		Block PurchasableVendorItems              { iff: 12   size: 64    page: "gadgets" }
+		Block QuickSelect                         { iff: 13   size: 32    page: "gadgets" }
+		Block VisitedPlanets                      { iff: 14   size: 60    page: "game" }
+		Block GalacticMap                         { iff: 20   size: 240   page: "game" }
+		Block MapLandmarks                        { iff: 15   size: 1824  page: "game" }
+		Block HelpDataMessages                    { iff: 16   size: 4272  page: "help" }
+		Block HelpDataMisc                        { iff: 17   size: 516   page: "help" }
+		Block HelpDataGadgets                     { iff: 18   size: 1872  page: "help" }
+		Block Settings                            { iff: 38   size: 188   page: "settings" }
+		Block GadgetLookup                        { iff: 30   size: 160   page: "gadgets" }
+		Block EquippedGadgets                     { iff: 32   size: 28    page: "gadgets" }
+		Block CheatsEverActivated                 { iff: 37   size: 19    page: "cheats" }
+		Block EnemiesKilled                       { iff: 41   size: 268   page: "game" }
+		Block GadgetMods                          { iff: 42   size: 156   page: "gadgetstats" }
+		Block Gadget45                            { iff: 45   size: 156   page: "gadgetstats" }
+		Block MoviesPlayedRecord                  { iff: 43   size: 256   page: "movies" }
+		Block ShipMods                            { iff: 44   size: 4     page: "game" }
+		Block Unknown46                           { iff: 46   size: 40    page: "game" }
+		Block Unknown47                           { iff: 47   size: 256   page: "game" }
+		Block TotalDeaths                         { iff: 1005 size: 4     page: "game" }
+		Block HelpLog                             { iff: 1010 size: 800   page: "help" }
+		Block HelpLogPos                          { iff: 1011 size: 4     page: "help" }
+		Block SecondaryQuickSelect                { iff: 7002 size: 32    page: "gadgets" }
+		Block Unknown7003                         { iff: 7003 size: 12    page: "game" }
+		Block Unknown7004                         { iff: 7004 size: 6     page: "game" }
+		Block Unknown7005                         { iff: 7005 size: 192   page: "game" }
+		Block Unknown7006                         { iff: 7006 size: 192   page: "game" }
+		Block Unknown7007                         { iff: 7007 size: 192   page: "game" }
+	}
+	
+	File level {
+		Block Visited                             { iff: 3001 size: 1     page: "game" }
+		Block MapMask                             { iff: 3002 size: 2048  page: "game" }
+		Block GoldBolts                           { iff: 3003 size: 8     page: "game" }
+		Block SegmentsCompleted                   { iff: 3004 size: 16    page: "game" }
+		Block unknown_3005                        { iff: 3005 size: 1024  page: "game" }
+		Block DeathsPerLevel                      { iff: 4002 size: 4     page: "game" buddy: "TotalDeaths" }
+		Block unknown_4005                        { iff: 4005 size: 64    page: "game" }
+		Block unknown_4007                        { iff: 4007 size: 4     page: "game" }
+		Block unknown_4008                        { iff: 4008 size: 4     page: "game" }
+	}
+	
+	File net {
+		Block gameModeOptions                     { iff: 7000 size: 28    page: "game" }
+		Block mpProfiles                          { iff: 7001 size: 3968  page: "game" }
+	}
+}
+
+Game dl {
+	File game {
+		Block Level                               { iff: 0    size: 4     page: "game" }
+		Block HeroSave                            { iff: 39   size: 60    page: "hero" }
+		Block ElapsedTime                         { iff: 3    size: 4     page: "game" }
+		Block LastSaveTime                        { iff: 4    size: 8     page: "game" }
+		Block TotalPlayTime                       { iff: 1003 size: 4     page: "game" }
+		Block TN_savedDifficultyLevel             { iff: 7016 size: 4     page: "game" }
+		Block GlobalFlags                         { iff: 5    size: 12    page: "globalflags" }
+		Block CheatsActivated                     { iff: 7    size: 14    page: "cheats" }
+		Block CheatsEverActivated                 { iff: 37   size: 14    page: "cheats" }
+		Block SkillPoints                         { iff: 8    size: 60    page: "skillpoints" }
+		Block g_HeroGadgetBox                     { iff: 7008 size: 4784  page: "hero" }
+		Block HelpDataMessages                    { iff: 16   size: 25056 page: "help" }
+		Block HelpDataMisc                        { iff: 17   size: 192   page: "help" }
+		Block HelpDataGadgets                     { iff: 18   size: 240   page: "help" }
+		Block Settings                            { iff: 38   size: 196   page: "settings" }
+		Block FirstPersonDesiredMode              { iff: 7015 size: 40    page: "settings" }
+		Block MoviesPlayedRecord                  { iff: 43   size: 256   page: "movies" }
+		Block TotalDeaths                         { iff: 1005 size: 4     page: "game" }
+		Block HelpLog                             { iff: 1010 size: 4200  page: "help" }
+		Block HelpLogPos                          { iff: 1011 size: 4     page: "help" }
+		Block g_PurchaseableGadgets               { iff: 7010 size: 20    page: "game" }
+		Block g_PurchaseableBotUpgrades           { iff: 7011 size: 17    page: "game" }
+		Block g_PurchaseableWrenchLevel           { iff: 7012 size: 4     page: "game" }
+		Block g_PurchaseablePostFXMods            { iff: 7013 size: 9     page: "game" }
+		Block BotSave                             { iff: 7014 size: 40    page: "game" }
+		Block ST_PlayerStatistics                 { iff: 7017 size: 1344  page: "game" }
+		Block ST_BattledomeWinsAndLosses          { iff: 7018 size: 8     page: "game" }
+		Block ST_EnemyKills                       { iff: 7019 size: 240   page: "game" }
+		Block g_QuickSwitchGadgets                { iff: 7020 size: 48    page: "game" }
+	}
+	
+	File level {
+		Block mf_levelSaveData                    { iff: 7009 size: 772   page: "game" }
+	}
+	
+	File net {
+		Block gameModeOptions                     { iff: 7000 size: 28    page: "game" }
+		Block mpProfiles                          { iff: 7001 size: 3840  page: "game" }
+	}
+}

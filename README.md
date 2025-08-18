@@ -6,7 +6,7 @@ A set of modding tools for the Ratchet & Clank PS2 games. Compatible with R&C1, 
 - [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable)
 - [Documentation](docs/README.md)
 
-Most members of the modding community for these games use Discord ([invite link](https://discord.gg/FY4Gwv8EuK)). Alternatively, feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
+Most members of the modding community for these games use Discord. Alternatively, feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
 
 Features currently include:
 - Launcher
@@ -29,8 +29,8 @@ Features currently include:
 	- Inspect objects and modify their attributes (including pvars).
 	- **New in v0.5!** Recover instanced collision for ties and shrubs.
 	- **New in v0.5!** Translate, rotate and scale objects using 3D transformation gizmos.
-- Memory Card Editor
-	- Only works properly on Deadlocked saves. Experimental.
+- Save Editor
+	- **New in v0.5!** Works for all the games, rather than just Deadlocked.
 - Asset System
 	- A system to create, distribute and load mods.
 	- Multiple mods can be loaded at a time.
@@ -56,8 +56,14 @@ Features currently include:
 	- git
 	- cmake
 	- g++
-	- xorg-dev (needed to build GLFW)
 	- zenity
+	- extra-cmake-modules *
+	- libwayland-dev *
+	- libxkbcommon-dev *
+	- wayland-protocols *
+	- xorg-dev *
+	
+	\* Needed to build GLFW.
 
 2.	cd into the directory above where you want Wrench to live e.g. `cd ~/programs`.
 

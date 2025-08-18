@@ -37,7 +37,7 @@ std::vector<u8> Buffer::read_bytes(s64 offset, s64 size, const char* subject) co
 }
 
 std::string Buffer::read_string(s64 offset, bool is_korean) const {
-	verify(offset > 0, "Failed to read string: Offset cannot be negative.");
+	verify(offset >= 0, "Failed to read string: Offset cannot be negative.");
 	verify(lo + offset <= hi, "Failed to read string: Attempted to read past end of buffer.");
 	std::string result;
 	if(!is_korean) {
@@ -61,7 +61,7 @@ std::string Buffer::read_string(s64 offset, bool is_korean) const {
 }
 
 std::string Buffer::read_fixed_string(s64 offset, s64 size) const {
-	verify(offset > 0, "Failed to read string: Offset cannot be negative.");
+	verify(offset >= 0, "Failed to read string: Offset cannot be negative.");
 	verify(lo + offset + size <= hi, "Failed to read string: Attempted to read past end of buffer.");
 	std::string string;
 	string.resize(size);
@@ -187,7 +187,7 @@ void OutBuffer::writesf(s32 indent_level, const char* format, va_list args) {
 	
 	size_t write_ofs = vec.size();
 	vec.resize(vec.size() + count);
-	memcpy(&vec[write_ofs], temp, count);
+	memcpy(vec.data() + write_ofs, temp, count);
 }
 
 void OutBuffer::writelf(s32 indent_level, const char* format, va_list args) {
@@ -203,7 +203,7 @@ void OutBuffer::writelf(s32 indent_level, const char* format, va_list args) {
 	
 	size_t write_ofs = vec.size();
 	vec.resize(write_ofs + count + 1);
-	memcpy(&vec[write_ofs], temp, count);
+	memcpy(vec.data() + write_ofs, temp, count);
 	vec[write_ofs + count] = '\n';
 }
 

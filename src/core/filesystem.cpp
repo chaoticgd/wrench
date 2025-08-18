@@ -68,21 +68,6 @@ void write_file(const fs::path& path, Buffer buffer, bool text_mode) {
 	}
 }
 
-std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer, bool text_mode) {
-	fs::path dest_path = dest_dir/rel_path;
-	WrenchFileHandle* file = file_open(dest_path.string().c_str(), WRENCH_FILE_MODE_WRITE);
-	verify(file, "Failed to open file '%s' for writing (%s).", dest_path.string().c_str(), FILEIO_ERROR_CONTEXT_STRING);
-	if(buffer.size() > 0) {
-		if (text_mode) {
-			verify(file_write_string((char*)buffer.lo, file) > 0, "Failed to write output file '%s'.", dest_path.string().c_str());
-		} else {
-			verify(file_write(buffer.lo, buffer.size(), file) == buffer.size(), "Failed to write output file '%s'.", dest_path.string().c_str());
-		}
-	}
-	file_close(file);
-	return rel_path.string();
-}
-
 void strip_carriage_returns(std::vector<u8>& file) {
 	size_t new_size = 0;
 	for(size_t i = 0; i < file.size(); i++) {

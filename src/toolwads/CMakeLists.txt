@@ -15,7 +15,7 @@ target_link_libraries(toolwadpacker wrenchcore wrenchengine wrenchinstancemgr ve
 # Generate wads
 # ******************************************************************************
 
-file(GLOB TOOLWADPACKER_DEPENDS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/data/*")
+file(GLOB_RECURSE TOOLWADPACKER_DEPENDS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/data/*")
 add_custom_command(
 	COMMAND toolwadpacker "${CMAKE_BINARY_DIR}"
 	DEPENDS toolwadpacker
@@ -26,12 +26,13 @@ add_custom_command(
 		"${CMAKE_BINARY_DIR}/gui.wad"
 		"${CMAKE_BINARY_DIR}/launcher.wad"
 		"${CMAKE_BINARY_DIR}/editor.wad"
+		"${CMAKE_BINARY_DIR}/memcard.wad"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	COMMENT "Generating tool wads"
 )
 
 # ******************************************************************************
-# Pack headers into executables (this is mimicking how the game does things)
+# Pack headers into executables
 # ******************************************************************************
 
 add_executable(header2cpp
@@ -45,11 +46,13 @@ add_custom_command(
 		"${CMAKE_BINARY_DIR}/gui.wad"
 		"${CMAKE_BINARY_DIR}/launcher.wad"
 		"${CMAKE_BINARY_DIR}/editor.wad"
+		"${CMAKE_BINARY_DIR}/memcard.wad"
 	DEPENDS header2cpp
 		"${CMAKE_BINARY_DIR}/build.wad"
 		"${CMAKE_BINARY_DIR}/gui.wad"
 		"${CMAKE_BINARY_DIR}/launcher.wad"
 		"${CMAKE_BINARY_DIR}/editor.wad"
+		"${CMAKE_BINARY_DIR}/memcard.wad"
 	OUTPUT ${CMAKE_BINARY_DIR}/_generated_wadinfo.cpp
 	COMMENT "Generating _generated_wadinfo.cpp"
 )

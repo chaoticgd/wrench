@@ -2,10 +2,13 @@
 
 ## v0.5
 
+- Rewrote the save editor so that it now works for all the games.
 - Use glTF (.glb) to store the sky models instead of COLLADA.
+- Use glTF (.glb) to store the shrub models instead of COLLADA.
 - Sky models are now split up into clusters automatically, making custom skies much more doable.
 - Added a collision fixer tool in the editor to recover instanced collision for ties and shrubs semi-automatically.
 - Added proper 3D transformation gizmos in the editor for translation, rotation and scaling.
+- The SYSTEM.CNF file is now written out onto the correct sector for R&C1.
 
 ## v0.4
 

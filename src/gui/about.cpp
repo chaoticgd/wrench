@@ -62,6 +62,7 @@ static const gui::Page LICENSE_PAGES[] = {
 	{"Catch2", gen_license_page<LICENSE_CATCH2>()},
 	{"Barlow", gen_license_page<LICENSE_BARLOW>()},
 	{"Dear ImGui", gen_license_page<LICENSE_IMGUI>()},
+	{"Dear ImGui Club", gen_license_page<LICENSE_IMGUI_CLUB>()},
 	{"GLAD", gen_license_page<LICENSE_GLAD>()},
 	{"GLFW", gen_license_page<LICENSE_GLFW>()},
 	{"GLM", gen_license_page<LICENSE_GLM>()},
