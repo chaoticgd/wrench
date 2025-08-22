@@ -55,7 +55,7 @@ static void pack_file_asset(
 	fs::file_time_type* time_dest,
 	const FileAsset& src)
 {
-	if(g_asset_packer_dry_run) {
+	if (g_asset_packer_dry_run) {
 		return;
 	}
 	

@@ -215,10 +215,10 @@ static void unpack_rac_gc_credits_text(
 	CollectionAsset& dest, InputStream& src, SectorRange range, BuildConfig config)
 {
 	std::vector<s32> offsets = src.read_multiple<s32>(range.bytes().offset, 8);
-	for(s32 i = 0; i < 8; i++) {
+	for (s32 i = 0; i < 8; i++) {
 		ByteRange inner;
 		inner.offset = range.bytes().offset + offsets[i];
-		if(i < 7) {
+		if (i < 7) {
 			inner.size = offsets[i + 1] - offsets[i];
 		} else {
 			inner.size = range.bytes().size - offsets[i];
@@ -234,8 +234,8 @@ static SectorRange pack_rac_gc_credits_text(
 	s64 begin_ofs = dest.tell();
 	dest.alloc_multiple<s32>(8);
 	std::vector<s32> offsets(8, -1);
-	for(s32 i = 0; i < 8; i++) {
-		if(src.has_child(i)) {
+	for (s32 i = 0; i < 8; i++) {
+		if (src.has_child(i)) {
 			ByteRange range = {-1, -1};
 			offsets[i] = pack_asset(dest, src.get_child(i), config, 0x10, FMT_NO_HINT, &range).offset - (s32) begin_ofs;
 		}
@@ -286,15 +286,15 @@ static void unpack_demo_images(
 	s32 inner_count,
 	BuildConfig config)
 {
-	for(s32 i = 0; i < outer_count; i++) {
+	for (s32 i = 0; i < outer_count; i++) {
 		CollectionAsset& inner = dest.foreign_child<CollectionAsset>(i);
 		SubInputStream stream(src, ranges[i].bytes());
 		std::vector<s32> offsets = stream.read_multiple<s32>(0, inner_count);
-		for(s32 j = 0; j < inner_count; j++) {
-			if(offsets[j] > -1) {
+		for (s32 j = 0; j < inner_count; j++) {
+			if (offsets[j] > -1) {
 				ByteRange range;
 				range.offset = offsets[j];
-				if(j + 1 < inner_count && offsets[j + 1] > -1) {
+				if (j + 1 < inner_count && offsets[j + 1] > -1) {
 					range.size = offsets[j + 1] - offsets[j];
 				} else {
 					range.size = (s32) stream.size() - offsets[j];
@@ -314,8 +314,8 @@ static void pack_demo_images(
 	BuildConfig config,
 	const char* muffin)
 {
-	for(s32 i = 0; i < outer_count; i++) {
-		if(src.has_child(i)) {
+	for (s32 i = 0; i < outer_count; i++) {
+		if (src.has_child(i)) {
 			const CollectionAsset& inner = src.get_child(i).as<CollectionAsset>();
 			dest.pad(SECTOR_SIZE, 0);
 			s64 begin_ofs = dest.tell();
@@ -323,8 +323,8 @@ static void pack_demo_images(
 			SubOutputStream stream(dest, begin_ofs);
 			stream.alloc_multiple<s32>(inner_count);
 			std::vector<s32> offsets(inner_count);
-			for(s32 j = 0; j < inner_count; j++) {
-				if(inner.has_child(j)) {
+			for (s32 j = 0; j < inner_count; j++) {
+				if (inner.has_child(j)) {
 					offsets[j] = pack_compressed_asset<ByteRange>(stream, inner.get_child(j).as<TextureAsset>(), config, 0x10, muffin, FMT_TEXTURE_RGBA).offset;
 				}
 			}

@@ -59,23 +59,23 @@ std::string gui::run_packer(const PackerParams& params, CommandThread& command)
 	args.emplace_back("pack");
 	args.emplace_back(params.game_path);
 	args.emplace_back(params.overlay_path);
-	for(const std::string& mod_path : params.mod_paths) {
+	for (const std::string& mod_path : params.mod_paths) {
 		args.emplace_back(mod_path);
 	}
 	args.emplace_back("-a");
 	args.emplace_back(params.build);
 	args.emplace_back("-o");
-	if(fs::path(params.output_path).is_relative()) {
+	if (fs::path(params.output_path).is_relative()) {
 		output_path = (fs::path(g_config.paths.builds_folder)/params.output_path).string();
 	} else {
 		output_path = params.output_path;
 	}
 	args.emplace_back(output_path);
 	args.emplace_back("-h");
-	if(params.debug.single_level_enabled || params.debug.nompegs) {
+	if (params.debug.single_level_enabled || params.debug.nompegs) {
 		std::string single_level = params.debug.single_level_enabled ? params.debug.single_level_tag : "";
 		std::string flags;
-		if(params.debug.nompegs) {
+		if (params.debug.nompegs) {
 			flags += "nompegs";
 		}
 		args.emplace_back("testlf," + single_level + "," + flags);

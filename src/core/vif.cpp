@@ -71,7 +71,7 @@ bool VifCode::is_strow() const
 s64 VifCode::packet_size() const
 {
 	s64 result = 0;
-	switch(cmd) {
+	switch (cmd) {
 		case VifCmd::NOP:
 		case VifCmd::STCYCL:
 		case VifCmd::OFFSET:
@@ -105,7 +105,7 @@ s64 VifCode::packet_size() const
 			result = 1 + directhl.size * 4;
 			break;
 		default:
-			if(is_unpack()) {
+			if (is_unpack()) {
 				s32 size = num * element_size();
 				if (size % 4 != 0)
 					size += 4 - (size % 4);
@@ -122,7 +122,7 @@ std::string VifCode::to_string() const
 	std::stringstream ss;
 	ss << std::hex;
 	ss << std::setw(8) << std::setfill('0') << raw << " ";
-	switch(cmd) {
+	switch (cmd) {
 		case VifCmd::NOP:      ss << "NOP"; break;
 		case VifCmd::STCYCL:   ss << "STCYCL num=" << num << " wl=" << stcycl.wl << " cl=" << stcycl.cl; break;
 		case VifCmd::OFFSET:   ss << "OFFSET offset=" << offset.offset; break;
@@ -144,7 +144,7 @@ std::string VifCode::to_string() const
 		case VifCmd::DIRECT:   ss << "DIRECT size=" << direct.size; break;
 		case VifCmd::DIRECTHL: ss << "DIRECTHL size=" << directhl.size; break;
 		default:
-			if(!is_unpack()) {
+			if (!is_unpack()) {
 				return "INVALID VIF CODE";
 			}
 			ss << "UNPACK vnvl=" << VIF_VNVL_STRINGS[(u32) unpack.vnvl & 0b1111]
@@ -183,7 +183,7 @@ Opt<VifCode> read_vif_code(u32 val)
 	code.num       = bit_range(val, 16, 23);
 	code.num = code.num ? code.num : 256;
 	
-	switch(code.cmd) {
+	switch (code.cmd) {
 		case VifCmd::NOP:
 			break;
 		case VifCmd::STCYCL:
@@ -236,7 +236,7 @@ Opt<VifCode> read_vif_code(u32 val)
 			code.directhl.size = code.directhl.size ? code.directhl.size : 65536;
 			break;
 		default:
-			if(!code.is_unpack()) {
+			if (!code.is_unpack()) {
 				return {};
 			}
 			code.unpack.vnvl = (VifVnVl) bit_range(val, 24, 27);
@@ -252,12 +252,12 @@ std::vector<VifPacket> read_vif_command_list(Buffer src)
 {
 	std::vector<VifPacket> command_list;
 	s64 ofs = 0;
-	while(ofs < src.size()) {
+	while (ofs < src.size()) {
 		VifPacket packet;
 		packet.offset = ofs;
 		
 		Opt<VifCode> code = read_vif_code(src.read<u32>(ofs, "vif code"));
-		if(!code.has_value()) {
+		if (!code.has_value()) {
 			packet.error = "failed to disassemble vif code";
 			command_list.push_back(packet);
 			break;
@@ -265,13 +265,13 @@ std::vector<VifPacket> read_vif_command_list(Buffer src)
 		packet.code = *code;
 		
 		s64 packet_size = packet.code.packet_size();
-		if(packet_size > 0x10000) {
+		if (packet_size > 0x10000) {
 			packet.error = "vif packet too big";
 			command_list.push_back(packet);
 			break;
 		}
 		
-		if(ofs + packet_size > src.size()) {
+		if (ofs + packet_size > src.size()) {
 			packet.error = "vif packet overruns buffer";
 			command_list.push_back(packet);
 			break;
@@ -288,8 +288,8 @@ std::vector<VifPacket> read_vif_command_list(Buffer src)
 std::vector<VifPacket> filter_vif_unpacks(std::vector<VifPacket>& src)
 {
 	std::vector<VifPacket> dest;
-	for(VifPacket& packet : src) {
-		if(packet.code.is_unpack()) {
+	for (VifPacket& packet : src) {
+		if (packet.code.is_unpack()) {
 			dest.emplace_back(std::move(packet));
 		}
 	}
@@ -298,11 +298,11 @@ std::vector<VifPacket> filter_vif_unpacks(std::vector<VifPacket>& src)
 
 void write_vif_packet(OutBuffer dest, const VifPacket& packet)
 {
-	if(packet.code.is_unpack()) {
+	if (packet.code.is_unpack()) {
 		dest.write<u32>(packet.code.encode_unpack());
 		dest.vec.insert(dest.vec.end(), packet.data.lo, packet.data.hi);
 		dest.pad(4, 0);
-	} else if(packet.code.cmd == VifCmd::NOP) {
+	} else if (packet.code.cmd == VifCmd::NOP) {
 		dest.write<u32>(0);
 	} else {
 		verify_not_reached_fatal("Failed to write VIF command list.");

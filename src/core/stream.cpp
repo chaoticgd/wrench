@@ -24,7 +24,7 @@ void Stream::copy(OutputStream& dest, InputStream& src, s64 size)
 {
 	static const s64 chunk_size = 64 * 1024;
 	static std::vector<u8> buffer(chunk_size);
-	for(s64 i = 0; i < size / chunk_size; i++) {
+	for (s64 i = 0; i < size / chunk_size; i++) {
 		src.read_n(buffer.data(), chunk_size);
 		dest.write_n(buffer.data(), chunk_size);
 	}
@@ -38,8 +38,8 @@ void Stream::copy(OutputStream& dest, InputStream& src, s64 size)
 void OutputStream::pad(s64 alignment, u8 padding)
 {
 	s64 pos = tell();
-	if(pos % alignment != 0) {
-		for(s64 i = 0; i < alignment - (pos % alignment); i++) {
+	if (pos % alignment != 0) {
+		for (s64 i = 0; i < alignment - (pos % alignment); i++) {
 			write<u8>(padding);
 		}
 	}
@@ -139,7 +139,7 @@ s64 MemoryOutputStream::size() const
 
 bool MemoryOutputStream::write_n(const u8* src, s64 size)
 {
-	if(m_ofs + size > m_backing.size()) {
+	if (m_ofs + size > m_backing.size()) {
 		m_backing.resize(m_ofs + size);
 	}
 	memcpy(&m_backing[m_ofs], src, size);
@@ -154,15 +154,15 @@ FileInputStream::FileInputStream() {}
 
 FileInputStream::~FileInputStream()
 {
-	if(m_file != nullptr) {
+	if (m_file != nullptr) {
 		file_close(m_file);
 	}
 }
 
 bool FileInputStream::open(const fs::path& path)
 {
-	if(m_file != nullptr) {
-		if(file_close(m_file) == EOF) {
+	if (m_file != nullptr) {
+		if (file_close(m_file) == EOF) {
 			last_error = FILEIO_ERROR_CONTEXT_STRING;
 			return false;
 		}
@@ -206,14 +206,14 @@ FileOutputStream::FileOutputStream() {}
 
 FileOutputStream::~FileOutputStream()
 {
-	if(m_file != nullptr) {
+	if (m_file != nullptr) {
 		file_close(m_file);
 	}
 }
 
 bool FileOutputStream::open(const fs::path& path)
 {
-	if(m_file != nullptr) {
+	if (m_file != nullptr) {
 		file_close(m_file);
 	}
 	m_file = file_open(path.string().c_str(), WRENCH_FILE_MODE_WRITE);
@@ -286,9 +286,9 @@ bool SubInputStream::read_n(u8* dest, s64 size)
 
 s64 SubInputStream::offset_relative_to(InputStream* outer) const
 {
-	if(outer == &m_stream) {
+	if (outer == &m_stream) {
 		return m_range.offset;
-	} else if(SubInputStream* sub_stream = dynamic_cast<SubInputStream*>(&m_stream)) {
+	} else if (SubInputStream* sub_stream = dynamic_cast<SubInputStream*>(&m_stream)) {
 		return m_range.offset + sub_stream->offset_relative_to(outer);
 	} else {
 		return 0;

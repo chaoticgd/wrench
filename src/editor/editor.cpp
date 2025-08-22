@@ -43,13 +43,13 @@ BaseEditor::UndoRedoCommand::UndoRedoCommand(UndoRedoCommand&& rhs) noexcept
 	, cleanup(std::exchange(rhs.cleanup, nullptr)) {}
 
 BaseEditor::UndoRedoCommand::~UndoRedoCommand() {
-	if(cleanup && user_data) {
+	if (cleanup && user_data) {
 		cleanup(user_data);
 	}
 }
 
 BaseEditor::UndoRedoCommand& BaseEditor::UndoRedoCommand::operator=(UndoRedoCommand& rhs) noexcept {
-	if(cleanup && user_data) {
+	if (cleanup && user_data) {
 		cleanup(user_data);
 	}
 	user_data = std::exchange(rhs.user_data, nullptr);

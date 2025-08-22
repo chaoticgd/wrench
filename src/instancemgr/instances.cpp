@@ -23,7 +23,7 @@
 
 Instance* Instances::from_id(InstanceId id)
 {
-	switch(id.type) {
+	switch (id.type) {
 		#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
 			case INST_##inst_type_uppercase: return inst_variable.from_id(id.value);
 		#define GENERATED_INSTANCE_MACRO_CALLS
@@ -46,7 +46,7 @@ std::vector<InstanceId> Instances::selected_instances() const
 {
 	std::vector<InstanceId> ids;
 	this->for_each([&](const Instance& inst) {
-		if(inst.selected) {
+		if (inst.selected) {
 			ids.push_back(inst.id());
 		}
 	});
@@ -73,20 +73,20 @@ Instances read_instances(std::string& src)
 	Instances dest;
 	
 	const WtfNode* level_settings_node = wtf_child(root, nullptr, "level_settings");
-	if(level_settings_node) {
+	if (level_settings_node) {
 		dest.level_settings = read_level_settings(level_settings_node);
 	}
 	
-	for(WtfNode* node = root->first_child; node != nullptr; node = node->next_sibling) {
-		for(const InstanceReadWriteFuncs& funcs : read_write_funcs) {
-			if(strcmp(instance_type_to_string(funcs.type), node->type_name) == 0) {
+	for (WtfNode* node = root->first_child; node != nullptr; node = node->next_sibling) {
+		for (const InstanceReadWriteFuncs& funcs : read_write_funcs) {
+			if (strcmp(instance_type_to_string(funcs.type), node->type_name) == 0) {
 				funcs.read(dest, node);
 			}
 		}
 	}
 	
 	const WtfAttribute* moby_classes_attrib = wtf_attribute_of_type(root, "moby_classes", WTF_ARRAY);
-	for(WtfAttribute* o_class = moby_classes_attrib->first_array_element; o_class != nullptr; o_class = o_class->next) {
+	for (WtfAttribute* o_class = moby_classes_attrib->first_array_element; o_class != nullptr; o_class = o_class->next) {
 		verify(o_class->type == WTF_NUMBER, "Bad moby class number.");
 		dest.moby_classes.emplace_back(o_class->number.i);
 	}
@@ -114,13 +114,13 @@ std::string write_instances(const Instances& src, const char* application_name, 
 	write_level_settings(ctx, src.level_settings);
 	wtf_end_node(ctx);
 	
-	for(const InstanceReadWriteFuncs& funcs : read_write_funcs) {
+	for (const InstanceReadWriteFuncs& funcs : read_write_funcs) {
 		funcs.write(ctx, src);
 	}
 	
 	wtf_begin_attribute(ctx, "moby_classes");
 	wtf_begin_array(ctx);
-	for(s32 o_class : src.moby_classes) {
+	for (s32 o_class : src.moby_classes) {
 		wtf_write_integer(ctx, o_class);
 	}
 	wtf_end_array(ctx);

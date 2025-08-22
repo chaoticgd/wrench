@@ -60,7 +60,7 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 
 int main(int argc, char** argv)
 {
-	if(argc != 4) {
+	if (argc != 4) {
 		fprintf(stderr, "usage: %s <game path> <mod path> <asset link of LevelWad asset>\n", (argc > 0) ? argv[0] : "wrenchvis");
 		return 1;
 	}
@@ -103,12 +103,12 @@ int main(int argc, char** argv)
 static std::vector<OcclChunk> load_chunks(const CollectionAsset& collection, Game game)
 {
 	std::vector<OcclChunk> chunks(3);
-	for(s32 i = 0; i < 3; i++) {
-		if(collection.has_child(i)) {
+	for (s32 i = 0; i < 3; i++) {
+		if (collection.has_child(i)) {
 			const ChunkAsset& chunk_asset = collection.get_child(i).as<ChunkAsset>();
-			if(chunk_asset.has_tfrags()) {
+			if (chunk_asset.has_tfrags()) {
 				const Asset& core_asset = chunk_asset.get_tfrags().get_core();
-				if(const BinaryAsset* binary_asset = core_asset.maybe_as<BinaryAsset>()) {
+				if (const BinaryAsset* binary_asset = core_asset.maybe_as<BinaryAsset>()) {
 					std::unique_ptr<InputStream> stream = binary_asset->src().open_binary_file_for_reading();
 					std::vector<u8> buffer = stream->read_multiple<u8>(0, stream->size());
 					Tfrags tfrags = read_tfrags(buffer, game);
@@ -128,7 +128,7 @@ static std::map<s32, Mesh> load_moby_classes(const CollectionAsset& collection)
 {
 	std::map<s32, Mesh> classes;
 	collection.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
-		if(child.has_editor_mesh()) {
+		if (child.has_editor_mesh()) {
 			const MeshAsset& editor_mesh = child.get_editor_mesh();
 			std::string collada = editor_mesh.src().read_text_file();
 			ColladaScene scene = read_collada((char*) collada.c_str());
@@ -157,10 +157,10 @@ static std::map<s32, Mesh> load_tie_classes(const CollectionAsset& collection)
 static Instances load_instances(const Asset& src, Game game)
 {
 	std::vector<u8> gameplay_buffer;
-	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
+	if (const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
 		std::string instances_wtf = asset->src().read_text_file();
 		return read_instances(instances_wtf);
-	} else if(const BinaryAsset* asset = src.maybe_as<BinaryAsset>()) {
+	} else if (const BinaryAsset* asset = src.maybe_as<BinaryAsset>()) {
 		std::unique_ptr<InputStream> gameplay_stream = asset->src().open_binary_file_for_reading();
 		std::vector<u8> buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
 		Gameplay gameplay;
@@ -177,7 +177,7 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 	std::string octants_txt = asset.octants().read_text_file();
 	std::vector<OcclusionVector> octants = read_occlusion_octants(octants_txt.c_str());
 	
-	for(OcclusionVector& octant : octants) {
+	for (OcclusionVector& octant : octants) {
 		glm::vec3 point = {
 			octant.x * 4.f,
 			octant.y * 4.f,
@@ -205,8 +205,8 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 	
 	input.octants = std::move(octants);
 	
-	for(s32 i = 0; i < (s32) level.chunks.size(); i++) {
-		for(const Mesh& tfrag_mesh : level.chunks[i].tfrags) {
+	for (s32 i = 0; i < (s32) level.chunks.size(); i++) {
+		for (const Mesh& tfrag_mesh : level.chunks[i].tfrags) {
 			VisInstance& vis_instance = input.instances[VIS_TFRAG].emplace_back();
 			vis_instance.mesh = (s32) input.meshes.size();
 			vis_instance.chunk = i;
@@ -216,11 +216,11 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 	}
 	
 	std::map<s32, s32> tie_class_to_index;
-	for(const auto& [id, mesh] : level.tie_classes) {
+	for (const auto& [id, mesh] : level.tie_classes) {
 		tie_class_to_index[id] = (s32) input.meshes.size();
 		input.meshes.emplace_back(&mesh);
 	}
-	for(const TieInstance& instance : level.instances.tie_instances) {
+	for (const TieInstance& instance : level.instances.tie_instances) {
 		auto index = tie_class_to_index.find(instance.o_class());
 		verify(index != tie_class_to_index.end(), "Cannot find tie model!");
 		VisInstance& vis_instance = input.instances[VIS_TIE].emplace_back();
@@ -230,14 +230,14 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 	}
 	
 	std::map<s32, s32> moby_class_to_index;
-	for(const auto& [id, mesh] : level.moby_classes) {
+	for (const auto& [id, mesh] : level.moby_classes) {
 		moby_class_to_index[id] = (s32) input.meshes.size();
 		input.meshes.emplace_back(&mesh);
 	}
-	for(const MobyInstance& instance : level.instances.moby_instances) {
-		if(!instance.occlusion) {
+	for (const MobyInstance& instance : level.instances.moby_instances) {
+		if (!instance.occlusion) {
 			auto index = moby_class_to_index.find(instance.o_class());
-			if(index != moby_class_to_index.end()) {
+			if (index != moby_class_to_index.end()) {
 				VisInstance& vis_instance = input.instances[VIS_MOBY].emplace_back();
 				vis_instance.mesh = index->second;
 				vis_instance.matrix = instance.transform().matrix();
@@ -247,12 +247,12 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 	}
 	
 	s32 memory_budget = -1;
-	if(asset.has_memory_budget()) {
+	if (asset.has_memory_budget()) {
 		memory_budget = asset.memory_budget();
 	}
 	
 	s32 memory_budget_for_masks = -1;
-	if(memory_budget) {
+	if (memory_budget) {
 		memory_budget_for_masks = memory_budget - compute_occlusion_tree_size(input.octants);
 	}
 	
@@ -274,14 +274,14 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 	mappings_header.moby_mapping_count = (s32) vis.mappings[VIS_MOBY].size();
 	mappings_dest->write(mappings_header);
 	
-	for(s32 i = 0; i < (s32) vis.mappings[VIS_TFRAG].size(); i++) {
+	for (s32 i = 0; i < (s32) vis.mappings[VIS_TFRAG].size(); i++) {
 		OcclusionMapping mapping;
 		mapping.bit_index = vis.mappings[VIS_TFRAG][i];
 		mapping.occlusion_id = i;
 		mappings_dest->write(mapping);
 	}
 	
-	for(s32 i = 0; i < (s32) vis.mappings[VIS_TIE].size(); i++) {
+	for (s32 i = 0; i < (s32) vis.mappings[VIS_TIE].size(); i++) {
 		OcclusionMapping mapping;
 		const TieInstance& instance = level.instances.tie_instances[i];
 		mapping.bit_index = vis.mappings[VIS_TIE][i];
@@ -290,9 +290,9 @@ static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel
 	}
 	
 	s32 moby_instance_index = 0;
-	for(s32 i = 0; i < (s32) vis.mappings[VIS_MOBY].size(); i++) {
+	for (s32 i = 0; i < (s32) vis.mappings[VIS_MOBY].size(); i++) {
 		// Skip past moby instances for which we don't precompute occlusion.
-		while(level.instances.moby_instances[moby_instance_index].occlusion
+		while (level.instances.moby_instances[moby_instance_index].occlusion
 			|| moby_class_to_index.find(level.instances.moby_instances[moby_instance_index].o_class()) == moby_class_to_index.end()) {
 			moby_instance_index++;
 		}

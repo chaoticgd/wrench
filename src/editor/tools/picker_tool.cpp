@@ -47,7 +47,7 @@ static void deactivate()
 
 static void update()
 {
-	if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
+	if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
 		ImVec2 rel_pos {
 			ImGui::GetMousePos().x - ImGui::GetWindowPos().x,
 			ImGui::GetMousePos().y - ImGui::GetWindowPos().y - 20
@@ -87,17 +87,17 @@ static void pick_object(const glm::mat4& view, const glm::mat4& projection, ImVe
 
 	int smallest_index = -1;
 	int smallest_value = size;
-	for(int i = 0; i < size; i++) {
-		if(buffer[i] > 0) {
+	for (int i = 0; i < size; i++) {
+		if (buffer[i] > 0) {
 			auto current_value = glm::abs(middle - i % select_size) + glm::abs(middle - i / select_size);
-			if(current_value < smallest_value) {
+			if (current_value < smallest_value) {
 				smallest_index = i;
 				smallest_value = current_value;
 			}
 		}
 	}
 
-	if(smallest_value == -1) {
+	if (smallest_value == -1) {
 		lvl.instances().clear_selection();
 		return;
 	}
@@ -109,7 +109,7 @@ static void pick_object(const glm::mat4& view, const glm::mat4& projection, ImVe
 	lvl.instances().for_each([&](Instance& inst) {
 		bool same_type = inst.id().type == picked_type;
 		bool same_id_value = inst.id().value == picked_id;
-		if(is_multi_selecting) {
+		if (is_multi_selecting) {
 			inst.selected ^= same_type && same_id_value;
 		} else {
 			inst.selected = same_type && same_id_value;

@@ -44,8 +44,8 @@ on_load(Tfrags, []() {
 
 static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig config, const char* hint)
 {
-	if(g_asset_unpacker.dump_binaries) {
-		if(!dest.has_core()) {
+	if (g_asset_unpacker.dump_binaries) {
+		if (!dest.has_core()) {
 			unpack_asset_impl(dest.core<TfragsCoreAsset>(), src, nullptr, config);
 		}
 		return;
@@ -78,13 +78,13 @@ ByteRange pack_tfrags(
 	u16* next_occlusion_index,
 	BuildConfig config)
 {
-	if(g_asset_packer_dry_run) {
+	if (g_asset_packer_dry_run) {
 		return {0, 0};
 	}
 	
 	s64 ofs = bin_dest.tell();
 	
-	if(src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
+	if (src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
 		// Since the tfrags were provided as a binary file, we need to unpack
 		// that file so we can generate occlusion data for the level.
 		std::vector<u8> input_buffer;
@@ -93,14 +93,14 @@ ByteRange pack_tfrags(
 		Tfrags tfrags = read_tfrags(input_buffer, config.game());
 		
 		ColladaScene scene = recover_tfrags(tfrags, TFRAG_SEPARATE_MESHES);
-		if(tfrags_dest) {
+		if (tfrags_dest) {
 			*tfrags_dest = std::move(scene.meshes);
 		}
 		
 		// Rewrite all the occlusion indices so they're equal to what the
 		// occlusion code expects.
-		if(next_occlusion_index) {
-			for(Tfrag& tfrag : tfrags.fragments) {
+		if (next_occlusion_index) {
+			for (Tfrag& tfrag : tfrags.fragments) {
 				tfrag.occl_index = (*next_occlusion_index)++;
 			}
 		}
@@ -131,10 +131,10 @@ static bool test_tfrags(
 	
 	// Test that the data is being allocated in VU memory correctly. We do this
 	// sepearately so that more helpful error messages can be generated.
-	for(s32 i = 0; i < (s32) tfrags_original.fragments.size(); i++) {
+	for (s32 i = 0; i < (s32) tfrags_original.fragments.size(); i++) {
 		bool matching_allocation = false;
 		#define COMPARE(field) \
-			if(tfrags_original.fragments[i].memory_map.field != tfrags_reallocated.fragments[i].memory_map.field) { \
+			if (tfrags_original.fragments[i].memory_map.field != tfrags_reallocated.fragments[i].memory_map.field) { \
 				fprintf(stderr, "Field " #field " for tfrag %d doesn't match. Original is 0x%x, reallocated is 0x%x.\n", \
 					i, tfrags_original.fragments[i].memory_map.field, tfrags_reallocated.fragments[i].memory_map.field); \
 				matching_allocation = true; \
@@ -151,7 +151,7 @@ static bool test_tfrags(
 		COMPARE(parent_indices_lod_0_addr);
 		COMPARE(indices_addr);
 		COMPARE(strips_addr);
-		if(matching_allocation) {
+		if (matching_allocation) {
 			return false;
 		}
 	}

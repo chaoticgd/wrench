@@ -33,38 +33,38 @@ void gui::command_output_screen(
 	size.x -= 0;
 	size.y -= s.WindowPadding.y * 2 + 64;
 	
-	if(ImGui::BeginPopupModal(id)) {
+	if (ImGui::BeginPopupModal(id)) {
 		ImGui::SetNextItemWidth(-1);
 		ImGui::InputTextMultiline("output", &command.get_last_output_lines(), size, ImGuiInputTextFlags_Multiline | ImGuiInputTextFlags_ReadOnly);
 		ImGui::GetCurrentContext()->InputTextState.ReloadUserBufAndKeepSelection();
 		
-		if(command.is_running()) {
-			if(ImGui::Button("Cancel")) {
+		if (command.is_running()) {
+			if (ImGui::Button("Cancel")) {
 				close_callback();
 				command.clear();
 				ImGui::CloseCurrentPopup();
 			}
 		} else {
-			if(run_callback && command.succeeded()) {
-				if(ImGui::Button("Run")) {
+			if (run_callback && command.succeeded()) {
+				if (ImGui::Button("Run")) {
 					run_callback();
 					command.clear();
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::SameLine();
 			}
-			if(ImGui::Button("Close")) {
+			if (ImGui::Button("Close")) {
 				close_callback();
 				command.clear();
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::SameLine();
-			if(ImGui::Button("Save Log")) {
+			if (ImGui::Button("Save Log")) {
 				nfdchar_t* path;
 				nfdresult_t result = NFD_SaveDialog("txt", nullptr, &path);
-				if(result == NFD_OKAY) {
+				if (result == NFD_OKAY) {
 					FileOutputStream log;
-					if(log.open(fs::path(std::string(path)))) {
+					if (log.open(fs::path(std::string(path)))) {
 						std::string output = command.copy_entire_output();
 						log.write_n((u8*) output.data(), output.size());
 					}

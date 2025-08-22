@@ -98,7 +98,7 @@ static void unpack_dl_level_scene_wad(
 	BuildConfig config)
 {
 	std::set<s64> end_sectors;
-	for(const DlSceneHeader& scene : header.scenes) {
+	for (const DlSceneHeader& scene : header.scenes) {
 		end_sectors.insert(scene.speech_english_left.sectors);
 		end_sectors.insert(scene.speech_english_right.sectors);
 		end_sectors.insert(scene.subtitles.offset.sectors);
@@ -111,14 +111,14 @@ static void unpack_dl_level_scene_wad(
 		end_sectors.insert(scene.speech_italian_left.sectors);
 		end_sectors.insert(scene.speech_italian_right.sectors);
 		end_sectors.insert(scene.moby_load.offset.sectors);
-		for(Sector32 chunk : scene.chunks) {
+		for (Sector32 chunk : scene.chunks) {
 			end_sectors.insert(chunk.sectors);
 		}
 	}
 	end_sectors.insert(Sector32::size_from_bytes(src.size()).sectors);
 	
 	CollectionAsset& scenes = dest.scenes();
-	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
+	for (s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
 		SceneAsset& scene = scenes.foreign_child<SceneAsset>(stringf("scenes/%d/%d", i, i), false, i);
 		const DlSceneHeader& scene_header = header.scenes[i];
 		unpack_asset(scene.speech_english_left(), src, range(scene_header.speech_english_left, end_sectors), config, FMT_BINARY_VAG);
@@ -134,8 +134,8 @@ static void unpack_dl_level_scene_wad(
 		unpack_asset(scene.speech_italian_right(), src, range(scene_header.speech_italian_right, end_sectors), config, FMT_BINARY_VAG);
 		unpack_compressed_asset(scene.moby_load(), src, scene_header.moby_load, config);
 		CollectionAsset& chunks = scene.chunks(SWITCH_FILES);
-		for(s32 j = 0; j < ARRAY_SIZE(scene_header.chunks); j++) {
-			if(scene_header.chunks[j].sectors > 0) {
+		for (s32 j = 0; j < ARRAY_SIZE(scene_header.chunks); j++) {
+			if (scene_header.chunks[j].sectors > 0) {
 				unpack_compressed_asset(chunks.child<BinaryAsset>(j), src, range(scene_header.chunks[j], end_sectors), config);
 			}
 		}
@@ -149,8 +149,8 @@ static void pack_dl_level_scene_wad(
 	BuildConfig config)
 {
 	const CollectionAsset& scenes = src.get_scenes();
-	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
-		if(scenes.has_child(i)) {
+	for (s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
+		if (scenes.has_child(i)) {
 			DlSceneHeader& scene_header = header.scenes[i];
 			const SceneAsset& scene = scenes.get_child(i).as<SceneAsset>();
 			scene_header.speech_english_left = pack_asset_sa<Sector32>(dest, scene.get_speech_english_left(), config, FMT_BINARY_VAG);

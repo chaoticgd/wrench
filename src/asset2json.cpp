@@ -27,7 +27,7 @@ static Json attribute_to_json(WtfAttribute* attribute);
 
 int main(int argc, char** argv)
 {
-	if(argc != 3) {
+	if (argc != 3) {
 		fprintf(stderr, "usage: %s <input .asset file> <output .json file>\n", argv[0]);
 		return 1;
 	}
@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 	
 	char* error = nullptr;
 	WtfNode* root = wtf_parse((char*) input.data(), &error);
-	if(error) {
+	if (error) {
 		fprintf(stderr, "error: %s\n", error);
 		return 1;
 	}
@@ -55,12 +55,12 @@ static Json node_to_json(WtfNode* node)
 	Json json = Json::object();
 	json["type_name"] = node->type_name ? node->type_name : Json();
 	json["tag"] = node->tag ? node->tag : Json();
-	for(WtfAttribute* attribute = node->first_attribute; attribute != nullptr; attribute = attribute->next) {
+	for (WtfAttribute* attribute = node->first_attribute; attribute != nullptr; attribute = attribute->next) {
 		json[attribute->key] = attribute_to_json(attribute);
 	}
-	if(node->first_child != NULL) {
+	if (node->first_child != NULL) {
 		Json children = Json::array();
-		for(WtfNode* child = node->first_child; child != NULL; child = child->next_sibling) {
+		for (WtfNode* child = node->first_child; child != NULL; child = child->next_sibling) {
 			children.emplace_back(node_to_json(child));
 		}
 		json["children"] = children;
@@ -70,7 +70,7 @@ static Json node_to_json(WtfNode* node)
 
 static Json attribute_to_json(WtfAttribute* attribute)
 {
-	switch(attribute->type) {
+	switch (attribute->type) {
 		case WTF_NUMBER: {
 			return attribute->number.f;
 		}
@@ -82,7 +82,7 @@ static Json attribute_to_json(WtfAttribute* attribute)
 		}
 		case WTF_ARRAY: {
 			Json array = Json::array();
-			for(WtfAttribute* element = attribute->first_array_element; element != NULL; element = attribute->next) {
+			for (WtfAttribute* element = attribute->first_array_element; element != NULL; element = attribute->next) {
 				array.emplace_back(attribute_to_json(element));
 			}
 			return array;

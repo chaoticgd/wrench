@@ -22,13 +22,13 @@ WadPaths find_wads(const char* bin_path)
 
 static std::string find_wad(const fs::path& directory, const char* file_name)
 {
-	if(fs::exists(directory/file_name)) {
+	if (fs::exists(directory/file_name)) {
 		return (directory/file_name).string();
 	}
-	if(fs::exists(directory/".."/file_name)) {
+	if (fs::exists(directory/".."/file_name)) {
 		return (directory/".."/file_name).string();
 	}
-	if(fs::exists(directory/".."/"share"/"wrench"/file_name)) {
+	if (fs::exists(directory/".."/"share"/"wrench"/file_name)) {
 		return (directory/".."/"share"/"wrench"/file_name).string();
 	}
 	verify_not_reached_fatal("Failed to load WAD.");
@@ -36,16 +36,16 @@ static std::string find_wad(const fs::path& directory, const char* file_name)
 
 static std::string find_bank(const fs::path& directory, const char* file_name)
 {
-	if(fs::exists(directory/file_name)) {
+	if (fs::exists(directory/file_name)) {
 		return (directory/file_name).string();
 	}
-	if(fs::exists(directory/".."/"data"/file_name)) {
+	if (fs::exists(directory/".."/"data"/file_name)) {
 		return (directory/".."/"data"/file_name).string();
 	}
-	if(fs::exists(directory/".."/".."/"data"/file_name)) {
+	if (fs::exists(directory/".."/".."/"data"/file_name)) {
 		return (directory/".."/".."/"data"/file_name).string();
 	}
-	if(fs::exists(directory/".."/"share"/"wrench"/file_name)) {
+	if (fs::exists(directory/".."/"share"/"wrench"/file_name)) {
 		return (directory/".."/"share"/"wrench"/file_name).string();
 	}
 	verify_not_reached_fatal("Failed to load WAD.");
@@ -54,7 +54,7 @@ static std::string find_bank(const fs::path& directory, const char* file_name)
 const char* get_versioned_application_name(const char* name)
 {
 	const char* application_version;
-	if(strlen(wadinfo.build.version_string) > 0) {
+	if (strlen(wadinfo.build.version_string) > 0) {
 		application_version = wadinfo.build.version_string;
 	} else {
 		application_version = wadinfo.build.commit_string;

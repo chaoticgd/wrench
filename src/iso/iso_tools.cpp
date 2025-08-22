@@ -40,11 +40,11 @@ void inspect_iso(const std::string& iso_path)
 	static const char* RAC1_VOLUME_ID = "RATCHETANDCLANK                 ";
 	
 	table_of_contents toc;
-	if(memcmp(filesystem.pvd.volume_identifier, RAC1_VOLUME_ID, 32) == 0) {
+	if (memcmp(filesystem.pvd.volume_identifier, RAC1_VOLUME_ID, 32) == 0) {
 		toc = read_table_of_contents_rac(iso);
 	} else {
 		toc = read_table_of_contents_rac234(iso);
-		if(toc.levels.size() == 0) {
+		if (toc.levels.size() == 0) {
 			fprintf(stderr, "error: Unable to locate level table!\n");
 			exit(1);
 		}
@@ -53,7 +53,7 @@ void inspect_iso(const std::string& iso_path)
 	printf("+-[Global WADs]---------+-------------+-------------+\n");
 	printf("| Index | Offset in ToC | Size in ToC | Data Offset |\n");
 	printf("| ----- | ------------- | ----------- | ----------- |\n");
-	for(s32 i = 0; i < (s32) toc.globals.size(); i++) {
+	for (s32 i = 0; i < (s32) toc.globals.size(); i++) {
 		GlobalWadInfo& global = toc.globals[i];
 		size_t base_offset = global.sector.bytes();
 	printf("| %02d    | %08x      | %08x    | %08lx    |\n",
@@ -66,10 +66,10 @@ void inspect_iso(const std::string& iso_path)
 	printf("|                 | ----------             | ----------             | ----------             |\n");
 	printf("| Index  Entry    | Offset      Size       | Offset      Size       | Offset      Size       |\n");
 	printf("| -----  -----    | ------      ----       | ------      ----       | ------      ----       |\n");
-	for(LevelInfo& level : toc.levels) {
+	for (LevelInfo& level : toc.levels) {
 		printf("| %03d    %08x |", level.level_table_index, level.level_table_entry_offset);
-		for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
-			if(wad) {
+		for (const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
+			if (wad) {
 				printf(" %010lx  %010lx |", wad->file_lba.bytes(), wad->file_size.bytes());
 			} else {
 				printf(" N/A         N/A        |");
@@ -91,7 +91,7 @@ void parse_pcsx2_cdvd_log(std::string iso_path)
 	files.push_back({"primary volume descriptor", 0x10, SECTOR_SIZE});
 	IsoFilesystem filesystem = read_iso_filesystem(iso);
 	std::function<void(IsoDirectory&)> enumerate_dir = [&](IsoDirectory& dir) {
-		for(IsoDirectory& subdir : dir.subdirs) {
+		for (IsoDirectory& subdir : dir.subdirs) {
 			enumerate_dir(subdir);
 		}
 		files.insert(files.end(), dir.files.begin(), dir.files.end());
@@ -101,9 +101,9 @@ void parse_pcsx2_cdvd_log(std::string iso_path)
 	const char* before_text = "DvdRead: Reading Sector ";
 	
 	auto file_from_lba = [&](size_t lba) -> IsoFileRecord* {
-		for(IsoFileRecord& file : files) {
+		for (IsoFileRecord& file : files) {
 			size_t end_lba = file.lba.sectors + Sector32::size_from_bytes(file.size).sectors;
-			if(lba >= file.lba.sectors && lba < end_lba) {
+			if (lba >= file.lba.sectors && lba < end_lba) {
 				return &file;
 			}
 		}
@@ -115,11 +115,11 @@ void parse_pcsx2_cdvd_log(std::string iso_path)
 	IsoFileRecord* last_file = nullptr;
 	size_t last_lba = SIZE_MAX;
 	std::string line;
-	while(std::getline(std::cin, line)) {
+	while (std::getline(std::cin, line)) {
 		size_t before_pos = line.find(before_text);
-		if(line.find(before_text) != std::string::npos) {
+		if (line.find(before_text) != std::string::npos) {
 			line = line.substr(before_pos + strlen(before_text));
-			if(line.find(" ") == std::string::npos) {
+			if (line.find(" ") == std::string::npos) {
 				continue;
 			}
 			line = line.substr(0, line.find(" "));
@@ -130,16 +130,16 @@ void parse_pcsx2_cdvd_log(std::string iso_path)
 				continue;
 			}
 			IsoFileRecord* file = file_from_lba(lba);
-			if(lba > last_lba && lba <= last_lba + 0x10 && file == last_file) {
+			if (lba > last_lba && lba <= last_lba + 0x10 && file == last_file) {
 				// Don't spam stdout with every new sector that needs to be read
 				// in. Only print when it's reading a different file, or it
 				// seeks to a different position.
 				last_lba = lba;
 				continue;
-			} else if(last_lba != SIZE_MAX) {
+			} else if (last_lba != SIZE_MAX) {
 				printf(" ... 0x%lx abs 0x%lx\n", last_lba - (last_file ? last_file->lba.sectors : 0), last_lba);
 			}
-			if(file) {
+			if (file) {
 				printf("%8lx %32s + 0x%lx", lba, file->name.c_str(), lba - file->lba.sectors);
 			} else {
 				printf("%8lx %32s + 0x%lx", lba, "(unknown)", lba);
@@ -148,7 +148,7 @@ void parse_pcsx2_cdvd_log(std::string iso_path)
 			last_file = file;
 		}
 	}
-	if(last_lba != SIZE_MAX) {
+	if (last_lba != SIZE_MAX) {
 		printf(" ... 0x%lx abs 0x%lx\n", last_lba - (last_file ? last_file->lba.sectors : 0), last_lba);
 	}
 }

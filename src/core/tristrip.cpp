@@ -92,21 +92,21 @@ GeometryPrimitives weave_tristrips(const GLTF::Mesh& mesh, const std::vector<Eff
 {
 	// Firstly we build a graph structure to make finding adjacent faces fast.
 	MeshGraph graph(mesh);
-	if(graph.face_count() == 0) {
+	if (graph.face_count() == 0) {
 		return {};
 	}
 	FaceStrips face_strips;
-	for(s32 i = 0; i < (s32) effectives.size(); i++) {
+	for (s32 i = 0; i < (s32) effectives.size(); i++) {
 		const EffectiveMaterial& effective = effectives[i];
-		for(;;) {
+		for (;;) {
 			FaceStrip strip = weave_multiple_strips_and_pick_the_best(face_strips, graph, effective);
-			if(strip.face_count == 0) {
+			if (strip.face_count == 0) {
 				break;
 			}
 			strip.effective_material = i;
-			for(s32 i = 0; i < strip.face_count; i++) {
+			for (s32 i = 0; i < strip.face_count; i++) {
 				StripFace& face = face_strips.faces[strip.face_begin + i];
-				if(face.index != NULL_FACE_INDEX) {
+				if (face.index != NULL_FACE_INDEX) {
 					graph.put_in_strip(face.index, (s32) face_strips.strips.size());
 				}
 			}
@@ -123,9 +123,9 @@ std::vector<s32> zero_area_tris_to_restart_bit_strip(const std::vector<s32>& ind
 {
 	std::vector<s32> output;
 	bool set_next_restart_bit = false;
-	for(size_t i = 0; i < indices.size(); i++) {
-		if(i <= 0 || indices[i - 1] != indices[i]) {
-			if(set_next_restart_bit) {
+	for (size_t i = 0; i < indices.size(); i++) {
+		if (i <= 0 || indices[i - 1] != indices[i]) {
+			if (set_next_restart_bit) {
 				output.emplace_back(indices[i] | (1 << 31));
 				set_next_restart_bit = false;
 			} else {
@@ -141,8 +141,8 @@ std::vector<s32> zero_area_tris_to_restart_bit_strip(const std::vector<s32>& ind
 std::vector<s32> restart_bit_strip_to_zero_area_tris(const std::vector<s32>& indices)
 {
 	std::vector<s32> output;
-	for(size_t i = 0; i < indices.size(); i++) {
-		if(i > 0 && indices[i] < 0) {
+	for (size_t i = 0; i < indices.size(); i++) {
+		if (i > 0 && indices[i] < 0) {
 			output.emplace_back(output.back());
 		}
 		output.emplace_back(indices[i] & ~(1 << 31));
@@ -157,18 +157,18 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(
 	FaceStrips temp;
 	FaceIndex next_faces[4] = {0, 0, 0, 0};
 	FaceIndex last_start_face = NULL_FACE_INDEX;
-	for(s32 i = 0; i < 10; i++) {
+	for (s32 i = 0; i < 10; i++) {
 		FaceIndex start_face = find_start_face(graph, effective, next_faces);
-		if(start_face == NULL_FACE_INDEX) {
+		if (start_face == NULL_FACE_INDEX) {
 			return {};
 		}
-		if(start_face == last_start_face) {
+		if (start_face == last_start_face) {
 			break;
 		}
 		
 		// Edge with more than two faces, this should be included as a single
 		// triangle so it doesn't cause problems.
-		if(graph.face_is_evil(start_face)) {
+		if (graph.face_is_evil(start_face)) {
 			FaceStrip strip;
 			strip.face_begin = (s32) dest.faces.size();
 			strip.face_count = 1;
@@ -192,10 +192,10 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(
 	// Determine which is the best.
 	s32 best_strip = -1;
 	f32 best_utility = -1000000000;
-	for(size_t i = 0; i < temp.strips.size(); i++) {
+	for (size_t i = 0; i < temp.strips.size(); i++) {
 		FaceStrip& candidate = temp.strips[i];
 		f32 utility = candidate.face_count - candidate.zero_area_tri_count * 2.5f;
-		if(utility > best_utility) {
+		if (utility > best_utility) {
 			best_strip = i;
 			best_utility = utility;
 		}
@@ -209,7 +209,7 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(
 	strip.face_begin = (s32) dest.faces.size();
 	strip.face_count = temp.strips[best_strip].face_count;
 	strip.zero_area_tri_count = temp.strips[best_strip].zero_area_tri_count;
-	for(s32 i = 0; i < temp.strips[best_strip].face_count; i++) {
+	for (s32 i = 0; i < temp.strips[best_strip].face_count; i++) {
 		dest.faces.emplace_back(temp.faces[temp.strips[best_strip].face_begin + i]);
 	}
 	return strip;
@@ -220,24 +220,24 @@ static FaceIndex find_start_face(
 {
 	// First try individual triangles connected to zero other valid triangles,
 	// the one, then two, then three other valid triangles.
-	for(s32 i = 0; i <= 3; i++) {
+	for (s32 i = 0; i <= 3; i++) {
 		FaceIndex face = next_faces[i];
 		do {
 			s32 neighbour_count = 0;
-			for(s32 j = 0; j < 3; j++) {
+			for (s32 j = 0; j < 3; j++) {
 				EdgeIndex edge = graph.edge_of_face(face, j);
 				verify_fatal(edge != NULL_EDGE_INDEX);
 				FaceIndex other_face = graph.other_face(edge, face);
-				if(other_face != NULL_FACE_INDEX && graph.can_be_added_to_strip(other_face, effective)) {
+				if (other_face != NULL_FACE_INDEX && graph.can_be_added_to_strip(other_face, effective)) {
 					neighbour_count++;
 				}
 			}
-			if(neighbour_count == i && graph.can_be_added_to_strip(face, effective)) {
+			if (neighbour_count == i && graph.can_be_added_to_strip(face, effective)) {
 				next_faces[i] = (face.index + 1) % graph.face_count();
 				return face;
 			}
 			face.index = (face.index + 1) % graph.face_count();
-		} while(face != next_faces[i]);
+		} while (face != next_faces[i]);
 	}
 	return NULL_FACE_INDEX;
 }
@@ -258,7 +258,7 @@ static void weave_strip(
 	VertexIndex v1 = to_v1 ? graph.edge_vertex(start_edge, 1) : graph.edge_vertex(start_edge, 0);
 	
 	VertexIndex v2 = graph.next_index(v0, v1, start_face);
-	if(v2 == NULL_VERTEX_INDEX) {
+	if (v2 == NULL_VERTEX_INDEX) {
 		printf("warning: Tristrip weaving failed. Failed to find v2.\n");
 		return;
 	}
@@ -278,11 +278,11 @@ static void weave_strip(
 	// Merge the strips.
 	strip.face_count = backward.face_count + 1 + forward.face_count;
 	strip.zero_area_tri_count = backward.zero_area_tri_count + forward.zero_area_tri_count;
-	for(s32 i = 0; i < backward.face_count; i++) {
+	for (s32 i = 0; i < backward.face_count; i++) {
 		dest.faces.emplace_back(temp.faces[backward.face_begin + (backward.face_count - i - 1)]);
 	}
 	dest.faces.emplace_back(v0, v1, v2, start_face);
-	for(s32 i = 0; i < forward.face_count; i++) {
+	for (s32 i = 0; i < forward.face_count; i++) {
 		dest.faces.emplace_back(temp.faces[forward.face_begin + i]);
 	}
 	
@@ -305,10 +305,10 @@ static FaceStrip weave_strip_in_one_direction(
 	VertexIndex v0 = NULL_VERTEX_INDEX;
 	FaceIndex f0 = start_face;
 	
-	for(;;) {
+	for (;;) {
 		FaceIndex f1 = graph.other_face(graph.edge(v1, v2), f0);
 		
-		if(f1 == NULL_FACE_INDEX || !graph.can_be_added_to_strip(f1, effective)) {
+		if (f1 == NULL_FACE_INDEX || !graph.can_be_added_to_strip(f1, effective)) {
 			// Consider swapping, but only if it helps us.
 			//
 			// Preconditions: f0 already added to strip, can't find f1.
@@ -323,11 +323,11 @@ static FaceStrip weave_strip_in_one_direction(
 			//   |   /   |            |   v   |
 			//   |  /    |            |  /    |
 			//   +-------+            +--->---+
-			if(v0 == NULL_VERTEX_INDEX) {
+			if (v0 == NULL_VERTEX_INDEX) {
 				break;
 			}
 			FaceIndex f2 = graph.other_face(graph.edge(v0, v2), f0);
-			if(f2 == NULL_FACE_INDEX || !graph.can_be_added_to_strip(f2, effective)) {
+			if (f2 == NULL_FACE_INDEX || !graph.can_be_added_to_strip(f2, effective)) {
 				break;
 			} 
 			
@@ -343,7 +343,7 @@ static FaceStrip weave_strip_in_one_direction(
 		}
 		
 		VertexIndex v3 = graph.next_index(v1, v2, f1);
-		if(v3 == NULL_VERTEX_INDEX) {
+		if (v3 == NULL_VERTEX_INDEX) {
 			printf("warning: Tristrip weaving failed. Failed to find v3.\n");
 			return strip;
 		}
@@ -367,16 +367,16 @@ static GeometryPrimitives facestrips_to_tristrips(
 {
 	GeometryPrimitives output;
 	
-	for(const FaceStrip& src_primitive : input.strips) {
+	for (const FaceStrip& src_primitive : input.strips) {
 		GeometryPrimitive& dest_primitive = output.primitives.emplace_back();
 		dest_primitive.effective_material = src_primitive.effective_material;
 		verify_fatal(src_primitive.face_count >= 1);
-		switch(src_primitive.type) {
+		switch (src_primitive.type) {
 			case GeometryType::TRIANGLE_LIST: {
 				dest_primitive.type = GeometryType::TRIANGLE_LIST;
 				dest_primitive.index_begin = (s32) output.indices.size();
 				dest_primitive.index_count = src_primitive.face_count * 3;
-				for(s32 i = 0; i < src_primitive.face_count; i++) {
+				for (s32 i = 0; i < src_primitive.face_count; i++) {
 					output.indices.emplace_back(input.faces[src_primitive.face_begin + i].v[0].index);
 					output.indices.emplace_back(input.faces[src_primitive.face_begin + i].v[1].index);
 					output.indices.emplace_back(input.faces[src_primitive.face_begin + i].v[2].index);
@@ -403,33 +403,33 @@ static GeometryPrimitives facestrips_to_tristrips(
 static void facestrip_to_tristrip(
 	std::vector<s32>& output_indices, const FaceStrip& face_strip, const std::vector<StripFace>& faces)
 {
-	if(face_strip.face_count == 0) {
+	if (face_strip.face_count == 0) {
 		return;
 	}
 	
 	// Process the first face.
 	StripFace first_face = faces[face_strip.face_begin];
-	if(face_strip.face_count >= 2) {
+	if (face_strip.face_count >= 2) {
 		// Reorder the vertices of the first face such that a strip
 		// can be more easily constructed.
 		StripFace second_face = faces[face_strip.face_begin + 1];
 		VertexIndex unique = unique_vertex_from_rhs(second_face, first_face);
-		if(unique == first_face.v[1]) {
+		if (unique == first_face.v[1]) {
 			std::swap(first_face.v[0], first_face.v[1]);
-		} else if(unique == first_face.v[2]) {
+		} else if (unique == first_face.v[2]) {
 			std::swap(first_face.v[0], first_face.v[2]);
 		}
-		if(face_strip.face_count >= 3) {
+		if (face_strip.face_count >= 3) {
 			// Same thing, but with the third face.
 			StripFace third_face = faces[face_strip.face_begin + 2];
-			if(second_face.is_zero_area()) {
+			if (second_face.is_zero_area()) {
 				VertexIndex pivot = second_face.v[1];
-				if(first_face.v[1] == pivot) {
+				if (first_face.v[1] == pivot) {
 					std::swap(first_face.v[1], first_face.v[2]);
 				}
 			} else {
 				auto [shared_0, shared_1] = get_shared_vertices(third_face, first_face);
-				if(shared_0 == first_face.v[1] && shared_1 == -1) {
+				if (shared_0 == first_face.v[1] && shared_1 == -1) {
 					std::swap(first_face.v[1], first_face.v[2]);
 				}
 			}
@@ -446,10 +446,10 @@ static void facestrip_to_tristrip(
 	
 	// Process the rest of the faces.
 	StripFace last_face = first_face;
-	for(s32 j = 1; j < face_strip.face_count; j++) {
+	for (s32 j = 1; j < face_strip.face_count; j++) {
 		const StripFace& face = faces[face_strip.face_begin + j];
 		VertexIndex unique = unique_vertex_from_rhs(last_face, face);
-		if(unique != NULL_VERTEX_INDEX) {
+		if (unique != NULL_VERTEX_INDEX) {
 			verify_fatal(unique != NULL_VERTEX_INDEX);
 			output_indices.emplace_back(unique.index);
 			last_face.v[0] = last_face.v[1];
@@ -470,25 +470,25 @@ static void batch_single_triangles_together(GeometryPrimitives& primitives)
 {
 	// For each effective material.
 	size_t start_of_group = 0;
-	for(size_t i = 0; i < primitives.primitives.size(); i++) {
+	for (size_t i = 0; i < primitives.primitives.size(); i++) {
 		s32 effective_material = primitives.primitives[i].effective_material;
-		if(i == primitives.primitives.size() - 1 || primitives.primitives[i + 1].effective_material != effective_material) {
+		if (i == primitives.primitives.size() - 1 || primitives.primitives[i + 1].effective_material != effective_material) {
 			// Find a primitive to stuff the batched triangle list in.
 			size_t first_single_tri = SIZE_MAX;
-			for(size_t j = start_of_group; j <= i; j++) {
-				if(primitives.primitives[j].index_count == 3) {
+			for (size_t j = start_of_group; j <= i; j++) {
+				if (primitives.primitives[j].index_count == 3) {
 					first_single_tri = j;
 					break;
 				}
 			}
 			// Do the stuffing.
-			if(first_single_tri != SIZE_MAX) {
+			if (first_single_tri != SIZE_MAX) {
 				GeometryPrimitive& first_prim = primitives.primitives[first_single_tri];
 				s32 index_begin = (s32) primitives.indices.size();
 				s32 index_count = 0;
-				for(size_t j = start_of_group; j <= i; j++) {
+				for (size_t j = start_of_group; j <= i; j++) {
 					GeometryPrimitive& prim = primitives.primitives[j];
-					if(prim.index_count == 3) {
+					if (prim.index_count == 3) {
 						index_count += 3;
 						primitives.indices.emplace_back(primitives.indices[prim.index_begin + 0]);
 						primitives.indices.emplace_back(primitives.indices[prim.index_begin + 1]);
@@ -508,8 +508,8 @@ static void batch_single_triangles_together(GeometryPrimitives& primitives)
 
 static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace& rhs)
 {
-	for(VertexIndex vertex : rhs.v) {
-		if(vertex != lhs.v[0] && vertex != lhs.v[1] && vertex != lhs.v[2]) {
+	for (VertexIndex vertex : rhs.v) {
+		if (vertex != lhs.v[0] && vertex != lhs.v[1] && vertex != lhs.v[2]) {
 			return vertex;
 		}
 	}
@@ -520,9 +520,9 @@ static std::pair<VertexIndex, VertexIndex> get_shared_vertices(
 	const StripFace& lhs, const StripFace& rhs)
 {
 	VertexIndex first = NULL_VERTEX_INDEX;
-	for(VertexIndex vertex : rhs.v) {
-		if(vertex == lhs.v[0] || vertex == lhs.v[1] || vertex == lhs.v[2]) {
-			if(first == -1) {
+	for (VertexIndex vertex : rhs.v) {
+		if (vertex == lhs.v[0] || vertex == lhs.v[1] || vertex == lhs.v[2]) {
+			if (first == -1) {
 				first = vertex;
 			} else {
 				return {first, vertex};
@@ -539,19 +539,19 @@ static void verify_face_strips(
 	const MeshGraph& graph)
 {
 	std::vector<bool> included(graph.face_count(), false);
-	for(const FaceStrip& strip : strips) {
-		for(s32 i = 0; i < strip.face_count; i++) {
+	for (const FaceStrip& strip : strips) {
+		for (s32 i = 0; i < strip.face_count; i++) {
 			const StripFace& face = faces[strip.face_begin + i];
-			if(!face.is_zero_area()) {
+			if (!face.is_zero_area()) {
 				std::vector<FaceIndex> face_indices = graph.faces_really_expensive(face.v[0], face.v[1], face.v[2]);
 				verify(!face_indices.empty(), "Broken strip generated by %s. Bad face(s).", context);
-				for(FaceIndex face_index : face_indices) {
+				for (FaceIndex face_index : face_indices) {
 					included[face_index.index] = true;
 				}
 			}
 		}
 	}
-	for(FaceIndex i = 0; i < graph.face_count(); i.index++) {
+	for (FaceIndex i = 0; i < graph.face_count(); i.index++) {
 		verify(included[i.index], "Broken strip generated by %s. Missing %sface (%d).",
 			context, graph.face_is_evil(i) ? "evil " : "", i.index);
 	}

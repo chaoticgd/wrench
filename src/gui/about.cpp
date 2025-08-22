@@ -42,7 +42,7 @@ template <License license>
 static constexpr VoidFuncPtr gen_license_page()
 {
 	return []() {
-		if(license != loaded_license) {
+		if (license != loaded_license) {
 			license_text.clear();
 			SectorRange range = wadinfo.gui.license_text[(s32) license];
 			std::vector<u8> compressed = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
@@ -94,7 +94,7 @@ static void about_wrench()
 	ImGui::TextWrapped("Wrench is a set of modding tools for the Ratchet & Clank PS2 games.");
 	ImGui::NewLine();
 	// These numbers are extracted from the git tag at build time. See 'src/toolwads/'.
-	if(strlen(wadinfo.build.version_string) != 0) {
+	if (strlen(wadinfo.build.version_string) != 0) {
 		ImGui::TextWrapped("Release Version %s", wadinfo.build.version_string);
 	} else {
 		ImGui::TextWrapped("Development Version");
@@ -105,14 +105,14 @@ static void about_wrench()
 	ImGui::TextWrapped("Built from git commit %c%c%c%c%c%c%c%c",
 		c[0],c[1], c[2], c[3], c[4], c[5], c[6], c[7]);
 	ImGui::SameLine();
-	if(ImGui::Button("Copy Full Hash")) {
+	if (ImGui::Button("Copy Full Hash")) {
 		ImGui::SetClipboardText(c);
 	}
 }
 
 static void about_credits()
 {
-	if(credits_text.empty()) {
+	if (credits_text.empty()) {
 		SectorRange range = wadinfo.gui.credits;
 		std::vector<u8> compressed_bytes = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
 		

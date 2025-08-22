@@ -32,14 +32,14 @@ TieClass read_tie_class(Buffer src, Game game)
 	GcUyaDlTieClassHeader header = read_tie_header(src, game);
 	tie.scale = header.scale;
 	
-	for(s32 i = 0; i < 3; i++) {
+	for (s32 i = 0; i < 3; i++) {
 		TieLod& lod = tie.lods[i];
 		lod.packets.reserve(header.packet_count[i]);
 		
 		Buffer lod_buffer = src.subbuf(header.packets[i]);
 		
 		auto packet_table = lod_buffer.read_multiple<TiePacketHeader>(0, header.packet_count[i], "packet header");
-		for(s32 j = 0; j < header.packet_count[i]; j++) {
+		for (s32 j = 0; j < header.packet_count[i]; j++) {
 			lod.packets.emplace_back(read_tie_packet(src.subbuf(header.packets[i] + packet_table[j].data), packet_table[j]));
 		}
 	}
@@ -58,7 +58,7 @@ static GcUyaDlTieClassHeader read_tie_header(Buffer src, Game game)
 {
 	GcUyaDlTieClassHeader header = {};
 	
-	if(game == Game::RAC) {
+	if (game == Game::RAC) {
 		RacTieClassHeader rac_header = src.read<RacTieClassHeader>(0, "header");
 		memcpy(header.packets, rac_header.packets, sizeof(header.packets));
 		memcpy(header.packet_count, rac_header.packet_count, sizeof(header.packet_count));
@@ -94,17 +94,17 @@ static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header)
 	
 	// Combine the dinky and fat vertices.
 	std::vector<TieDinkyVertex> raw_vertices;
-	for(const TieDinkyVertex& src : dinky_vertices) {
+	for (const TieDinkyVertex& src : dinky_vertices) {
 		TieDinkyVertex& dest_1 = raw_vertices.emplace_back();
 		dest_1 = src;
 		
-		if(src.gs_packet_write_ofs_2 != 0 && src.gs_packet_write_ofs_2 != src.gs_packet_write_ofs) {
+		if (src.gs_packet_write_ofs_2 != 0 && src.gs_packet_write_ofs_2 != src.gs_packet_write_ofs) {
 			TieDinkyVertex& dest_2 = raw_vertices.emplace_back();
 			dest_2 = dest_1;
 			dest_2.gs_packet_write_ofs = src.gs_packet_write_ofs_2;
 		}
 	}
-	for(const TieFatVertex& src : fat_vertices) {
+	for (const TieFatVertex& src : fat_vertices) {
 		TieDinkyVertex& dest_1 = raw_vertices.emplace_back();
 		dest_1.x = src.x;
 		dest_1.y = src.y;
@@ -115,7 +115,7 @@ static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header)
 		dest_1.q = src.q;
 		dest_1.gs_packet_write_ofs_2 = src.gs_packet_write_ofs_2;
 		
-		if(src.gs_packet_write_ofs_2 != 0 && src.gs_packet_write_ofs_2 != src.gs_packet_write_ofs) {
+		if (src.gs_packet_write_ofs_2 != 0 && src.gs_packet_write_ofs_2 != src.gs_packet_write_ofs) {
 			TieDinkyVertex& dest_2 = raw_vertices.emplace_back();
 			dest_2 = dest_1;
 			dest_2.gs_packet_write_ofs = src.gs_packet_write_ofs_2;
@@ -131,11 +131,11 @@ static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header)
 	// Each packet must have a minimum of 4 regular vertices, so there may be
 	// duplicates to pad out small packets. These can be safely removed.
 	std::vector<TieDinkyVertex> vertices;
-	if(raw_vertices.size() >= 1) {
+	if (raw_vertices.size() >= 1) {
 		vertices.emplace_back(raw_vertices[0]);
 	}
-	for(size_t i = 1; i < raw_vertices.size(); i++) {
-		if(raw_vertices[i].gs_packet_write_ofs != raw_vertices[i - 1].gs_packet_write_ofs) {
+	for (size_t i = 1; i < raw_vertices.size(); i++) {
+		if (raw_vertices[i].gs_packet_write_ofs != raw_vertices[i - 1].gs_packet_write_ofs) {
 			vertices.emplace_back(raw_vertices[i]);
 		}
 	}
@@ -155,9 +155,9 @@ static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header)
 	}
 	
 	// Interpret the data in the order it would appear in the GS packet.
-	while(next_strip < strips.size() || next_vertex < vertices.size()) {
+	while (next_strip < strips.size() || next_vertex < vertices.size()) {
 		// Data used to generate GIF tags for each of the strips.
-		if(next_strip < strips.size() && strips[next_strip].gif_tag_offset == next_offset) {
+		if (next_strip < strips.size() && strips[next_strip].gif_tag_offset == next_offset) {
 			prim = &packet.primitives.emplace_back();
 			prim->material_index = material_index;
 			// for RC3/4 this is used to indicate which faces need their winding order flipped for backface culling
@@ -170,7 +170,7 @@ static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header)
 		}
 		
 		// Regular vertices.
-		if(next_vertex < vertices.size() && vertices[next_vertex].gs_packet_write_ofs == next_offset) {
+		if (next_vertex < vertices.size() && vertices[next_vertex].gs_packet_write_ofs == next_offset) {
 			verify(prim != nullptr, "Tie has bad GS packet data.");
 			prim->vertices.emplace_back(vertices[next_vertex]);
 			
@@ -181,7 +181,7 @@ static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header)
 		}
 		
 		// AD GIF data to change the texture.
-		if(next_ad_gif < ad_gif_src_offsets.size() && ad_gif_dest_offsets[next_ad_gif - 1] == next_offset) {
+		if (next_ad_gif < ad_gif_src_offsets.size() && ad_gif_dest_offsets[next_ad_gif - 1] == next_offset) {
 			material_index = ad_gif_src_offsets[next_ad_gif] / 0x50;
 			
 			next_ad_gif++;
@@ -205,13 +205,13 @@ ColladaScene recover_tie_class(const TieClass& tie)
 {
 	ColladaScene scene;
 	
-	for(s32 i = 0; i < (s32) tie.ad_gifs.size(); i++) {
+	for (s32 i = 0; i < (s32) tie.ad_gifs.size(); i++) {
 		ColladaMaterial& material = scene.materials.emplace_back();
 		material.name = stringf("%d", i);
 		material.surface = MaterialSurface(i);
 	}
 	
-	for(s32 i = 0; i < (s32) tie.ad_gifs.size(); i++) {
+	for (s32 i = 0; i < (s32) tie.ad_gifs.size(); i++) {
 		scene.texture_paths.emplace_back(stringf("%d.png", i));
 	}
 	
@@ -219,14 +219,14 @@ ColladaScene recover_tie_class(const TieClass& tie)
 	mesh.name = "mesh";
 	mesh.flags |= MESH_HAS_TEX_COORDS;
 	
-	for(const TiePacket& packet : tie.lods[0].packets) {
-		for(const TiePrimitive& primitive : packet.primitives) {
+	for (const TiePacket& packet : tie.lods[0].packets) {
+		for (const TiePrimitive& primitive : packet.primitives) {
 			s32 base_vertex = (s32) mesh.vertices.size();
 			
 			SubMesh& submesh = mesh.submeshes.emplace_back();
 			submesh.material = primitive.material_index;
 			
-			for(s32 i = 0; i < (s32) primitive.vertices.size(); i++) {
+			for (s32 i = 0; i < (s32) primitive.vertices.size(); i++) {
 				Vertex& dest = mesh.vertices.emplace_back();
 				const TieDinkyVertex& src = primitive.vertices[i];
 				dest.pos.x = src.x * (tie.scale / 1024.f);
@@ -235,8 +235,8 @@ ColladaScene recover_tie_class(const TieClass& tie)
 				dest.tex_coord.s = vu_fixed12_to_float(src.s);
 				dest.tex_coord.t = vu_fixed12_to_float(src.t);
 				
-				if(i >= 2) {
-					if(i % 2 == primitive.winding_order) {
+				if (i >= 2) {
+					if (i % 2 == primitive.winding_order) {
 						submesh.faces.emplace_back(base_vertex + i - 2, base_vertex + i - 1, base_vertex + i);
 					} else {
 						submesh.faces.emplace_back(base_vertex + i - 0, base_vertex + i - 1, base_vertex + i - 2);

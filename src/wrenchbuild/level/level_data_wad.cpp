@@ -131,7 +131,7 @@ void pack_gc_uya_level_data_wad(
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);
 	pack_compressed_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, "hud_bank", FMT_NO_HINT);
 	header.core_data = write_vector_of_bytes(dest, data);
-	if(src.has_transition_textures()) {
+	if (src.has_transition_textures()) {
 		header.transition_textures = pack_compressed_asset<ByteRange>(dest, src.get_transition_textures(), config, 0x40, "transition", FMT_COLLECTION_PIF8);
 	} else {
 		header.transition_textures = {-1, 0};
@@ -204,8 +204,8 @@ static bool test_level_data_wad(
 	Header original_header = Buffer(original).read<Header>(0, "original level data header");
 	Header repacked_header = Buffer(repacked).read<Header>(0, "repacked level data header");
 	
-	if(original_header.core_index.size != repacked_header.core_index.size) {
-		if(mode == AssetTestMode::PRINT_DIFF_ON_FAIL) {
+	if (original_header.core_index.size != repacked_header.core_index.size) {
+		if (mode == AssetTestMode::PRINT_DIFF_ON_FAIL) {
 			Buffer original_core_index = Buffer(original).subbuf(original_header.core_index.offset, original_header.core_index.size);
 			Buffer repacked_core_index = Buffer(repacked).subbuf(repacked_header.core_index.offset, repacked_header.core_index.size);
 			

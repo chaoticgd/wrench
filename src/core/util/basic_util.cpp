@@ -54,7 +54,7 @@ u32 byte_swap_32(u32 val)
 std::size_t parse_number(std::string x)
 {
 	std::stringstream ss;
-	if(x.size() >= 2 && x[0] == '0' && x[1] == 'x') {
+	if (x.size() >= 2 && x[0] == '0' && x[1] == 'x') {
 		ss << std::hex << x.substr(2);
 	} else {
 		ss << x;
@@ -68,7 +68,7 @@ std::string md5_to_printable_string(uint8_t in[16])
 {
 	const char* HEX_DIGITS = "0123456789abcdef";
 	std::string result;
-	for(int i = 0; i < 16; i++) {
+	for (int i = 0; i < 16; i++) {
 		result += HEX_DIGITS[(in[i] >> 4) & 0xf];
 		result += HEX_DIGITS[in[i] & 0xf];
 	}
@@ -89,10 +89,10 @@ std::string to_snake_case(const char* src)
 {
 	std::string result;
 	size_t size = strlen(src);
-	for(size_t i = 0; i < size; i++) {
-		if(src[i] == ' ') {
+	for (size_t i = 0; i < size; i++) {
+		if (src[i] == ' ') {
 			result += '_';
-		} else if(isalnum(src[i])) {
+		} else if (isalnum(src[i])) {
 			result += tolower(src[i]);
 		}
 	}
@@ -101,7 +101,7 @@ std::string to_snake_case(const char* src)
 
 s32 align32(s32 value, s32 alignment)
 {
-	if(value % alignment != 0) {
+	if (value % alignment != 0) {
 		value += alignment - (value % alignment);
 	}
 	return value;
@@ -109,7 +109,7 @@ s32 align32(s32 value, s32 alignment)
 
 s64 align64(s64 value, s64 alignment)
 {
-	if(value % alignment != 0) {
+	if (value % alignment != 0) {
 		value += alignment - (value % alignment);
 	}
 	return value;
@@ -119,14 +119,14 @@ bool find_case_insensitive_substring(const char* haystack, const char* needle)
 {
 	size_t haystack_size = strlen(haystack);
 	size_t needle_size = strlen(needle);
-	for(size_t i = 0; i < haystack_size - needle_size + 1; i++) {
+	for (size_t i = 0; i < haystack_size - needle_size + 1; i++) {
 		size_t j;
-		for(j = 0; j < needle_size; j++) {
-			if(toupper(needle[j]) != toupper(haystack[i + j])) {
+		for (j = 0; j < needle_size; j++) {
+			if (toupper(needle[j]) != toupper(haystack[i + j])) {
 				break;
 			}
 		}
-		if(j == needle_size) {
+		if (j == needle_size) {
 			return true;
 		}
 	}

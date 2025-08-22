@@ -35,13 +35,13 @@ int main(int argc, char** argv)
 {
 	assert(argc == 3);
 	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
-	if(!file) {
+	if (!file) {
 		fprintf(stderr, "Failed to open input file.\n");
 		return 1;
 	}
 	std::vector<char> bytes;
 	char c;
-	while(file_read(&c, 1, file) == 1) {
+	while (file_read(&c, 1, file) == 1) {
 		bytes.emplace_back(c);
 	}
 	bytes.push_back(0);
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 	
 	char* error = NULL;
 	WtfNode* root = wtf_parse((char*) bytes.data(), &error);
-	if(error) {
+	if (error) {
 		fprintf(stderr, "Failed to parse instance schema. %s\n", error);
 		return 1;
 	}
@@ -68,20 +68,20 @@ int main(int argc, char** argv)
 	out("## Instances");
 	out("");
 	
-	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
+	for (const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		const WtfAttribute* desc = wtf_attribute(type, "desc");
 		assert(desc && desc->type == WTF_STRING);
 		out("### %s", type->tag);
 		out("");
 		
 		const WtfNode* field = type->first_child;
-		if(field) {
+		if (field) {
 			out("");
 			out("*Fields*");
 			out("");
 			out("| Name | Description | Type |");
 			out("| - | - | - |");
-			for(; field != nullptr; field = field->next_sibling) {
+			for (; field != nullptr; field = field->next_sibling) {
 				out("| %s | %s | %s |", field->tag, "", field->type_name);
 			}
 		}

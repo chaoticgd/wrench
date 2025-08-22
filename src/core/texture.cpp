@@ -79,7 +79,7 @@ Texture Texture::create_8bit_paletted(
 
 s32 Texture::bits_per_component() const
 {
-	switch(format) {
+	switch (format) {
 		case PixelFormat::RGBA: return 8;
 		case PixelFormat::PALETTED_4: return 4;
 		case PixelFormat::PALETTED_8: return 8;
@@ -90,7 +90,7 @@ s32 Texture::bits_per_component() const
 
 s32 Texture::bits_per_pixel() const
 {
-	switch(format) {
+	switch (format) {
 		case PixelFormat::RGBA: return 32;
 		case PixelFormat::PALETTED_4: return 4;
 		case PixelFormat::PALETTED_8: return 8;
@@ -114,16 +114,16 @@ const std::vector<u32>& Texture::palette() const
 void Texture::to_rgba()
 {
 	std::vector<u8> rgba(width * height * 4);
-	switch(format) {
+	switch (format) {
 		case PixelFormat::RGBA: {
 			break;
 		}
 		case PixelFormat::PALETTED_4: {
 			
-			for(s32 y = 0; y < height; y++) {
-				for(s32 x = 0; x < width; x++) {
+			for (s32 y = 0; y < height; y++) {
+				for (s32 x = 0; x < width; x++) {
 					u8 index = data[(y * width + x) / 2];
-					if(x % 2 == 0) {
+					if (x % 2 == 0) {
 						index >>= 4;
 					} else {
 						index &= 0xf;
@@ -135,8 +135,8 @@ void Texture::to_rgba()
 			break;
 		}
 		case PixelFormat::PALETTED_8: {
-			for(s32 y = 0; y < height; y++) {
-				for(s32 x = 0; x < width; x++) {
+			for (s32 y = 0; y < height; y++) {
+				for (s32 x = 0; x < width; x++) {
 					u8 index = data[y * width + x];
 					*(u32*) &rgba[(y * width + x) * 4] = palette().at(index);
 				}
@@ -155,10 +155,10 @@ void Texture::to_rgba()
 void Texture::to_grayscale()
 {
 	std::vector<u8> grays(width * height * 4);
-	switch(format) {
+	switch (format) {
 		case PixelFormat::RGBA: {
-			for(s32 y = 0; y < height; y++) {
-				for(s32 x = 0; x < width; x++) {
+			for (s32 y = 0; y < height; y++) {
+				for (s32 x = 0; x < width; x++) {
 					u32 colour = *(u32*) &data[(y * height + x) * 4];
 					u8 r = colour & 0x000000ff;
 					u8 g = (colour & 0x0000ff00) >> 8;
@@ -170,10 +170,10 @@ void Texture::to_grayscale()
 			break;
 		}
 		case PixelFormat::PALETTED_4: {
-			for(s32 y = 0; y < height; y++) {
-				for(s32 x = 0; x < width; x++) {
+			for (s32 y = 0; y < height; y++) {
+				for (s32 x = 0; x < width; x++) {
 					u8 index = data[(y * width + x) / 2];
-					if(x % 2 == 0) {
+					if (x % 2 == 0) {
 						index >>= 4;
 					} else {
 						index &= 0xf;
@@ -189,8 +189,8 @@ void Texture::to_grayscale()
 			break;
 		}
 		case PixelFormat::PALETTED_8: {
-			for(s32 y = 0; y < height; y++) {
-				for(s32 x = 0; x < width; x++) {
+			for (s32 y = 0; y < height; y++) {
+				for (s32 x = 0; x < width; x++) {
 					u8 index = data[y * width + x];
 					u8 colour = palette().at(index);
 					u8 r = colour & 0x000000ff;
@@ -212,7 +212,7 @@ void Texture::to_grayscale()
 
 void Texture::to_4bit_paletted()
 {
-	switch(format) {
+	switch (format) {
 		case PixelFormat::RGBA: {
 			verify_not_reached("Automatic palettization not yet implemented.");
 			break;
@@ -223,10 +223,10 @@ void Texture::to_4bit_paletted()
 		}
 		case PixelFormat::PALETTED_8: {
 			std::vector<u8> indices(width * height);
-			for(s32 y = 0; y < height; y++) {
-				for(s32 x = 0; x < width; x++) {
+			for (s32 y = 0; y < height; y++) {
+				for (s32 x = 0; x < width; x++) {
 					u8 index = data[y * width + x] & 0xf;
-					if(x % 2 == 0) {
+					if (x % 2 == 0) {
 						indices[(y * width + x) / 2] = index << 4;
 					} else {
 						indices[(y * width + x) / 2] |= index;
@@ -246,17 +246,17 @@ void Texture::to_4bit_paletted()
 
 void Texture::to_8bit_paletted()
 {
-	switch(format) {
+	switch (format) {
 		case PixelFormat::RGBA: {
 			verify_not_reached("Automatic palettization not yet implemented.");
 			break;
 		}
 		case PixelFormat::PALETTED_4: {
 			std::vector<u8> indices(width * height);
-			for(s32 y = 0; y < height; y++) {
-				for(s32 x = 0; x < width; x++) {
+			for (s32 y = 0; y < height; y++) {
+				for (s32 x = 0; x < width; x++) {
 					u8 index = data[(y * width + x) / 2];
-					if(x % 2 == 0) {
+					if (x % 2 == 0) {
 						index >>= 4;
 					} else {
 						index &= 0xf;
@@ -281,16 +281,16 @@ void Texture::to_8bit_paletted()
 
 void Texture::reswizzle()
 {
-	switch(format) {
+	switch (format) {
 		case PixelFormat::PALETTED_4: {
 			verify_not_reached("Swizzling this type of texture not yet implemented.");
 			break;
 		}
 		case PixelFormat::PALETTED_8: {
 			std::vector<u8> swizzled(data.size());
-			for(s32 i = 0; i < data.size(); i++) {
+			for (s32 i = 0; i < data.size(); i++) {
 				s32 map = map_pixel_index_rac4(i, width);
-				if(map >= data.size()) {
+				if (map >= data.size()) {
 					map = data.size() - 1;
 				}
 				swizzled[i] = data[map];
@@ -306,16 +306,16 @@ void Texture::reswizzle()
 
 void Texture::swizzle()
 {
-	switch(format) {
+	switch (format) {
 		case PixelFormat::PALETTED_4: {
 			verify_not_reached("Swizzling this type of texture not yet implemented.");
 			break;
 		}
 		case PixelFormat::PALETTED_8: {
 			std::vector<u8> swizzled(data.size());
-			for(s32 i = 0; i < data.size(); i++) {
+			for (s32 i = 0; i < data.size(); i++) {
 				s32 map = map_pixel_index_rac4(i, width);
-				if(map >= data.size()) {
+				if (map >= data.size()) {
 					map = data.size() - 1;
 				}
 				swizzled[map] = data[i];
@@ -332,19 +332,19 @@ void Texture::swizzle()
 void Texture::swizzle_palette()
 {
 	std::vector<u32> original = palette();
-	for(size_t i = 0; i < palette().size(); i++) {
+	for (size_t i = 0; i < palette().size(); i++) {
 		palette()[i] = original.at(map_palette_index(i));
 	}
 }
 
 void Texture::multiply_alphas()
 {
-	switch(format) {
+	switch (format) {
 		case PixelFormat::RGBA:
 		case PixelFormat::GRAYSCALE: {
-			for(size_t i = 3; i < data.size(); i += 4) {
+			for (size_t i = 3; i < data.size(); i += 4) {
 				u8& alpha = data[i];
-				if(alpha < 0x80) {
+				if (alpha < 0x80) {
 					alpha *= 2;
 				} else {
 					alpha = 255;
@@ -354,9 +354,9 @@ void Texture::multiply_alphas()
 		}
 		case PixelFormat::PALETTED_4:
 		case PixelFormat::PALETTED_8: {
-			for(u32& colour : palette()) {
+			for (u32& colour : palette()) {
 				u32 alpha = (colour & 0xff000000) >> 24;
-				if(alpha < 0x80) {
+				if (alpha < 0x80) {
 					alpha *= 2;
 				} else {
 					alpha = 255;
@@ -370,12 +370,12 @@ void Texture::multiply_alphas()
 
 void Texture::divide_alphas(bool handle_80s)
 {
-	switch(format) {
+	switch (format) {
 		case PixelFormat::RGBA:
 		case PixelFormat::GRAYSCALE: {
-			for(size_t i = 3; i < data.size(); i += 4) {
+			for (size_t i = 3; i < data.size(); i += 4) {
 				u8& alpha = data[i];
-				if(handle_80s && alpha == 0xff) {
+				if (handle_80s && alpha == 0xff) {
 					alpha = 0x80;
 				} else {
 					alpha /= 2;
@@ -385,9 +385,9 @@ void Texture::divide_alphas(bool handle_80s)
 		}
 		case PixelFormat::PALETTED_4:
 		case PixelFormat::PALETTED_8: {
-			for(u32& colour : palette()) {
+			for (u32& colour : palette()) {
 				u32 alpha = (colour & 0xff000000) >> 24;
-				if(handle_80s && alpha == 0xff) {
+				if (handle_80s && alpha == 0xff) {
 					alpha = 0x80;
 				} else {
 					alpha /= 2;
@@ -409,8 +409,8 @@ TextureMipmaps Texture::generate_mipmaps(s32 max_mip_levels)
 	
 	TextureMipmaps output;
 	
-	for(s32 level = 0; level < max_mip_levels; level++) {
-		if(texture.width >= 8) {
+	for (s32 level = 0; level < max_mip_levels; level++) {
+		if (texture.width >= 8) {
 			output.mip_levels++;
 			output.mips[level] = texture.data;
 			texture.reduce();
@@ -428,8 +428,8 @@ TextureMipmaps Texture::generate_mipmaps(s32 max_mip_levels)
 void Texture::reduce()
 {
 	std::vector<u8> reduced((width * height) / 4);
-	for(s32 y = 0; y < (height / 2); y++) {
-		for(s32 x = 0; x < (width / 2); x++) {
+	for (s32 y = 0; y < (height / 2); y++) {
+		for (s32 x = 0; x < (width / 2); x++) {
 			reduced[y * (width / 2) + x] = data[(y * 2) * width + (x * 2)];
 		}
 	}
@@ -448,10 +448,10 @@ void Texture::destroy()
 
 bool Texture::operator<(const Texture& rhs) const
 {
-	if(width != rhs.width) return width < rhs.width;
-	if(height != rhs.height) return height < rhs.height;
-	if(format != rhs.format) return format < rhs.format;
-	if(data != rhs.data) return data < rhs.data;
+	if (width != rhs.width) return width < rhs.width;
+	if (height != rhs.height) return height < rhs.height;
+	if (format != rhs.format) return format < rhs.format;
+	if (data != rhs.data) return data < rhs.data;
 	return m_palette < rhs.m_palette;
 }
 

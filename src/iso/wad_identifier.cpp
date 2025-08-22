@@ -76,21 +76,21 @@ static WadFileDescription WAD_FILE_TYPES[] = {
 
 std::tuple<Game, WadType, const char*> identify_wad(Buffer header)
 {
-	for(WadFileDescription& desc : WAD_FILE_TYPES) {
-		if(desc.header_size != header.size()) {
+	for (WadFileDescription& desc : WAD_FILE_TYPES) {
+		if (desc.header_size != header.size()) {
 			continue;
 		}
 		
-		if(desc.secondary_offset > -1) {
+		if (desc.secondary_offset > -1) {
 			s32 value = header.read<s32>(desc.secondary_offset, "header");
-			if(value < desc.secondary_value_min || value > desc.secondary_value_max) {
+			if (value < desc.secondary_value_min || value > desc.secondary_value_max) {
 				continue;
 			}
 		}
 		
-		if(desc.tertiary_offset > -1) {
+		if (desc.tertiary_offset > -1) {
 			s32 value = header.read<s32>(desc.tertiary_offset, "header");
-			if(value == desc.tertiary_value_not_equal) {
+			if (value == desc.tertiary_value_not_equal) {
 				continue;
 			}
 		}
@@ -102,13 +102,13 @@ std::tuple<Game, WadType, const char*> identify_wad(Buffer header)
 
 s32 header_size_of_wad(Game game, WadType type)
 {
-	for(WadFileDescription& desc : WAD_FILE_TYPES) {
-		if(desc.game == game && desc.type == type) {
+	for (WadFileDescription& desc : WAD_FILE_TYPES) {
+		if (desc.game == game && desc.type == type) {
 			return desc.header_size;
 		}
 	}
-	for(WadFileDescription& desc : WAD_FILE_TYPES) {
-		if(desc.game == Game::UNKNOWN && desc.type == type) {
+	for (WadFileDescription& desc : WAD_FILE_TYPES) {
+		if (desc.game == Game::UNKNOWN && desc.type == type) {
 			return desc.header_size;
 		}
 	}

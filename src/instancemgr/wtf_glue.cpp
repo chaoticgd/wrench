@@ -45,7 +45,7 @@ T read_inst_float_list(const WtfAttribute* attrib, const char* name)
 	verify(attrib->type == WTF_ARRAY, "Invalid '%s' field.", name);
 	T dest;
 	s32 index = 0;
-	for(const WtfAttribute* value = attrib->first_array_element; value != nullptr; value = value->next) {
+	for (const WtfAttribute* value = attrib->first_array_element; value != nullptr; value = value->next) {
 		verify(value->type == WTF_NUMBER && index < (sizeof(T) / sizeof(f32)), "Invalid '%s' attribute.", name);
 		*((f32*) &dest + index++) = value->number.f;
 	}
@@ -63,7 +63,7 @@ std::vector<u8> read_inst_byte_list(const WtfAttribute* attrib, const char* name
 	verify(attrib, "Missing '%s' attribute.", name);
 	verify(attrib->type == WTF_ARRAY, "Invalid '%s' field.", name);
 	std::vector<u8> dest;
-	for(const WtfAttribute* value = attrib->first_array_element; value != nullptr; value = value->next) {
+	for (const WtfAttribute* value = attrib->first_array_element; value != nullptr; value = value->next) {
 		verify(value->type == WTF_NUMBER, "Invalid '%s' field.", name);
 		dest.emplace_back((u8) value->number.i);
 	}

@@ -42,17 +42,17 @@ void pack_asset_impl(
 	// Placeholder assets come in place of that actual asset when its type isn't
 	// specified, and they're not packable so we need to skip them.
 	const Asset* asset = &src.highest_precedence();
-	while(asset->physical_type() == PlaceholderAsset::ASSET_TYPE) {
+	while (asset->physical_type() == PlaceholderAsset::ASSET_TYPE) {
 		asset = asset->lower_precedence();
 	}
 	
 	std::string type = asset_type_to_string(asset->physical_type());
-	for(char& c : type) c = tolower(c);
+	for (char& c : type) c = tolower(c);
 	std::string reference = asset->absolute_link().to_string();
 	
-	if(!g_asset_packer_dry_run && !g_asset_packer_quiet) {
+	if (!g_asset_packer_dry_run && !g_asset_packer_quiet) {
 		s32 completion_percentage = (s32) ((g_asset_packer_num_assets_processed * 100.f) / g_asset_packer_max_assets_processed);
-		if(hint && strlen(hint) > 0) {
+		if (hint && strlen(hint) > 0) {
 			printf("[%3d%%] \033[32mPacking %s asset %s (%s)\033[0m\n", completion_percentage, type.c_str(), reference.c_str(), hint);
 		} else {
 			printf("[%3d%%] \033[32mPacking %s asset %s\033[0m\n", completion_percentage, type.c_str(), reference.c_str());
@@ -60,10 +60,10 @@ void pack_asset_impl(
 	}
 	
 	AssetPackerFunc* pack_func = nullptr;
-	if(asset->physical_type() == BuildAsset::ASSET_TYPE) {
+	if (asset->physical_type() == BuildAsset::ASSET_TYPE) {
 		pack_func = asset->funcs.pack_rac1;
 	} else {
-		switch(config.game()) {
+		switch (config.game()) {
 			case Game::RAC: pack_func = asset->funcs.pack_rac1; break;
 			case Game::GC: pack_func = asset->funcs.pack_rac2; break;
 			case Game::UYA: pack_func = asset->funcs.pack_rac3; break;

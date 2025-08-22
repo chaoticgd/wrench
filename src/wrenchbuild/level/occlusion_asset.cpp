@@ -60,7 +60,7 @@ static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig
 
 static void pack_occlusion(OutputStream& dest, const OcclusionAsset& src, BuildConfig config)
 {
-	if(g_asset_packer_dry_run) {
+	if (g_asset_packer_dry_run) {
 		return;
 	}
 	

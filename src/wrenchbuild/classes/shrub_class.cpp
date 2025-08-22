@@ -49,8 +49,8 @@ on_load(ShrubClass, []() {
 
 static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint)
 {
-	if(g_asset_unpacker.dump_binaries) {
-		if(!dest.has_core()) {
+	if (g_asset_unpacker.dump_binaries) {
+		if (!dest.has_core()) {
 			unpack_asset_impl(dest.core<ShrubClassCoreAsset>(), src, nullptr, config);
 		}
 		return;
@@ -66,10 +66,10 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 	node.mesh = (s32) gltf.meshes.size();
 	gltf.meshes.emplace_back(recover_shrub_class(shrub));
 	
-	if(dest.has_materials()) {
+	if (dest.has_materials()) {
 		CollectionAsset& materials = dest.get_materials();
-		for(s32 i = 0; i < 16; i++) {
-			if(materials.has_child(i)) {
+		for (s32 i = 0; i < 16; i++) {
+			if (materials.has_child(i)) {
 				MaterialAsset& material_asset = materials.get_child(i).as<MaterialAsset>();
 				
 				GLTF::Material& material = gltf.materials.emplace_back();
@@ -104,7 +104,7 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 	mesh.set_name(*node.name);
 	mesh.set_src(ref);
 	
-	if(shrub.billboard.has_value()) {
+	if (shrub.billboard.has_value()) {
 		ShrubBillboardAsset& billboard = dest.billboard();
 		billboard.set_fade_distance(shrub.billboard->fade_distance);
 		billboard.set_width(shrub.billboard->width);
@@ -115,11 +115,11 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 
 static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint)
 {
-	if(g_asset_packer_dry_run) {
+	if (g_asset_packer_dry_run) {
 		return;
 	}
 	
-	if(src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
+	if (src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
 		pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config, nullptr);
 		return;
 	}
@@ -138,7 +138,7 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 	map_gltf_materials_to_wrench_materials(gltf, material_set.materials);
 	
 	Opt<ShrubBillboardInfo> billboard;
-	if(src.has_billboard()) {
+	if (src.has_billboard()) {
 		const ShrubBillboardAsset& billboard_asset = src.get_billboard();
 		billboard.emplace();
 		billboard->fade_distance = billboard_asset.fade_distance();

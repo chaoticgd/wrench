@@ -42,7 +42,7 @@ void zone_delete(void* pointer, std::size_t size, s32 zone)
 void report_memory_statistics()
 {
 	printf("\033[34m");
-	for(const MemoryZone& zone : g_memory_zones) {
+	for (const MemoryZone& zone : g_memory_zones) {
 		printf("%s: %ldk used, %ld allocations, %ld frees, %ld leaked\n",
 			zone.name, zone.stats.max_bytes_used / 1024,
 			zone.stats.total_allocations, zone.stats.total_frees,

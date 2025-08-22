@@ -27,12 +27,12 @@ ZippedAssetBank::ZippedAssetBank(AssetForest& forest, const char* zip_path, fs::
 	verify(m_zip, "Failed to open zip file.");
 	// If no prefix was explicitly provided and there's no gameinfo.txt in the
 	// root directory, try and find the first gameinfo.txt file and use that.
-	if(m_prefix.empty() && !file_exists(m_prefix/"gameinfo.txt")) {
+	if (m_prefix.empty() && !file_exists(m_prefix/"gameinfo.txt")) {
 		s64 count = zip_get_num_entries(m_zip, 0);
-		for(s32 i = 0; i < count; i++) {
-			if(const char* name = zip_get_name(m_zip, i, 0)) {
+		for (s32 i = 0; i < count; i++) {
+			if (const char* name = zip_get_name(m_zip, i, 0)) {
 				fs::path path(name);
-				if(path.filename() == "gameinfo.txt") {
+				if (path.filename() == "gameinfo.txt") {
 					m_prefix = path.parent_path();
 					break;
 				}
@@ -53,7 +53,7 @@ std::unique_ptr<InputStream> ZippedAssetBank::open_binary_file_for_reading(const
 	verify(zip_stat(m_zip, absolute_path.string().c_str(), 0, &stat) == 0, "Failed to open zipped file '%s'.", absolute_path.string().c_str());
 	verify(stat.valid & ZIP_STAT_SIZE, "Failed to find size of zipped file '%s'.", absolute_path.string().c_str());
 	std::unique_ptr<ZipInputStream> stream = std::make_unique<ZipInputStream>();
-	if(stream->open(m_zip, absolute_path.string().c_str(), (s64) stat.size)) {
+	if (stream->open(m_zip, absolute_path.string().c_str(), (s64) stat.size)) {
 		return stream;
 	} else {
 		return nullptr;
@@ -91,10 +91,10 @@ std::vector<fs::path> ZippedAssetBank::enumerate_asset_files() const
 {
 	std::vector<fs::path> asset_files;
 	s64 count = zip_get_num_entries(m_zip, 0);
-	for(s64 i = 0; i < count; i++) {
-		if(const char* name = zip_get_name(m_zip, i, 0)) {
+	for (s64 i = 0; i < count; i++) {
+		if (const char* name = zip_get_name(m_zip, i, 0)) {
 			fs::path path = fs::path(name).lexically_relative(m_prefix);
-			if(!path.string().starts_with("..") && path.extension() == ".asset") {
+			if (!path.string().starts_with("..") && path.extension() == ".asset") {
 				asset_files.emplace_back(path);
 			}
 		}
@@ -108,11 +108,11 @@ void ZippedAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*
 	std::string game_source_path = get_game_source_path(game);
 	
 	s64 count = zip_get_num_entries(m_zip, 0);
-	for(s64 i = 0; i < count; i++) {
-		if(const char* name = zip_get_name(m_zip, i, 0)) {
+	for (s64 i = 0; i < count; i++) {
+		if (const char* name = zip_get_name(m_zip, i, 0)) {
 			std::string str = fs::path(name).lexically_relative(m_prefix).string();
 			std::replace(str.begin(), str.end(), '\\', '/');
-			if(str.starts_with(common_source_path) || str.starts_with(game_source_path)) {
+			if (str.starts_with(common_source_path) || str.starts_with(game_source_path)) {
 				dest[str] = this;
 			}
 		}
@@ -130,7 +130,7 @@ void ZippedAssetBank::lock() {}
 
 ZipInputStream::~ZipInputStream()
 {
-	if(m_file) {
+	if (m_file) {
 		zip_fclose(m_file);
 	}
 }

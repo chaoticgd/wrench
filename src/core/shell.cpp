@@ -49,7 +49,7 @@ void CommandThread::start(const std::vector<std::string>& args)
 			command->m_shared.state = RUNNING;
 		}
 		std::vector<const char*> pointers(args.size());
-		for(size_t i = 0; i < args.size(); i++) {
+		for (size_t i = 0; i < args.size(); i++) {
 			pointers[i] = args[i].c_str();
 		}
 		worker_thread(pointers.size(), pointers.data(), *command);
@@ -60,23 +60,23 @@ void CommandThread::stop()
 {
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
-		if(m_shared.state == NOT_RUNNING) {
+		if (m_shared.state == NOT_RUNNING) {
 			return;
-		} else if(m_shared.state != STOPPED) {
+		} else if (m_shared.state != STOPPED) {
 			m_shared.state = STOPPING;
 		}
 	}
 
 	// Wait for the thread to stop processing data.
-	for(;;) {
+	for (;;) {
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
-			if(m_shared.state == STOPPED) {
+			if (m_shared.state == STOPPED) {
 				m_shared.state = NOT_RUNNING;
 				break;
 			}
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+		std::this_thread::sleep_for (std::chrono::milliseconds(5));
 	}
 
 	// Wait for the thread to terminate.
@@ -123,7 +123,7 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	// Pass arguments to the shell as enviroment variables.
 	std::string command_string = prepare_arguments(argc, argv);
 
-	if(command_string.empty()) {
+	if (command_string.empty()) {
 		std::lock_guard<std::mutex> lock(command.m_mutex);
 		command.m_shared.output = "Failed to pass arguments to shell.\n";
 		command.m_shared.state = STOPPED;
@@ -150,10 +150,10 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	// Read data from the pipe until the process has finished or the main thread
 	// has requested that we stop.
 	char buffer[1024];
-	while(pipe_gets(buffer, sizeof(buffer), pipe) != NULL) {
+	while (pipe_gets(buffer, sizeof(buffer), pipe) != NULL) {
 		std::lock_guard<std::mutex> lock(command.m_mutex);
 		command.m_shared.output += buffer;
-		if(command.m_shared.state == STOPPING) {
+		if (command.m_shared.state == STOPPING) {
 			break;
 		}
 	}
@@ -163,7 +163,7 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	{
 		std::lock_guard<std::mutex> lock(command.m_mutex);
 		state = command.m_shared.state;
-		if(state == RUNNING) {
+		if (state == RUNNING) {
 			command.m_shared.state = STOPPING;
 		}
 	}
@@ -172,8 +172,8 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	{
 		std::lock_guard<std::mutex> lock(command.m_mutex);
 		command.m_shared.state = STOPPED;
-		if(strlen(PIPEIO_ERROR_CONTEXT_STRING) == 0) {
-			if(exit_code == 0) {
+		if (strlen(PIPEIO_ERROR_CONTEXT_STRING) == 0) {
+			if (exit_code == 0) {
 				command.m_shared.output += "\nProcess exited normally.\n";
 				command.m_shared.success = true;
 			} else {
@@ -195,11 +195,11 @@ void CommandThread::update_last_output_lines() {
 	// Find the start of the last 15 lines.
 	s64 i = 0;
 	s32 new_line_count = 0;
-	if(m_shared.output.size() > 0) {
-		for(i = (s64)m_shared.output.size() - 1; i > 0; i--) {
-			if(m_shared.output[i] == '\n') {
+	if (m_shared.output.size() > 0) {
+		for (i = (s64)m_shared.output.size() - 1; i > 0; i--) {
+			if (m_shared.output[i] == '\n') {
 				new_line_count++;
-				if(new_line_count >= 15) {
+				if (new_line_count >= 15) {
 					i++;
 					break;
 				}
@@ -209,10 +209,10 @@ void CommandThread::update_last_output_lines() {
 
 	// Go through the last 15 lines of the output and strip out colour
 	// codes, taking care to handle incomplete buffers.
-	for(; i < (s64)m_shared.output.size(); i++) {
+	for (; i < (s64)m_shared.output.size(); i++) {
 		// \033[%sm%02x\033[0m
-		if(i + 1 < m_shared.output.size() && memcmp(m_shared.output.data() + i, "\033[", 2) == 0) {
-			if(i + 3 < m_shared.output.size() && m_shared.output[i + 3] == 'm') {
+		if (i + 1 < m_shared.output.size() && memcmp(m_shared.output.data() + i, "\033[", 2) == 0) {
+			if (i + 3 < m_shared.output.size() && m_shared.output[i + 3] == 'm') {
 				i += 3;
 			} else {
 				i += 4;
@@ -229,7 +229,7 @@ s32 execute_command(s32 argc, const char** argv, bool blocking)
 	
 	std::string command_string = prepare_arguments(argc, argv);
 	
-	if(!blocking) {
+	if (!blocking) {
 #ifdef _WIN32
 		STARTUPINFO startup_info;
 		memset(&startup_info, 0, sizeof(STARTUPINFOW));
@@ -243,7 +243,7 @@ s32 execute_command(s32 argc, const char** argv, bool blocking)
 		PROCESS_INFORMATION process_info;
 		memset(&process_info, 0, sizeof(PROCESS_INFORMATION));
 		
-		if(CreateProcessA(NULL, (LPSTR) command_string.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &startup_info, &process_info)) {
+		if (CreateProcessA(NULL, (LPSTR) command_string.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &startup_info, &process_info)) {
 			CloseHandle(process_info.hProcess);
 			CloseHandle(process_info.hThread);
 		}
@@ -270,11 +270,11 @@ void open_in_file_manager(const char* path)
 // https://web.archive.org/web/20190109172835/https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
 static std::string argv_quote(const std::string& argument) {
 	std::string command;
-	if(!argument.empty() && argument.find_first_of(" \t\n\v\"") == std::string::npos) {
+	if (!argument.empty() && argument.find_first_of(" \t\n\v\"") == std::string::npos) {
 		command.append(argument);
 	} else {
 		command.push_back('"');
-		for(auto iter = argument.begin();; iter++) {
+		for (auto iter = argument.begin();; iter++) {
 			s32 backslash_count = 0;
 		
 			while (iter != argument.end() && *iter == '\\') {
@@ -282,7 +282,7 @@ static std::string argv_quote(const std::string& argument) {
 				backslash_count++;
 			}
 		
-			if(iter == argument.end()) {
+			if (iter == argument.end()) {
 				command.append(backslash_count * 2, '\\');
 				break;
 			} else if (*iter == '"') {
@@ -303,16 +303,16 @@ static std::string prepare_arguments(s32 argc, const char** argv)
 	std::string command;
 	
 #ifdef _WIN32
-	for(s32 i = 0; i < argc; i++) {
+	for (s32 i = 0; i < argc; i++) {
 		command += argv_quote(argv[i]) + " ";
 	}
 	
 	printf("command: %s\n", command.c_str());
 #else
 	// Pass arguments as enviroment variables.
-	for(s32 i = 0; i < argc; i++) {
+	for (s32 i = 0; i < argc; i++) {
 		std::string env_var = stringf("WRENCH_ARG_%d", i);
-		if(setenv(env_var.c_str(), argv[i], 1) == -1) {
+		if (setenv(env_var.c_str(), argv[i], 1) == -1) {
 			return "";
 		}
 		command += "\"$" + env_var + "\" ";

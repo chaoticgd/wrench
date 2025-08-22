@@ -37,19 +37,19 @@ static size_t selected_game = 0;
 void game_list()
 {
 	std::string name;
-	if(GameData* game = get_game()) {
+	if (GameData* game = get_game()) {
 		g_game_path = game->directory;
 		name = game->info.name + " (" + game->directory + ")";
-	} else if(games.empty()) {
+	} else if (games.empty()) {
 		name = "(has no games)";
 	} else {
 		name = "(select game)";
 	}
-	if(ImGui::BeginCombo("##game", name.c_str())) {
-		for(size_t i = 0; i < games.size(); i++) {
+	if (ImGui::BeginCombo("##game", name.c_str())) {
+		for (size_t i = 0; i < games.size(); i++) {
 			GameData& game = games[i];
 			std::string option_name = game.info.name + " (" + game.directory + ")";
-			if(ImGui::Selectable(option_name.c_str(), i == selected_game)) {
+			if (ImGui::Selectable(option_name.c_str(), i == selected_game)) {
 				selected_game = i;
 				update_game_builds();
 			}
@@ -62,13 +62,13 @@ void load_game_list(const std::string& games_folder)
 {
 	free_game_list();
 	
-	if(!fs::is_directory(games_folder)) {
+	if (!fs::is_directory(games_folder)) {
 		return;
 	}
 	
-	for(fs::directory_entry game_dir : fs::directory_iterator(games_folder)) {
+	for (fs::directory_entry game_dir : fs::directory_iterator(games_folder)) {
 		FileInputStream stream;
-		if(stream.open(game_dir.path()/"gameinfo.txt")) {
+		if (stream.open(game_dir.path()/"gameinfo.txt")) {
 			std::vector<u8> game_info_txt = stream.read_multiple<u8>(stream.size());
 			strip_carriage_returns(game_info_txt);
 			game_info_txt.push_back(0);
@@ -76,7 +76,7 @@ void load_game_list(const std::string& games_folder)
 			GameData game;
 			game.directory = game_dir.path().string();
 			game.info = read_game_info((char*) game_info_txt.data());
-			if(game.info.type == AssetBankType::GAME) {
+			if (game.info.type == AssetBankType::GAME) {
 				games.emplace_back(std::move(game));
 			}
 		}
@@ -93,7 +93,7 @@ void free_game_list()
 
 static void update_game_builds()
 {
-	if(GameData* game = get_game()) {
+	if (GameData* game = get_game()) {
 		g_game_builds = &game->info.builds;
 	} else {
 		g_game_builds = nullptr;
@@ -102,7 +102,7 @@ static void update_game_builds()
 
 static GameData* get_game()
 {
-	if(selected_game >= games.size()) {
+	if (selected_game >= games.size()) {
 		return nullptr;
 	}
 	return &games[selected_game];

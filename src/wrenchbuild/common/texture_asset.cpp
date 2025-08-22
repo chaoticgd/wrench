@@ -25,8 +25,8 @@ static void unpack_texture_asset(
 	TextureAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_texture_asset(
 	OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint);
-static Texture unpack_pif(InputStream& src);
-static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_level);
+static Texture unpack_pif (InputStream& src);
+static void pack_pif (OutputStream& dest, Texture& texture, s32 mip_level);
 static bool test_texture_asset(
 	std::vector<u8>& original,
 	std::vector<u8>& repacked,
@@ -63,23 +63,23 @@ static void unpack_texture_asset(
 	Texture texture;
 	
 	const char* type = next_hint(&hint);
-	if(strcmp(type, "rgba") == 0) {
+	if (strcmp(type, "rgba") == 0) {
 		RgbaTextureHeader header = src.read<RgbaTextureHeader>(0);
 		std::vector<u8> data = src.read_multiple<u8>(0x10, header.width * header.height * 4);
 		texture = Texture::create_rgba(header.width, header.height, data);
 		texture.multiply_alphas();
-	} else if(strcmp(type, "rawrgba") == 0) {
+	} else if (strcmp(type, "rawrgba") == 0) {
 		s32 width = atoi(next_hint(&hint));
 		s32 height = atoi(next_hint(&hint));
 		std::vector<u8> data = src.read_multiple<u8>(0, width * height * 4);
 		texture = Texture::create_rgba(width, height, data);
 		texture.multiply_alphas();
-	} else if(strcmp(type, "pif") == 0) {
+	} else if (strcmp(type, "pif") == 0) {
 		next_hint(&hint); // palette_size
 		next_hint(&hint); // mip_levels
 		bool swizzled = strcmp(next_hint(&hint), "swizzled") == 0;
-		texture = unpack_pif(src);
-		if(swizzled) {
+		texture = unpack_pif (src);
+		if (swizzled) {
 			texture.swizzle();
 		}
 	} else {
@@ -90,7 +90,7 @@ static void unpack_texture_asset(
 	// material e.g. "0", "1", "2" etc instead of the tag of the texture itself
 	// e.g. "diffuse".
 	std::string name;
-	if(dest.parent() && dest.parent()->logical_type() == MaterialAsset::ASSET_TYPE) {
+	if (dest.parent() && dest.parent()->logical_type() == MaterialAsset::ASSET_TYPE) {
 		name = dest.parent()->tag();
 	} else {
 		name = dest.tag();
@@ -110,7 +110,7 @@ static void pack_texture_asset(
 	verify(texture.has_value(), "Failed to read PNG file.");
 	
 	const char* type = next_hint(&hint);
-	if(strcmp(type, "rgba") == 0) {
+	if (strcmp(type, "rgba") == 0) {
 		texture->to_rgba();
 		texture->divide_alphas(false);
 		
@@ -119,7 +119,7 @@ static void pack_texture_asset(
 		header.height = texture->height;
 		dest.write(header);
 		dest.write_v(texture->data);
-	} else if(strcmp(type, "rawrgba") == 0) {
+	} else if (strcmp(type, "rawrgba") == 0) {
 		s32 width = atoi(next_hint(&hint));
 		s32 height = atoi(next_hint(&hint));
 		texture->to_rgba();
@@ -128,11 +128,11 @@ static void pack_texture_asset(
 			"RGBA image has wrong size, should be %d by %d.",
 			width, height);
 		dest.write_v(texture->data);
-	} else if(strcmp(type, "pif") == 0) {
+	} else if (strcmp(type, "pif") == 0) {
 		s32 palette_size = atoi(next_hint(&hint));
-		if(palette_size == 4) {
+		if (palette_size == 4) {
 			texture->to_4bit_paletted();
-		} else if(palette_size == 8) {
+		} else if (palette_size == 8) {
 			texture->to_8bit_paletted();
 		} else {
 			verify_not_reached("Tried to pack a texture with an invalid palette size specified in the hint.");
@@ -141,10 +141,10 @@ static void pack_texture_asset(
 		const char* swizzled = next_hint(&hint);
 		// TODO: Once we've figure out swizzling for where palette_size == 4
 		// make sure to enable that here.
-		if(strcmp(swizzled, "swizzled") == 0 && palette_size == 8) {
+		if (strcmp(swizzled, "swizzled") == 0 && palette_size == 8) {
 			texture->swizzle();
 		}
-		pack_pif(dest, *texture, mip_levels);
+		pack_pif (dest, *texture, mip_levels);
 	} else {
 		verify_not_reached("Tried to pack a texture with an invalid hint.");
 	}
@@ -161,13 +161,13 @@ packed_struct(PifHeader,
 	/* 0x1c */ s32 mip_levels;
 )
 
-static Texture unpack_pif(InputStream& src)
+static Texture unpack_pif (InputStream& src)
 {
 	PifHeader header = src.read<PifHeader>(0);
 	verify(memcmp(header.magic, "2FIP", 4) == 0, "PIF has bad magic bytes.");
 	verify(header.width <= 2048 && header.height <= 2048, "PIF has bad width/height values.");
 	
-	switch(header.format) {
+	switch (header.format) {
 		case 0x13: {
 			std::vector<u32> palette(256);
 			src.read_n((u8*) palette.data(), palette.size() * 4);
@@ -193,7 +193,7 @@ static Texture unpack_pif(InputStream& src)
 	}
 }
 
-static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels)
+static void pack_pif (OutputStream& dest, Texture& texture, s32 mip_levels)
 {
 	texture.divide_alphas();
 	
@@ -205,13 +205,13 @@ static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels)
 	header.height = texture.height;
 	header.mip_levels = 1;
 	
-	switch(texture.format) {
+	switch (texture.format) {
 		case PixelFormat::PALETTED_4: {
 			verify_fatal(texture.data.size() == (texture.width * texture.height) / 2);
 			
 			header.format = 0x94;
 			dest.write_n((u8*) texture.palette().data(), std::min(texture.palette().size(), (size_t) 16) * 4);
-			for(size_t i = texture.palette().size(); i < 16; i++) {
+			for (size_t i = texture.palette().size(); i < 16; i++) {
 				dest.write<u32>(0);
 			}
 			dest.write_n(texture.data.data(), texture.data.size());
@@ -228,10 +228,10 @@ static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels)
 			header.mip_levels = mipmaps.mip_levels;
 			
 			dest.write_n((u8*) mipmaps.palette.data(), std::min(mipmaps.palette.size(), (size_t) 256) * 4);
-			for(size_t i = mipmaps.palette.size(); i < 256; i++) {
+			for (size_t i = mipmaps.palette.size(); i < 256; i++) {
 				dest.write<u32>(0);
 			}
-			for(s32 level = 0 ; level < mipmaps.mip_levels; level++) {
+			for (s32 level = 0 ; level < mipmaps.mip_levels; level++) {
 				dest.write_n(mipmaps.mips[level].data(), mipmaps.mips[level].size());
 			}
 			
@@ -251,7 +251,7 @@ static bool test_texture_asset(
 	AssetTestMode mode)
 {
 	const char* type = next_hint(&hint);
-	if(strcmp(type, "pif") == 0) {
+	if (strcmp(type, "pif") == 0) {
 		// We don't know what this field in the PIF header is and it doesn't
 		// seem to be used, so just zero it during tests.
 		verify_fatal(original.size() >= 8);

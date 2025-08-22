@@ -55,16 +55,16 @@ int main(int argc, char** argv)
 	
 	gui::setup_bin_paths(argv[0]);
 	
-	if(!gui::config_file_exists()) {
-		if(!run_oobe()) {
+	if (!gui::config_file_exists()) {
+		if (!run_oobe()) {
 			return 0;
 		}
 	} else {
 		g_config.read();
 	}
 	
-	for(;;) {
-		switch(g_launcher.mode) {
+	for (;;) {
+		switch (g_launcher.mode) {
 			case LauncherMode::DRAWING_GUI: {
 				g_launcher.window = gui::startup("Wrench Launcher", 960, 600);
 				glfwSetWindowSizeLimits(g_launcher.window, 960, 600, GLFW_DONT_CARE, GLFW_DONT_CARE);
@@ -76,10 +76,10 @@ int main(int argc, char** argv)
 				load_game_list(g_config.paths.games_folder);
 				load_mod_list(g_config.paths.mods_folders);
 				
-				while(g_launcher.mode == LauncherMode::DRAWING_GUI) {
+				while (g_launcher.mode == LauncherMode::DRAWING_GUI) {
 					gui::run_frame(g_launcher.window, update_gui);
 					
-					if(glfwWindowShouldClose(g_launcher.window)) {
+					if (glfwWindowShouldClose(g_launcher.window)) {
 						g_launcher.mode = LauncherMode::EXIT;
 					}
 				}
@@ -113,7 +113,7 @@ void update_gui(f32 delta_time)
 	
 	Mod* mod = nullptr;
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
-	if(ImGui::BeginTable("main", 2, ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable)) {
+	if (ImGui::BeginTable("main", 2, ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable)) {
 		ImGui::PopStyleVar();
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
@@ -136,7 +136,7 @@ static Mod* mod_list_window()
 	ImGui::BeginChild("Mod List");
 	
 	char greeting[64];
-	if(strlen(wadinfo.build.version_string) != 0) {
+	if (strlen(wadinfo.build.version_string) != 0) {
 		snprintf(greeting, sizeof(greeting), "Wrench Modding Toolset %s", wadinfo.build.version_string);
 	} else {
 		snprintf(greeting, sizeof(greeting), "Wrench Modding Toolset");
@@ -150,7 +150,7 @@ static Mod* mod_list_window()
 	
 	static std::string filter;
 	
-	if(ImGui::BeginTable("inputs", 2)) {
+	if (ImGui::BeginTable("inputs", 2)) {
 		ImGui::TableSetupColumn("labels", ImGuiTableColumnFlags_WidthFixed);
 		ImGui::TableSetupColumn("inputs", ImGuiTableColumnFlags_WidthStretch);
 		
@@ -196,7 +196,7 @@ static void details_window(Mod* mod)
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 	
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - display_size.x / 2);
-	if(ImGui::ImageButton("##imageviewer", (ImTextureID) image.texture.id, display_size, ImVec2(0, 0), ImVec2(1, 1))) {
+	if (ImGui::ImageButton("##imageviewer", (ImTextureID) image.texture.id, display_size, ImVec2(0, 0), ImVec2(1, 1))) {
 		ImGui::OpenPopup("Image Viewer");
 	}
 	
@@ -204,8 +204,8 @@ static void details_window(Mod* mod)
 	
 	image_viewer(g_mod_images);
 	
-	if(mod) {
-		if(ImGui::BeginTable("attributes", 2)) {
+	if (mod) {
+		if (ImGui::BeginTable("attributes", 2)) {
 			ImGui::TableSetupColumn("key", ImGuiTableColumnFlags_WidthFixed);
 			ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_WidthStretch);
 			
@@ -213,7 +213,7 @@ static void details_window(Mod* mod)
 			ImGui::TableNextColumn();
 			ImGui::Text("Author");
 			ImGui::TableNextColumn();
-			if(!mod->info.author.empty()) {
+			if (!mod->info.author.empty()) {
 				ImGui::TextWrapped("%s", mod->info.author.c_str());
 			} else {
 				not_specified();
@@ -223,7 +223,7 @@ static void details_window(Mod* mod)
 			ImGui::TableNextColumn();
 			ImGui::Text("Description");
 			ImGui::TableNextColumn();
-			if(!mod->info.description.empty()) {
+			if (!mod->info.description.empty()) {
 				ImGui::TextWrapped("%s", mod->info.description.c_str());
 			} else {
 				not_specified();
@@ -233,7 +233,7 @@ static void details_window(Mod* mod)
 			ImGui::TableNextColumn();
 			ImGui::Text("Version");
 			ImGui::TableNextColumn();
-			if(!mod->info.version.empty()) {
+			if (!mod->info.version.empty()) {
 				ImGui::TextWrapped("%s", mod->info.version.c_str());
 			} else {
 				not_specified();
@@ -267,17 +267,17 @@ static void buttons_window(Mod* mod, f32 buttons_window_height)
 	
 	static CommandThread unpack_command;
 	
-	if(ImGui::Button("Import ISO")) {
+	if (ImGui::Button("Import ISO")) {
 		nfdchar_t* path = nullptr;
 		nfdresult_t result = NFD_OpenDialog("iso", nullptr, &path);
-		if(result == NFD_OKAY) {
+		if (result == NFD_OKAY) {
 			gui::UnpackerParams params;
 			params.iso_path = path;
 			gui::run_unpacker(params, unpack_command);
 			free(path);
 			
 			ImGui::OpenPopup("Import ISO");
-		} else if(result != NFD_CANCEL) {
+		} else if (result != NFD_CANCEL) {
 			printf("error: %s\n", NFD_GetError());
 		}
 	}
@@ -287,17 +287,17 @@ static void buttons_window(Mod* mod, f32 buttons_window_height)
 	});
 	
 	ImGui::SameLine();
-	if(ImGui::Button("Open Mods Folder")) {
-		if(g_config.paths.mods_folders.size() == 1) {
+	if (ImGui::Button("Open Mods Folder")) {
+		if (g_config.paths.mods_folders.size() == 1) {
 			open_in_file_manager(fs::absolute(g_config.paths.mods_folders[0]).string().data());
 		} else {
 			ImGui::OpenPopup("Mods Folder Selector");
 		}
 	}
 	
-	if(ImGui::BeginPopup("Mods Folder Selector")) {
-		for(const std::string& mods_folder : g_config.paths.mods_folders) {
-			if(ImGui::Selectable(mods_folder.c_str())) {
+	if (ImGui::BeginPopup("Mods Folder Selector")) {
+		for (const std::string& mods_folder : g_config.paths.mods_folders) {
+			if (ImGui::Selectable(mods_folder.c_str())) {
 				open_in_file_manager(fs::absolute(mods_folder).string().data());
 			}
 		}
@@ -305,18 +305,18 @@ static void buttons_window(Mod* mod, f32 buttons_window_height)
 	}
 	
 	ImGui::SameLine();
-	if(ImGui::Button("Refresh")) {
+	if (ImGui::Button("Refresh")) {
 		load_game_list(g_config.paths.games_folder);
 		load_mod_list(g_config.paths.mods_folders);
 	}
 	
-	if(new_mod_screen()) {
+	if (new_mod_screen()) {
 		load_mod_list(g_config.paths.mods_folders);
 	}
 	
 	ImGui::SameLine();
-	if(ImGui::Button("Open in Editor")) {
-		if(!g_game_path.empty() && mod) {
+	if (ImGui::Button("Open in Editor")) {
+		if (!g_game_path.empty() && mod) {
 			gui::EditorParams params;
 			params.game_path = g_game_path;
 			params.mod_path = mod->path;
@@ -324,18 +324,18 @@ static void buttons_window(Mod* mod, f32 buttons_window_height)
 		}
 	}
 	
-	if(g_game_path.empty() && ImGui::IsItemHovered()) {
+	if (g_game_path.empty() && ImGui::IsItemHovered()) {
 		ImGui::BeginTooltip();
 		ImGui::Text("No game imported.");
 		ImGui::EndTooltip();
-	} else if(!mod && ImGui::IsItemHovered()) {
+	} else if (!mod && ImGui::IsItemHovered()) {
 		ImGui::BeginTooltip();
 		ImGui::Text("No mod selected. To create a mod, use the 'New Mod' option in the '···' menu.");
 		ImGui::EndTooltip();
 	}
 	
 	ImGui::SameLine();
-	if(ImGui::Button("···")) {
+	if (ImGui::Button("···")) {
 		ImGui::OpenPopup("More Buttons");
 	}
 	
@@ -344,20 +344,20 @@ static void buttons_window(Mod* mod, f32 buttons_window_height)
 	static bool open_settings = false;
 	static bool show_the_demo = false;
 	
-	if(ImGui::BeginPopup("More Buttons")) {
-		if(ImGui::Selectable("New Mod##the_button")) {
+	if (ImGui::BeginPopup("More Buttons")) {
+		if (ImGui::Selectable("New Mod##the_button")) {
 			open_new_mod = true;
 		}
 		ImGui::Separator();
-		if(ImGui::Selectable("About##the_button")) {
+		if (ImGui::Selectable("About##the_button")) {
 			open_about = true;
 		}
-		if(ImGui::Selectable("Settings##the_button")) {
+		if (ImGui::Selectable("Settings##the_button")) {
 			open_settings = true;
 		}
-		if(g_config.ui.developer) {
-			if(ImGui::BeginMenu("Developer")) {
-				if(ImGui::Selectable("The Demo")) {
+		if (g_config.ui.developer) {
+			if (ImGui::BeginMenu("Developer")) {
+				if (ImGui::Selectable("The Demo")) {
 					show_the_demo = !show_the_demo;
 				}
 				ImGui::EndMenu();
@@ -366,26 +366,26 @@ static void buttons_window(Mod* mod, f32 buttons_window_height)
 		ImGui::EndPopup();
 	}
 	
-	if(open_new_mod) {
+	if (open_new_mod) {
 		ImGui::OpenPopup("New Mod##the_popup");
 		open_new_mod = false;
 	}
 	
-	if(open_about) {
+	if (open_about) {
 		ImGui::OpenPopup("About##the_popup");
 		open_about = false;
 	}
 	
 	gui::about_screen();
 	
-	if(open_settings) {
+	if (open_settings) {
 		ImGui::OpenPopup("Settings##the_popup");
 		open_settings = false;
 	}
 	
 	gui::settings_screen();
 	
-	if(show_the_demo) {
+	if (show_the_demo) {
 		ImGui::ShowDemoWindow();
 	}
 	
@@ -403,8 +403,8 @@ static void buttons_window(Mod* mod, f32 buttons_window_height)
 	gui::build_settings(pack_params, g_game_builds, g_mod_builds);
 	
 	ImGui::SameLine();
-	if(ImGui::Button("Build & Run##the_button")) {
-		if(!g_game_path.empty()) {
+	if (ImGui::Button("Build & Run##the_button")) {
+		if (!g_game_path.empty()) {
 			pack_params.game_path = g_game_path;
 			pack_params.overlay_path = wad_paths.overlay;
 			pack_params.mod_paths = enabled_mods();
@@ -413,13 +413,13 @@ static void buttons_window(Mod* mod, f32 buttons_window_height)
 		}
 	}
 	
-	if(g_game_path.empty() && ImGui::IsItemHovered()) {
+	if (g_game_path.empty() && ImGui::IsItemHovered()) {
 		ImGui::BeginTooltip();
 		ImGui::Text("No game imported.");
 		ImGui::EndTooltip();
 	}
 	
-	if(!any_mods_enabled() && ImGui::IsItemHovered()) {
+	if (!any_mods_enabled() && ImGui::IsItemHovered()) {
 		ImGui::BeginTooltip();
 		ImGui::Text("No mods enabled.");
 		ImGui::EndTooltip();

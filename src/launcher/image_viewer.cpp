@@ -24,7 +24,7 @@ void image_viewer(const std::vector<ModImage>& images)
 	ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size, ImGuiCond_Always);
 	
-	if(ImGui::BeginPopupModal("Image Viewer", nullptr, ImGuiWindowFlags_NoResize)) {
+	if (ImGui::BeginPopupModal("Image Viewer", nullptr, ImGuiWindowFlags_NoResize)) {
 		ImGuiStyle& s = ImGui::GetStyle();
 		ImVec2 button_size = ImGui::CalcTextSize("Close") + s.FramePadding * 3;
 		static size_t selected_image = 0;
@@ -40,17 +40,17 @@ void image_viewer(const std::vector<ModImage>& images)
 		
 		ImGui::SetCursorPos(ImVec2(0, viewport.y));
 		ImGui::NewLine();
-		for(size_t i = 0; i < images.size(); i++) {
+		for (size_t i = 0; i < images.size(); i++) {
 			const ModImage& image = images[i];
 			ImGui::SameLine();
-			if(ImGui::RadioButton(image.path.c_str(), i == selected_image)) {
+			if (ImGui::RadioButton(image.path.c_str(), i == selected_image)) {
 				selected_image = i;
 			}
 		}
 		
 		ImGui::SameLine();
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() - button_size.x);
-		if(ImGui::Button("Close")) {
+		if (ImGui::Button("Close")) {
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::EndPopup();

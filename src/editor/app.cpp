@@ -60,10 +60,10 @@ GlTexture load_icon(s32 index)
 	g_editorwad.read_n((u8*) buffer, sizeof(buffer));
 	
 	uint32_t image_buffer[32][32];
-	for(s32 y = 0; y < 32; y++) {
-		for(s32 x = 0; x < 32; x++) {
+	for (s32 y = 0; y < 32; y++) {
+		for (s32 x = 0; x < 32; x++) {
 			u8 gray;
-			if(x % 2 == 0) {
+			if (x % 2 == 0) {
 				gray = ((buffer[y][x / 2] & 0xf0) >> 4) * 17;
 			} else {
 				gray = ((buffer[y][x / 2] & 0x0f) >> 0) * 17;

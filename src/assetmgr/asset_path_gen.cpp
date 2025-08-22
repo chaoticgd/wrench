@@ -21,11 +21,11 @@
 template <typename ClassAsset>
 static std::string generate_asset_path(const char* directory, const char* type, s32 tag, const Asset& parent)
 {
-	if(parent.has_child(tag)) {
+	if (parent.has_child(tag)) {
 		const ClassAsset* child = parent.get_child(tag).maybe_as<ClassAsset>();
-		if(child && child->has_name() && !child->name().empty()) {
+		if (child && child->has_name() && !child->name().empty()) {
 			std::string name = to_snake_case(child->name().c_str());
-			if(child->has_category() && !child->category().empty()) {
+			if (child->has_category() && !child->category().empty()) {
 				std::string category = to_snake_case(child->category().c_str());
 				return stringf("%s/%s/%d_%s/%s_%s.asset", directory, category.c_str(), tag, name.c_str(), type, name.c_str());
 			} else {

@@ -29,19 +29,19 @@ static std::thread stdout_flush_thread;
 
 void start_stdout_flusher_thread()
 {
-	if(!stdout_flush_started) {
+	if (!stdout_flush_started) {
 		stdout_flush_started = true;
 		stdout_flush_thread = std::thread([]() {
-			for(;;) {
+			for (;;) {
 				{
 					std::lock_guard<std::mutex> g(stdout_flush_mutex);
-					if(stdout_flush_finished) {
+					if (stdout_flush_finished) {
 						break;
 					}
 				}
 				fflush(stdout);
 				fflush(stderr);
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				std::this_thread::sleep_for (std::chrono::milliseconds(100));
 			}
 		});
 	}
@@ -49,7 +49,7 @@ void start_stdout_flusher_thread()
 
 void stop_stdout_flusher_thread()
 {
-	if(stdout_flush_started) {
+	if (stdout_flush_started) {
 		{
 			std::lock_guard<std::mutex> g(stdout_flush_mutex);
 			stdout_flush_finished = true;

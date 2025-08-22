@@ -49,7 +49,7 @@ void RuntimeError::print() const
 
 void assert_impl(const char* file, int line, const char* arg_str, bool condition)
 {
-	if(!condition) {
+	if (!condition) {
 		fprintf(stderr, "[%s:%d] assert%s: ", file, line, UTIL_ERROR_CONTEXT_STRING);
 		fprintf(stderr, "%s", arg_str);
 		fprintf(stderr, "\n");
@@ -60,7 +60,7 @@ void assert_impl(const char* file, int line, const char* arg_str, bool condition
 static void update_error_context()
 {
 	error_context_alloc = "";
-	for(auto& str : error_context_stack) {
+	for (auto& str : error_context_stack) {
 		error_context_alloc += str;
 	}
 	UTIL_ERROR_CONTEXT_STRING = error_context_alloc.c_str();

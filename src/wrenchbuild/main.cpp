@@ -117,7 +117,7 @@ int main(int argc, char** argv)
 
 static int wrenchbuild(int argc, char** argv)
 {
-	if(argc < 2) {
+	if (argc < 2) {
 		print_usage(false);
 		return 1;
 	}
@@ -126,29 +126,29 @@ static int wrenchbuild(int argc, char** argv)
 	
 	std::string mode = argv[1];
 	
-	if(mode.starts_with("unpack")) {
+	if (mode.starts_with("unpack")) {
 		std::string continuation = mode.substr(6);
-		if(continuation == "_globals") {
+		if (continuation == "_globals") {
 			g_asset_unpacker.skip_levels = true;
-		} else if(continuation == "_levels") {
+		} else if (continuation == "_levels") {
 			g_asset_unpacker.skip_globals = true;
-		} else if(continuation == "_wads") {
+		} else if (continuation == "_wads") {
 			g_asset_unpacker.dump_wads = true;
-		} else if(continuation == "_global_wads") {
+		} else if (continuation == "_global_wads") {
 			g_asset_unpacker.skip_levels = true;
 			g_asset_unpacker.dump_wads = true;
-		} else if(continuation == "_level_wads") {
+		} else if (continuation == "_level_wads") {
 			g_asset_unpacker.skip_globals = true;
 			g_asset_unpacker.dump_wads = true;
-		} else if(continuation == "_binaries") {
+		} else if (continuation == "_binaries") {
 			g_asset_unpacker.dump_binaries = true;
-		} else if(continuation == "_flat") {
+		} else if (continuation == "_flat") {
 			g_asset_unpacker.dump_flat = true;
-		} else if(continuation == "_collision") {
+		} else if (continuation == "_collision") {
 			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
 			unpack_collision(args.input_paths[0], args.output_path);
 			return 0;
-		} else if(!continuation.empty()) {
+		} else if (!continuation.empty()) {
 			print_usage(false);
 			return 1;
 		}
@@ -159,59 +159,59 @@ static int wrenchbuild(int argc, char** argv)
 		return 0;
 	}
 	
-	if(mode == "pack") {
+	if (mode == "pack") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH | ARG_GAME | ARG_REGION | ARG_HINT);
 		pack(args.input_paths, args.asset, args.output_path, BuildConfig(args.game, args.region), args.hint, wads.underlay.c_str());
 		report_memory_statistics();
 		return 0;
 	}
 	
-	if(mode == "help" || mode == "-h" || mode == "--help") {
+	if (mode == "help" || mode == "-h" || mode == "--help") {
 		ParsedArgs args = parse_args(argc, argv, ARG_DEVELOPER);
 		print_usage(args.print_developer_output);
 		return 0;
 	}
 	
-	if(mode == "test") {
+	if (mode == "test") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_ASSET_OPTIONAL | ARG_FILTER);
 		run_tests(args.input_paths[0], args.asset, args.filter);
 		return 0;
 	}
 	
-	if(mode == "version" || mode == "-v" || mode == "--version") {
+	if (mode == "version" || mode == "-v" || mode == "--version") {
 		print_version();
 		return 0;
 	}
 	
-	if(mode == "decompress") {
+	if (mode == "decompress") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_OFFSET);
 		decompress(args.input_paths[0], args.output_path, args.offset);
 		return 0;
 	}
 	
-	if(mode == "compress") {
+	if (mode == "compress") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
 		compress(args.input_paths[0], args.output_path);
 		return 0;
 	}
 	
-	if(mode == "inspect_iso") {
+	if (mode == "inspect_iso") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
 		inspect_iso(args.input_paths[0].string());
 		return 0;
 	}
 	
-	if(mode == "parse_pcsx2_cdvd_log") {
+	if (mode == "parse_pcsx2_cdvd_log") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
 		parse_pcsx2_cdvd_log(args.input_paths[0].string());
 		return 0;
 	}
 	
-	if(mode == "profile_memory_usage") {
+	if (mode == "profile_memory_usage") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
 		{
 			AssetForest forest;
-			for(const fs::path& input_path : args.input_paths) {
+			for (const fs::path& input_path : args.input_paths) {
 				forest.mount<LooseAssetBank>(input_path, false);
 			}
 		}
@@ -219,31 +219,31 @@ static int wrenchbuild(int argc, char** argv)
 		return 0;
 	}
 	
-	if(mode == "extract_moby") {
+	if (mode == "extract_moby") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
 		extract_moby(args.input_paths[0], args.output_path, args.game);
 		return 0;
 	}
 	
-	if(mode == "extract_mesh_only_moby") {
+	if (mode == "extract_mesh_only_moby") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
 		extract_mesh_only_moby(args.input_paths[0], args.output_path, args.game);
 		return 0;
 	}
 	
-	if(mode == "extract_tie") {
+	if (mode == "extract_tie") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
 		extract_tie(args.input_paths[0], args.output_path, args.game);
 		return 0;
 	}
 	
-	if(mode == "extract_shrub") {
+	if (mode == "extract_shrub") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
 		extract_shrub(args.input_paths[0], args.output_path);
 		return 0;
 	}
 	
-	if(mode == "extract_tfrags") {
+	if (mode == "extract_tfrags") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
 		extract_tfrags(args.input_paths[0], args.output_path, args.game);
 		return 0;
@@ -257,75 +257,75 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags)
 {
 	ParsedArgs args;
 	
-	for(int i = 2; i < argc; i++) {
-		if((flags & (ARG_ASSET | ARG_ASSET_OPTIONAL)) && strcmp(argv[i], "-a") == 0) {
+	for (int i = 2; i < argc; i++) {
+		if ((flags & (ARG_ASSET | ARG_ASSET_OPTIONAL)) && strcmp(argv[i], "-a") == 0) {
 			verify(i + 1 < argc, "Expected asset reference argument.");
 			args.asset = argv[++i];
 			continue;
 		}
 		
-		if((flags & ARG_OUTPUT_PATH) && strcmp(argv[i], "-o") == 0) {
+		if ((flags & ARG_OUTPUT_PATH) && strcmp(argv[i], "-o") == 0) {
 			verify(i + 1 < argc, "Expected output path argument.");
 			args.output_path = argv[++i];
 			continue;
 		}
 		
-		if((flags & ARG_OFFSET) && strcmp(argv[i], "-x") == 0) {
+		if ((flags & ARG_OFFSET) && strcmp(argv[i], "-x") == 0) {
 			verify(i + 1 < argc, "Expected offset argument.");
 			args.offset = parse_number(argv[++i]);
 			continue;
 		}
 		
-		if((flags & ARG_GAME) && strcmp(argv[i], "-g") == 0) {
+		if ((flags & ARG_GAME) && strcmp(argv[i], "-g") == 0) {
 			verify(i + 1 < argc, "Expected game argument.");
 			std::string game = argv[++i];
 			args.game = game_from_string(game);
 			continue;
 		}
 		
-		if((flags & ARG_REGION) && strcmp(argv[i], "-r") == 0) {
+		if ((flags & ARG_REGION) && strcmp(argv[i], "-r") == 0) {
 			verify(i + 1 < argc, "Expected region argument.");
 			std::string region = argv[++i];
 			args.region = region_from_string(region);
 			continue;
 		}
 		
-		if((flags & ARG_HINT) && strcmp(argv[i], "-h") == 0) {
+		if ((flags & ARG_HINT) && strcmp(argv[i], "-h") == 0) {
 			verify(i + 1 < argc, "Expected hint argument.");
 			args.hint = argv[++i];
 			continue;
 		}
 		
-		if((flags & ARG_SUBDIRECTORY) && strcmp(argv[i], "-s") == 0) {
+		if ((flags & ARG_SUBDIRECTORY) && strcmp(argv[i], "-s") == 0) {
 			args.generate_output_subdirectory = true;
 			continue;
 		}
 		
-		if((flags & ARG_DEVELOPER) && strcmp(argv[i], "-d") == 0) {
+		if ((flags & ARG_DEVELOPER) && strcmp(argv[i], "-d") == 0) {
 			args.print_developer_output = true;
 			continue;
 		}
 		
-		if((flags & ARG_FILTER) && strcmp(argv[i], "-f") == 0) {
+		if ((flags & ARG_FILTER) && strcmp(argv[i], "-f") == 0) {
 			verify(i + 1 < argc, "Expected filter argument.");
 			args.filter = argv[++i];
 			continue;
 		}
 		
-		if(strcmp(argv[i], "--flusher-thread-hack") == 0) {
+		if (strcmp(argv[i], "--flusher-thread-hack") == 0) {
 			start_stdout_flusher_thread();
 			continue;
 		}
 		
-		if((flags & ARG_INPUT_PATH) || (flags & ARG_INPUT_PATHS)) {
+		if ((flags & ARG_INPUT_PATH) || (flags & ARG_INPUT_PATHS)) {
 			args.input_paths.emplace_back(argv[i]);
 		}
 	}
 	
-	if(flags & ARG_INPUT_PATH) {
+	if (flags & ARG_INPUT_PATH) {
 		verify(!args.input_paths.empty(), "Input path not specified.");
 		verify(args.input_paths.size() <= 1, "Multiple input paths specified.");
-	} else if(flags & ARG_INPUT_PATHS) {
+	} else if (flags & ARG_INPUT_PATHS) {
 		verify(!args.input_paths.empty(), "Input paths not specified.");
 	} else {
 		verify(args.input_paths.empty(), "Unknown argument.");
@@ -350,11 +350,11 @@ static void unpack(
 		input_path.string().c_str(), stream.last_error.c_str());
 	
 	// Check if it's an ISO file.
-	if(stream.size() > 16 * SECTOR_SIZE + 6) {
+	if (stream.size() > 16 * SECTOR_SIZE + 6) {
 		stream.seek(16 * SECTOR_SIZE + 1);
 		std::vector<char> identifier = stream.read_multiple<char>(5);
 		
-		if(memcmp(identifier.data(), "CD001", 5) == 0) {
+		if (memcmp(identifier.data(), "CD001", 5) == 0) {
 			IsoFilesystem fs = read_iso_filesystem(stream);
 			Release release = identify_release(fs.root, stream);
 			
@@ -364,10 +364,10 @@ static void unpack(
 			// If -s is passed we create a new subdirectory based on the elf
 			// name for the output files.
 			fs::path new_output_path = output_path;
-			if(generate_output_subdirectory) {
+			if (generate_output_subdirectory) {
 				std::string name = game_str + "_" + release.elf_name;
-				for(char& c : name) {
-					if(c == '.') {
+				for (char& c : name) {
+					if (c == '.') {
 						c = '_';
 					}
 				}
@@ -406,16 +406,16 @@ static void unpack(
 	
 	// Check if it's a WAD.
 	s32 header_size = stream.read<s32>(0);
-	if(header_size < 0x10000) {
+	if (header_size < 0x10000) {
 		stream.seek(0);
 		std::vector<u8> header = stream.read_multiple<u8>(header_size);
 		auto [detected_game, type, name] = identify_wad(header);
 		
-		if(game == Game::UNKNOWN) {
+		if (game == Game::UNKNOWN) {
 			game = detected_game;
 		}
 		
-		if(type != WadType::UNKNOWN) {
+		if (type != WadType::UNKNOWN) {
 			// Mount the underlay, which contains metadata to be used to name
 			// files and directories while unpacking.
 			forest.mount<LooseAssetBank>(underlay_path, false);
@@ -428,7 +428,7 @@ static void unpack(
 			BuildAsset& build = root.child<BuildAsset>("build");
 			
 			Asset* wad = nullptr;
-			switch(type) {
+			switch (type) {
 				case WadType::ARMOR: wad = &build.armor<ArmorWadAsset>(); break;
 				case WadType::AUDIO: wad = &build.audio<AudioWadAsset>(); break;
 				case WadType::BONUS: wad = &build.bonus<BonusWadAsset>(); break;
@@ -484,15 +484,15 @@ static void pack(
 	forest.any_root()->for_each_logical_descendant([&](Asset& asset) {
 		// If the asset has strongly_deleted set to false, interpret that to
 		// mean the asset should shouldn't be weakly deleted.
-		if((asset.flags & ASSET_HAS_STRONGLY_DELETED_FLAG) == 0 || (asset.flags & ASSET_IS_STRONGLY_DELETED) != 0) {
+		if ((asset.flags & ASSET_HAS_STRONGLY_DELETED_FLAG) == 0 || (asset.flags & ASSET_IS_STRONGLY_DELETED) != 0) {
 			asset.flags |= ASSET_IS_WEAKLY_DELETED;
 		}
 	});
 	
-	for(const fs::path& input_path : input_paths) {
-		if(fs::is_directory(input_path)) {
+	for (const fs::path& input_path : input_paths) {
+		if (fs::is_directory(input_path)) {
 			forest.mount<LooseAssetBank>(input_path, false);
-		} else if(input_path.extension() == ".zip") {
+		} else if (input_path.extension() == ".zip") {
 			forest.mount<ZippedAssetBank>(input_path.string().c_str(), fs::path());
 		} else {
 			verify_not_reached("An input path points to neither a directory nor a zip file.");
@@ -504,7 +504,7 @@ static void pack(
 	Asset& wad = forest.lookup_asset(link, nullptr);
 	
 	Game game;
-	if(BuildAsset* build = wad.maybe_as<BuildAsset>()) {
+	if (BuildAsset* build = wad.maybe_as<BuildAsset>()) {
 		game = game_from_string(build->game());
 	} else {
 		verify(config.game() != Game::UNKNOWN, "Must specify -g on the command line.");
@@ -581,7 +581,7 @@ static void extract_moby(const fs::path& input_path, const fs::path& output_path
 	
 	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
 	
-	for(s32 i = 0; i < 16; i++) {
+	for (s32 i = 0; i < 16; i++) {
 		gltf.materials.emplace_back();
 	}
 	
@@ -605,7 +605,7 @@ static void extract_mesh_only_moby(const fs::path& input_path, const fs::path& o
 	
 	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
 	
-	for(s32 i = 0; i < 16; i++) {
+	for (s32 i = 0; i < 16; i++) {
 		gltf.materials.emplace_back();
 	}
 	
@@ -684,7 +684,7 @@ static void print_usage(bool developer_subcommands)
 	puts("");
 	puts(" version | -v | --version");
 	puts("   Print out version information.");
-	if(developer_subcommands) {
+	if (developer_subcommands) {
 		puts("");
 		puts("Developer Subcommands");
 		puts("");
@@ -756,7 +756,7 @@ static void print_usage(bool developer_subcommands)
 
 static void print_version()
 {
-	if(strlen(wadinfo.build.version_string) != 0) {
+	if (strlen(wadinfo.build.version_string) != 0) {
 		printf("Wrench Build Tool %s\n", wadinfo.build.version_string);
 	} else {
 		printf("Wrench Build Tool (Development Version)\n");

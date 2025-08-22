@@ -60,7 +60,7 @@ Sky read_sky(Buffer src, Game game, f32 framerate)
 	
 	std::tie(sky.textures, sky.texture_mappings) = read_sky_textures(src, header, game);
 	
-	for(s32 i = 0; i < header.shell_count; i++) {
+	for (s32 i = 0; i < header.shell_count; i++) {
 		sky.shells.emplace_back(read_sky_shell(src, header.shells[i], header.texture_count, game, framerate));
 	}
 	
@@ -89,13 +89,13 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate)
 	header.texture_defs = defs;
 	header.texture_data = data;
 	
-	if(header.maximum_sprite_count > 0) {
+	if (header.maximum_sprite_count > 0) {
 		dest.pad(0x40);
 		header.sprites = dest.tell();
 		dest.alloc_multiple<u8>(header.maximum_sprite_count * 0x20);
 	}
 	
-	for(size_t i = 0; i < sky.shells.size(); i++) {
+	for (size_t i = 0; i < sky.shells.size(); i++) {
 		header.shells[i] = write_sky_shell(dest, sky.shells[i], game, framerate);
 	}
 	
@@ -112,22 +112,22 @@ static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(
 	// Multiple texture headers can point to the same texture. Here, we only
 	// write out each texture once, but we create a seperate element in the
 	// texture_mappings list for each duplicate.
-	for(const SkyTexture& def : src.read_multiple<SkyTexture>(header.texture_defs, header.texture_count, "texture defs")) {
+	for (const SkyTexture& def : src.read_multiple<SkyTexture>(header.texture_defs, header.texture_count, "texture defs")) {
 		s32 index = -1;
-		for(s32 i = 0; i < (s32) defs.size(); i++) {
-			if(memcmp(&def, &defs[i], sizeof(SkyTexture)) == 0) {
+		for (s32 i = 0; i < (s32) defs.size(); i++) {
+			if (memcmp(&def, &defs[i], sizeof(SkyTexture)) == 0) {
 				verify(i >= header.fx_count, "Weird fx texture mapping.");
 				index = texture_mappings[i];
 				break;
 			}
 		}
-		if(index == -1) {
+		if (index == -1) {
 			std::vector<u8> data = src.read_bytes(header.texture_data + def.texture_offset, def.width * def.height, "texture data");
 			std::vector<u32> palette = src.read_multiple<u32>(header.texture_data + def.palette_offset, 256, "palette").copy();
 			Texture texture = Texture::create_8bit_paletted(def.width, def.height, std::move(data), std::move(palette));
 			texture.multiply_alphas();
 			texture.swizzle_palette();
-			if(game == Game::DL) {
+			if (game == Game::DL) {
 				texture.reswizzle();
 			}
 			
@@ -154,12 +154,12 @@ static std::tuple<s64, s64> write_sky_textures(
 	
 	std::vector<SkyTexture> defs(texture_mappings.size(), {{}});
 	
-	for(s32 i = 0; i < (s32) textures.size(); i++) {
+	for (s32 i = 0; i < (s32) textures.size(); i++) {
 		Texture texture = textures[i];
 		texture.to_8bit_paletted();
 		texture.divide_alphas();
 		texture.swizzle_palette();
-		if(game == Game::DL) {
+		if (game == Game::DL) {
 			texture.swizzle();
 		}
 		
@@ -171,8 +171,8 @@ static std::tuple<s64, s64> write_sky_textures(
 		dest.write_multiple(texture.data);
 		
 		// Populate all the texture headers that point to this texture.
-		for(s32 j = 0; j < (s32) texture_mappings.size(); j++) {
-			if(texture_mappings[j] == i) {
+		for (s32 j = 0; j < (s32) texture_mappings.size(); j++) {
+			if (texture_mappings[j] == i) {
 				SkyTexture& def = defs[j];
 				def.texture_offset = texture_ofs;
 				def.palette_offset = palette_ofs;
@@ -192,7 +192,7 @@ static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, Game g
 	SkyShell shell;
 	
 	s32 cluster_count = 0;
-	if(game == Game::RAC || game == Game::GC) {
+	if (game == Game::RAC || game == Game::GC) {
 		RacGcSkyShellHeader header = src.read<RacGcSkyShellHeader>(offset, "shell header");
 		shell.textured = (header.flags & 1) == 0;
 		cluster_count = header.cluster_count;
@@ -209,7 +209,7 @@ static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, Game g
 		cluster_count = header.cluster_count;
 	}
 	
-	for(s32 i = 0; i < cluster_count; i++) {
+	for (s32 i = 0; i < cluster_count; i++) {
 		read_sky_cluster(shell.mesh, src, offset + 0x10 + i * sizeof(SkyClusterHeader), texture_count, shell.textured);
 	}
 	
@@ -228,7 +228,7 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32
 	
 	f32 mid_threshold = 20.f / 90.f;
 	f32 high_threshold = 65.f / 90.f;
-	for(s32 azimuth = -6; azimuth < 6; azimuth++) {
+	for (s32 azimuth = -6; azimuth < 6; azimuth++) {
 		f32 min_azimuth = azimuth * (1.f / 6.f);
 		f32 max_azimuth = (azimuth + 1) * (1.f / 6.f);
 		
@@ -243,7 +243,7 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32
 	
 	dest.pad(0x10);
 	s64 header_ofs = dest.tell();
-	if(game == Game::RAC || game == Game::GC) {
+	if (game == Game::RAC || game == Game::GC) {
 		RacGcSkyShellHeader header = {};
 		verify(cluster_headers.size() < INT32_MAX, "Too many clusters.");
 		header.cluster_count = (s32) cluster_headers.size();
@@ -264,7 +264,7 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32
 		dest.write(header);
 	}
 	dest.pad(0x10);
-	for(SkyClusterHeader& cluster_header : cluster_headers) {
+	for (SkyClusterHeader& cluster_header : cluster_headers) {
 		cluster_header.data += dest.tell() + cluster_headers.size() * sizeof(SkyClusterHeader);
 	}
 	dest.write_multiple(cluster_headers);
@@ -292,7 +292,7 @@ static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 textu
 	dest.vertices.resize(base_index + header.vertex_count);
 	auto sky_vertices = src.read_multiple<SkyVertex>(header.data + header.vertex_offset, header.vertex_count, "vertex positions");
 	auto sts = src.read_multiple<SkyTexCoord>(header.data + header.st_offset, header.vertex_count, "texture coordinates");
-	for(s32 i = 0; i < header.vertex_count; i++) {
+	for (s32 i = 0; i < header.vertex_count; i++) {
 		dest.vertices[base_index + i].pos.x = sky_vertices[i].x * (1 / 1024.f);
 		dest.vertices[base_index + i].pos.y = sky_vertices[i].y * (1 / 1024.f);
 		dest.vertices[base_index + i].pos.z = sky_vertices[i].z * (1 / 1024.f);
@@ -301,7 +301,7 @@ static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 textu
 		dest.vertices[base_index + i].colour.r = 255;
 		dest.vertices[base_index + i].colour.g = 255;
 		dest.vertices[base_index + i].colour.b = 255;
-		if(sky_vertices[i].alpha == 0x80) {
+		if (sky_vertices[i].alpha == 0x80) {
 			dest.vertices[base_index + i].colour.a = 255;
 		} else {
 			dest.vertices[base_index + i].colour.a = sky_vertices[i].alpha * 2;
@@ -312,11 +312,11 @@ static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 textu
 	Opt<s32> last_material = 0;
 	
 	auto faces = src.read_multiple<SkyFace>(header.data + header.tri_offset, header.tri_count, "faces");
-	for(const SkyFace& face : faces) {
-		if(primitive == nullptr || face.texture != last_material) {
+	for (const SkyFace& face : faces) {
+		if (primitive == nullptr || face.texture != last_material) {
 			primitive = &dest.primitives.emplace_back();
 			primitive->attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::COLOR_0;
-			if(face.texture != 0xff) {
+			if (face.texture != 0xff) {
 				verify(face.texture < texture_count, "Sky has bad texture data.");
 				primitive->material = face.texture;
 			}
@@ -344,10 +344,10 @@ static void write_sky_clusters(
 	std::vector<SkyFace> faces;
 	std::vector<s32> mapping(shell.vertices.size(), -1);
 	
-	for(size_t i = 0; i < shell.primitives.size(); i++) {
+	for (size_t i = 0; i < shell.primitives.size(); i++) {
 		const GLTF::MeshPrimitive& primitive = shell.primitives[i];
 		
-		for(size_t j = 0; j < primitive.indices.size() / 3; j++) {
+		for (size_t j = 0; j < primitive.indices.size() / 3; j++) {
 			glm::vec3 inverse_sphere_normal = glm::normalize(
 				shell.vertices[primitive.indices[j * 3 + 0]].pos +
 				shell.vertices[primitive.indices[j * 3 + 1]].pos +
@@ -355,45 +355,45 @@ static void write_sky_clusters(
 				
 			f32 azimuth_radians = atan2f(inverse_sphere_normal.x, inverse_sphere_normal.y);
 			f32 azimuth_half_turns = azimuth_radians * (1.f / WRENCH_PI);
-			if(azimuth_bias != 0.f) {
+			if (azimuth_bias != 0.f) {
 				azimuth_half_turns = (fmodf((azimuth_half_turns + azimuth_bias) / 2.f + 0.5f, 1.f) - 0.5f) * 2.f;
 			}
-			if(azimuth_half_turns < min_azimuth || azimuth_half_turns > max_azimuth) {
+			if (azimuth_half_turns < min_azimuth || azimuth_half_turns > max_azimuth) {
 				continue;
 			}
 			
 			f32 elevation_radians = asinf(inverse_sphere_normal.z);
 			f32 elevation_quarter_turns = elevation_radians * (2.f / WRENCH_PI);
-			if(elevation_quarter_turns < min_elev || elevation_quarter_turns > max_elev) {
+			if (elevation_quarter_turns < min_elev || elevation_quarter_turns > max_elev) {
 				continue;
 			}
 			
 			size_t vertex_count = vertices.size();
-			for(s32 k = 0; k < 3; k++) {
+			for (s32 k = 0; k < 3; k++) {
 				s32 src_index = primitive.indices[j * 3 + k];
-				if(mapping.at(src_index) == -1) {
+				if (mapping.at(src_index) == -1) {
 					vertex_count++;
 				}
 			}
 			
 			// TODO: Should maybe check the cluster size too.
-			if(vertex_count > INT8_MAX || faces.size() + 1 > INT16_MAX) {
+			if (vertex_count > INT8_MAX || faces.size() + 1 > INT16_MAX) {
 				headers.emplace_back(write_sky_cluster(data, vertices, faces));
 				vertices.clear();
 				faces.clear();
-				for(s32& m : mapping) {
+				for (s32& m : mapping) {
 					m = -1;
 				}
 			}
 			
 			s32 indices[3];
-			for(s32 k = 0; k < 3; k++) {
+			for (s32 k = 0; k < 3; k++) {
 				s32 src_index = primitive.indices[j * 3 + k];
 				s32& dest_index = mapping.at(src_index);
-				if(dest_index == -1) {
+				if (dest_index == -1) {
 					dest_index = (s32) vertices.size();
 					Vertex& vertex = vertices.emplace_back(shell.vertices.at(src_index));
-					if((primitive.attributes_bitfield & GLTF::COLOR_0) == 0) {
+					if ((primitive.attributes_bitfield & GLTF::COLOR_0) == 0) {
 						vertex.colour.a = 0xff;
 					}
 				}
@@ -402,7 +402,7 @@ static void write_sky_clusters(
 			}
 			
 			SkyFace& face = faces.emplace_back();
-			if(primitive.material.has_value()) {
+			if (primitive.material.has_value()) {
 				verify(*primitive.material < 256, "Too many textures.");
 				face.texture = (u8) *primitive.material;
 			} else {
@@ -415,7 +415,7 @@ static void write_sky_clusters(
 		}
 	}
 	
-	if(!faces.empty()) {
+	if (!faces.empty()) {
 		headers.emplace_back(write_sky_cluster(data, vertices, faces));
 	}
 }
@@ -430,12 +430,12 @@ static SkyClusterHeader write_sky_cluster(
 	data.pad(0x10);
 	header.data = data.tell();
 	header.vertex_offset = data.tell() - header.data;
-	for(const Vertex& src : vertices) {
+	for (const Vertex& src : vertices) {
 		SkyVertex vertex;
 		vertex.x = (s16) roundf(src.pos.x * 1024.f);
 		vertex.y = (s16) roundf(src.pos.y * 1024.f);
 		vertex.z = (s16) roundf(src.pos.z * 1024.f);
-		if(src.colour.a == 0xff) {
+		if (src.colour.a == 0xff) {
 			vertex.alpha = 0x80;
 		} else {
 			vertex.alpha = src.colour.a / 2;
@@ -445,7 +445,7 @@ static SkyClusterHeader write_sky_cluster(
 	
 	data.pad(0x4);
 	header.st_offset = data.tell() - header.data;
-	for(const Vertex& src : vertices) {
+	for (const Vertex& src : vertices) {
 		SkyTexCoord st;
 		st.s = vu_float_to_fixed12(src.tex_coord.x);
 		st.t = vu_float_to_fixed12(src.tex_coord.y);

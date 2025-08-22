@@ -65,19 +65,19 @@ std::vector<CppToken> eat_cpp_file(char* input)
 	lexer.begin = input;
 	lexer.ptr = input;
 	splice_physical_lines(input, lexer.line_lookup); // [lex.phases] 1
-	while(*lexer.ptr != '\0') {
+	while (*lexer.ptr != '\0') {
 		// Skip whitespace.
-		if(*lexer.ptr == ' ' || *lexer.ptr == '\n' || *lexer.ptr == '\t') {
+		if (*lexer.ptr == ' ' || *lexer.ptr == '\n' || *lexer.ptr == '\t') {
 			lexer.ptr++;
 			continue;
 		}
 		
-		if(*lexer.ptr == '#') {
+		if (*lexer.ptr == '#') {
 			// Preprocessor directive.
 			lexer.ptr++;
-			while(*lexer.ptr == ' ' || *lexer.ptr == '\t') lexer.ptr++; // Skip whitespace.
+			while (*lexer.ptr == ' ' || *lexer.ptr == '\t') lexer.ptr++; // Skip whitespace.
 			const char* str_begin = lexer.ptr;
-			while(*lexer.ptr != '\n' && *lexer.ptr != '\0') {
+			while (*lexer.ptr != '\n' && *lexer.ptr != '\0') {
 				lexer.ptr++;
 			}
 			CppToken& token = lexer.tokens.emplace_back();
@@ -88,12 +88,12 @@ std::vector<CppToken> eat_cpp_file(char* input)
 			continue;
 		}
 		
-		if(lexer.eat_raw_string()) {
+		if (lexer.eat_raw_string()) {
 			continue;
 		}
 		
 		// [lex.pptoken] 3.2
-		if(lexer.ptr[0] == '<' && lexer.ptr[1] == ':' && lexer.ptr[2] == ':' && (lexer.ptr[3] != ':' && lexer.ptr[3] != '>')) {
+		if (lexer.ptr[0] == '<' && lexer.ptr[1] == ':' && lexer.ptr[2] == ':' && (lexer.ptr[3] != ':' && lexer.ptr[3] != '>')) {
 			lexer.ptr += 3;
 			CppToken& token_1 = lexer.tokens.emplace_back();
 			token_1.type = CPP_OPERATOR;
@@ -106,19 +106,19 @@ std::vector<CppToken> eat_cpp_file(char* input)
 			continue;
 		}
 		
-		if(lexer.eat_comment()) {
+		if (lexer.eat_comment()) {
 			continue;
 		}
 		
-		if(lexer.eat_keyword_or_operator()) {
+		if (lexer.eat_keyword_or_operator()) {
 			continue;
 		}
 		
-		if(lexer.eat_literal()) {
+		if (lexer.eat_literal()) {
 			continue;
 		}
 		
-		if(lexer.eat_identifier()) {
+		if (lexer.eat_identifier()) {
 			continue;
 		}
 		
@@ -128,16 +128,16 @@ std::vector<CppToken> eat_cpp_file(char* input)
 	
 	// Fill in prev and next indices for skipping preprocessor directives.
 	size_t prev = lexer.tokens.size();
-	for(size_t i = 0; i < lexer.tokens.size(); i++) {
+	for (size_t i = 0; i < lexer.tokens.size(); i++) {
 		lexer.tokens[i].prev = prev;
-		if(lexer.tokens[i].type != CPP_PREPROCESSOR_DIRECTIVE) {
+		if (lexer.tokens[i].type != CPP_PREPROCESSOR_DIRECTIVE) {
 			prev = i;
 		}
 	}
 	size_t next = lexer.tokens.size();
-	for(size_t i = lexer.tokens.size(); i > 0; i--) {
+	for (size_t i = lexer.tokens.size(); i > 0; i--) {
 		lexer.tokens[i - 1].next = next;
-		if(lexer.tokens[i - 1].type != CPP_PREPROCESSOR_DIRECTIVE) {
+		if (lexer.tokens[i - 1].type != CPP_PREPROCESSOR_DIRECTIVE) {
 			next = i - 1;
 		}
 	}
@@ -150,11 +150,11 @@ static void splice_physical_lines(char* string, std::map<s32, s32>& line_lookup_
 	size_t size = strlen(string);
 	size_t out = 0;
 	s32 current_line = 1;
-	for(size_t in = 0; in < size; in++) {
-		if(string[in] == '\\' && string[in + 1] == '\n') {
+	for (size_t in = 0; in < size; in++) {
+		if (string[in] == '\\' && string[in + 1] == '\n') {
 			in += 2;
 			current_line++;
-		} else if(string[in] == '\n') {
+		} else if (string[in] == '\n') {
 			current_line++;
 			line_lookup_dest[-((s32) out + 1)] = current_line;
 		}
@@ -165,7 +165,7 @@ static void splice_physical_lines(char* string, std::map<s32, s32>& line_lookup_
 
 bool CppLexer::eat_raw_string()
 {
-	if(ptr[0] != 'R' || ptr[1] != '"') {
+	if (ptr[0] != 'R' || ptr[1] != '"') {
 		return false;
 	}
 	
@@ -174,22 +174,22 @@ bool CppLexer::eat_raw_string()
 	dchar[0] = ')';
 	s32 dchar_size;
 	// Read opening delimiter.
-	for(dchar_size = 0; dchar_size < 16; dchar_size++) {
-		if(*ptr == '(' || *ptr == '\0') break;
+	for (dchar_size = 0; dchar_size < 16; dchar_size++) {
+		if (*ptr == '(' || *ptr == '\0') break;
 		dchar[dchar_size + 1] = *(ptr++);
 	}
-	if(*ptr != '\0') ptr++; // Skip past '('.
+	if (*ptr != '\0') ptr++; // Skip past '('.
 	const char* str_begin = ptr;
 	// Scan for closing delimiter.
-	while(*ptr != '\0') {
+	while (*ptr != '\0') {
 		bool matches = true;
-		for(s32 i = 0; i < dchar_size + 1; i++) {
-			if(ptr[i] != dchar[i]) {
+		for (s32 i = 0; i < dchar_size + 1; i++) {
+			if (ptr[i] != dchar[i]) {
 				matches = false;
 				break;
 			}
 		}
-		if(matches) {
+		if (matches) {
 			break;
 		}
 		ptr++;
@@ -209,20 +209,20 @@ bool CppLexer::eat_raw_string()
 bool CppLexer::eat_comment()
 {
 	// [lex.comment]
-	if(ptr[0] == '/' && ptr[1] == '*') {
+	if (ptr[0] == '/' && ptr[1] == '*') {
 		ptr += 2;
-		while(*ptr != '\0') {
-			if(ptr[0] == '*' && ptr[1] == '/') {
+		while (*ptr != '\0') {
+			if (ptr[0] == '*' && ptr[1] == '/') {
 				ptr += 2;
 				break;
 			}
 			ptr++;
 		}
 		return true;
-	} else if(ptr[0] == '/' && ptr[1] == '/') {
+	} else if (ptr[0] == '/' && ptr[1] == '/') {
 		ptr += 2;
-		while(*ptr != '\0') {
-			if(ptr[0] == '\n') {
+		while (*ptr != '\0') {
+			if (ptr[0] == '\n') {
 				ptr++;
 				break;
 			}
@@ -236,9 +236,9 @@ bool CppLexer::eat_comment()
 bool CppLexer::eat_keyword_or_operator()
 {
 	// [lex.key]
-	for(s32 i = 0; i < CPP_KEYWORD_COUNT; i++) {
+	for (s32 i = 0; i < CPP_KEYWORD_COUNT; i++) {
 		size_t chars = strlen(CPP_KEYWORDS[i].string);
-		if(strncmp(ptr, CPP_KEYWORDS[i].string, chars) == 0 && !is_literal_char(ptr[chars])) {
+		if (strncmp(ptr, CPP_KEYWORDS[i].string, chars) == 0 && !is_literal_char(ptr[chars])) {
 			ptr += strlen(CPP_KEYWORDS[i].string);
 			CppToken& token = tokens.emplace_back();
 			token.type = CPP_KEYWORD;
@@ -249,9 +249,9 @@ bool CppLexer::eat_keyword_or_operator()
 	}
 	
 	// [lex.operators]
-	for(s32 i = 0; i < CPP_OPERATOR_COUNT; i++) {
+	for (s32 i = 0; i < CPP_OPERATOR_COUNT; i++) {
 		size_t chars = strstr(CPP_OPERATORS[i].string, " ") - CPP_OPERATORS[i].string;
-		if(strncmp(ptr, CPP_OPERATORS[i].string, chars) == 0) {
+		if (strncmp(ptr, CPP_OPERATORS[i].string, chars) == 0) {
 			ptr += chars;
 			CppToken& token = tokens.emplace_back();
 			token.type = CPP_OPERATOR;
@@ -268,11 +268,11 @@ bool CppLexer::eat_literal()
 {
 	bool hungry = true;
 	
-	if(hungry && eat_number_literal()) hungry = false;
-	if(hungry && eat_character_literal()) hungry = false;
-	if(hungry && eat_string_literal()) hungry = false;
-	if(hungry && eat_boolean_literal()) hungry = false;
-	if(hungry && eat_pointer_literal()) hungry = false;
+	if (hungry && eat_number_literal()) hungry = false;
+	if (hungry && eat_character_literal()) hungry = false;
+	if (hungry && eat_string_literal()) hungry = false;
+	if (hungry && eat_boolean_literal()) hungry = false;
+	if (hungry && eat_pointer_literal()) hungry = false;
 	
 	return !hungry;
 }
@@ -281,10 +281,10 @@ bool CppLexer::eat_number_literal()
 {
 	const char* str_begin = ptr;
 	
-	if(ptr[0] == '0' && (ptr[1] == 'b' || ptr[1] == 'B')) {
+	if (ptr[0] == '0' && (ptr[1] == 'b' || ptr[1] == 'B')) {
 		// binary-literal
 		ptr += 2;
-		while(*ptr == '0'  || *ptr == '1' || *ptr == '\'') ptr++;
+		while (*ptr == '0'  || *ptr == '1' || *ptr == '\'') ptr++;
 		
 		CppToken& token = tokens.emplace_back();
 		token.type = CPP_INTEGER_LITERAL;
@@ -294,10 +294,10 @@ bool CppLexer::eat_number_literal()
 		token.line = get_line();
 		
 		return true;
-	} else if(ptr[0] == '0' && (ptr[1] == 'x' || ptr[1] == 'X')) {
+	} else if (ptr[0] == '0' && (ptr[1] == 'x' || ptr[1] == 'X')) {
 		// hexadecimal-literal
 		ptr += 2;
-		while((*ptr >= '0' && *ptr <= '9')
+		while ((*ptr >= '0' && *ptr <= '9')
 			|| (*ptr >= 'a' && *ptr <= 'f')
 			|| (*ptr >= 'A' && *ptr <= 'F')
 			|| *ptr == '\'') ptr++;
@@ -310,10 +310,10 @@ bool CppLexer::eat_number_literal()
 		token.line = get_line();
 		
 		return true;
-	} else if(ptr[0] == '0') {
+	} else if (ptr[0] == '0') {
 		// octal-literal
 		ptr++;
-		while((*ptr >= '0' && *ptr <= '7') || *ptr == '\'') ptr++;
+		while ((*ptr >= '0' && *ptr <= '7') || *ptr == '\'') ptr++;
 		
 		CppToken& token = tokens.emplace_back();
 		token.type = CPP_INTEGER_LITERAL;
@@ -323,12 +323,12 @@ bool CppLexer::eat_number_literal()
 		token.line = get_line();
 		
 		return true;
-	} else if(ptr[0] >= '0' && ptr[0] <= '9') {
+	} else if (ptr[0] >= '0' && ptr[0] <= '9') {
 		// decimal-literal / decimal-floating-point-literal
-		while((*ptr >= '0' && *ptr <= '9') || *ptr == '\'') ptr++;
-		if(*ptr == '.') {
+		while ((*ptr >= '0' && *ptr <= '9') || *ptr == '\'') ptr++;
+		if (*ptr == '.') {
 			ptr++;
-			while((*ptr >= '0' && *ptr <= '9') || *ptr == '\'') ptr++;
+			while ((*ptr >= '0' && *ptr <= '9') || *ptr == '\'') ptr++;
 			
 			CppToken& token = tokens.emplace_back();
 			token.type = CPP_FLOATING_POINT_LITERAL;
@@ -338,10 +338,10 @@ bool CppLexer::eat_number_literal()
 			token.line = get_line();
 			
 			// floating-point-suffix
-			if(*ptr == 'f' || *ptr == 'F') ptr++;
-			if(*ptr == 'f' || *ptr == 'F') ptr++;
+			if (*ptr == 'f' || *ptr == 'F') ptr++;
+			if (*ptr == 'f' || *ptr == 'F') ptr++;
 		} else {
-			while((*ptr >= '0' && *ptr <= '9')
+			while ((*ptr >= '0' && *ptr <= '9')
 				|| *ptr == '\'') ptr++;
 			
 			CppToken& token = tokens.emplace_back();
@@ -352,8 +352,8 @@ bool CppLexer::eat_number_literal()
 			token.line = get_line();
 			
 			// integer-suffix
-			if(*ptr == 'u' || *ptr == 'U' || *ptr == 'l' || *ptr == 'L') ptr++;
-			if(*ptr == 'u' || *ptr == 'U' || *ptr == 'l' || *ptr == 'L') ptr++;
+			if (*ptr == 'u' || *ptr == 'U' || *ptr == 'l' || *ptr == 'L') ptr++;
+			if (*ptr == 'u' || *ptr == 'U' || *ptr == 'l' || *ptr == 'L') ptr++;
 		}
 		
 		return true;
@@ -367,17 +367,17 @@ bool CppLexer::eat_character_literal()
 	const char* str_begin = ptr;
 	
 	bool hungry = true;
-	if(hungry && strncmp(ptr, "u8'", 3) == 0) { ptr += 3; hungry = false; }
-	if(hungry && strncmp(ptr, "u'", 2) == 0) { ptr += 2; hungry = false; }
-	if(hungry && strncmp(ptr, "U'", 2) == 0) { ptr += 2; hungry = false; }
-	if(hungry && strncmp(ptr, "L'", 2) == 0) { ptr += 2; hungry = false; }
-	if(hungry && strncmp(ptr, "'", 1) == 0) { ptr += 1; hungry = false; }
+	if (hungry && strncmp(ptr, "u8'", 3) == 0) { ptr += 3; hungry = false; }
+	if (hungry && strncmp(ptr, "u'", 2) == 0) { ptr += 2; hungry = false; }
+	if (hungry && strncmp(ptr, "U'", 2) == 0) { ptr += 2; hungry = false; }
+	if (hungry && strncmp(ptr, "L'", 2) == 0) { ptr += 2; hungry = false; }
+	if (hungry && strncmp(ptr, "'", 1) == 0) { ptr += 1; hungry = false; }
 	
-	if(!hungry) {
-		while(*ptr != '\'' && *ptr != '\0') {
+	if (!hungry) {
+		while (*ptr != '\'' && *ptr != '\0') {
 			eat_literal_char();
 		}
-		if(*ptr != '\0') ptr++; // '\''
+		if (*ptr != '\0') ptr++; // '\''
 		
 		CppToken& token = tokens.emplace_back();
 		token.type = CPP_CHARACTER_LITERAL;
@@ -394,16 +394,16 @@ bool CppLexer::eat_character_literal()
 bool CppLexer::eat_string_literal()
 {
 	bool hungry = true;
-	if(hungry && strncmp(ptr, "u8\"", 3) == 0) { ptr += 3; hungry = false; }
-	if(hungry && strncmp(ptr, "u\"", 2) == 0) { ptr += 2; hungry = false; }
-	if(hungry && strncmp(ptr, "U\"", 2) == 0) { ptr += 2; hungry = false; }
-	if(hungry && strncmp(ptr, "L\"", 2) == 0) { ptr += 2; hungry = false; }
-	if(hungry && strncmp(ptr, "\"", 1) == 0) { ptr += 1; hungry = false; }
+	if (hungry && strncmp(ptr, "u8\"", 3) == 0) { ptr += 3; hungry = false; }
+	if (hungry && strncmp(ptr, "u\"", 2) == 0) { ptr += 2; hungry = false; }
+	if (hungry && strncmp(ptr, "U\"", 2) == 0) { ptr += 2; hungry = false; }
+	if (hungry && strncmp(ptr, "L\"", 2) == 0) { ptr += 2; hungry = false; }
+	if (hungry && strncmp(ptr, "\"", 1) == 0) { ptr += 1; hungry = false; }
 	
 	const char* str_begin = ptr;
 	
-	if(!hungry) {
-		while(*ptr != '\"' && *ptr != '\0') {
+	if (!hungry) {
+		while (*ptr != '\"' && *ptr != '\0') {
 			eat_literal_char();
 		}
 		
@@ -413,7 +413,7 @@ bool CppLexer::eat_string_literal()
 		token.str_end = ptr;
 		token.line = get_line();
 		
-		if(*ptr != '\0') ptr++;
+		if (*ptr != '\0') ptr++;
 		
 		return true;
 	}
@@ -423,9 +423,9 @@ bool CppLexer::eat_string_literal()
 
 void CppLexer::eat_literal_char()
 {
-	if(*ptr == '\\') {
+	if (*ptr == '\\') {
 		ptr++;
-		if(*ptr == '\''
+		if (*ptr == '\''
 			|| *ptr == '"'
 			|| *ptr == '?'
 			|| *ptr == '\\'
@@ -438,13 +438,13 @@ void CppLexer::eat_literal_char()
 			|| *ptr == 'v') {
 			// simple-escape-sequence
 			ptr++;
-		} else if(*ptr == 'x') {
+		} else if (*ptr == 'x') {
 			// hexadecimal-escape-sequence
 			ptr++;
-			while((*ptr >= '0' && *ptr <= '9') || (*ptr >= 'A' && *ptr <= 'F') || (*ptr >= 'a' && *ptr <= 'f')) ptr++;
+			while ((*ptr >= '0' && *ptr <= '9') || (*ptr >= 'A' && *ptr <= 'F') || (*ptr >= 'a' && *ptr <= 'f')) ptr++;
 		} else {
 			// octal-escape-sequence
-			while(*ptr >= '0' && *ptr <= '7') ptr++;
+			while (*ptr >= '0' && *ptr <= '7') ptr++;
 		}
 	} else {
 		ptr++;
@@ -455,7 +455,7 @@ bool CppLexer::eat_boolean_literal()
 {
 	const char* str_begin = ptr;
 	
-	if(strncmp(ptr, "false", 5) == 0 && !is_literal_char(ptr[5])) {
+	if (strncmp(ptr, "false", 5) == 0 && !is_literal_char(ptr[5])) {
 		ptr += 5;
 		
 		CppToken& token = tokens.emplace_back();
@@ -467,7 +467,7 @@ bool CppLexer::eat_boolean_literal()
 		
 		return true;
 	}
-	if(strncmp(ptr, "true", 4) == 0 && !is_literal_char(ptr[4])) {
+	if (strncmp(ptr, "true", 4) == 0 && !is_literal_char(ptr[4])) {
 		ptr += 4;
 		
 		CppToken& token = tokens.emplace_back();
@@ -486,7 +486,7 @@ bool CppLexer::eat_pointer_literal()
 {
 	const char* str_begin = ptr;
 	
-	if(strncmp(ptr, "nullptr", 7) == 0 && !is_literal_char(ptr[7])) {
+	if (strncmp(ptr, "nullptr", 7) == 0 && !is_literal_char(ptr[7])) {
 		ptr += 7;
 		
 		CppToken& token = tokens.emplace_back();
@@ -503,10 +503,10 @@ bool CppLexer::eat_pointer_literal()
 
 bool CppLexer::eat_identifier()
 {
-	if((*ptr >= 'A' && *ptr <= 'Z') || (*ptr >= 'a' && *ptr <= 'z') || *ptr == '_') {
+	if ((*ptr >= 'A' && *ptr <= 'Z') || (*ptr >= 'a' && *ptr <= 'z') || *ptr == '_') {
 		const char* str_begin = ptr;
 		ptr++;
-		while(is_literal_char(*ptr)) {
+		while (is_literal_char(*ptr)) {
 			ptr++;
 		}
 		CppToken& token = tokens.emplace_back();
@@ -522,7 +522,7 @@ bool CppLexer::eat_identifier()
 s32 CppLexer::get_line()
 {
 	auto iter = line_lookup.lower_bound(-((s32) (ptr - begin)));
-	if(iter != line_lookup.end()) {
+	if (iter != line_lookup.end()) {
 		return iter->second;
 	} else {
 		return 0;
@@ -536,7 +536,7 @@ static bool is_literal_char(char c)
 
 const char* cpp_token_type(CppTokenType type)
 {
-	switch(type) {
+	switch (type) {
 		case CPP_IDENTIFIER: return "identifier";
 		case CPP_KEYWORD: return "keyword";
 		case CPP_BOOLEAN_LITERAL: return "boolean literal";

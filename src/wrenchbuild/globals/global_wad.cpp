@@ -141,7 +141,7 @@ static void pack_rac_global_wad(
 	pack_assets_sa<SectorRange>(dest, ARRAY_PAIR(header.credits_images_ntsc), src.get_credits_images_ntsc(), config, FMT_TEXTURE_RGBA_512_416);
 	pack_assets_sa<SectorRange>(dest, ARRAY_PAIR(header.credits_images_pal), src.get_credits_images_pal(), config, FMT_TEXTURE_RGBA_512_448);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.wad_things), src.get_wad_things(), config, "");
-	if(!no_mpegs) {
+	if (!no_mpegs) {
 		pack_assets_sa(dest, ARRAY_PAIR(header.mpegs), src.get_mpegs(), config, FMT_BINARY_PSS);
 	}
 	pack_assets_sa(dest, ARRAY_PAIR(header.help_audio), src.get_help_audio(), config);
@@ -161,8 +161,8 @@ static void unpack_vags(
 	s32 count,
 	BuildConfig config)
 {
-	for(s32 i = 0; i < count; i++) {
-		if(!sectors[i].empty()) {
+	for (s32 i = 0; i < count; i++) {
+		if (!sectors[i].empty()) {
 			Sector32 size = get_vag_size(src, sectors[i]);
 			SectorRange range{sectors[i], size};
 			unpack_asset(dest.child<BinaryAsset>(i), src, range, config, FMT_BINARY_VAG);

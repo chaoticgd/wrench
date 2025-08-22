@@ -30,7 +30,7 @@ Shader::Shader(
 	
 Shader::~Shader()
 {
-	if(m_id) {
+	if (m_id) {
 		glDeleteProgram(m_id);
 	}
 }
@@ -61,7 +61,7 @@ GLuint Shader::link(GLuint vertex, GLuint fragment)
 	int log_length;
 	glGetProgramiv(id, GL_LINK_STATUS, &result);
 	glGetProgramiv(id, GL_INFO_LOG_LENGTH, &log_length);
-	if(log_length > 0) {
+	if (log_length > 0) {
 		std::string message;
 		message.resize(log_length);
 		glGetProgramInfoLog(id, log_length, NULL, message.data());
@@ -87,7 +87,7 @@ GLuint Shader::compile(const GLchar* src, GLuint type)
 	glCompileShader(id);
 	glGetShaderiv(id, GL_COMPILE_STATUS, &result);
 	glGetShaderiv(id, GL_INFO_LOG_LENGTH, &log_length);
-	if(log_length > 0) {
+	if (log_length > 0) {
 		std::string message;
 		message.resize(log_length);
 		glGetShaderInfoLog(id, log_length, NULL, message.data());
@@ -223,7 +223,7 @@ Shaders::Shaders() :
 			
 			void main() {
 				gl_FragColor = texture2D(sampler, uv);
-				if(gl_FragColor.a < 0.001) {
+				if (gl_FragColor.a < 0.001) {
 					discard;
 				}
 			}

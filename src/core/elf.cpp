@@ -73,14 +73,14 @@ ElfFile read_elf_file(Buffer src)
 	auto program_headers = src.read_multiple<ElfProgramHeader>(file_header.phoff, file_header.phnum, "ELF program headers");
 	
 	const ElfSectionHeader& name_section = section_headers[file_header.shstrndx];
-	for(size_t i = 0; i < section_headers.size(); i++) {
+	for (size_t i = 0; i < section_headers.size(); i++) {
 		const ElfSectionHeader& shdr = section_headers[i];
-		if(i != file_header.shstrndx) {
+		if (i != file_header.shstrndx) {
 			ElfSection& section = elf.sections.emplace_back();
 			section.name = src.read_string(name_section.offset + shdr.name, false);
-			for(s32 j = 0; j < (s32) program_headers.size(); j++) {
+			for (s32 j = 0; j < (s32) program_headers.size(); j++) {
 				const ElfProgramHeader& phdr = program_headers[j];
-				if(shdr.offset >= program_headers[j].offset && shdr.offset + shdr.size <= phdr.offset + phdr.filesz) {
+				if (shdr.offset >= program_headers[j].offset && shdr.offset + shdr.size <= phdr.offset + phdr.filesz) {
 					section.segment = j;
 					break;
 				}
@@ -103,7 +103,7 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf)
 	
 	// Initialise the section headers.
 	section_headers.reserve(elf.sections.size());
-	for(const ElfSection& section : elf.sections) {
+	for (const ElfSection& section : elf.sections) {
 		section_headers.emplace_back(section.header);
 	}
 	
@@ -111,24 +111,24 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf)
 	s64 file_header_ofs = dest.alloc<ElfFileHeader>();
 	s64 program_headers_ofs = dest.alloc_multiple<ElfProgramHeader>(elf.segments.size());
 	dest.pad(0x1000);
-	for(size_t i = 0; i < elf.sections.size(); i++) {
+	for (size_t i = 0; i < elf.sections.size(); i++) {
 		const ElfSection& section = elf.sections[i];
-		if(section.data.empty())
+		if (section.data.empty())
 			continue;
 		
 		// Insert padding.
-		if(section.segment > -1) {
-			if(i > 0) {
+		if (section.segment > -1) {
+			if (i > 0) {
 				const ElfSection& last_section = elf.sections[i - 1];
-				if(last_section.segment == section.segment) {
+				if (last_section.segment == section.segment) {
 					// Make sure the address field matches up with the offset
 					// between different sections so they form a valid segment.
 					s32 padding_size = section.header.addr - (last_section.header.addr + last_section.data.size());
-					if(padding_size > 0) {
-						for(s32 j = 0; j < padding_size; j++) {
+					if (padding_size > 0) {
+						for (s32 j = 0; j < padding_size; j++) {
 							dest.write<u8>(0);
 						}
-					} else if(padding_size < 0) {
+					} else if (padding_size < 0) {
 						fprintf(stderr, "warning: Padding calculation gave negative result, segments may be incorrect.\n");
 					}
 				} else {
@@ -146,7 +146,7 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf)
 	}
 	
 	s64 section_header_names_ofs = dest.tell();
-	for(size_t i = 0; i < elf.sections.size(); i++) {
+	for (size_t i = 0; i < elf.sections.size(); i++) {
 		s64 offset = dest.tell();
 		dest.writesf("%s", elf.sections[i].name.c_str());
 		dest.write<char>('\0');
@@ -160,21 +160,21 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf)
 	s64 section_headers_ofs = dest.alloc_multiple<ElfSectionHeader>(elf.sections.size() + 1);
 	
 	// Fill in the program headers.
-	for(size_t segment = 0; segment < elf.segments.size(); segment++) {
+	for (size_t segment = 0; segment < elf.segments.size(); segment++) {
 		s32 addr = INT32_MAX;
 		s32 offset = INT32_MAX;
 		s32 end = INT32_MIN;
-		for(size_t section = 0; section < elf.sections.size(); section++) {
-			if(elf.sections[section].segment == segment && section_headers[section].addr > 0) {
+		for (size_t section = 0; section < elf.sections.size(); section++) {
+			if (elf.sections[section].segment == segment && section_headers[section].addr > 0) {
 				addr = std::min(addr, section_headers[section].addr);
 				offset = std::min(offset, section_headers[section].offset);
 				end = std::max(end, section_headers[section].offset + (s32) elf.sections[section].data.size());
 			}
 		}
 		
-		if(addr == INT32_MAX) addr = 0;
-		if(offset == INT32_MAX) offset = 0;
-		if(end == INT32_MIN) end = 0;
+		if (addr == INT32_MAX) addr = 0;
+		if (offset == INT32_MAX) offset = 0;
+		if (end == INT32_MIN) end = 0;
 		
 		program_headers[segment].offset = offset;
 		program_headers[segment].vaddr = addr;
@@ -195,7 +195,7 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf)
 	file_header.machine = ElfMachine::MIPS;
 	file_header.version = 1;
 	file_header.entry = elf.entry_point;
-	if(!elf.segments.empty()) {
+	if (!elf.segments.empty()) {
 		file_header.phoff = (s32) program_headers_ofs;
 	}
 	file_header.shoff = (s32) section_headers_ofs;
@@ -243,13 +243,13 @@ ElfFile read_ratchet_executable(Buffer src)
 	elf.sections.emplace_back();
 	
 	s32 ofs = 0;
-	for(s32 i = 0; ofs < src.size(); i++) {
+	for (s32 i = 0; ofs < src.size(); i++) {
 		// Read the block header, set the entry point, and check for EOF.
 		RatchetSectionHeader header = src.read<RatchetSectionHeader>(ofs, "ratchet section header");
 		ofs += sizeof(RatchetSectionHeader);
-		if(elf.entry_point == 0) {
+		if (elf.entry_point == 0) {
 			elf.entry_point = header.entry_point;
-		} else if(header.entry_point != elf.entry_point) {
+		} else if (header.entry_point != elf.entry_point) {
 			// This is the logic the game uses for breaking out of the loop, but
 			// it actually reads out of bounds at the end.
 			break;
@@ -277,8 +277,8 @@ ElfFile read_ratchet_executable(Buffer src)
 
 void write_ratchet_executable(OutBuffer dest, const ElfFile& elf)
 {
-	for(const ElfSection& section : elf.sections) {
-		if(section.header.addr > 0 && !section.data.empty()) {
+	for (const ElfSection& section : elf.sections) {
+		if (section.header.addr > 0 && !section.data.empty()) {
 			verify(section.header.addr % 4 == 0, "Loadable ELF section data must be aligned to 4 byte boundary in memory.");
 			verify(section.data.size() % 4 == 0, "Loadable ELF section size in bytes must be a multiple of 4.");
 			
@@ -295,14 +295,14 @@ void write_ratchet_executable(OutBuffer dest, const ElfFile& elf)
 
 bool fill_in_elf_headers(ElfFile& elf, const ElfFile& donor)
 {
-	if(elf.sections.size() != donor.sections.size())
+	if (elf.sections.size() != donor.sections.size())
 		return false;
 	
-	for(s32 i = 0; i < donor.sections.size(); i++)
-		if(elf.sections[i].header.type != donor.sections[i].header.type)
+	for (s32 i = 0; i < donor.sections.size(); i++)
+		if (elf.sections[i].header.type != donor.sections[i].header.type)
 			return false;
 	
-	for(s32 i = 0; i < donor.sections.size(); i++) {
+	for (s32 i = 0; i < donor.sections.size(); i++) {
 		ElfSection& section = elf.sections[i];
 		const ElfSection& donor_section = donor.sections[i];
 		section.name = donor_section.name;

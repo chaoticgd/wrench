@@ -35,7 +35,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 int main(int argc, char** argv)
 {
-	if(argc != 3) {
+	if (argc != 3) {
 		fprintf(stderr, "usage: %s <game path> <mod path>\n", argv[0]);
 		return 1;
 	}
@@ -84,7 +84,7 @@ static void run_wrench(
 	a.asset_forest.any_root()->for_each_logical_descendant([&](Asset& asset) {
 		// If the asset has strongly_deleted set to false, interpret that to
 		// mean the asset should shouldn't be weakly deleted.
-		if((asset.flags & ASSET_HAS_STRONGLY_DELETED_FLAG) == 0 || (asset.flags & ASSET_IS_STRONGLY_DELETED) != 0) {
+		if ((asset.flags & ASSET_HAS_STRONGLY_DELETED_FLAG) == 0 || (asset.flags & ASSET_IS_STRONGLY_DELETED) != 0) {
 			asset.flags |= ASSET_IS_WEAKLY_DELETED;
 		}
 	});
@@ -105,7 +105,7 @@ static void run_wrench(
 	
 	g_tools[g_active_tool]->funcs.activate();
 	
-	while(!glfwWindowShouldClose(a.glfw_window)) {
+	while (!glfwWindowShouldClose(a.glfw_window)) {
 		gui::run_frame(window, update);
 	}
 	
@@ -134,7 +134,7 @@ static void update_camera(app* a)
 	glm::vec2 mouse_diff = mouse_cur - a->mouse_last;
 	a->mouse_last = mouse_cur;
 	
-	if(!a->render_settings.camera_control) {
+	if (!a->render_settings.camera_control) {
 		return;
 	}
 	
@@ -167,26 +167,26 @@ static void update_camera(app* a)
 	
 	static constexpr float speed = 30.f;
 	
-	if(is_down(GLFW_KEY_W)) {
+	if (is_down(GLFW_KEY_W)) {
 		movement.x -= dz * a->delta_time * speed;
 		movement.y += dx * a->delta_time * speed;
 	}
-	if(is_down(GLFW_KEY_S)) {
+	if (is_down(GLFW_KEY_S)) {
 		movement.x += dz * a->delta_time * speed;
 		movement.y -= dx * a->delta_time * speed;
 	}
-	if(is_down(GLFW_KEY_A)) {
+	if (is_down(GLFW_KEY_A)) {
 		movement.x -= dx * a->delta_time * speed;
 		movement.y -= dz * a->delta_time * speed;
 	}
-	if(is_down(GLFW_KEY_D)) {
+	if (is_down(GLFW_KEY_D)) {
 		movement.x += dx * a->delta_time * speed;
 		movement.y += dz * a->delta_time * speed;
 	}
-	if(is_down(GLFW_KEY_SPACE)) {
+	if (is_down(GLFW_KEY_SPACE)) {
 		movement.z += dist * a->delta_time * speed;
 	}
-	if(is_down(GLFW_KEY_LEFT_SHIFT)) {
+	if (is_down(GLFW_KEY_LEFT_SHIFT)) {
 		movement.z -= dist * a->delta_time * speed;
 	}
 	a->render_settings.camera_position += movement;
@@ -196,13 +196,13 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 {
 	app* a = static_cast<app*>(glfwGetWindowUserPointer(window));
 	
-	if(action == GLFW_PRESS && key == GLFW_KEY_Z) {
+	if (action == GLFW_PRESS && key == GLFW_KEY_Z) {
 		a->render_settings.camera_control = !a->render_settings.camera_control;
 		glfwSetInputMode(window, GLFW_CURSOR,
 			a->render_settings.camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 	}
 	
-	if(!a->render_settings.camera_control) {
+	if (!a->render_settings.camera_control) {
 		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	}
 }

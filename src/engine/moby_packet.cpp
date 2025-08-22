@@ -33,7 +33,7 @@ std::vector<MobyPacket> read_packets(Buffer src, s64 table_ofs, s64 count, MobyF
 	std::vector<MobyPacket> packets;
 	
 	auto packet_table = src.read_multiple<MobyPacketEntry>(table_ofs, count, "moby packet table");
-	for(s32 i = 0; i < (s32) packet_table.size(); i++) {
+	for (s32 i = 0; i < (s32) packet_table.size(); i++) {
 		VERBOSE_SKINNING(printf("******** packet %d\n", i));
 		
 		const MobyPacketEntry& entry = packet_table[i];
@@ -52,10 +52,10 @@ std::vector<MobyPacket> read_packets(Buffer src, s64 table_ofs, s64 count, MobyF
 		verify(index_header.pad == 0, "Moby has bad index buffer.");
 		packet.vif.secret_indices.push_back(index_header.secret_index);
 		packet.vif.indices = index_data.read_multiple<s8>(4, index_data.size() - 4, "moby index unpack data").copy();
-		if(unpacks.size() >= 3) {
+		if (unpacks.size() >= 3) {
 			Buffer texture_data(unpacks.at(2).data);
 			verify(texture_data.size() % 0x40 == 0, "Moby has bad texture unpack.");
-			for(size_t i = 0; i < texture_data.size() / 0x40; i++) {
+			for (size_t i = 0; i < texture_data.size() / 0x40; i++) {
 				packet.vif.secret_indices.push_back(texture_data.read<s8>(i * 0x10 + 0xc, "extra index"));
 				auto prim = texture_data.read<MobyTexturePrimitive>(i * 0x40, "moby texture primitive");
 				verify(prim.d3_tex0_1.data_lo >= MOBY_TEX_NONE, "Regular moby packet has a texture index that is too low.");
@@ -87,15 +87,15 @@ void write_packets(
 {
 	//// TODO: Make it so we don't have to copy the packets here.
 	//std::vector<MobyPacket> packets;
-	//for(size_t i = 0; i < packet_count; i++) {
+	//for (size_t i = 0; i < packet_count; i++) {
 	//	packets.push_back(packets_in[i]);
 	//}
 	//
 	//// Fixup joint indices.
-	//for(MobyPacket& packet : packets) {
-	//	for(Vertex& vertex : packet.vertices) {
-	//		for(s32 i = 0; i < vertex.skin.count; i++) {
-	//			if(vertex.skin.joints[i] == -1) {
+	//for (MobyPacket& packet : packets) {
+	//	for (Vertex& vertex : packet.vertices) {
+	//		for (s32 i = 0; i < vertex.skin.count; i++) {
+	//			if (vertex.skin.joints[i] == -1) {
 	//				vertex.skin.joints[i] = 0;
 	//			}
 	//		}
@@ -110,7 +110,7 @@ void write_packets(
 	//std::vector<MobyPacketLowLevel> low_packets;
 	//MobyPacketLowLevel* last = nullptr;
 	//VU0MatrixAllocator matrix_allocator(max_joints_per_packet);
-	//for(size_t i = 0; i < packets.size(); i++) {
+	//for (size_t i = 0; i < packets.size(); i++) {
 	//	VERBOSE_MATRIX_ALLOCATION(printf("**** packet %d ****\n", i));
 	//	matrix_allocator.new_packet();
 	//	MatrixTransferSchedule schedule = schedule_matrix_transfers((s32) i, packets[i], last, matrix_allocator, liveness[i]);
@@ -119,7 +119,7 @@ void write_packets(
 	//	// Write the scheduled transfers.
 	//	verify_fatal((last == nullptr && schedule.last_packet_transfers.size() == 0) ||
 	//		(last != nullptr && schedule.last_packet_transfers.size() <= last->main_vertex_count));
-	//	for(size_t i = 0; i < schedule.last_packet_transfers.size(); i++) {
+	//	for (size_t i = 0; i < schedule.last_packet_transfers.size(); i++) {
 	//		verify_fatal(last != nullptr);
 	//		MobyVertex& mv = last->vertices.at(last->vertices.size() - i - 1);
 	//		MobyMatrixTransfer& transfer = schedule.last_packet_transfers[i];
@@ -128,7 +128,7 @@ void write_packets(
 	//	}
 	//	low.preloop_matrix_transfers = std::move(schedule.preloop_transfers);
 	//	verify_fatal(schedule.two_way_transfers.size() <= low.two_way_blend_vertex_count);
-	//	for(size_t i = 0; i < schedule.two_way_transfers.size(); i++) {
+	//	for (size_t i = 0; i < schedule.two_way_transfers.size(); i++) {
 	//		MobyVertex& mv = low.vertices.at(i);
 	//		MobyMatrixTransfer& transfer = schedule.two_way_transfers[i];
 	//		mv.v.two_way_blend.low_halfword |= transfer.spr_joint_index << 9;
@@ -144,7 +144,7 @@ void write_packets(
 	
 	static const s32 ST_UNPACK_ADDR_QUADWORDS = 0xc2;
 	
-	for(size_t i = 0; i < packet_count; i++) {
+	for (size_t i = 0; i < packet_count; i++) {
 		const MobyPacket& packet = packets_in[i];
 		MobyPacketEntry entry = {0};
 		
@@ -189,7 +189,7 @@ void write_packets(
 std::vector<MobyMetalPacket> read_metal_packets(Buffer src, s64 table_ofs, s64 count)
 {
 	std::vector<MobyMetalPacket> packets;
-	for(auto& entry : src.read_multiple<MobyPacketEntry>(table_ofs, count, "moby metal packet table")) {
+	for (auto& entry : src.read_multiple<MobyPacketEntry>(table_ofs, count, "moby metal packet table")) {
 		MobyMetalPacket packet;
 		
 		// Read VIF command list.
@@ -202,10 +202,10 @@ std::vector<MobyMetalPacket> read_metal_packets(Buffer src, s64 table_ofs, s64 c
 		verify(index_header.pad == 0, "Moby has bad index buffer.");
 		packet.vif.secret_indices.push_back(index_header.secret_index);
 		packet.vif.indices = index_data.read_multiple<s8>(4, index_data.size() - 4, "moby index unpack data").copy();
-		if(unpacks.size() >= 2) {
+		if (unpacks.size() >= 2) {
 			Buffer texture_data(unpacks.at(1).data);
 			verify(texture_data.size() % 0x40 == 0, "Moby has bad texture unpack.");
-			for(size_t i = 0; i < texture_data.size() / 0x40; i++) {
+			for (size_t i = 0; i < texture_data.size() / 0x40; i++) {
 				packet.vif.secret_indices.push_back(texture_data.read<s8>(i * 0x10 + 0xc, "extra index"));
 				auto prim = texture_data.read<MobyTexturePrimitive>(i * 0x40, "moby texture primitive");
 				verify(prim.d3_tex0_1.data_lo == MOBY_TEX_CHROME || prim.d3_tex0_1.data_lo == MOBY_TEX_GLASS,
@@ -225,7 +225,7 @@ std::vector<MobyMetalPacket> read_metal_packets(Buffer src, s64 table_ofs, s64 c
 void write_metal_packets(
 	OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalPacket>& packets, s64 class_header_ofs)
 {
-	for(const MobyMetalPacket& packet : packets) {
+	for (const MobyMetalPacket& packet : packets) {
 		MobyPacketEntry entry = {0};
 		
 		// Write VIF command list.
@@ -264,10 +264,10 @@ static s64 write_shared_moby_vif_packets(
 	
 	MobyIndexHeader index_header = {0};
 	index_header.unknown_0 = src.index_header_first_byte;
-	if(src.textures.size() > 0) {
+	if (src.textures.size() > 0) {
 		index_header.texture_unpack_offset_quadwords = indices.size() / 4;
 	}
-	if(src.secret_indices.size() >= 1) {
+	if (src.secret_indices.size() >= 1) {
 		index_header.secret_index = src.secret_indices[0];
 	}
 	index_buffer.write(index_header_ofs, index_header);
@@ -284,8 +284,8 @@ static s64 write_shared_moby_vif_packets(
 	write_vif_packet(dest, index_unpack);
 	
 	s64 rel_texture_unpack_ofs = 0;
-	if(src.textures.size() > 0) {
-		while(dest.tell() % 0x10 != 0xc) {
+	if (src.textures.size() > 0) {
+		while (dest.tell() % 0x10 != 0xc) {
 			dest.write<u8>(0);
 		}
 		
@@ -300,26 +300,26 @@ static s64 write_shared_moby_vif_packets(
 		
 		verify_fatal(src.secret_indices.size() >= src.textures.size());
 		std::vector<u8> texture_unpack_data;
-		for(size_t i = 0; i < src.textures.size(); i++) {
+		for (size_t i = 0; i < src.textures.size(); i++) {
 			MobyTexturePrimitive primitive = src.textures[i];
 			OutBuffer(texture_unpack_data).write(primitive);
 		}
-		for(size_t i = 1; i < src.secret_indices.size(); i++) {
+		for (size_t i = 1; i < src.secret_indices.size(); i++) {
 			OutBuffer(texture_unpack_data).write((i - 1) * 0x10 + 0xc, src.secret_indices[i]);
 		}
 		texture_unpack.data = Buffer(texture_unpack_data);
 		s32 abs_texture_unpack_ofs = dest.tell();
 		write_vif_packet(dest, texture_unpack);
 		
-		if(gif_usage != nullptr) {
+		if (gif_usage != nullptr) {
 			MobyGifUsage gif_entry;
 			gif_entry.offset_and_terminator = abs_texture_unpack_ofs - 0xc - class_header_ofs;
 			s32 gif_index = 0;
-			for(const MobyTexturePrimitive& prim : src.textures) {
+			for (const MobyTexturePrimitive& prim : src.textures) {
 				verify_fatal(gif_index < 12);
 				gif_entry.texture_indices[gif_index++] = prim.d3_tex0_1.data_lo;
 			}
-			for(s32 i = gif_index; i < 12; i++) {
+			for (s32 i = gif_index; i < 12; i++) {
 				gif_entry.texture_indices[i] = 0xff;
 			}
 			gif_usage->push_back(gif_entry);
@@ -348,25 +348,25 @@ static void sort_moby_vertices_after_reading(MobyPacketLowLevel& low, MobyPacket
 	// This rearranges the vertices into an order such that the blended matrices
 	// in VU0 memory can be allocated sequentially and the resultant moby class
 	// file will match the file from the original game.
-	while(two_way_index < two_way_end && three_way_index < three_way_end) {
+	while (two_way_index < two_way_end && three_way_index < three_way_end) {
 		u8 two_way_addr = low.vertices[two_way_index].v.two_way_blend.vu0_blended_matrix_store_addr;
 		u8 three_way_addr = low.vertices[three_way_index].v.three_way_blend.vu0_blended_matrix_store_addr;
 		
-		if((two_way_addr <= three_way_addr && three_way_addr != 0xf4) || two_way_addr == 0xf4) {
+		if ((two_way_addr <= three_way_addr && three_way_addr != 0xf4) || two_way_addr == 0xf4) {
 			mapping[two_way_index++] = next_mapped_index++;
 		} else {
 			mapping[three_way_index++] = next_mapped_index++;
 		}
 	}
-	while(two_way_index < two_way_end) {
+	while (two_way_index < two_way_end) {
 		mapping[two_way_index++] = next_mapped_index++;
 	}
-	while(three_way_index < three_way_end) {
+	while (three_way_index < three_way_end) {
 		mapping[three_way_index++] = next_mapped_index++;
 	}
 	verify_fatal(next_mapped_index == three_way_end);
 	
-	for(s32 i = three_way_end; i < (s32) low.vertices.size(); i++) {
+	for (s32 i = three_way_end; i < (s32) low.vertices.size(); i++) {
 		mapping[i] = i;
 	}
 	
@@ -374,7 +374,7 @@ static void sort_moby_vertices_after_reading(MobyPacketLowLevel& low, MobyPacket
 	
 	auto old_vertices = std::move(packet.vertices);
 	packet.vertices = std::vector<Vertex>(old_vertices.size());
-	for(size_t i = 0; i < old_vertices.size(); i++) {
+	for (size_t i = 0; i < old_vertices.size(); i++) {
 		packet.vertices[mapping[i]] = old_vertices[i];
 	}
 	
@@ -388,10 +388,10 @@ void map_indices(MobyPacket& packet, const std::vector<size_t>& mapping)
 	// Find the end of the index buffer.
 	s32 next_secret_index_pos = 0;
 	size_t buffer_end = 0;
-	for(size_t i = 0; i < packet.indices.size(); i++) {
+	for (size_t i = 0; i < packet.indices.size(); i++) {
 		u8 index = packet.indices[i];
-		if(index == 0) {
-			if(next_secret_index_pos >= packet.secret_indices.size() || packet.secret_indices[next_secret_index_pos] == 0) {
+		if (index == 0) {
+			if (next_secret_index_pos >= packet.secret_indices.size() || packet.secret_indices[next_secret_index_pos] == 0) {
 				verify_fatal(i >= 3);
 				buffer_end = i - 3;
 			}
@@ -401,25 +401,25 @@ void map_indices(MobyPacket& packet, const std::vector<size_t>& mapping)
 	
 	// Map the index buffer and the secret indices.
 	next_secret_index_pos = 0;
-	for(size_t i = 0; i < buffer_end; i++) {
+	for (size_t i = 0; i < buffer_end; i++) {
 		u8& index = packet.indices[i];
-		if(index == 0) {
-			if(next_secret_index_pos < packet.secret_indices.size()) {
+		if (index == 0) {
+			if (next_secret_index_pos < packet.secret_indices.size()) {
 				u8& secret_index = packet.secret_indices[next_secret_index_pos];
-				if(secret_index != 0 && secret_index <= packet.vertices.size()) {
+				if (secret_index != 0 && secret_index <= packet.vertices.size()) {
 					secret_index = mapping.at(secret_index - 1) + 1;
 				}
 			}
 			next_secret_index_pos++;
 		} else {
 			bool restart_bit_set = index >= 0x80;
-			if(restart_bit_set) {
+			if (restart_bit_set) {
 				index -= 0x80;
 			}
-			if(index <= packet.vertices.size()) {;
+			if (index <= packet.vertices.size()) {;
 				index = mapping.at(index - 1) + 1;
 			}
-			if(restart_bit_set) {
+			if (restart_bit_set) {
 				index += 0x80;
 			}
 		}

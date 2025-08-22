@@ -46,7 +46,7 @@ bool BuildConfig::is_ntsc() const
 
 float BuildConfig::framerate()
 {
-	if(is_ntsc()) {
+	if (is_ntsc()) {
 		return NTSC_FRAMERATE;
 	} else {
 		return PAL_FRAMERATE;
@@ -55,7 +55,7 @@ float BuildConfig::framerate()
 
 float BuildConfig::half_framerate()
 {
-	if(is_ntsc()) {
+	if (is_ntsc()) {
 		return HALF_NTSC_FRAMERATE;
 	} else {
 		return HALF_PAL_FRAMERATE;
@@ -64,16 +64,16 @@ float BuildConfig::half_framerate()
 
 Game game_from_string(const std::string& game)
 {
-	if(game == "rac") return Game::RAC;
-	if(game == "gc") return Game::GC;
-	if(game == "uya") return Game::UYA;
-	if(game == "dl") return Game::DL;
+	if (game == "rac") return Game::RAC;
+	if (game == "gc") return Game::GC;
+	if (game == "uya") return Game::UYA;
+	if (game == "dl") return Game::DL;
 	return Game::UNKNOWN;
 }
 
 std::string game_to_string(Game game)
 {
-	switch(game) {
+	switch (game) {
 		case Game::RAC: return "rac";
 		case Game::GC: return "gc";
 		case Game::UYA: return "uya";
@@ -84,15 +84,15 @@ std::string game_to_string(Game game)
 
 Region region_from_string(const std::string& region)
 {
-	if(region == "us") return Region::US;
-	if(region == "eu") return Region::EU;
-	if(region == "japan") return Region::JAPAN;
+	if (region == "us") return Region::US;
+	if (region == "eu") return Region::EU;
+	if (region == "japan") return Region::JAPAN;
 	return Region::UNKNOWN;
 }
 
 std::string region_to_string(Region region)
 {
-	switch(region) {
+	switch (region) {
 		case Region::US: return "us";
 		case Region::EU: return "eu";
 		case Region::JAPAN: return "japan";

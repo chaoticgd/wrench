@@ -22,24 +22,24 @@ EffectiveMaterialsOutput effective_materials(const std::vector<Material>& materi
 {
 	EffectiveMaterialsOutput output;
 	output.material_to_effective.resize(materials.size(), -1);
-	for(size_t i = 0; i < materials.size(); i++) {
-		if(output.material_to_effective[i] == -1) {
+	for (size_t i = 0; i < materials.size(); i++) {
+		if (output.material_to_effective[i] == -1) {
 			s32 effective_index = (s32) output.effectives.size();
 			EffectiveMaterial& effective = output.effectives.emplace_back();
-			for(size_t j = 0; j < materials.size(); j++) {
-				if(output.material_to_effective[j] == -1) {
+			for (size_t j = 0; j < materials.size(); j++) {
+				if (output.material_to_effective[j] == -1) {
 					bool equal = true;
-					if(attributes & MATERIAL_ATTRIB_SURFACE) {
+					if (attributes & MATERIAL_ATTRIB_SURFACE) {
 						equal &= materials[i].surface == materials[j].surface;
 					}
-					if(attributes & MATERIAL_ATTRIB_WRAP_MODE) {
+					if (attributes & MATERIAL_ATTRIB_WRAP_MODE) {
 						equal &= materials[i].wrap_mode_s == materials[j].wrap_mode_s;
 						equal &= materials[i].wrap_mode_t == materials[j].wrap_mode_t;
 					}
-					if(attributes & MATERIAL_ATTRIB_METAL_MODE) {
+					if (attributes & MATERIAL_ATTRIB_METAL_MODE) {
 						equal &= materials[i].metal_mode == materials[j].metal_mode;
 					}
-					if(equal) {
+					if (equal) {
 						effective.materials.emplace_back((s32) j);
 						output.material_to_effective[j] = effective_index;
 					}

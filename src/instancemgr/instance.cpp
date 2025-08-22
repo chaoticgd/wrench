@@ -74,12 +74,12 @@ void TransformComponent::set_from_matrix(
 {
 	glm::mat4 temp_matrix;
 	verify_fatal(new_matrix || new_inverse_matrix);
-	if(new_matrix) {
+	if (new_matrix) {
 		temp_matrix = *new_matrix;
 	} else {
 		temp_matrix = glm::inverse(*new_inverse_matrix);
 	}
-	switch(m_mode) {
+	switch (m_mode) {
 		case TransformMode::NONE: {
 			break;
 		}
@@ -88,14 +88,14 @@ void TransformComponent::set_from_matrix(
 		case TransformMode::MATRIX_AND_INVERSE:
 		case TransformMode::MATRIX_INVERSE_ROTATION: {
 			m_matrix = temp_matrix;
-			if(new_inverse_matrix) {
+			if (new_inverse_matrix) {
 				m_inverse_matrix = *new_inverse_matrix;
 			} else {
 				m_inverse_matrix = glm::inverse(*new_matrix);
 			}
 			glm::vec3 p, r, s;
 			decompose_matrix(temp_matrix, p, r, s);
-			if(new_rot) {
+			if (new_rot) {
 				m_rot = *new_rot;
 			} else {
 				m_rot = r;
@@ -126,7 +126,7 @@ void TransformComponent::set_from_matrix(
 
 static f32 constrain_angle(f32 angle)
 {
-	if(angle > -WRENCH_PI && angle < WRENCH_PI) {
+	if (angle > -WRENCH_PI && angle < WRENCH_PI) {
 		return angle;
 	}
 	return std::remainder(angle, 2 * WRENCH_PI);
@@ -135,7 +135,7 @@ static f32 constrain_angle(f32 angle)
 void TransformComponent::set_from_pos_rot_scale(const glm::vec3& pos, const glm::vec3& rot, f32 scale)
 {
 	glm::vec3 rot_wrapped;
-	for(s32 i = 0; i < 3; i++) {
+	for (s32 i = 0; i < 3; i++) {
 		rot_wrapped[i] = constrain_angle(rot[i]);
 	}
 	
@@ -152,7 +152,7 @@ void TransformComponent::set_from_pos_rot_scale(const glm::vec3& pos, const glm:
 
 void TransformComponent::read(const WtfNode* src)
 {
-	switch(m_mode) {
+	switch (m_mode) {
 		case TransformMode::NONE: {
 			break;
 		}
@@ -218,7 +218,7 @@ void TransformComponent::read(const WtfNode* src)
 
 void TransformComponent::write(WtfWriter* dest) const
 {
-	switch(m_mode) {
+	switch (m_mode) {
 		case TransformMode::NONE: {
 			break;
 		}
@@ -264,8 +264,8 @@ void PvarComponent::read(const WtfNode* src)
 	read_inst_field(data, src, "pvars");
 	
 	const WtfAttribute* relative_pointers_attrib = wtf_attribute_of_type(src, "relative_pvar_pointers", WTF_ARRAY);
-	if(relative_pointers_attrib) {
-		for(const WtfAttribute* attrib = relative_pointers_attrib->first_array_element; attrib != nullptr; attrib = attrib->next) {
+	if (relative_pointers_attrib) {
+		for (const WtfAttribute* attrib = relative_pointers_attrib->first_array_element; attrib != nullptr; attrib = attrib->next) {
 			verify(attrib->type == WTF_NUMBER, "Bad relative pointer list on instance.");
 			
 			PvarPointer& pointer = pointers.emplace_back();
@@ -275,8 +275,8 @@ void PvarComponent::read(const WtfNode* src)
 	}
 	
 	const WtfAttribute* shared_data_pointers_attrib = wtf_attribute_of_type(src, "shared_pvar_pointers", WTF_ARRAY);
-	if(shared_data_pointers_attrib) {
-		for(const WtfAttribute* attrib = shared_data_pointers_attrib->first_array_element; attrib != nullptr; attrib = attrib->next) {
+	if (shared_data_pointers_attrib) {
+		for (const WtfAttribute* attrib = shared_data_pointers_attrib->first_array_element; attrib != nullptr; attrib = attrib->next) {
 			verify(attrib->type == WTF_ARRAY, "Bad shared data pointers list on moby instance.");
 			WtfAttribute* pointer_offset = attrib->first_array_element;
 			verify(pointer_offset && pointer_offset->type == WTF_NUMBER, "Bad shared data pointer list on instance.");
@@ -299,7 +299,7 @@ void PvarComponent::validate() const
 	std::vector<PvarPointer> pointers_copy = pointers;
 	std::sort(BEGIN_END(pointers_copy));
 	s32 last_offset = -1;
-	for(size_t i = 0; i < pointers_copy.size(); i++) {
+	for (size_t i = 0; i < pointers_copy.size(); i++) {
 		verify_fatal(pointers_copy[i].offset > -1);
 		verify_fatal(last_offset == -1 || last_offset < pointers_copy[i].offset);
 		last_offset = pointers_copy[i].offset;
@@ -310,11 +310,11 @@ void PvarComponent::write(WtfWriter* dest) const
 {
 	write_inst_field(dest, "pvars", data);
 	
-	if(!pointers.empty()) {
+	if (!pointers.empty()) {
 		wtf_begin_attribute(dest, "relative_pvar_pointers");
 		wtf_begin_array(dest);
-		for(const PvarPointer& pointer : pointers) {
-			if(pointer.type == PvarPointerType::RELATIVE) {
+		for (const PvarPointer& pointer : pointers) {
+			if (pointer.type == PvarPointerType::RELATIVE) {
 				wtf_write_integer(dest, pointer.offset);
 			}
 		}
@@ -322,8 +322,8 @@ void PvarComponent::write(WtfWriter* dest) const
 		
 		wtf_begin_attribute(dest, "shared_pvar_pointers");
 		wtf_begin_array(dest);
-		for(const PvarPointer& pointer : pointers) {
-			if(pointer.type == PvarPointerType::SHARED) {
+		for (const PvarPointer& pointer : pointers) {
+			if (pointer.type == PvarPointerType::SHARED) {
 				wtf_begin_array(dest);
 				wtf_write_integer(dest, pointer.offset);
 				wtf_write_integer(dest, pointer.shared_data_id);
@@ -419,36 +419,36 @@ CameraCollisionParams& Instance::camera_collision()
 
 void Instance::read_common(const WtfNode* src)
 {
-	if(has_component(COM_TRANSFORM)) {
+	if (has_component(COM_TRANSFORM)) {
 		transform().read(src);
 	}
 	
-	if(has_component(COM_CLASS)) {
+	if (has_component(COM_CLASS)) {
 		read_inst_field(o_class(), src, "class");
 	}
 	
-	if(has_component(COM_PVARS)) {
+	if (has_component(COM_PVARS)) {
 		pvars().read(src);
 	}
 	
-	if(has_component(COM_COLOUR)) {
+	if (has_component(COM_COLOUR)) {
 		read_inst_field(colour(), src, "col");
 	}
 	
-	if(has_component(COM_DRAW_DISTANCE)) {
+	if (has_component(COM_DRAW_DISTANCE)) {
 		draw_distance() = read_inst_float(src, "draw_dist");
 	}
 	
-	if(has_component(COM_SPLINE)) {
+	if (has_component(COM_SPLINE)) {
 		std::vector<glm::vec4>& points = spline();
 		points.clear();
 		const WtfAttribute* attrib = wtf_attribute_of_type(src, "spline", WTF_ARRAY);
 		verify(attrib, "Missing 'spline' attribute.");
-		for(WtfAttribute* vector_attrib = attrib->first_array_element; vector_attrib != nullptr; vector_attrib = vector_attrib->next) {
+		for (WtfAttribute* vector_attrib = attrib->first_array_element; vector_attrib != nullptr; vector_attrib = vector_attrib->next) {
 			verify(vector_attrib->type == WTF_ARRAY, "Invalid 'spline' attribute.");
 			float vector[4];
 			s32 i = 0;
-			for(WtfAttribute* number_attrib = vector_attrib->first_array_element; number_attrib != nullptr; number_attrib = number_attrib->next) {
+			for (WtfAttribute* number_attrib = vector_attrib->first_array_element; number_attrib != nullptr; number_attrib = number_attrib->next) {
 				verify(number_attrib->type == WTF_NUMBER && i < 4, "Invalid 'spline' attribute.");
 				vector[i++] = number_attrib->number.f;
 			}
@@ -461,30 +461,30 @@ void Instance::begin_write(WtfWriter* dest) const
 {
 	wtf_begin_node(dest, instance_type_to_string(type()), std::to_string(id().value).c_str());
 	
-	if(has_component(COM_TRANSFORM)) {
+	if (has_component(COM_TRANSFORM)) {
 		transform().write(dest);
 	}
 	
-	if(has_component(COM_CLASS)) {
+	if (has_component(COM_CLASS)) {
 		write_inst_field(dest, "class", o_class());
 	}
 	
-	if(has_component(COM_PVARS)) {
+	if (has_component(COM_PVARS)) {
 		pvars().write(dest);
 	}
 	
-	if(has_component(COM_COLOUR)) {
+	if (has_component(COM_COLOUR)) {
 		write_inst_field(dest, "col", colour());
 	}
 	
-	if(has_component(COM_DRAW_DISTANCE)) {
+	if (has_component(COM_DRAW_DISTANCE)) {
 		wtf_write_float_attribute(dest, "draw_dist", draw_distance());
 	}
 	
-	if(has_component(COM_SPLINE)) {
+	if (has_component(COM_SPLINE)) {
 		wtf_begin_attribute(dest, "spline");
 		wtf_begin_array(dest);
-		for(const glm::vec4& vec : spline()) {
+		for (const glm::vec4& vec : spline()) {
 			wtf_write_floats(dest, &vec.x, 4);
 		}
 		wtf_end_array(dest);

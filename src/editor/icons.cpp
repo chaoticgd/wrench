@@ -41,8 +41,8 @@ GlTexture create_dvd_icon()
 	const float shine_max_angle = M_PI * 0.5 - M_PI * 0.125;
 	const glm::vec2 dvd_centre = { START_SCREEN_ICON_SIDE / 2, START_SCREEN_ICON_SIDE / 2 };
 	uint32_t icon[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE];
-	for(int y = 0; y < START_SCREEN_ICON_SIDE; y++) {
-		for(int x = 0; x < START_SCREEN_ICON_SIDE; x++) {
+	for (int y = 0; y < START_SCREEN_ICON_SIDE; y++) {
+		for (int x = 0; x < START_SCREEN_ICON_SIDE; x++) {
 			glm::vec2 point = glm::vec2(x, y) - dvd_centre;
 			int radius = glm::distance(point, glm::vec2(0, 0));
 			float angle = atan(-point.y / point.x);
@@ -92,7 +92,7 @@ GlTexture create_floppy_icon()
 static void path(
 	uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], std::vector<glm::vec2> points)
 {
-	for(size_t i = 0; i < points.size() - 1; i++) {
+	for (size_t i = 0; i < points.size() - 1; i++) {
 		line(image, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);
 	}
 }
@@ -105,29 +105,29 @@ static void line(
 	float y1) {
 	auto inbounds = [&](int coord) {
 		int max = START_SCREEN_ICON_SIDE - 1;
-		if(coord > max) coord = max;
-		if(coord < 0) coord = 0;
+		if (coord > max) coord = max;
+		if (coord < 0) coord = 0;
 		return coord;
 	};
 	float m;
-	if(x1 - x0 == 0) {
+	if (x1 - x0 == 0) {
 		m = 1000000.f;
 	} else {
 		m = (y1 - y0) / (x1 - x0);
 	}
-	if(m < -1) {
+	if (m < -1) {
 		std::swap(x0, x1);
 		std::swap(y0, y1);
 	}
 	float c = y0 - m * x0;
-	if(m > 1 || m < -1) {
-		for(int y = y0; y < y1; y++) {
+	if (m > 1 || m < -1) {
+		for (int y = y0; y < y1; y++) {
 			int x = (y - c) / m;
 			image[inbounds(y)][inbounds(x)] = 0xffffffff;
 		}
 	} else {
 		float c = y0 - m * x0;
-		for(int x = x0; x < x1; x++) {
+		for (int x = x0; x < x1; x++) {
 			int y = m * x + c;
 			image[inbounds(y)][inbounds(x)] = 0xffffffff;
 		}

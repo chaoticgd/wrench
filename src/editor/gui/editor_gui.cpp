@@ -67,7 +67,7 @@ void editor_gui()
 	available_rect = ImRect(ImVec2(0, 0), ImGui::GetMainViewport()->Size);
 	
 	menu_bar();
-	if(layouts[selected_layout].tool_bar) {
+	if (layouts[selected_layout].tool_bar) {
 		layouts[selected_layout].tool_bar();
 	}
 	
@@ -75,29 +75,29 @@ void editor_gui()
 	dockable_windows();
 	
 	static bool is_first_frame = true;
-	if(is_first_frame) {
+	if (is_first_frame) {
 		create_dock_layout();
 		is_first_frame = false;
 	}
 	
 	end_dock_space();
 
-	if(g_app->last_frame && layouts[selected_layout].shutdown) {
+	if (g_app->last_frame && layouts[selected_layout].shutdown) {
 		layouts[selected_layout].shutdown();
 	}
 }
 
 static void menu_bar()
 {
-	if(ImGui::BeginMainMenuBar()) {
+	if (ImGui::BeginMainMenuBar()) {
 		bool open_error_popup = false;
 		static std::string error_message;
 		bool open_success_poopup = false;
 		static std::string success_message;
 		
-		if(ImGui::BeginMenu("File")) {
-			if(ImGui::MenuItem("Save")) {
-				if(BaseEditor* editor = g_app->get_editor()) {
+		if (ImGui::BeginMenu("File")) {
+			if (ImGui::MenuItem("Save")) {
+				if (BaseEditor* editor = g_app->get_editor()) {
 					try {
 						success_message = editor->save();
 						open_success_poopup = true;
@@ -113,9 +113,9 @@ static void menu_bar()
 			ImGui::EndMenu();
 		}
 		
-		if(ImGui::BeginMenu("Edit")) {
-			if(ImGui::MenuItem("Undo")) {
-				if(BaseEditor* editor = g_app->get_editor()) {
+		if (ImGui::BeginMenu("Edit")) {
+			if (ImGui::MenuItem("Undo")) {
+				if (BaseEditor* editor = g_app->get_editor()) {
 					try {
 						editor->undo();
 					} catch(RuntimeError& e) {
@@ -127,8 +127,8 @@ static void menu_bar()
 					open_error_popup = true;
 				}
 			}
-			if(ImGui::MenuItem("Redo")) {
-				if(BaseEditor* editor = g_app->get_editor()) {
+			if (ImGui::MenuItem("Redo")) {
+				if (BaseEditor* editor = g_app->get_editor()) {
 					try {
 						editor->redo();
 					} catch(RuntimeError& e) {
@@ -143,42 +143,42 @@ static void menu_bar()
 			ImGui::EndMenu();
 		}
 		
-		if(open_error_popup) {
+		if (open_error_popup) {
 			ImGui::OpenPopup("Error");
 			open_error_popup = false;
 		}
 		
 		ImGui::SetNextWindowSize(ImVec2(300, 200));
-		if(ImGui::BeginPopupModal("Error")) {
+		if (ImGui::BeginPopupModal("Error")) {
 			ImGui::TextWrapped("%s", error_message.c_str());
-			if(ImGui::Button("Okay")) {
+			if (ImGui::Button("Okay")) {
 				error_message.clear();
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndPopup();
 		}
 		
-		if(open_success_poopup) {
+		if (open_success_poopup) {
 			ImGui::OpenPopup("Success");
 			open_success_poopup = false;
 		}
 		
 		ImGui::SetNextWindowSize(ImVec2(300, 200));
-		if(ImGui::BeginPopupModal("Success")) {
+		if (ImGui::BeginPopupModal("Success")) {
 			ImGui::TextWrapped("%s", success_message.c_str());
-			if(ImGui::Button("Okay")) {
+			if (ImGui::Button("Okay")) {
 				success_message.clear();
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndPopup();
 		}
 		
-		if(ImGui::BeginMenu("View")) {
+		if (ImGui::BeginMenu("View")) {
 			app& a = *g_app;
-			if(ImGui::MenuItem("Reset Camera")) {
+			if (ImGui::MenuItem("Reset Camera")) {
 				reset_camera(&a);
 			}
-			if(ImGui::BeginMenu("Visibility")) {
+			if (ImGui::BeginMenu("Visibility")) {
 				ImGui::Checkbox("Tfrags", &a.render_settings.draw_tfrags);
 				ImGui::Checkbox("Moby Instances", &a.render_settings.draw_moby_instances);
 				ImGui::Checkbox("Moby Groups", &a.render_settings.draw_moby_groups);
@@ -206,10 +206,10 @@ static void menu_bar()
 			ImGui::EndMenu();
 		}
 		
-		for(size_t i = 0; i < ARRAY_SIZE(layouts); i++) {
+		for (size_t i = 0; i < ARRAY_SIZE(layouts); i++) {
 			Layout& layout = layouts[i];
-			if(layout_button(layout, i) && i != selected_layout) {
-				if(layouts[selected_layout].shutdown) {
+			if (layout_button(layout, i) && i != selected_layout) {
+				if (layouts[selected_layout].shutdown) {
 					layouts[selected_layout].shutdown();
 				}
 				selected_layout = i;
@@ -225,7 +225,7 @@ static void menu_bar()
 		
 		static CommandThread pack_command;
 		static std::string iso_path;
-		if(ImGui::Button("Build & Run##the_button")) {
+		if (ImGui::Button("Build & Run##the_button")) {
 			pack_params.game_path = g_app->game_path;
 			pack_params.mod_paths = {g_app->mod_path};
 			pack_params.overlay_path = g_app->overlay_path;
@@ -239,7 +239,7 @@ static void menu_bar()
 			gui::run_emulator(params, false);
 		});
 		
-		if(layouts[selected_layout].menu_bar_extras) {
+		if (layouts[selected_layout].menu_bar_extras) {
 			layouts[selected_layout].menu_bar_extras();
 		}
 		
@@ -261,7 +261,7 @@ static void level_editor_menu_bar()
 {
 	const char* preview_value = "(select level)";
 	Level* level = g_app->get_level();
-	if(level) {
+	if (level) {
 		preview_value = "(level)";
 	}
 	
@@ -269,7 +269,7 @@ static void level_editor_menu_bar()
 	level_selector.required_type_count = 1;
 	level_selector.required_types[0] = LevelAsset::ASSET_TYPE;
 	ImGui::SetNextItemWidth(200);
-	if(Asset* asset = asset_selector("##level_selector", preview_value, level_selector, g_app->asset_forest)) {
+	if (Asset* asset = asset_selector("##level_selector", preview_value, level_selector, g_app->asset_forest)) {
 		g_app->load_level(asset->as<LevelAsset>());
 	}
 	
@@ -282,29 +282,29 @@ static void occlusion_things(Level* level)
 	static gui::RebuildOcclusionParams occl_params;
 	
 	const char* occlusion_problem = nullptr;
-	if(!occlusion_problem && !level) {
+	if (!occlusion_problem && !level) {
 		occlusion_problem = "No level loaded.";
 	}
-	if(!occlusion_problem && !level->level().parent()) {
+	if (!occlusion_problem && !level->level().parent()) {
 		occlusion_problem = "Level asset has no parent.";
 	}
-	if(!occlusion_problem && !level->level_wad().has_occlusion())  {
+	if (!occlusion_problem && !level->level_wad().has_occlusion())  {
 		occlusion_problem = "Missing occlusion asset.";
 	}
-	if(!occlusion_problem && !level->level_wad().get_occlusion().has_octants())  {
+	if (!occlusion_problem && !level->level_wad().get_occlusion().has_octants())  {
 		occlusion_problem = "Occlusion asset has missing octants attribute.";
 	}
-	if(!occlusion_problem && !level->level_wad().get_occlusion().has_grid())  {
+	if (!occlusion_problem && !level->level_wad().get_occlusion().has_grid())  {
 		occlusion_problem = "Occlusion asset has missing grid attribute.";
 	}
-	if(!occlusion_problem && !level->level_wad().get_occlusion().has_mappings())  {
+	if (!occlusion_problem && !level->level_wad().get_occlusion().has_mappings())  {
 		occlusion_problem = "Occlusion asset has mappings attribute.";
 	}
 	
-	if(ImGui::Button("Rebuild Occlusion##the_button") && !occlusion_problem) {
+	if (ImGui::Button("Rebuild Occlusion##the_button") && !occlusion_problem) {
 		// Setup the file structure so that the new occlusion file can be
 		// written out in place of the old one.
-		if(&level->level_wad().get_occlusion().bank() != g_app->mod_bank) {
+		if (&level->level_wad().get_occlusion().bank() != g_app->mod_bank) {
 			s32 level_id = level->level_wad().id();
 			std::string path = generate_level_asset_path(level_id, *level->level().parent());
 			OcclusionAsset& old_occl = level->level_wad().get_occlusion();
@@ -337,7 +337,7 @@ static void occlusion_things(Level* level)
 		gui::run_occlusion_rebuild(occl_params, occl_command);
 		
 		ImGui::OpenPopup("Rebuild Occlusion##the_popup");
-	} else if(ImGui::IsItemHovered() && occlusion_problem) {
+	} else if (ImGui::IsItemHovered() && occlusion_problem) {
 		ImGui::BeginTooltip();
 		ImGui::Text("%s", occlusion_problem);
 		ImGui::EndTooltip();
@@ -361,18 +361,18 @@ static void tool_bar()
 	static std::vector<GlTexture> icon_textures(g_tool_count);
 	static bool icons_loaded = false;
 	
-	if(!icons_loaded) {
-		for(s32 i = 0; i < g_tool_count; i++) {
+	if (!icons_loaded) {
+		for (s32 i = 0; i < g_tool_count; i++) {
 			icon_textures[i] = load_icon(i);
 		}
 		icons_loaded = true;
 	}
 	
-	for(s32 i = 0; i < g_tool_count; i++) {
+	for (s32 i = 0; i < g_tool_count; i++) {
 		ImGui::PushID(i);
 		
 		bool active = i == g_active_tool;
-		if(!active) {
+		if (!active) {
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		}
 
@@ -382,10 +382,10 @@ static void tool_bar()
 			ImVec2(32 * g_config.ui.scale, 32 * g_config.ui.scale),
 			ImVec2(0, 0),
 			ImVec2(1, 1));
-		if(!active) {
+		if (!active) {
 			ImGui::PopStyleColor();
 		}
-		if(clicked) {
+		if (clicked) {
 			g_tools[g_active_tool]->funcs.deactivate();
 			g_active_tool = i;
 			g_tools[g_active_tool]->funcs.activate();
@@ -394,7 +394,7 @@ static void tool_bar()
 		ImGui::PopID();
 	}
 	
-	if(g_app->last_frame) {
+	if (g_app->last_frame) {
 		icon_textures.clear();
 	}
 	
@@ -450,13 +450,13 @@ static void dockable_window(const char* window, void (*func)())
 {
 	Layout& layout = layouts[selected_layout];
 	bool visible = false;
-	for(const char* other_window : layout.visible_windows) {
-		if(strcmp(other_window, window) == 0) {
+	for (const char* other_window : layout.visible_windows) {
+		if (strcmp(other_window, window) == 0) {
 			visible = true;
 			break;
 		}
 	}
-	if(visible) {
+	if (visible) {
 		ImGui::Begin(window);
 		func();
 		ImGui::End();
