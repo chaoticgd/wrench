@@ -23,11 +23,13 @@
 #include <instancemgr/gameplay_convert.h>
 #include <wrenchvis/visibility.h>
 
-struct OcclChunk {
+struct OcclChunk
+{
 	std::vector<Mesh> tfrags;
 };
 
-struct OcclLevel {
+struct OcclLevel
+{
 	std::vector<OcclChunk> chunks;
 	std::map<s32, Mesh> moby_classes;
 	std::map<s32, Mesh> tie_classes;
@@ -39,7 +41,8 @@ packed_struct(OcclusionMapping,
 	s32 occlusion_id;
 )
 
-struct OcclusionMappings {
+struct OcclusionMappings
+{
 	std::vector<OcclusionMapping> tfrag_mappings;
 	std::vector<OcclusionMapping> tie_mappings;
 	std::vector<OcclusionMapping> moby_mappings;

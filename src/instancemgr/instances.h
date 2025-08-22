@@ -23,7 +23,8 @@
 #include <instancemgr/level_settings.h>
 
 // Represents a gameplay source file.
-struct Instances {
+struct Instances
+{
 	LevelSettings level_settings;
 	
 	// objects
@@ -74,7 +75,8 @@ struct Instances {
 	Instances* core = nullptr; // Only used during packing to reference the gameplay core from the mission instances.
 };
 
-struct HelpMessage {
+struct HelpMessage
+{
 	Opt<std::string> string;
 	s32 id;
 	s16 short_id;
@@ -84,7 +86,8 @@ struct HelpMessage {
 	s16 character;
 };
 
-struct HelpMessages {
+struct HelpMessages
+{
 	Opt<std::vector<u8>> us_english;
 	Opt<std::vector<u8>> uk_english;
 	Opt<std::vector<u8>> french;

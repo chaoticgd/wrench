@@ -21,7 +21,8 @@
 
 #include <core/util.h>
 
-enum License {
+enum License
+{
 	LICENSE_WRENCH = 0,
 	LICENSE_BARLOW = 1,
 	LICENSE_CATCH2 = 2,
@@ -97,7 +98,8 @@ extern "C" {
 	extern ToolWadInfo wadinfo;
 }
 
-struct WadPaths {
+struct WadPaths
+{
 	std::string gui;
 	std::string launcher;
 	std::string editor;

@@ -22,7 +22,8 @@
 #include <core/util.h>
 #include <iso/iso_filesystem.h>
 
-struct Release {
+struct Release
+{
 	std::string elf_name;
 	Game game = Game::UNKNOWN;
 	Region region = Region::US;

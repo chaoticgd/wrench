@@ -26,34 +26,40 @@
 #define COL_TIE 0
 #define COL_SHRUB 1
 
-struct ColChunk {
+struct ColChunk
+{
 	ChunkAsset* asset;
 	ColladaScene collision_scene;
 	Mesh* collision_mesh;
 };
 
-struct ColInstance {
+struct ColInstance
+{
 	s32 o_class;
 	s32 chunk;
 	glm::mat4 inverse_matrix;
 };
 
-struct ColLevel {
+struct ColLevel
+{
 	LevelWadAsset* asset;
 	Opt<ColChunk> chunks[3];
 	std::vector<ColInstance> instances[COL_INSTANCE_TYPE_COUNT];
 };
 
-struct ColInstanceMapping {
+struct ColInstanceMapping
+{
 	size_t level;
 	size_t instance;
 };
 
-struct ColMappings {
+struct ColMappings
+{
 	std::map<s32, std::vector<ColInstanceMapping>> classes[COL_INSTANCE_TYPE_COUNT];
 };
 
-struct ColParams {
+struct ColParams
+{
 	s32 min_hits = 3;
 	f32 merge_dist = 0.25f;
 	bool reject_faces_outside_bb = true;

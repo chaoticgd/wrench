@@ -63,7 +63,8 @@ static void pack_collision_asset(OutputStream& dest, const CollisionAsset& src, 
 	pack_level_collision(dest, src, nullptr, nullptr, -1);
 }
 
-struct ColInstance {
+struct ColInstance
+{
 	s32 mesh;
 	glm::mat4 matrix;
 };

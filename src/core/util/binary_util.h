@@ -44,7 +44,8 @@
 
 static const s64 SECTOR_SIZE = 0x800;
 
-struct ByteRange64 {
+struct ByteRange64
+{
 	ByteRange64(s64 o, s64 s) : offset(o), size(s) {}
 	s64 offset;
 	s64 size;

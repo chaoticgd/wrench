@@ -124,7 +124,8 @@ std::vector<GLTF::Mesh> recover_packets(
 	return output;
 }
 
-struct RichIndex {
+struct RichIndex
+{
 	u32 index;
 	bool restart;
 	bool is_dupe = 0;

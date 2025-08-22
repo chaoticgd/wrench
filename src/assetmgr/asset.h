@@ -37,7 +37,8 @@
 #include <assetmgr/asset_util.h>
 #include <assetmgr/asset_dispatch.h>
 
-enum AssetFlags {
+enum AssetFlags
+{
 	ASSET_IS_WAD = (1 << 0),                    // This asset is a WAD file.
 	ASSET_IS_LEVEL_WAD = (1 << 1),              // This asset is a level WAD file.
 	ASSET_IS_BIN_LEAF = (1 << 2),               // This makes unpack_binaries dump this out excluding children.
@@ -47,7 +48,8 @@ enum AssetFlags {
 	ASSET_IS_WEAKLY_DELETED = (1 << 6)          // Like the strongly deleted flag, but is treated as false if not set.
 };
 
-class Asset {
+class Asset
+{
 protected:
 	Asset(AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table);
 public:
@@ -297,7 +299,8 @@ protected:
 	u32 m_attrib_exists = 0;
 };
 
-class AssetFile {
+class AssetFile
+{
 public:
 	AssetFile(AssetForest& forest, AssetBank& pack, const fs::path& relative_path);
 	AssetFile(const AssetFile&) = delete;
@@ -338,7 +341,8 @@ private:
 	std::unique_ptr<Asset> m_root;
 };
 
-class AssetBank {
+class AssetBank
+{
 public:
 	virtual ~AssetBank();
 	
@@ -397,7 +401,8 @@ private:
 	AssetBank* m_higher_precedence = nullptr;
 };
 
-class AssetForest {
+class AssetForest
+{
 public:
 	AssetForest() {}
 	AssetForest(const AssetForest&) = delete;
@@ -446,7 +451,8 @@ private:
 	std::map<std::string, CppType> m_types;
 };
 
-class LooseAssetBank : public AssetBank {
+class LooseAssetBank : public AssetBank
+{
 	friend AssetBank;
 public:
 	LooseAssetBank(AssetForest& forest, fs::path directory, bool is_writeable);
@@ -465,7 +471,8 @@ private:
 	fs::path m_directory;
 };
 
-class MemoryAssetBank : public AssetBank {
+class MemoryAssetBank : public AssetBank
+{
 public:
 	MemoryAssetBank(AssetForest& forest);
 	

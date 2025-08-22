@@ -23,7 +23,8 @@
 
 static void write_float(char dest[64], float f);
 
-struct WtfWriter {
+struct WtfWriter
+{
 	std::string* dest;
 	int32_t indent;
 	int32_t array_depth;

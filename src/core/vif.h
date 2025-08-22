@@ -24,7 +24,8 @@
 #define vu_fixed12_to_float(i) (((s16)i) * (1.f / 4096.f))
 #define vu_float_to_fixed12(f) ((u16) roundf((f) * 4096.f))
 
-enum class VifCmd {
+enum class VifCmd
+{
 	NOP      = 0b0000000,
 	STCYCL   = 0b0000001,
 	OFFSET   = 0b0000010,
@@ -47,7 +48,8 @@ enum class VifCmd {
 	DIRECTHL = 0b1010001
 };
 
-enum class VifVnVl {
+enum class VifVnVl
+{
 	S_32     = 0b0000,
 	S_16     = 0b0001,
 	ERR_0010 = 0b0010,
@@ -67,19 +69,22 @@ enum class VifVnVl {
 };
 extern const char* VIF_VNVL_STRINGS[16];
 
-enum class VifFlg {
+enum class VifFlg
+{
 	DO_NOT_USE_VIF1_TOPS = 0x0,
 	USE_VIF1_TOPS        = 0x1
 };
 extern const char* VIF_FLG_STRINGS[2];
 
-enum class VifUsn {
+enum class VifUsn
+{
 	SIGNED   = 0x0,
 	UNSIGNED = 0x1
 };
 extern const char* VIF_USN_STRINGS[2];
 
-struct VifCode {
+struct VifCode
+{
 	u32 raw = 0;
 	s32 interrupt;
 	VifCmd cmd;
@@ -116,7 +121,8 @@ struct VifCode {
 	s32 vl() const;
 };
 
-struct VifPacket {
+struct VifPacket
+{
 	s64 offset;
 	VifCode code;
 	Buffer data;

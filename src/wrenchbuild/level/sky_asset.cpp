@@ -249,7 +249,8 @@ static void unpack_sky_textures(
 	gouraud_asset.set_name("gouraud");
 }
 
-struct TextureLoad {
+struct TextureLoad
+{
 	FileReference ref;
 	Texture texture;
 };

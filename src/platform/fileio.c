@@ -31,9 +31,15 @@ const char* FILEIO_ERROR_CONTEXT_STRING = error_buffer;
 
 // This file provides a standard implementation of the fileio API.
 
-enum _last_unflushed_op { _last_unflushed_op_none = 0, _last_unflushed_op_read = 1, _last_unflushed_op_write = 2 };
+enum _last_unflushed_op
+{
+	_last_unflushed_op_none = 0,
+	_last_unflushed_op_read = 1,
+	_last_unflushed_op_write = 2
+};
 
-struct _wrench_file_handle {
+struct _wrench_file_handle
+{
 	FILE* file;
 	int may_flush;
 	int update_mode;

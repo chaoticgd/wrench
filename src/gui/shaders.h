@@ -24,7 +24,8 @@
 
 #include <gui/gui.h>
 
-class Shader {
+class Shader
+{
 public:
 	using ShaderCallback = std::function<void(GLuint id)>;
 
@@ -46,7 +47,8 @@ private:
 	ShaderCallback m_after;
 };
 
-struct Shaders {
+struct Shaders
+{
 	Shaders();
 
 	void init();

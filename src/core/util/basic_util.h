@@ -83,7 +83,8 @@ std::size_t parse_number(std::string x);
 
 template <typename> struct MemberTraits;
 template <typename Return, typename Object>
-struct MemberTraits<Return (Object::*)> {
+struct MemberTraits<Return (Object::*)>
+{
 	typedef Object instance_type;
 };
 
@@ -140,7 +141,8 @@ struct IsVector<std::vector<Element>> : std::true_type {};
 // Implements a way to delay the execution of a block of code until the
 // enclosing scope ends. This lets us write statements in a more logical order.
 template <typename F>
-struct _deferer {
+struct _deferer
+{
 	F callback;
 	_deferer(F cb) : callback(cb) {}
 	~_deferer() { callback(); }

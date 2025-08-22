@@ -29,7 +29,8 @@ static char error_buffer[128] = "";
 
 const char* PIPEIO_ERROR_CONTEXT_STRING = error_buffer;
 
-struct _wrench_pipe_handle {
+struct _wrench_pipe_handle
+{
 	FILE* pipe;
 };
 

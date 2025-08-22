@@ -23,7 +23,8 @@
 #include <core/util/binary_util.h>
 #include <core/util/error_util.h>
 
-enum class WadType {
+enum class WadType
+{
 	UNKNOWN = 0,
 	GLOBAL, // R&C1
 	ARMOR,

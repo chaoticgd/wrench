@@ -22,7 +22,8 @@
 #include "util.h"
 
 template <typename T>
-struct BufferArray {
+struct BufferArray
+{
 	const T* lo = nullptr;
 	const T* hi = nullptr;
 	const T& operator[](s64 i) const { return lo[i]; }
@@ -51,7 +52,8 @@ packed_struct(FixedArray,
 	s64 size() const { return N; }
 )
 
-struct Buffer {
+struct Buffer
+{
 	const u8* lo = nullptr;
 	const u8* hi = nullptr;
 	
@@ -110,7 +112,8 @@ struct Buffer {
 
 bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff, const std::vector<ByteRange64>* ignore_list = nullptr);
 
-struct OutBuffer {
+struct OutBuffer
+{
 	std::vector<u8>& vec;
 	
 	OutBuffer(std::vector<u8>& v) : vec(v) {}

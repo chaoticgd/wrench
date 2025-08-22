@@ -29,7 +29,8 @@
 class InputStream;
 class OutputStream;
 
-class Stream {
+class Stream
+{
 protected:
 	Stream() = default;
 public:
@@ -46,7 +47,8 @@ public:
 	mutable std::string last_error;
 };
 
-class InputStream : public Stream {
+class InputStream : public Stream
+{
 public:
 	virtual bool read_n(u8* dest, s64 size) = 0;
 	
@@ -87,7 +89,8 @@ public:
 	}
 };
 
-class OutputStream : public Stream {
+class OutputStream : public Stream
+{
 public:
 	virtual bool write_n(const u8* src, s64 size) = 0;
 
@@ -133,7 +136,8 @@ private:
 	static const constexpr u8 m_zeroes[4096] = {0};
 };
 
-class BlackHoleOutputStream : public OutputStream {
+class BlackHoleOutputStream : public OutputStream
+{
 public:
 	BlackHoleOutputStream();
 	
@@ -148,7 +152,8 @@ private:
 	s64 m_top = 0;
 };
 
-class MemoryInputStream : public InputStream {
+class MemoryInputStream : public InputStream
+{
 public:
 	MemoryInputStream(const u8* begin_, const u8* end_);
 	MemoryInputStream(const std::vector<u8>& bytes);
@@ -165,7 +170,8 @@ private:
 	s64 m_ofs = 0;
 };
 
-class MemoryOutputStream : public OutputStream {
+class MemoryOutputStream : public OutputStream
+{
 public:
 	MemoryOutputStream(std::vector<u8>& backing_);
 	
@@ -180,7 +186,8 @@ private:
 	s64 m_ofs = 0;
 };
 
-class FileInputStream : public InputStream {
+class FileInputStream : public InputStream
+{
 public:
 	FileInputStream();
 	~FileInputStream() override;
@@ -198,7 +205,8 @@ private:
 	std::string m_error_message;
 };
 
-class FileOutputStream : public OutputStream {
+class FileOutputStream : public OutputStream
+{
 public:
 	FileOutputStream();
 	~FileOutputStream() override;
@@ -214,7 +222,8 @@ public:
 	WrenchFileHandle* m_file = nullptr;
 };
 
-class SubInputStream : public InputStream {
+class SubInputStream : public InputStream
+{
 public:
 	SubInputStream(InputStream& stream_, ByteRange64 range_);
 	SubInputStream(InputStream& stream_, s64 base_, s64 bytes_);
@@ -232,7 +241,8 @@ private:
 	ByteRange64 m_range;
 };
 
-class SubOutputStream : public OutputStream {
+class SubOutputStream : public OutputStream
+{
 public:
 	SubOutputStream(OutputStream& stream_, s64 zero_);
 	

@@ -25,7 +25,8 @@
 //#define TFRAG_DEBUG_TFRAGS_AS_SEPARATE_MESHES
 
 // A single LOD level, not including migration information.
-struct TfragLod {
+struct TfragLod
+{
 	s32 index;
 	Vec4f bsphere;
 	VifSTROW base_position;

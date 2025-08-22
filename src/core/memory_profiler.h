@@ -21,19 +21,22 @@
 
 #include <core/util.h>
 
-struct MemoryUsageStatistics {
+struct MemoryUsageStatistics
+{
 	s64 bytes_used = 0;
 	s64 max_bytes_used = 0;
 	s64 total_allocations = 0;
 	s64 total_frees = 0;
 };
 
-enum MemoryZoneType {
+enum MemoryZoneType
+{
 	MEMORY_ZONE_ASSET_SYSTEM = 0,
 	MAX_MEMORY_ZONE = 1
 };
 
-struct MemoryZone {
+struct MemoryZone
+{
 	const char* name;
 	MemoryUsageStatistics stats;
 };

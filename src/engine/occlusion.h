@@ -23,7 +23,8 @@
 
 // A 4x4x4 cube with a bit mask that determines what is visible when the camera
 // is inside the cube. Similar to how the collision works.
-struct OcclusionOctant {
+struct OcclusionOctant
+{
 	s32 x = -1;
 	s32 y = -1;
 	s32 z = -1;
@@ -42,7 +43,8 @@ struct OcclusionOctant {
 	bool operator==(const OcclusionOctant& rhs) const;
 };
 
-struct OcclusionVector {
+struct OcclusionVector
+{
 	s32 x = -1;
 	s32 y = -1;
 	s32 z = -1;

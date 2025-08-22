@@ -23,13 +23,15 @@
 #include <assetmgr/game_info.h>
 #include <gui/gui.h>
 
-struct Mod {
+struct Mod
+{
 	std::string path;
 	GameInfo info;
 	bool enabled = false;
 };
 
-struct ModImage {
+struct ModImage
+{
 	ModImage(GlTexture t, s32 w, s32 h, std::string p)
 		: texture(std::move(t)), width(w), height(h), path(std::move(p)) {}
 	GlTexture texture;

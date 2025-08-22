@@ -36,7 +36,8 @@ extern const s32 CPP_OPERATOR_COUNT = ARRAY_SIZE(CPP_OPERATORS);
 
 static void splice_physical_lines(char* ptr, std::map<s32, s32>& line_lookup_dest);
 
-struct CppLexer {
+struct CppLexer
+{
 	const char* begin;
 	const char* ptr;
 	std::vector<CppToken> tokens;

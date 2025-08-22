@@ -26,7 +26,8 @@
 #include <editor/instanced_collision_recovery.h>
 #include <editor/gui/asset_selector.h>
 
-class CollisionFixerThread {
+class CollisionFixerThread
+{
 public:
 	bool interrupt();
 	void start(Game game, std::string game_bank_path, s32 type, s32 o_class, const ColParams& params);

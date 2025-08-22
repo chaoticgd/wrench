@@ -25,19 +25,22 @@
 
 namespace GLTF {
 
-struct Asset {
+struct Asset
+{
 	Opt<std::string> copyright;
 	Opt<std::string> generator;
 	std::string version;
 	Opt<std::string> min_version;
 };
 
-struct Scene {
+struct Scene
+{
 	std::vector<s32> nodes;
 	Opt<std::string> name;
 };
 
-struct Node {
+struct Node
+{
 	// unimplemented: camera
 	std::vector<s32> children;
 	Opt<s32> skin;
@@ -50,29 +53,34 @@ struct Node {
 	Opt<std::string> name;
 };
 
-struct AnimationAttributes {
+struct AnimationAttributes
+{
 	glm::vec3 translation = {0.f, 0.f, 0.f};
 	glm::vec4 rotation = {0.f, 0.f, 0.f, 0.f};
 	glm::vec3 scale = {0.f, 0.f, 0.f};
 };
 
-struct AnimationChannelGroup {
+struct AnimationChannelGroup
+{
 	s32 node;
 	std::vector<AnimationAttributes> frames;
 };
 
-struct Animation {
+struct Animation
+{
 	Opt<std::string> name;
 	std::vector<AnimationChannelGroup> channel_groups;
 	std::vector<f32> sampler_input;
 };
 
-struct TextureInfo {
+struct TextureInfo
+{
 	s32 index;
 	Opt<s32> tex_coord;
 };
 
-struct MaterialPbrMetallicRoughness {
+struct MaterialPbrMetallicRoughness
+{
 	Opt<glm::vec4> base_color_factor;
 	Opt<TextureInfo> base_color_texture;
 	// unimplemented: metallicFactor
@@ -80,13 +88,15 @@ struct MaterialPbrMetallicRoughness {
 	// unimplemented: metallicRoughnessTexture
 };
 
-enum MaterialAlphaMode {
+enum MaterialAlphaMode
+{
 	OPAQUE,
 	MASK,
 	BLEND
 };
 
-struct Material {
+struct Material
+{
 	Opt<std::string> name;
 	Opt<MaterialPbrMetallicRoughness> pbr_metallic_roughness;
 	// unimplemented: normalTexture
@@ -98,7 +108,8 @@ struct Material {
 	Opt<bool> double_sided;
 };
 
-enum MeshPrimitiveAttribute {
+enum MeshPrimitiveAttribute
+{
 	POSITION = 1 << 0,
 	TEXCOORD_0 = 1 << 1,
 	NORMAL = 1 << 2,
@@ -107,7 +118,8 @@ enum MeshPrimitiveAttribute {
 	WEIGHTS_0 = 1 << 5
 };
 
-enum MeshPrimitiveMode {
+enum MeshPrimitiveMode
+{
 	POINTS = 0,
 	LINES = 1,
 	LINE_LOOP = 2,
@@ -117,7 +129,8 @@ enum MeshPrimitiveMode {
 	TRIANGLE_FAN = 6
 };
 
-struct MeshPrimitive {
+struct MeshPrimitive
+{
 	u32 attributes_bitfield = 0;
 	std::vector<s32> indices;
 	Opt<s32> material;
@@ -125,34 +138,39 @@ struct MeshPrimitive {
 	// unimplemented: targets
 };
 
-struct Mesh {
+struct Mesh
+{
 	Opt<std::string> name;
 	std::vector<MeshPrimitive> primitives;
 	std::vector<Vertex> vertices;
 	// unimplemented: weights
 };
 
-struct Texture {
+struct Texture
+{
 	Opt<s32> sampler;
 	Opt<s32> source;
 	Opt<std::string> name;
 };
 
-struct Image {
+struct Image
+{
 	Opt<std::string> uri;
 	Opt<std::string> mime_type;
 	Opt<s32> buffer_view;
 	Opt<std::string> name;
 };
 
-struct Skin {
+struct Skin
+{
 	std::vector<glm::mat4> inverse_bind_matrices;
 	Opt<s32> skeleton;
 	std::vector<s32> joints;
 	Opt<std::string> name;
 };
 
-struct Sampler {
+struct Sampler
+{
 	Opt<s32> mag_filter;
 	Opt<s32> min_filter;
 	Opt<s32> wrap_s;
@@ -160,7 +178,8 @@ struct Sampler {
 	Opt<std::string> name;
 };
 
-struct ModelFile {
+struct ModelFile
+{
 	Asset asset;
 	std::vector<std::string> extensions_used;
 	std::vector<std::string> extensions_required;
@@ -179,7 +198,8 @@ struct ModelFile {
 	std::vector<Skin> skins;
 };
 
-struct DefaultScene {
+struct DefaultScene
+{
 	ModelFile gltf;
 	Scene* scene;
 };

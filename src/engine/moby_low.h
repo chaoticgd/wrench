@@ -30,7 +30,8 @@
 
 namespace MOBY {
 
-struct MobyMeshSection {
+struct MobyMeshSection
+{
 	std::vector<MobyPacket> high_lod;
 	u8 high_lod_count = 0;
 	std::vector<MobyPacket> low_lod;
@@ -51,12 +52,14 @@ packed_struct(MobyJoint,
 	MobyTrans trans;
 )
 
-struct MobyJointEntry {
+struct MobyJointEntry
+{
 	std::vector<u8> thing_one;
 	std::vector<u8> thing_two;
 };
 
-struct MobyAnimationSection {
+struct MobyAnimationSection
+{
 	std::vector<Opt<MobySequence>> sequences;
 	Opt<std::vector<Mat4>> skeleton;
 	Opt<std::vector<MobyTrans>> common_trans;
@@ -64,7 +67,8 @@ struct MobyAnimationSection {
 	std::vector<MobyJointEntry> joints;
 };
 
-struct MobyCollision {
+struct MobyCollision
+{
 	u16 unknown_0;
 	u16 unknown_2;
 	std::vector<u8> first_part;
@@ -85,16 +89,19 @@ packed_struct(MobySoundDef,
 	/* 0x1c */ s32 bank_index;
 )
 
-struct MobyCornKernel {
+struct MobyCornKernel
+{
 	Vec4f vec;
 	std::vector<MobyVec4> vertices;
 };
 
-struct MobyCornCob {
+struct MobyCornCob
+{
 	Opt<MobyCornKernel> kernels[16];
 };
 
-struct MobyClassData {
+struct MobyClassData
+{
 	MobyMeshSection mesh;
 	MobyAnimationSection animation;
 	std::vector<MobyBangle> bangles;

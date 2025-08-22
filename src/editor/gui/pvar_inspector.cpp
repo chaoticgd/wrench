@@ -21,7 +21,8 @@
 #include <map>
 #include <editor/app.h>
 
-struct PvarInspectorState {
+struct PvarInspectorState
+{
 	Level* lvl;
 	const CppType* root;
 	std::vector<InstanceId>* ids;
@@ -183,13 +184,15 @@ void pvar_inspector(Level& lvl, const CppType& pvar_type)
 	ImGui::EndChild();
 }
 
-struct ResizePvarInfo {
+struct ResizePvarInfo
+{
 	InstanceId id;
 	size_t old_size;
 	std::vector<u8> truncated_data;
 };
 
-struct ResizePvarCommand {
+struct ResizePvarCommand
+{
 	size_t new_size;
 	std::vector<ResizePvarInfo> instances;
 };
@@ -506,14 +509,16 @@ static void generate_pointer_input(const CppType& type, const PvarInspectorState
 	}
 }
 
-struct PokePvarInfo {
+struct PokePvarInfo
+{
 	InstanceId id;
 	u8 old_data[16];
 	bool has_old_pointer = false;
 	PvarPointer old_pointer;
 };
 
-struct PokePvarCommand {
+struct PokePvarCommand
+{
 	s32 offset;
 	s32 size;
 	u8 new_data[16];

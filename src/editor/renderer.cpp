@@ -153,7 +153,8 @@ void prepare_frame(Level& lvl)
 	upload_instance_buffer(area_inst_buffer, lvl.instances().areas);
 }
 
-struct InstanceData {
+struct InstanceData
+{
 	InstanceData(const glm::mat4& m, const glm::vec4& c, const glm::vec4& i) : matrix(m), colour(c), id(i) {}
 	glm::mat4 matrix;
 	glm::vec4 colour;

@@ -69,7 +69,8 @@ packed_struct(ShrubBillboardInfo,
 	/* 0xe */ s16 mipmap_3_offset = 0;
 )
 
-struct LevelTexture {
+struct LevelTexture
+{
 	Opt<Texture> texture;
 	bool stashed = false;
 	s32 out_edge = -1;
@@ -84,13 +85,15 @@ struct LevelTexture {
 	Opt<s32> indices[4];
 };
 
-struct LevelTextureRange {
+struct LevelTextureRange
+{
 	s32 table;
 	s32 begin;
 	s32 end;
 };
 
-struct SharedLevelTextures {
+struct SharedLevelTextures
+{
 	std::vector<LevelTexture> textures;
 	LevelTextureRange tfrag_range;
 	LevelTextureRange moby_range;

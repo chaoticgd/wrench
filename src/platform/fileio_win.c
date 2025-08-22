@@ -28,7 +28,8 @@ static char _fileio_message_error_buffer[128];
 
 const char* FILEIO_ERROR_CONTEXT_STRING = "";
 
-struct _wrench_file_handle {
+struct _wrench_file_handle
+{
 	HANDLE file;
 	int may_flush;
 };
@@ -55,7 +56,8 @@ struct _wrench_file_handle {
 		} \
 	}
 
-struct _file_open_clear_list {
+struct _file_open_clear_list
+{
 	LPWSTR wide_string;
 };
 

@@ -18,7 +18,8 @@
 
 #include "wad_identifier.h"
 
-struct WadFileDescription {
+struct WadFileDescription
+{
 	const char* name;
 	Game game;
 	WadType type;

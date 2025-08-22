@@ -23,7 +23,8 @@
 #include <assetmgr/asset_types.h>
 #include <engine/compression.h>
 
-struct AssetUnpackerGlobals {
+struct AssetUnpackerGlobals
+{
 	bool skip_globals = false;
 	bool skip_levels = false;
 	

@@ -47,7 +47,8 @@ struct Instances;
 struct WtfNode;
 struct WtfWriter;
 
-struct InstanceId {
+struct InstanceId
+{
 	InstanceType type;
 	s32 value;
 	
@@ -58,7 +59,8 @@ static constexpr const InstanceId NULL_INSTANCE_ID = {
 	INST_NONE, -1
 };
 
-enum InstanceComponent : u32 {
+enum InstanceComponent : u32
+{
 	COM_NONE = 0,
 	COM_TRANSFORM = (1 << 1),
 	COM_CLASS = (1 << 2),
@@ -69,7 +71,8 @@ enum InstanceComponent : u32 {
 	COM_CAMERA_COLLISION = (1 << 7)
 };
 
-enum class TransformMode {
+enum class TransformMode
+{
 	NONE,
 	MATRIX,
 	MATRIX_INVERSE,
@@ -80,7 +83,8 @@ enum class TransformMode {
 	POSITION_ROTATION_SCALE
 };
 
-class TransformComponent {
+class TransformComponent
+{
 public:
 	TransformComponent() : m_mode(TransformMode::NONE) {}
 	TransformComponent(TransformMode mode) : m_mode(mode) {}
@@ -103,13 +107,15 @@ private:
 	f32 m_scale = 1.f;
 };
 
-enum class PvarPointerType {
+enum class PvarPointerType
+{
 	NULLPTR, // Null pointer.
 	RELATIVE, // Pointer relative to the beginning of the pvar structure.
 	SHARED // Pointer to a structure in the shared data section.
 };
 
-struct PvarPointer {
+struct PvarPointer
+{
 	s32 offset = -1;
 	PvarPointerType type = PvarPointerType::NULLPTR;
 	s32 shared_data_id = -1;
@@ -117,7 +123,8 @@ struct PvarPointer {
 	friend auto operator<=>(const PvarPointer& lhs, const PvarPointer& rhs) = default;
 };
 
-struct PvarComponent {
+struct PvarComponent
+{
 	std::vector<u8> data;
 	std::vector<PvarPointer> pointers; // Must always be sorted!
 	mutable s32 temp_pvar_index = -1;
@@ -129,7 +136,8 @@ struct PvarComponent {
 
 using GlobalPvarPointers = std::vector<std::pair<s32, s32>>;
 
-struct CameraCollisionParams {
+struct CameraCollisionParams
+{
 	bool enabled = false;
 	s32 flags = 0;
 	s32 i_value = 0;
@@ -138,7 +146,8 @@ struct CameraCollisionParams {
 	friend auto operator<=>(const CameraCollisionParams& lhs, const CameraCollisionParams& rhs) = default;
 };
 
-struct Instance {
+struct Instance
+{
 	virtual ~Instance() {}
 	
 	InstanceId id() const { return m_id; }
@@ -203,12 +212,14 @@ const char* instance_type_to_string(InstanceType type);
 #include "_generated_instance_types.inl"
 #undef GENERATED_INSTANCE_TYPES
 
-enum MobyModeBits1 {
+enum MobyModeBits1
+{
 	MOBY_MB1_HAS_SUB_VARS = 0x20
 };
 
 template <typename ThisInstance>
-class InstanceList {
+class InstanceList
+{
 private:
 	std::vector<ThisInstance> _instances;
 	std::map<s32, s32> _id_to_index;

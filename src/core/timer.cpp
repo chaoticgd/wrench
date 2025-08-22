@@ -23,7 +23,8 @@
 
 #include "util.h"
 
-struct Timer {
+struct Timer
+{
 	const char* task;
 	std::chrono::high_resolution_clock::time_point start_time;
 };

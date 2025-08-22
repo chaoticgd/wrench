@@ -18,12 +18,14 @@
 
 #include "elf.h"
 
-enum class ElfIdentClass : u8 {
+enum class ElfIdentClass : u8
+{
 	B32 = 0x1,
 	B64 = 0x2
 };
 
-enum class ElfFileType : u16 {
+enum class ElfFileType : u16
+{
 	NONE   = 0x00,
 	REL    = 0x01,
 	EXEC   = 0x02,
@@ -35,7 +37,8 @@ enum class ElfFileType : u16 {
 	HIPROC = 0xffff
 };
 
-enum class ElfMachine : u16 {
+enum class ElfMachine : u16
+{
 	MIPS  = 0x08
 };
 

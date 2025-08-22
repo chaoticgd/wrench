@@ -91,7 +91,8 @@ packed_struct(MobyGifUsage,
 )
 
 // Note: R&C2 has some R&C1-format mobies.
-enum class MobyFormat {
+enum class MobyFormat
+{
 	RAC1, RAC2, RAC3DL
 };
 
@@ -100,7 +101,8 @@ packed_struct(MobyMatrixTransfer,
 	u8 vu0_dest_addr;
 )
 
-struct VertexTable {
+struct VertexTable
+{
 	std::vector<MobyMatrixTransfer> preloop_matrix_transfers;
 	std::vector<u16> duplicate_vertices;
 	s32 two_way_blend_vertex_count = 0;
@@ -137,7 +139,8 @@ packed_struct(MetalVertex,
 	/* 0xf */ u8 unknown_f;
 )
 
-struct MetalVertexTable {
+struct MetalVertexTable
+{
 	std::vector<MetalVertex> vertices;
 	u32 unknown_4;
 	u32 unknown_8;
@@ -154,7 +157,8 @@ struct MatrixLivenessInfo;
 
 std::vector<Vertex> unpack_vertices(
 	const VertexTable& input, Opt<SkinAttributes> blend_cache[64], f32 scale, bool animated);
-struct PackVerticesOutput {
+struct PackVerticesOutput
+{
 	VertexTable vertex_table;
 	std::vector<s32> index_mapping;
 };

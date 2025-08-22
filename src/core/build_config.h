@@ -21,15 +21,18 @@
 
 #include <core/util.h>
 
-enum class Game : u8 {
+enum class Game : u8
+{
 	UNKNOWN = 0, RAC = 1, GC = 2, UYA = 3, DL = 4
 };
 
-enum class Region : u8 {
+enum class Region : u8
+{
 	UNKNOWN = 0, US = 1, EU = 2, JAPAN = 3
 };
 
-class BuildConfig {
+class BuildConfig
+{
 public:
 	BuildConfig(Game game, Region region, bool is_testing = false);
 	BuildConfig(const std::string& game, const std::string& region, bool is_testing = false);

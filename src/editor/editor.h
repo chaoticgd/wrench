@@ -24,7 +24,8 @@
 #include <core/util.h>
 #include <core/filesystem.h>
 
-class BaseEditor {
+class BaseEditor
+{
 public:
 	virtual ~BaseEditor() {}
 
@@ -34,7 +35,8 @@ public:
 	virtual std::string save() = 0;
 	
 protected:
-	struct UndoRedoCommand {
+	struct UndoRedoCommand
+	{
 		UndoRedoCommand();
 		UndoRedoCommand(const UndoRedoCommand&) = delete;
 		UndoRedoCommand(UndoRedoCommand&& rhs) noexcept;
@@ -54,7 +56,8 @@ protected:
 };
 
 template <typename ThisEditor>
-class Editor : public BaseEditor {
+class Editor : public BaseEditor
+{
 public:
 	template <typename UserData>
 	void push_command(

@@ -29,7 +29,8 @@
 // respective costs and these results will be summed. If the sum is greater than
 // the max cost, the packet is too big so this can be used to reject changes to
 // a packet e.g. by limiting the length of a strip.
-struct TriStripConstraint {
+struct TriStripConstraint
+{
 	s32 constant_cost = 0;
 	s32 strip_cost = 0;
 	s32 vertex_cost = 0;
@@ -39,25 +40,29 @@ struct TriStripConstraint {
 	s32 round_index_cost_up_to_multiple_of = 1;
 };
 
-struct TriStripConfig {
+struct TriStripConfig
+{
 	std::vector<TriStripConstraint> constraints;
 	bool support_index_buffer = false;
 	bool support_instancing = false;
 };
 
-struct TriStripRunningTotals {
+struct TriStripRunningTotals
+{
 	s32 strip_count = 0;
 	s32 vertex_count = 0;
 	s32 index_count = 0;
 	s32 material_count = 0;
 };
 
-struct GeometryPacket {
+struct GeometryPacket
+{
 	s32 primitive_begin = 0;
 	s32 primitive_count = 0;
 };
 
-struct GeometryPackets {
+struct GeometryPackets
+{
 	std::vector<GeometryPacket> packets;
 	std::vector<GeometryPrimitive> primitives;
 	std::vector<s32> indices;
@@ -67,7 +72,8 @@ GeometryPackets generate_tristrip_packets(const GeometryPrimitives& input, const
 
 // Gets fed tristrips (as well as triangle lists) and incrementally splits them
 // up into packets based on the constraints passed to it at construction time.
-class TriStripPacketGenerator {
+class TriStripPacketGenerator
+{
 public:
 	TriStripPacketGenerator(const TriStripConfig& config);
 	void add_primitive(const s32* indices, s32 index_count, GeometryType type, s32 effective_material);

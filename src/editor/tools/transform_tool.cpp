@@ -36,17 +36,20 @@ ToolInfo g_transform_tool_info = {
 	}
 };
 
-struct GizmoTransformInfo {
+struct GizmoTransformInfo
+{
 	InstanceId id;
 	glm::mat4 inst_matrix;
 	TransformComponent old_transform;
 };
 
-struct GizmoTransformCommand {
+struct GizmoTransformCommand
+{
 	std::vector<GizmoTransformInfo> instances;
 };
 
-enum TransformState {
+enum TransformState
+{
 	TS_INACTIVE,
 	TS_BEGIN,
 	TS_DRAGGING,

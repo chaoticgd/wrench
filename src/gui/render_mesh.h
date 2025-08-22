@@ -27,18 +27,21 @@
 #include <core/texture.h>
 #include <gui/gui.h>
 
-struct RenderSubMesh {
+struct RenderSubMesh
+{
 	GLuint material;
 	GlBuffer vertex_buffer;
 	s32 vertex_count = 0;
 };
 
-struct RenderMaterial {
+struct RenderMaterial
+{
 	glm::vec4 colour{1.f, 1.f, 1.f, 1.f};
 	GlTexture texture;
 };
 
-struct RenderMesh {
+struct RenderMesh
+{
 	std::vector<RenderSubMesh> submeshes;
 };
 

@@ -22,7 +22,8 @@
 #include <core/stream.h>
 #include <assetmgr/asset.h>
 
-struct GlobalWadInfo {
+struct GlobalWadInfo
+{
 	size_t index;
 	u32 offset_in_toc;
 	Sector32 sector;
@@ -35,7 +36,8 @@ packed_struct(toc_level_table_entry,
 	SectorRange parts[3];
 )
 
-struct LevelWadInfo {
+struct LevelWadInfo
+{
 	Sector32 header_lba;
 	Sector32 file_lba;
 	Sector32 file_size;
@@ -44,7 +46,8 @@ struct LevelWadInfo {
 	const Asset* asset;
 };
 
-struct LevelInfo {
+struct LevelInfo
+{
 	Opt<LevelWadInfo> level;
 	Opt<LevelWadInfo> audio;
 	Opt<LevelWadInfo> scene;
@@ -52,7 +55,8 @@ struct LevelInfo {
 	s32 level_table_entry_offset = 0; // Not used for writing.
 };
 
-struct table_of_contents {
+struct table_of_contents
+{
 	std::vector<GlobalWadInfo> globals;
 	std::vector<LevelInfo> levels;
 };

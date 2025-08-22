@@ -147,7 +147,8 @@ packed_struct(TableHeader,
 )
 
 template <typename T>
-struct TableBlock {
+struct TableBlock
+{
 	static void read(std::vector<T>& dest, Buffer src, Game game)
 	{
 		auto header = src.read<TableHeader>(0, "table header");
@@ -165,7 +166,8 @@ struct TableBlock {
 };
 
 template <typename ThisInstance, typename Packed>
-struct InstanceBlock {
+struct InstanceBlock
+{
 	static void read(std::vector<ThisInstance>& dest, Buffer src, Game game)
 	{
 		TableHeader header = src.read<TableHeader>(0, "instance block header");

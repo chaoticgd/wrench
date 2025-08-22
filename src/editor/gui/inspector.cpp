@@ -29,13 +29,15 @@
 
 static u32 get_invaliation_id(const Instances& instances);
 
-struct InspectorFieldFuncs {
+struct InspectorFieldFuncs
+{
 	s32 lane_count;
 	std::function<bool(Instance& lhs, Instance& rhs, s32 lane)> compare;
 	std::function<void(Level& lvl, Instance& first, bool values_equal[MAX_LANES])> draw;
 };
 
-struct InspectorField {
+struct InspectorField
+{
 	InstanceComponent required_component;
 	InstanceType required_type;
 	const char* name;
@@ -45,7 +47,8 @@ struct InspectorField {
 static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields);
 
 template <typename Value>
-struct InspectorGetterSetter {
+struct InspectorGetterSetter
+{
 	std::function<Value(Instance& inst)> get;
 	std::function<void(Instance& inst, Value value)> set;
 };
@@ -604,7 +607,8 @@ template <s32 lane_count, typename Value>
 static void apply_to_all_selected(
 	Level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs)
 {
-	struct InspectorCommand {
+	struct InspectorCommand
+	{
 		InspectorGetterSetter<Value> funcs;
 		std::array<bool, MAX_LANES> lanes;
 		std::vector<InstanceId> ids;

@@ -33,7 +33,8 @@
 #include <editor/gui/collision_fixer.h>
 #include <editor/gui/model_preview.h>
 
-struct Layout {
+struct Layout
+{
 	const char* name;
 	void (*menu_bar_extras)();
 	void (*tool_bar)();

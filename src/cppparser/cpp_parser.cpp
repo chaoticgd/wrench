@@ -18,7 +18,8 @@
 
 #include "cpp_parser.h"
 
-struct CppParserState {
+struct CppParserState
+{
 	const std::vector<CppToken>& tokens;
 	size_t pos = 0;
 	

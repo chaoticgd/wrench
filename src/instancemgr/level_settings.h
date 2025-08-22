@@ -31,19 +31,22 @@
 
 // A plane that defines the bounds of a chunk. Everything on the side of the
 // plane in the direction that the normal is pointing is inside the chunk.
-struct ChunkPlane {
+struct ChunkPlane
+{
 	glm::vec3 point;
 	glm::vec3 normal;
 };
 
-struct LevelSettingsThirdPart {
+struct LevelSettingsThirdPart
+{
 	s32 unknown_0;
 	s32 unknown_4;
 	s32 unknown_8;
 	s32 unknown_c;
 };
 
-struct LevelSettingsRewardStats {
+struct LevelSettingsRewardStats
+{
 	f32 xp_decay_rate;
 	f32 xp_decay_min;
 	f32 bolt_decay_rate;
@@ -52,7 +55,8 @@ struct LevelSettingsRewardStats {
 	s32 unknown_14;
 };
 
-struct LevelSettingsFifthPart {
+struct LevelSettingsFifthPart
+{
 	s32 unknown_0;
 	s32 moby_inst_count;
 	s32 unknown_8;
@@ -61,7 +65,8 @@ struct LevelSettingsFifthPart {
 	s32 dbg_hit_points;
 };
 
-struct LevelSettings {
+struct LevelSettings
+{
 	Opt<glm::vec3> background_colour;
 	Opt<glm::vec3> fog_colour;
 	f32 fog_near_dist = 0.f;

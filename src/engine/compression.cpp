@@ -177,7 +177,8 @@ static void compress_wad_intermediate(
 		size_t src_pos,
 		size_t src_end);
 
-struct match_result {
+struct match_result
+{
 	size_t literal_size; // The number of bytes before a match was found.
 	size_t match_offset;
 	size_t match_size;

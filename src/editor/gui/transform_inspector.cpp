@@ -165,7 +165,8 @@ static void pos_rot_scale_inspector(Level& lvl)
 		return;
 	}
 	
-	struct PosRotScaleTransformCommand {
+	struct PosRotScaleTransformCommand
+	{
 		glm::vec3 new_pos;
 		glm::vec3 new_rot;
 		f32 new_scale;
@@ -303,7 +304,8 @@ static void matrix_inspector(Level& lvl)
 		return;
 	}
 	
-	struct MatrixTransformCommand {
+	struct MatrixTransformCommand
+	{
 		glm::mat4 new_matrix;
 		std::array<bool, MAX_LANES> changed[4];
 		std::vector<std::pair<InstanceId, TransformComponent>> instances;

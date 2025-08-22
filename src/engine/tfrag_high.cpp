@@ -24,12 +24,14 @@
 #define INIT_TFACE_INDICES \
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 
-struct TfragFace {
+struct TfragFace
+{
 	s32 ad_gif;
 	s32 indices[4];
 };
 
-struct TfragVertexEx {
+struct TfragVertexEx
+{
 	const TfragVertexPosition* position;
 	s32 parents[2] = {-1, -1};
 	s32 tfaces[MAX_TFACES_TOUCHING_VERTEX] = INIT_TFACE_INDICES;

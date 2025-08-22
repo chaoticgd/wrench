@@ -22,7 +22,8 @@
 #include <instancemgr/gameplay.h>
 #include <instancemgr/gameplay_convert.h>
 
-struct PvarHeaderSpec {
+struct PvarHeaderSpec
+{
 	s32 pointer_offset;
 	const char* type_name = "";
 	const char* variable_name = "";
@@ -89,20 +90,23 @@ static const PvarHeaderSpec DL_PVAR_SUB_VARS[] = {
 	{0x4c, nullptr}
 };
 
-struct PvarMobyWork {
+struct PvarMobyWork
+{
 	bool has_sub_vars;
 	std::vector<std::vector<u8>*> pvar_data;
 	std::vector<s32> moby_links;
 	std::vector<s32> pointers;
 };
 
-struct PvarWork {
+struct PvarWork
+{
 	s32 pvar_size;
 	std::vector<s32> moby_links;
 	std::vector<s32> pointers;
 };
 
-struct SubVarsInfo {
+struct SubVarsInfo
+{
 	const PvarHeaderSpec* begin;
 	const PvarHeaderSpec* end;
 	s32 size;

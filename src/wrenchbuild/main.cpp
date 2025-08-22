@@ -42,7 +42,8 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/release.h>
 
-enum ArgFlags : u32 {
+enum ArgFlags : u32
+{
 	ARG_INPUT_PATH = 1 << 0,
 	ARG_INPUT_PATHS = 1 << 1,
 	ARG_ASSET = 1 << 2,
@@ -57,7 +58,8 @@ enum ArgFlags : u32 {
 	ARG_FILTER = 1 << 11
 };
 
-struct ParsedArgs {
+struct ParsedArgs
+{
 	std::vector<fs::path> input_paths;
 	std::string asset;
 	fs::path output_path;

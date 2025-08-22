@@ -31,7 +31,8 @@
 // Check the magic bytes.
 bool validate_wad(const uint8_t* magic);
 
-struct WadBuffer {
+struct WadBuffer
+{
 	WadBuffer(const uint8_t* p, const uint8_t* e) : ptr(p), end(e) {}
 	WadBuffer(const std::vector<uint8_t>& vec) : ptr(vec.data()), end(vec.data() + vec.size()) {}
 	

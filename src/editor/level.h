@@ -27,7 +27,8 @@
 #include <gui/render_mesh.h>
 #include <editor/editor.h>
 
-struct EditorClass {
+struct EditorClass
+{
 	Opt<Mesh> mesh;
 	Opt<RenderMesh> render_mesh;
 	std::vector<RenderMaterial> materials;
@@ -35,13 +36,15 @@ struct EditorClass {
 	const CppType* pvar_type = nullptr;
 };
 
-struct EditorChunk {
+struct EditorChunk
+{
 	std::vector<RenderMesh> collision;
 	std::vector<RenderMaterial> collision_materials;
 	RenderMesh tfrags;
 };
 
-class Level : public Editor<Level> {
+class Level : public Editor<Level>
+{
 public:
 	Level();
 	

@@ -36,23 +36,27 @@ packed_struct(GLBChunk,
 	u32 type;
 )
 
-struct AnimationChannelTarget {
+struct AnimationChannelTarget
+{
 	Opt<s32> node;
 	std::string path;
 };
 
-struct AnimationChannel {
+struct AnimationChannel
+{
 	s32 sampler;
 	AnimationChannelTarget target;
 };
 
-struct AnimationSampler {
+struct AnimationSampler
+{
 	s32 input;
 	Opt<std::string> interpolation;
 	s32 output;
 };
 
-enum AccessorComponentType {
+enum AccessorComponentType
+{
 	SIGNED_BYTE = 5120,
 	UNSIGNED_BYTE = 5121,
 	SIGNED_SHORT = 5122,
@@ -61,7 +65,8 @@ enum AccessorComponentType {
 	FLOAT = 5126
 };
 
-enum AccessorType {
+enum AccessorType
+{
 	SCALAR,
 	VEC2,
 	VEC3,
@@ -71,12 +76,14 @@ enum AccessorType {
 	MAT4
 };
 
-enum BufferViewTarget {
+enum BufferViewTarget
+{
 	ARRAY_BUFFER = 34962,
 	ELEMENT_ARRAY_BUFFER = 34963
 };
 
-struct Accessor {
+struct Accessor
+{
 	std::vector<u8> bytes;
 	AccessorComponentType component_type;
 	Opt<bool> normalized;
@@ -89,7 +96,8 @@ struct Accessor {
 	Opt<BufferViewTarget> target;
 };
 
-struct GLTFBufferView {
+struct GLTFBufferView
+{
 	s32 buffer;
 	Opt<s32> byte_offset;
 	s32 byte_length;
@@ -98,7 +106,8 @@ struct GLTFBufferView {
 	Opt<std::string> name;
 };
 
-struct GLTFBuffer {
+struct GLTFBuffer
+{
 	Opt<std::string> uri;
 	s32 byte_length;
 	Opt<std::string> name;

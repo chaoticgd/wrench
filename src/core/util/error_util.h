@@ -25,7 +25,8 @@
 // so that it can be printed out if there's an error.
 extern const char* UTIL_ERROR_CONTEXT_STRING;
 
-struct RuntimeError : std::exception {
+struct RuntimeError : std::exception
+{
 	RuntimeError(const char* f, int l, const char* format, ...);
 	virtual const char* what() const noexcept;
 	void print() const;
@@ -74,7 +75,8 @@ template <typename... Args>
 #define verify_not_reached(...) \
 	verify_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
 
-struct ErrorContext {
+struct ErrorContext
+{
 	ErrorContext(const char* format, ...);
 	~ErrorContext();
 };

@@ -21,7 +21,8 @@
 
 #include <core/buffer.h>
 
-enum ElfSectionType : u32 {
+enum ElfSectionType : u32
+{
 	SHT_NULL = 0x0,
 	SHT_PROGBITS = 0x1,
 	SHT_SYMTAB = 0x2,
@@ -45,7 +46,8 @@ enum ElfSectionType : u32 {
 	SHT_MIPS_REGINFO = 0x70000006
 };
 
-enum ElfSectionFlags {
+enum ElfSectionFlags
+{
 	SHF_WRITE = (1 << 0),
 	SHF_ALLOC = (1 << 1),
 	SHF_EXECINSTR = (1 << 2),
@@ -77,14 +79,16 @@ packed_struct(ElfSectionHeader,
 	/* 0x24 */ s32 entsize;
 )
 
-struct ElfSection {
+struct ElfSection
+{
 	std::string name;
 	s32 segment = -1;
 	ElfSectionHeader header = {};
 	std::vector<u8> data;
 };
 
-enum ElfProgramHeaderType : u32 {
+enum ElfProgramHeaderType : u32
+{
 	PT_NULL = 0,
 	PT_LOAD = 1,
 	PT_DYNAMIC = 2,
@@ -108,7 +112,8 @@ enum ElfProgramHeaderType : u32 {
 	PT_HIPROC = 0x7fffffff
 };
 
-enum ElfProgramHeaderFlags {
+enum ElfProgramHeaderFlags
+{
 	PF_X = (1 << 0),
 	PF_W = (1 << 1),
 	PF_R = (1 << 2),
@@ -127,7 +132,8 @@ packed_struct(ElfProgramHeader,
 	/* 0x1c */ s32 align;
 )
 
-struct ElfFile {
+struct ElfFile
+{
 	std::vector<ElfSection> sections;
 	std::vector<ElfProgramHeader> segments;
 	s32 entry_point = 0;

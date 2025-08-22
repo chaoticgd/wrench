@@ -35,7 +35,8 @@ using IdMap = std::map<std::string, const XmlNode*>;
 using NodeToIndexMap = std::map<const XmlNode*, s32>;
 static ColladaMaterial read_material(const XmlNode* material_node, const IdMap& ids, const NodeToIndexMap& images);
 using JointSidsMap = std::map<std::tuple<const XmlNode*, std::string>, s32>; // (skeleton, joint name) -> joint id
-struct VertexData {
+struct VertexData
+{
 	Opt<std::vector<f32>> positions;
 	Opt<std::vector<f32>> normals;
 	Opt<std::vector<f32>> colours;
@@ -45,7 +46,8 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids);
 static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& ids);
 static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controller, const XmlNode* skeleton, const IdMap& ids, const JointSidsMap& joint_sids);
 static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* geometry, const XmlNode* controller, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data, const std::vector<SkinAttributes>& skin_data);
-struct CreateVertexInput {
+struct CreateVertexInput
+{
 	const std::vector<f32>* positions = nullptr;
 	const std::vector<f32>* normals = nullptr;
 	const std::vector<f32>* colours = nullptr;

@@ -34,7 +34,8 @@ typedef struct _wrench_pipe_handle WrenchPipeHandle;
 // information of the last call to a pipe I/O function.
 extern const char* PIPEIO_ERROR_CONTEXT_STRING;
 
-enum _wrench_pipe_mode {
+enum _wrench_pipe_mode
+{
 	// Opens a read-only pipe.
 	WRENCH_PIPE_MODE_READ = 1
 } typedef WrenchPipeMode;

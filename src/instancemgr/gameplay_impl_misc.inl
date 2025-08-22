@@ -69,7 +69,8 @@ packed_struct(ChunkPlanePacked,
 )
 static_assert(sizeof(ChunkPlanePacked) == 0x20);
 
-struct LevelSettingsBlock {
+struct LevelSettingsBlock
+{
 	static void read(LevelSettings& dest, Buffer src, Game game)
 	{
 		s32 ofs = 0;
@@ -230,7 +231,8 @@ packed_struct(HelpMessageEntry,
 )
 
 template <bool is_korean>
-struct HelpMessageBlock {
+struct HelpMessageBlock
+{
 	static void read(std::vector<HelpMessage>& dest, Buffer src, Game game)
 	{
 		auto& header = src.read<HelpMessageHeader>(0, "string block header");
@@ -298,7 +300,8 @@ struct HelpMessageBlock {
 };
 
 template <bool is_korean>
-struct BinHelpMessageBlock {
+struct BinHelpMessageBlock
+{
 	static void read(std::vector<u8>& dest, Buffer src, Game game)
 	{
 		auto& header = src.read<HelpMessageHeader>(0, "string block header");
@@ -358,7 +361,8 @@ packed_struct(PathBlockHeader,
 	s32 pad;
 )
 
-struct PathBlock {
+struct PathBlock
+{
 	static void read(std::vector<PathInstance>& dest, Buffer src, Game game)
 	{
 		auto& header = src.read<PathBlockHeader>(0, "path block header");
@@ -395,7 +399,8 @@ packed_struct(GrindPathData,
 	s32 pad;
 )
 
-struct GrindPathBlock {
+struct GrindPathBlock
+{
 	static void read(Gameplay& gameplay, Buffer src, Game game)
 	{
 		auto& header = src.read<PathBlockHeader>(0, "spline block header");
@@ -488,7 +493,8 @@ packed_struct(GameplayAreaPacked,
 	/* 0x1c */ s32 relative_part_offsets[5];
 )
 
-enum AreaPart {
+enum AreaPart
+{
 	AREA_PART_PATHS = 0,
 	AREA_PART_CUBOIDS = 1,
 	AREA_PART_SPHERES = 2,
@@ -496,7 +502,8 @@ enum AreaPart {
 	AREA_PART_NEGATIVE_CUBOIDS = 4
 };
 
-struct AreasBlock {
+struct AreasBlock
+{
 	static void read(Gameplay& gameplay, Buffer src, Game game)
 	{
 		src = src.subbuf(4); // Skip past size field.
@@ -644,7 +651,8 @@ packed_struct(OcclusionMappingsGameplayHeader,
 	s32 pad = 0;
 )
 
-struct OcclusionMappingsBlock {
+struct OcclusionMappingsBlock
+{
 	static void read(std::vector<u8>& dest, Buffer src, Game game)
 	{
 		auto& header = src.read<OcclusionMappingsGameplayHeader>(0, "occlusion header");

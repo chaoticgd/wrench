@@ -41,7 +41,8 @@ packed_struct(SharedDataEntry,
 )
 
 // Represents a packed gameplay file.
-struct Gameplay {
+struct Gameplay
+{
 	Opt<LevelSettings> level_settings;
 	Opt<std::vector<u8>> us_english_help_messages;
 	Opt<std::vector<u8>> uk_english_help_messages;
@@ -94,12 +95,14 @@ struct Gameplay {
 using GameplayBlockReadFunc = std::function<void(Gameplay& gameplay, Buffer src, Game game)>;
 using GameplayBlockWriteFunc = std::function<bool(OutBuffer dest, const Gameplay& gameplay, Game game)>;
 
-struct GameplayBlockFuncs {
+struct GameplayBlockFuncs
+{
 	GameplayBlockReadFunc read;
 	GameplayBlockWriteFunc write;
 };
 
-struct GameplayBlockDescription {
+struct GameplayBlockDescription
+{
 	s32 header_pointer_offset;
 	GameplayBlockFuncs funcs;
 	const char* name;

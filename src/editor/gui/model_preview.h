@@ -21,7 +21,8 @@
 
 #include <gui/render_mesh.h>
 
-struct ModelPreviewParams {
+struct ModelPreviewParams
+{
 	glm::vec2 rot = {0.f, 0.f};
 	f32 zoom = 0.5f;
 	f32 elevation = 0.f;

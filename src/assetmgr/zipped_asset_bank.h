@@ -23,7 +23,8 @@
 
 #include "asset.h"
 
-class ZippedAssetBank : public AssetBank {
+class ZippedAssetBank : public AssetBank
+{
 public:
 	ZippedAssetBank(AssetForest& forest, const char* zip_path, fs::path prefix = "");
 	~ZippedAssetBank();
@@ -43,7 +44,8 @@ private:
 	fs::path m_prefix;
 };
 
-class ZipInputStream : public InputStream {
+class ZipInputStream : public InputStream
+{
 public:
 	ZipInputStream() {}
 	~ZipInputStream();

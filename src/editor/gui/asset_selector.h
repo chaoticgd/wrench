@@ -18,7 +18,8 @@
 
 #include <assetmgr/asset.h>
 
-struct AssetSelector {
+struct AssetSelector
+{
 	s32 required_type_count = 0;
 	AssetType required_types[10];
 	Opt<AssetType> omit_type;

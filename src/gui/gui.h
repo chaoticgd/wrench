@@ -37,7 +37,8 @@
 
 namespace gui {
 
-struct GlfwCallbacks {
+struct GlfwCallbacks
+{
 	void (*key_callback)(GLFWwindow* window, int key, int scancode, int action, int mods);
 };
 
@@ -54,7 +55,8 @@ bool input_folder_path(std::string* output_path, const char* id, const nfdchar_t
 
 }
 
-struct GlBuffer {
+struct GlBuffer
+{
 	GLuint id = 0;
 	GlBuffer() {}
 	GlBuffer(const GlBuffer&) = delete;
@@ -65,7 +67,8 @@ struct GlBuffer {
 	void destroy() { if(id != 0) { glDeleteBuffers(1, &id); id = 0; } }
 };
 
-struct GlTexture {
+struct GlTexture
+{
 	GLuint id = 0;
 	GlTexture() {}
 	GlTexture(const GlTexture&) = delete;

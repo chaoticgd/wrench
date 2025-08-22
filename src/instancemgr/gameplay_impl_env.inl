@@ -37,7 +37,8 @@ packed_struct(RacEnvSamplePointPacked,
 	/* 0x2c */ s32 unused_2c;
 )
 
-struct RacEnvSamplePointBlock {
+struct RacEnvSamplePointBlock
+{
 	static void read(std::vector<EnvSamplePointInstance>& dest, Buffer src, Game game)
 	{
 		TableHeader header = src.read<TableHeader>(0, "env sample points block header");
@@ -100,7 +101,8 @@ packed_struct(GcUyaDlEnvSamplePointPacked,
 	/* 0x1e */ u16 unused_1e;
 )
 
-struct GcUyaDlEnvSamplePointBlock {
+struct GcUyaDlEnvSamplePointBlock
+{
 	static void read(std::vector<EnvSamplePointInstance>& dest, Buffer src, Game game)
 	{
 		TableHeader header = src.read<TableHeader>(0, "env sample points block header");
@@ -182,7 +184,8 @@ packed_struct(EnvTransitionPacked,
 	/* 0x7c */ s32 unused_7c;
 )
 
-struct EnvTransitionBlock {
+struct EnvTransitionBlock
+{
 	static void read(Gameplay& gameplay, Buffer src, Game game)
 	{
 		TableHeader header = src.read<TableHeader>(0, "env transitions block header");
@@ -254,14 +257,16 @@ packed_struct(CamCollGridPrim,
 	/* 0x24 */ s32 pad[3];
 )
 
-enum CamCollGridVolumeType {
+enum CamCollGridVolumeType
+{
 	CAM_COLL_CUBOID = 3,
 	CAM_COLL_SPHERE = 5,
 	CAM_COLL_CYLINDER = 6,
 	CAM_COLL_PILL = 7
 };
 
-struct CamCollGridBlock {
+struct CamCollGridBlock
+{
 	static const s32 GRID_SIZE_X = 0x40;
 	static const s32 GRID_SIZE_Y = 0x40;
 	
@@ -454,7 +459,8 @@ static Rgb32 palette[] = {
 #include <core/png.h>
 #endif
 
-struct PointLightGridBlock {
+struct PointLightGridBlock
+{
 	static const s32 GRID_SIZE_X = 0x40;
 	static const s32 GRID_SIZE_Y = 0x40;
 	
@@ -665,7 +671,8 @@ packed_struct(GcUyaPointLightPacked,
 	/* 0xe */ u16 unused_e;
 )
 
-struct GcUyaPointLightsBlock {
+struct GcUyaPointLightsBlock
+{
 	static void read(std::vector<PointLightInstance>& dest, Buffer src, Game game)
 	{
 		const TableHeader& header = src.read<TableHeader>(0, "point lights header");

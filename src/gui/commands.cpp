@@ -21,7 +21,8 @@
 #include <core/filesystem.h>
 #include <gui/config.h>
 
-struct BinPaths {
+struct BinPaths
+{
 	std::string wrenchbuild;
 	std::string wrencheditor;
 	std::string wrenchvis;

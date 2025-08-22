@@ -27,7 +27,8 @@
 #include <core/build_config.h>
 #include <engine/basic_types.h>
 
-struct SkyShell {
+struct SkyShell
+{
 	// The material field in this mesh is actually either the texture header
 	// index or std::nullopt for untextured meshes.
 	GLTF::Mesh mesh;
@@ -44,7 +45,8 @@ packed_struct(SkyColour,
 	u8 a = 0;
 )
 
-struct Sky {
+struct Sky
+{
 	SkyColour colour;
 	bool clear_screen = false;
 	std::vector<SkyShell> shells;

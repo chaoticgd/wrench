@@ -39,7 +39,8 @@ const glm::mat4 RATCHET_TO_OPENGL_MATRIX = {
 	0,  0, 0, 1
 };
 
-struct RenderSettings {
+struct RenderSettings
+{
 	bool camera_control { false };
 	glm::vec3 camera_position { 0, 0, 0 };
 	glm::vec2 camera_rotation { 0, 0 };

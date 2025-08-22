@@ -38,7 +38,8 @@
 
 struct GLFWwindow;
 
-class app {
+class app
+{
 public:
 	app() {}
 	

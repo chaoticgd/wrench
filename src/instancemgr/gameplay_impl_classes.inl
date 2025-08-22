@@ -21,7 +21,8 @@
 
 #include <instancemgr/gameplay_impl_common.inl>
 
-struct ClassBlock {
+struct ClassBlock
+{
 	static void read(std::vector<s32>& dest, Buffer src, Game game)
 	{
 		s32 count = src.read<s32>(0, "class count");
@@ -82,7 +83,8 @@ packed_struct(RacMobyInstance,
 )
 static_assert(sizeof(RacMobyInstance) == 0x78);
 
-struct RacMobyBlock {
+struct RacMobyBlock
+{
 	static void read(Gameplay& gameplay, Buffer src, Game game)
 	{
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
@@ -184,7 +186,8 @@ packed_struct(GcUyaMobyInstance,
 )
 static_assert(sizeof(GcUyaMobyInstance) == 0x88);
 
-struct GcUyaMobyBlock {
+struct GcUyaMobyBlock
+{
 	static void read(Gameplay& gameplay, Buffer src, Game game)
 	{
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
@@ -284,7 +287,8 @@ packed_struct(DlMobyInstance,
 )
 static_assert(sizeof(DlMobyInstance) == 0x70);
 
-struct DlMobyBlock {
+struct DlMobyBlock
+{
 	static void read(Gameplay& gameplay, Buffer src, Game game)
 	{
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
@@ -357,7 +361,8 @@ struct DlMobyBlock {
 	}
 };
 
-struct PvarTableBlock {
+struct PvarTableBlock
+{
 	static void read(Gameplay& dest, Buffer src, Game game)
 	{
 		s32 pvar_count = 0;
@@ -382,7 +387,8 @@ struct PvarTableBlock {
 	}
 };
 
-struct PvarDataBlock {
+struct PvarDataBlock
+{
 	static void read(Gameplay& dest, Buffer src, Game game)
 	{
 		verify_fatal(dest.pvar_table.has_value());
@@ -401,7 +407,8 @@ struct PvarDataBlock {
 	}
 };
 
-struct PvarFixupBlock {
+struct PvarFixupBlock
+{
 	static void read(std::vector<PvarFixupEntry>& dest, Buffer src, Game game)
 	{
 		for(s64 offset = 0;; offset += sizeof(PvarFixupEntry)) {
@@ -430,7 +437,8 @@ packed_struct(GroupHeader,
 )
 
 template <typename GroupInstance>
-struct GroupBlock {
+struct GroupBlock
+{
 	static void read(std::vector<GroupInstance>& dest, Buffer src, Game game)
 	{
 		auto& header = src.read<GroupHeader>(0, "group block header");
@@ -495,7 +503,8 @@ packed_struct(SharedDataBlockHeader,
 	/* 0x8 */ s32 unused_8[2];
 )
 
-struct SharedDataBlock {
+struct SharedDataBlock
+{
 	static void read(Gameplay& dest, Buffer src, Game game)
 	{
 		auto& header = src.read<SharedDataBlockHeader>(0, "global pvar block header");
@@ -524,7 +533,8 @@ struct SharedDataBlock {
 	}
 };
 
-struct TieAmbientRgbaBlock {
+struct TieAmbientRgbaBlock
+{
 	static void read(Gameplay& dest, Buffer src, Game game)
 	{
 		if(!dest.tie_instances.has_value()) {
@@ -562,7 +572,8 @@ struct TieAmbientRgbaBlock {
 	}
 };
 
-struct TieClassBlock {
+struct TieClassBlock
+{
 	static void read(Gameplay& dest, Buffer src, Game game) {}
 	
 	static bool write(OutBuffer dest, const Gameplay& src, Game game)
@@ -579,7 +590,8 @@ struct TieClassBlock {
 	}
 };
 
-struct ShrubClassBlock {
+struct ShrubClassBlock
+{
 	static void read(Gameplay& dest, Buffer src, Game game) {}
 	
 	static bool write(OutBuffer dest, const Gameplay& src, Game game)

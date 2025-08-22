@@ -50,24 +50,28 @@
 #include <dlfcn.h>
 #endif
 
-struct VisVertex {
+struct VisVertex
+{
 	glm::vec3 pos;
 	u16 id;
 };
 
-struct VisAABB {
+struct VisAABB
+{
 	glm::vec3 min;
 	glm::vec3 max;
 };
 
-struct CPUVisMesh {
+struct CPUVisMesh
+{
 	std::vector<VisVertex> vertices;
 	std::vector<u32> indices;
 	s32 chunk;
 	VisAABB aabb;
 };
 
-struct GPUVisMesh {
+struct GPUVisMesh
+{
 	GLuint vertex_array_object;
 	GLuint vertex_buffer;
 	s32 vertex_count;
@@ -77,7 +81,8 @@ struct GPUVisMesh {
 	VisAABB aabb;
 };
 
-struct GPUHandles {
+struct GPUHandles
+{
 	GLFWwindow* dummy;
 	GLuint frame_buffer;
 	GLuint id_buffer;
@@ -93,7 +98,8 @@ struct GPUHandles {
 #endif
 };
 
-struct VisSamples {
+struct VisSamples
+{
 	std::vector<u8> masks_of_object_bits;
 	std::map<VisSamplePoint, s32> lookup;
 	s32 mask_size_bytes;

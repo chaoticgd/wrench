@@ -181,7 +181,8 @@ AssetPackerFunc* wrap_iso_packer_func(PackerFunc func, AssetPackerFunc pack)
 
 // *****************************************************************************
 
-enum class AssetTestMode {
+enum class AssetTestMode
+{
 	RUN_ALL_TESTS,
 	PRINT_DIFF_ON_FAIL
 };
@@ -190,7 +191,8 @@ using AssetTestFunc = std::function<bool(std::vector<u8>& src, AssetType type, B
 
 // *****************************************************************************
 
-struct AssetDispatchTable {
+struct AssetDispatchTable
+{
 	AssetUnpackerFunc* unpack_rac1;
 	AssetUnpackerFunc* unpack_rac2;
 	AssetUnpackerFunc* unpack_rac3;

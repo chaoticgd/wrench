@@ -272,7 +272,8 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 }
 
 // State passed down to recursive dump_cpp_type calls.
-struct CppDumpContext {
+struct CppDumpContext
+{
 	const char* name = nullptr;
 	std::vector<char> pointers;
 	std::vector<s32> array_subscripts;

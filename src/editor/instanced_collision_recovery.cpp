@@ -107,7 +107,8 @@ ColMappings generate_instance_collision_mappings(const std::vector<ColLevel>& le
 	return mappings;
 }
 
-struct ColVec3i {
+struct ColVec3i
+{
 	s32 x = INT32_MAX;
 	s32 y = INT32_MAX;
 	s32 z = INT32_MAX;
@@ -115,13 +116,15 @@ struct ColVec3i {
 	friend auto operator<=>(const ColVec3i& lhs, const ColVec3i& rhs) = default;
 };
 
-struct ColFace {
+struct ColFace
+{
 	ColVec3i verts[4];
 	
 	friend auto operator<=>(const ColFace& lhs, const ColFace& rhs) = default;
 };
 
-struct ColVal {
+struct ColVal
+{
 	s32 mapping;
 	s32 submesh;
 	s32 face;

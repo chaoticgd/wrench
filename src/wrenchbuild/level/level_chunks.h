@@ -29,7 +29,8 @@ packed_struct(ChunkWadHeader,
 	/* 0x18 */ SectorRange sound_banks[3];
 )
 
-struct LevelChunk {
+struct LevelChunk
+{
 	std::vector<u8> tfrags;
 	std::vector<Mesh> tfrag_meshes;
 	std::vector<u8> collision;

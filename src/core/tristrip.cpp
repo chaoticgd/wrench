@@ -24,7 +24,8 @@
 //
 // Some of the algorithms here were adapted from the NvTriStrip library.
 
-struct FaceStrip {
+struct FaceStrip
+{
 	GeometryType type;
 	s32 face_begin = 0;
 	s32 face_count = 0;
@@ -35,7 +36,8 @@ struct FaceStrip {
 // This is used where a list of faces may contain a zero area triangle i.e. one
 // that isn't included in the original mesh but is inserted to construct a
 // triangle strip.
-struct StripFace {
+struct StripFace
+{
 	StripFace() {}
 	StripFace(VertexIndex v0, VertexIndex v1, VertexIndex v2, FaceIndex i)
 		: v{v0, v1, v2}, index(i) {}
@@ -44,17 +46,20 @@ struct StripFace {
 	bool is_zero_area() const { return v[0] == v[1] || v[0] == v[2] || v[1] == v[2]; }
 };
 
-struct FaceStrips {
+struct FaceStrips
+{
 	std::vector<FaceStrip> strips;
 	std::vector<StripFace> faces;
 };
 
-struct FaceStripPacket {
+struct FaceStripPacket
+{
 	s32 strip_begin = 0;
 	s32 strip_count = 0;
 };
 
-struct FaceStripPackets {
+struct FaceStripPackets
+{
 	std::vector<FaceStripPacket> packets;
 	std::vector<FaceStrip> strips;
 	std::vector<StripFace> faces;

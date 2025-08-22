@@ -28,13 +28,15 @@ packed_struct(CollisionHeader,
 )
 
 template <typename T>
-struct CollisionList {
+struct CollisionList
+{
 	s32 coord = 0;
 	s32 temp_offset = -1; // Only used during writing.
 	std::vector<T> list;
 };
 
-struct CollFace {
+struct CollFace
+{
 	CollFace() {}
 	CollFace(u8 a0, u8 a1, u8 a2, u8 t) : v0(a0), v1(a1), v2(a2), v3(0), type(t), is_quad(false) {}
 	CollFace(u8 a0, u8 a1, u8 a2, u8 a3, u8 t) : v0(a0), v1(a1), v2(a2), v3(a3), type(t), is_quad(true) {}
@@ -49,7 +51,8 @@ struct CollFace {
 
 // A single collision sector is 4x4x4 in metres/game units and is aligned to a
 // 4x4x4 boundary.
-struct CollisionSector {
+struct CollisionSector
+{
 	s32 offset = 0;
 	std::vector<glm::vec3> vertices;
 	std::vector<CollFace> faces;

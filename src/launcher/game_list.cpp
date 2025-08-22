@@ -23,7 +23,8 @@
 #include <assetmgr/game_info.h>
 #include <gui/gui.h>
 
-struct GameData {
+struct GameData
+{
 	std::string directory;
 	GameInfo info;
 };

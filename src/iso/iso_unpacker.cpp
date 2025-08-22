@@ -25,7 +25,8 @@
 #include <iso/iso_filesystem.h>
 #include <iso/wad_identifier.h>
 
-struct UnpackInfo {
+struct UnpackInfo
+{
 	Asset* asset = nullptr;
 	const std::vector<u8>* header = nullptr;
 	ByteRange64 data_range = {-1, -1};

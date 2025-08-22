@@ -53,7 +53,8 @@ std::vector<InstanceId> Instances::selected_instances() const
 	return ids;
 }
 
-struct InstanceReadWriteFuncs {
+struct InstanceReadWriteFuncs
+{
 	InstanceType type;
 	void (*read)(Instances& dest, const WtfNode* src); 
 	void (*write)(WtfWriter* dest, const Instances& src);
