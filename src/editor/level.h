@@ -27,7 +27,8 @@
 #include <gui/render_mesh.h>
 #include <editor/editor.h>
 
-struct EditorClass {
+struct EditorClass
+{
 	Opt<Mesh> mesh;
 	Opt<RenderMesh> render_mesh;
 	std::vector<RenderMaterial> materials;
@@ -35,13 +36,15 @@ struct EditorClass {
 	const CppType* pvar_type = nullptr;
 };
 
-struct EditorChunk {
+struct EditorChunk
+{
 	std::vector<RenderMesh> collision;
 	std::vector<RenderMaterial> collision_materials;
 	RenderMesh tfrags;
 };
 
-class Level : public Editor<Level> {
+class Level : public Editor<Level>
+{
 public:
 	Level();
 	
@@ -65,9 +68,9 @@ public:
 	std::map<s32, EditorClass> sound_classes;
 	
 private:
-	LevelAsset* _asset = nullptr;
-	InstancesAsset* _instances_asset = nullptr;
-	Instances _instances;
+	LevelAsset* m_asset = nullptr;
+	InstancesAsset* m_instances_asset = nullptr;
+	Instances m_instances;
 };
 
 Opt<EditorClass> load_moby_editor_class(const MobyClassAsset& moby);

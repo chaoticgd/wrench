@@ -22,7 +22,8 @@
 #include <engine/tfrag_low.h>
 #include <engine/tfrag_debug.h>
 
-enum TfragRecoveryFlags {
+enum TfragRecoveryFlags
+{
 	TFRAG_NO_FLAGS = 0,
 	TFRAG_SEPARATE_MESHES = 1 << 0
 };

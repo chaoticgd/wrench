@@ -29,11 +29,13 @@ static char error_buffer[128] = "";
 
 const char* PIPEIO_ERROR_CONTEXT_STRING = error_buffer;
 
-struct _wrench_pipe_handle {
+struct _wrench_pipe_handle
+{
 	FILE* pipe;
 };
 
-WrenchPipeHandle* pipe_open(const char* command, const WrenchPipeMode mode) {
+WrenchPipeHandle* pipe_open(const char* command, const WrenchPipeMode mode)
+{
 	assert(command != NULL);
 	assert(mode != 0);
 
@@ -54,7 +56,8 @@ WrenchPipeHandle* pipe_open(const char* command, const WrenchPipeMode mode) {
 	return pipe;
 }
 
-char* pipe_gets(char* str, size_t buffer_size, WrenchPipeHandle* pipe) {
+char* pipe_gets(char* str, size_t buffer_size, WrenchPipeHandle* pipe)
+{
 	assert(pipe);
 	
 	if(buffer_size == 0) {
@@ -73,7 +76,8 @@ char* pipe_gets(char* str, size_t buffer_size, WrenchPipeHandle* pipe) {
 	return ptr;
 }
 
-long pipe_close(WrenchPipeHandle* pipe) {
+long pipe_close(WrenchPipeHandle* pipe)
+{
 	assert(pipe);
 	assert(pipe->pipe);
 

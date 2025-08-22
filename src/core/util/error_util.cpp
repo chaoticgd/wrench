@@ -25,27 +25,31 @@ static std::string error_context_alloc;
 static char what_message[2048] = {};
 
 RuntimeError::RuntimeError(const char* f, int l, const char* format, ...)
-	: file(f), line(l), context(UTIL_ERROR_CONTEXT_STRING) {
+	: file(f), line(l), context(UTIL_ERROR_CONTEXT_STRING)
+{
 	va_list args;
 	va_start(args, format);
 	message = string_format(format, args);
 	va_end(args);
 }
 
-const char* RuntimeError::what() const noexcept {
+const char* RuntimeError::what() const noexcept
+{
 	snprintf(what_message, sizeof(what_message) - 1, "[%s:%d] \033[31merror%s:\033[0m %s\n", file, line, context.c_str(), message.c_str());
 	return what_message;
 }
 
-void RuntimeError::print() const {
+void RuntimeError::print() const
+{
 	fflush(stdout);
 	fflush(stderr);
 	fprintf(stderr, "[%s:%d] \033[31merror%s:\033[0m %s\n", file, line, context.c_str(), message.c_str());
 	fflush(stderr);
 }
 
-void assert_impl(const char* file, int line, const char* arg_str, bool condition) {
-	if(!condition) {
+void assert_impl(const char* file, int line, const char* arg_str, bool condition)
+{
+	if (!condition) {
 		fprintf(stderr, "[%s:%d] assert%s: ", file, line, UTIL_ERROR_CONTEXT_STRING);
 		fprintf(stderr, "%s", arg_str);
 		fprintf(stderr, "\n");
@@ -53,15 +57,17 @@ void assert_impl(const char* file, int line, const char* arg_str, bool condition
 	}
 }
 
-static void update_error_context() {
+static void update_error_context()
+{
 	error_context_alloc = "";
-	for(auto& str : error_context_stack) {
+	for (auto& str : error_context_stack) {
 		error_context_alloc += str;
 	}
 	UTIL_ERROR_CONTEXT_STRING = error_context_alloc.c_str();
 }
 
-ErrorContext::ErrorContext(const char* format, ...) {
+ErrorContext::ErrorContext(const char* format, ...)
+{
 	va_list args;
 	va_start(args, format);
 	error_context_stack.emplace_back(" " + string_format(format, args));
@@ -69,7 +75,8 @@ ErrorContext::ErrorContext(const char* format, ...) {
 	update_error_context();
 }
 
-ErrorContext::~ErrorContext() {
+ErrorContext::~ErrorContext()
+{
 	error_context_stack.pop_back();
 	update_error_context();
 }

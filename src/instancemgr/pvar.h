@@ -33,7 +33,8 @@ struct Instances;
 
 // Take the pvar sections from the gameplay file, distribute their contents
 // amongst the instances, and try to recover type information.
-void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const Gameplay& src, Game game);
+void recover_pvars(
+	Instances& dest, std::vector<CppType>& pvar_types_dest, const Gameplay& src, Game game);
 
 // Bake the pvar data from the instances down into a number of data sections to
 // be stored in the gameplay file.

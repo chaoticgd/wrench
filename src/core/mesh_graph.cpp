@@ -18,12 +18,13 @@
 
 #include "mesh_graph.h"
 
-MeshGraph::MeshGraph(const GLTF::Mesh& mesh) {
+MeshGraph::MeshGraph(const GLTF::Mesh& mesh)
+{
 	_vertices.resize(mesh.vertices.size());
 	
 	// Collect faces.
-	for(const GLTF::MeshPrimitive& primitive : mesh.primitives) {
-		for(size_t i = 0; i < primitive.indices.size() / 3; i++) {
+	for (const GLTF::MeshPrimitive& primitive : mesh.primitives) {
+		for (size_t i = 0; i < primitive.indices.size() / 3; i++) {
 			FaceInfo& info = _faces.emplace_back();
 			info.v[0] = primitive.indices[i * 3 + 0];
 			info.v[1] = primitive.indices[i * 3 + 1];
@@ -33,14 +34,14 @@ MeshGraph::MeshGraph(const GLTF::Mesh& mesh) {
 	}
 	
 	// Generate edge and vertex info structs.
-	for(FaceIndex i = {0}; i.index < face_count(); i.index++) {
+	for (FaceIndex i = {0}; i.index < face_count(); i.index++) {
 		FaceInfo& face = face_at(i);
 		
 		// Iterate over all the edges that make up the face.
-		for(s32 j = 0; j < 3; j++) {
+		for (s32 j = 0; j < 3; j++) {
 			VertexIndex v0 = face.v[j];
 			VertexIndex v1 = face.v[(j + 1) % 3];
-			if(v1 < v0) {
+			if (v1 < v0) {
 				std::swap(v0, v1);
 			}
 			
@@ -49,7 +50,7 @@ MeshGraph::MeshGraph(const GLTF::Mesh& mesh) {
 			
 			// Create an edge info record if it doesn't already exist, or
 			// fill in the second face index if it does.
-			if(index == NULL_EDGE_INDEX) {
+			if (index == NULL_EDGE_INDEX) {
 				index = EdgeIndex((s32) _edges.size());
 				EdgeInfo& info = _edges.emplace_back();
 				info.v[0] = v0;
@@ -60,18 +61,18 @@ MeshGraph::MeshGraph(const GLTF::Mesh& mesh) {
 			
 			EdgeInfo& info = edge_at(index);
 			
-			if(info.faces[0] == NULL_FACE_INDEX) {
+			if (info.faces[0] == NULL_FACE_INDEX) {
 				info.faces[0] = i;
-			} else if(info.faces[1] == NULL_FACE_INDEX) {
+			} else if (info.faces[1] == NULL_FACE_INDEX) {
 				info.faces[1] = i;
 			} else {
 				// The current face has an edge that connects three or more
 				// faces. We should remove it from the graph so it doesn't cause
 				// problems later.
-				for(s32 k = j - 1; k >= 0; k--) {
+				for (s32 k = j - 1; k >= 0; k--) {
 					VertexIndex v2 = face.v[k];
 					VertexIndex v3 = face.v[(k + 1) % 3];
-					if(v3 < v2) {
+					if (v3 < v2) {
 						std::swap(v2, v3);
 					}
 					
@@ -79,23 +80,23 @@ MeshGraph::MeshGraph(const GLTF::Mesh& mesh) {
 					verify_fatal(remove_index != NULL_EDGE_INDEX);
 					
 					EdgeInfo& remove_info = edge_at(remove_index);
-					for(FaceIndex& remove_face : remove_info.faces) {
-						if(remove_face == i) {
+					for (FaceIndex& remove_face : remove_info.faces) {
+						if (remove_face == i) {
 							remove_face = NULL_FACE_INDEX;
 						}
 					}
 				}
 				
 				// Make the remaining edge objects.
-				for(s32 k = j + 1; k < 3; k++) {
+				for (s32 k = j + 1; k < 3; k++) {
 					VertexIndex v2 = face.v[k];
 					VertexIndex v3 = face.v[(k + 1) % 3];
-					if(v3 < v2) {
+					if (v3 < v2) {
 						std::swap(v2, v3);
 					}
 					
 					EdgeIndex index = edge(v2, v3);
-					if(index == NULL_EDGE_INDEX) {
+					if (index == NULL_EDGE_INDEX) {
 						index = EdgeIndex((s32) _edges.size());
 						EdgeInfo& info = _edges.emplace_back();
 						info.v[0] = v2;

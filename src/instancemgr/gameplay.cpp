@@ -23,23 +23,27 @@
 
 const s32 NONE = -1;
 
-void read_gameplay(Gameplay& gameplay, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks) {
-	for(const GameplayBlockDescription& block : blocks) {
+void read_gameplay(
+	Gameplay& gameplay, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks)
+{
+	for (const GameplayBlockDescription& block : blocks) {
 		s32 block_offset = src.read<s32>(block.header_pointer_offset, "gameplay header");
-		if(block_offset != 0 && block.funcs.read != nullptr) {
+		if (block_offset != 0 && block.funcs.read != nullptr) {
 			block.funcs.read(gameplay, src.subbuf(block_offset), game);
 		}
 	}
 }
 
-std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks) {
+std::vector<u8> write_gameplay(
+	const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks)
+{
 	Gameplay gameplay = gameplay_arg;
 	
 	s32 header_size = 0;
 	s32 block_count = 0;
-	for(const GameplayBlockDescription& block : blocks) {
+	for (const GameplayBlockDescription& block : blocks) {
 		header_size = std::max(header_size, block.header_pointer_offset + 4);
-		if(block.header_pointer_offset != NONE) {
+		if (block.header_pointer_offset != NONE) {
 			block_count++;
 		}
 	}
@@ -47,16 +51,16 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const st
 	
 	std::vector<u8> dest_vec(header_size, 0);
 	OutBuffer dest(dest_vec);
-	for(const GameplayBlockDescription& block : blocks) {
-		if(block.header_pointer_offset != NONE && block.funcs.write != nullptr) {
-			if(strcmp(block.name, "us english help messages") != 0 && strcmp(block.name, "occlusion") != 0) {
+	for (const GameplayBlockDescription& block : blocks) {
+		if (block.header_pointer_offset != NONE && block.funcs.write != nullptr) {
+			if (strcmp(block.name, "us english help messages") != 0 && strcmp(block.name, "occlusion") != 0) {
 				dest.pad(0x10, 0);
 			}
-			if(strcmp(block.name, "occlusion") == 0 && gameplay.occlusion.has_value()) {
+			if (strcmp(block.name, "occlusion") == 0 && gameplay.occlusion.has_value()) {
 				dest.pad(0x40, 0);
 			}
 			s32 ofs = (s32) dest_vec.size();
-			if(block.funcs.write(dest, gameplay, game)) {
+			if (block.funcs.write(dest, gameplay, game)) {
 				verify_fatal(block.header_pointer_offset + 4 <= (s32) dest_vec.size());
 				*(s32*) &dest_vec[block.header_pointer_offset] = ofs;
 			}
@@ -65,9 +69,10 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const st
 	return dest_vec;
 }
 
-const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game) {
+const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game)
+{
 	const std::vector<GameplayBlockDescription>* gbd = nullptr;
-	switch(game) {
+	switch (game) {
 		case Game::RAC: gbd = &RAC_GAMEPLAY_BLOCKS; break;
 		case Game::GC: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
 		case Game::UYA: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
@@ -84,7 +89,8 @@ const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_ga
 #include "gameplay_impl_misc.inl"
 
 template <typename Block, typename Field>
-static GameplayBlockFuncs bf(Field field) {
+static GameplayBlockFuncs bf(Field field)
+{
 	// e.g. if field = &Gameplay::moby_instances then FieldType = std::vector<MobyInstance>.
 	using FieldType = typename std::remove_reference<decltype(Gameplay().*field)>::type::value_type;
 	
@@ -95,7 +101,7 @@ static GameplayBlockFuncs bf(Field field) {
 		gameplay.*field = std::move(value);
 	};
 	funcs.write = [field](OutBuffer dest, const Gameplay& gameplay, Game game) {
-		if(!(gameplay.*field).has_value()) {
+		if (!(gameplay.*field).has_value()) {
 			return false;
 		}
 		Block::write(dest, *(gameplay.*field), game);

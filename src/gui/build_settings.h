@@ -24,7 +24,11 @@
 
 namespace gui {
 
-void build_settings(PackerParams& params, const std::vector<std::string>* game_builds, const std::vector<std::string>& mod_builds, bool launcher = true);
+void build_settings(
+	PackerParams& params,
+	const std::vector<std::string>* game_builds,
+	const std::vector<std::string>& mod_builds,
+	bool launcher = true);
 
 }
 

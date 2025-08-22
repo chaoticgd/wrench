@@ -22,7 +22,8 @@
 #include <gui/render_mesh.h>
 #include <editor/gui/model_preview.h>
 
-struct CollisionFixerPreviews {
+struct CollisionFixerPreviews
+{
 	RenderMesh* mesh = nullptr;
 	std::vector<RenderMaterial>* materials = nullptr;
 	RenderMesh* collision_mesh = nullptr;

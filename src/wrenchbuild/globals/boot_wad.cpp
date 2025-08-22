@@ -42,7 +42,8 @@ packed_struct(DlBootHeader,
 	/* 0x78 */ ByteRange sram;
 )
 
-static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, BuildConfig config)
+{
 	auto header = src.read<DlBootHeader>(0);
 	
 	unpack_compressed_asset(dest.english(), src, header.english, config);
@@ -56,7 +57,8 @@ static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, BuildConfig co
 	unpack_compressed_asset(dest.sram(), src, header.sram, config);
 }
 
-static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, BuildConfig config) {
+static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, BuildConfig config)
+{
 	DlBootHeader header;
 	dest.write(header);
 	

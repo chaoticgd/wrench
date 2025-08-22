@@ -22,11 +22,13 @@
 #include <core/util.h>
 #include <core/mesh.h>
 
-enum class MaterialSurfaceType {
+enum class MaterialSurfaceType
+{
 	NONE, COLOUR, TEXTURE
 };
 
-struct MaterialSurface {
+struct MaterialSurface
+{
 	MaterialSurface() : type(MaterialSurfaceType::NONE) {}
 	MaterialSurface(const glm::vec4& c) : type(MaterialSurfaceType::COLOUR), colour(c) {}
 	MaterialSurface(s32 t) : type(MaterialSurfaceType::TEXTURE), texture(t) {}
@@ -48,15 +50,18 @@ struct MaterialSurface {
 	};
 };
 
-enum class WrapMode {
+enum class WrapMode
+{
 	REPEAT, CLAMP
 };
 
-enum class MetalEffectMode {
+enum class MetalEffectMode
+{
 	OFF, CHROME, GLASS
 };
 
-struct Material {
+struct Material
+{
 	std::string name;
 	MaterialSurface surface;
 	WrapMode wrap_mode_s = WrapMode::REPEAT;
@@ -64,7 +69,8 @@ struct Material {
 	MetalEffectMode metal_mode = MetalEffectMode::OFF;
 };
 
-enum MaterialAttribute {
+enum MaterialAttribute
+{
 	MATERIAL_ATTRIB_SURFACE = 1 << 1,
 	MATERIAL_ATTRIB_WRAP_MODE = 1 << 2,
 	MATERIAL_ATTRIB_METAL_MODE = 1 << 3
@@ -76,11 +82,13 @@ enum MaterialAttribute {
 // referencing all materials with that texture. This is used e.g. for generating
 // AD GIF data where only the texture index and wrapping mode is relevant i.e.
 // materials that vary only by other attributes should be merged.
-struct EffectiveMaterial {
+struct EffectiveMaterial
+{
 	std::vector<s32> materials;
 };
 
-struct EffectiveMaterialsOutput {
+struct EffectiveMaterialsOutput
+{
 	std::vector<EffectiveMaterial> effectives;
 	std::vector<s32> material_to_effective;
 };

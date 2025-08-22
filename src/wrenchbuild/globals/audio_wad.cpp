@@ -55,11 +55,26 @@ packed_struct(DlAudioWadHeader,
 )
 
 template <typename Header>
-static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
+static void unpack_audio_wad(
+	AudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
 template <typename Header>
-static void pack_audio_wad(OutputStream& dest, Header& header, const AudioWadAsset& src, BuildConfig config);
-static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, BuildConfig config, const std::set<s64>& end_sectors, s32 language);
-static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, const CollectionAsset& src, BuildConfig config, s32 language);
+static void pack_audio_wad(
+	OutputStream& dest, Header& header, const AudioWadAsset& src, BuildConfig config);
+static void unpack_help_audio(
+	CollectionAsset& dest,
+	InputStream& src,
+	const Sector32* ranges,
+	s32 count,
+	BuildConfig config,
+	const std::set<s64>& end_sectors,
+	s32 language);
+static void pack_help_audio(
+	OutputStream& dest,
+	Sector32* sectors_dest,
+	s32 count,
+	const CollectionAsset& src,
+	BuildConfig config,
+	s32 language);
 
 on_load(Audio, []() {
 	AudioWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<AudioWadAsset, GcAudioWadHeader>(unpack_audio_wad<GcAudioWadHeader>);
@@ -72,23 +87,25 @@ on_load(Audio, []() {
 })
 
 template <typename Header>
-static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config) {
+static void unpack_audio_wad(
+	AudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config)
+{
 	std::set<s64> end_sectors;
-	for(Sector32 sector : header.vendor) end_sectors.insert(sector.sectors);
+	for (Sector32 sector : header.vendor) end_sectors.insert(sector.sectors);
 	if constexpr(std::is_same_v<Header, DlAudioWadHeader>) {
-		for(SectorByteRange range : header.global_sfx) end_sectors.insert(range.offset.sectors);
+		for (SectorByteRange range : header.global_sfx) end_sectors.insert(range.offset.sectors);
 	}
-	for(Sector32 sector : header.help_english) end_sectors.insert(sector.sectors);
-	for(Sector32 sector : header.help_french) end_sectors.insert(sector.sectors);
-	for(Sector32 sector : header.help_german) end_sectors.insert(sector.sectors);
-	for(Sector32 sector : header.help_spanish) end_sectors.insert(sector.sectors);
-	for(Sector32 sector : header.help_italian) end_sectors.insert(sector.sectors);
+	for (Sector32 sector : header.help_english) end_sectors.insert(sector.sectors);
+	for (Sector32 sector : header.help_french) end_sectors.insert(sector.sectors);
+	for (Sector32 sector : header.help_german) end_sectors.insert(sector.sectors);
+	for (Sector32 sector : header.help_spanish) end_sectors.insert(sector.sectors);
+	for (Sector32 sector : header.help_italian) end_sectors.insert(sector.sectors);
 	end_sectors.insert(Sector32::size_from_bytes(src.size()).sectors);
 	
 	CollectionAsset& vendor = dest.vendor("vendor/vendor.asset");
-	for(s32 i = 0; i < ARRAY_SIZE(header.vendor); i++) {
+	for (s32 i = 0; i < ARRAY_SIZE(header.vendor); i++) {
 		s32 sector = header.vendor[i].sectors;
-		if(sector > 0) {
+		if (sector > 0) {
 			auto end_sector = end_sectors.upper_bound(sector);
 			verify(end_sector != end_sectors.end(), "Header references audio beyond end of file. The WAD file may be truncated.");
 			unpack_asset(vendor.child<BinaryAsset>(i), src, SectorRange{sector, (s32) (*end_sector - sector)}, config, FMT_BINARY_VAG);
@@ -109,7 +126,9 @@ static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStr
 }
 
 template <typename Header>
-static void pack_audio_wad(OutputStream& dest, Header& header, const AudioWadAsset& src, BuildConfig config) {
+static void pack_audio_wad(
+	OutputStream& dest, Header& header, const AudioWadAsset& src, BuildConfig config)
+{
 	pack_assets_sa(dest, ARRAY_PAIR(header.vendor), src.get_vendor(), config, FMT_BINARY_VAG);
 	
 	if constexpr(std::is_same_v<Header, DlAudioWadHeader>) {
@@ -123,12 +142,20 @@ static void pack_audio_wad(OutputStream& dest, Header& header, const AudioWadAss
 	pack_help_audio(dest, ARRAY_PAIR(header.help_italian), src.get_help(), config, 4);
 }
 
-static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, BuildConfig config, const std::set<s64>& end_sectors, s32 language) {
-	for(s32 i = 0; i < count; i++) {
-		if(ranges[i].sectors > 0) {
+static void unpack_help_audio(
+	CollectionAsset& dest,
+	InputStream& src,
+	const Sector32* ranges,
+	s32 count,
+	BuildConfig config,
+	const std::set<s64>& end_sectors,
+	s32 language)
+{
+	for (s32 i = 0; i < count; i++) {
+		if (ranges[i].sectors > 0) {
 			HelpAudioAsset& child = dest.foreign_child<HelpAudioAsset>(stringf("%d/audio.asset", i), false, i);
 			Asset* asset;
-			switch(language) {
+			switch (language) {
 				case 0: asset = &child.english<BinaryAsset>(); break;
 				case 1: asset = &child.french<BinaryAsset>(); break;
 				case 2: asset = &child.german<BinaryAsset>(); break;
@@ -145,19 +172,19 @@ static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sec
 }
 
 static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, const CollectionAsset& src, BuildConfig config, s32 language) {
-	for(size_t i = 0; i < count; i++) {
-		if(src.has_child(i)) {
+	for (size_t i = 0; i < count; i++) {
+		if (src.has_child(i)) {
 			const HelpAudioAsset& asset = src.get_child(i).as<HelpAudioAsset>();
 			const Asset* child = nullptr;
-			switch(language) {
-				case 0: if(asset.has_english()) child = &asset.get_english(); break;
-				case 1: if(asset.has_french()) child = &asset.get_french(); break;
-				case 2: if(asset.has_german()) child = &asset.get_german(); break;
-				case 3: if(asset.has_spanish()) child = &asset.get_spanish(); break;
-				case 4: if(asset.has_italian()) child = &asset.get_italian(); break;
+			switch (language) {
+				case 0: if (asset.has_english()) child = &asset.get_english(); break;
+				case 1: if (asset.has_french()) child = &asset.get_french(); break;
+				case 2: if (asset.has_german()) child = &asset.get_german(); break;
+				case 3: if (asset.has_spanish()) child = &asset.get_spanish(); break;
+				case 4: if (asset.has_italian()) child = &asset.get_italian(); break;
 				default: verify_not_reached_fatal("Invalid language.");
 			}
-			if(child) {
+			if (child) {
 				sectors_dest[i] = pack_asset_sa<Sector32>(dest, *child, config, FMT_BINARY_VAG);
 			}
 		}

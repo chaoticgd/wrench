@@ -20,39 +20,48 @@
 
 #include <vector>
 
-Shader::Shader(const GLchar* vertex_src, const GLchar* fragment_src, ShaderCallback before, ShaderCallback after)
-	: _id(0), _vertex_src(vertex_src), _fragment_src(fragment_src), _before(before), _after(after) {}
+Shader::Shader(
+	const GLchar* vertex_src, const GLchar* fragment_src, ShaderCallback before, ShaderCallback after)
+	: m_id(0)
+	, m_vertex_src(vertex_src)
+	, m_fragment_src(fragment_src)
+	, m_before(before)
+	, m_after(after) {}
 	
-Shader::~Shader() {
-	if(_id) {
-		glDeleteProgram(_id);
+Shader::~Shader()
+{
+	if (m_id) {
+		glDeleteProgram(m_id);
 	}
 }
 
-void Shader::init() {
-	_id = link(
-		compile(_vertex_src,   GL_VERTEX_SHADER),
-		compile(_fragment_src, GL_FRAGMENT_SHADER));
+void Shader::init()
+{
+	m_id = link(
+		compile(m_vertex_src,   GL_VERTEX_SHADER),
+		compile(m_fragment_src, GL_FRAGMENT_SHADER));
 }
 
-GLuint Shader::id() const {
-	return _id;
+GLuint Shader::id() const
+{
+	return m_id;
 }
 
-GLuint Shader::link(GLuint vertex, GLuint fragment) {
+GLuint Shader::link(GLuint vertex, GLuint fragment)
+{
 	GLuint id = glCreateProgram();
 	glAttachShader(id, vertex);
 	glAttachShader(id, fragment);
 	
-	_before(id);
+	m_before(id);
 	glLinkProgram(id);
-	_after(id);
+	m_after(id);
 
 	GLint result;
 	int log_length;
 	glGetProgramiv(id, GL_LINK_STATUS, &result);
 	glGetProgramiv(id, GL_INFO_LOG_LENGTH, &log_length);
-	if(log_length > 0) {
+	if (log_length > 0) {
 		std::string message;
 		message.resize(log_length);
 		glGetProgramInfoLog(id, log_length, NULL, message.data());
@@ -68,7 +77,8 @@ GLuint Shader::link(GLuint vertex, GLuint fragment) {
 	return id;
 }
 
-GLuint Shader::compile(const GLchar* src, GLuint type) {
+GLuint Shader::compile(const GLchar* src, GLuint type)
+{
 	GLuint id = glCreateShader(type);
 
 	GLint result;
@@ -77,7 +87,7 @@ GLuint Shader::compile(const GLchar* src, GLuint type) {
 	glCompileShader(id);
 	glGetShaderiv(id, GL_COMPILE_STATUS, &result);
 	glGetShaderiv(id, GL_INFO_LOG_LENGTH, &log_length);
-	if(log_length > 0) {
+	if (log_length > 0) {
 		std::string message;
 		message.resize(log_length);
 		glGetShaderInfoLog(id, log_length, NULL, message.data());
@@ -213,7 +223,7 @@ Shaders::Shaders() :
 			
 			void main() {
 				gl_FragColor = texture2D(sampler, uv);
-				if(gl_FragColor.a < 0.001) {
+				if (gl_FragColor.a < 0.001) {
 					discard;
 				}
 			}
@@ -323,7 +333,8 @@ Shaders::Shaders() :
 	)
 {}
 
-void Shaders::init() {
+void Shaders::init()
+{
 	textured.init();
 	selection.init();
 	icons.init();

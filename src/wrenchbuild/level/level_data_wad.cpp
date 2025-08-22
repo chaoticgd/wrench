@@ -60,7 +60,8 @@ template <typename Header>
 static bool test_level_data_wad(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 static ByteRange write_vector_of_bytes(OutputStream& dest, std::vector<u8>& bytes);
 
-void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config) {
+void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config)
+{
 	auto header = src.read<RacLevelDataHeader>(0);
 	
 	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
@@ -71,7 +72,12 @@ void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfi
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 }
 
-void pack_rac_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config) {
+void pack_rac_level_data_wad(
+	OutputStream& dest,
+	const std::vector<LevelChunk>& chunks,
+	const LevelWadAsset& src,
+	BuildConfig config)
+{
 	RacLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -92,7 +98,8 @@ void pack_rac_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& 
 	dest.write(0, header);
 }
 
-void unpack_gc_uya_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config) {
+void unpack_gc_uya_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config)
+{
 	auto header = src.read<GcUyaLevelDataHeader>(0);
 	
 	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
@@ -103,7 +110,12 @@ void unpack_gc_uya_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildCo
 	unpack_compressed_asset(dest.transition_textures<CollectionAsset>(SWITCH_FILES), src, header.transition_textures, config, FMT_COLLECTION_PIF8);
 }
 
-void pack_gc_uya_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config) {
+void pack_gc_uya_level_data_wad(
+	OutputStream& dest,
+	const std::vector<LevelChunk>& chunks,
+	const LevelWadAsset& src,
+	BuildConfig config)
+{
 	GcUyaLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -119,7 +131,7 @@ void pack_gc_uya_level_data_wad(OutputStream& dest, const std::vector<LevelChunk
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);
 	pack_compressed_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, "hud_bank", FMT_NO_HINT);
 	header.core_data = write_vector_of_bytes(dest, data);
-	if(src.has_transition_textures()) {
+	if (src.has_transition_textures()) {
 		header.transition_textures = pack_compressed_asset<ByteRange>(dest, src.get_transition_textures(), config, 0x40, "transition", FMT_COLLECTION_PIF8);
 	} else {
 		header.transition_textures = {-1, 0};
@@ -128,7 +140,8 @@ void pack_gc_uya_level_data_wad(OutputStream& dest, const std::vector<LevelChunk
 	dest.write(0, header);
 }
 
-s32 unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config) {
+s32 unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config)
+{
 	auto header = src.read<DlLevelDataHeader>(0);
 	
 	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
@@ -146,7 +159,14 @@ s32 unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig 
 	return core_moby_count;
 }
 
-void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& art_instances, std::vector<u8>& gameplay, const LevelWadAsset& src, BuildConfig config) {
+void pack_dl_level_data_wad(
+	OutputStream& dest,
+	const std::vector<LevelChunk>& chunks,
+	std::vector<u8>& art_instances,
+	std::vector<u8>& gameplay,
+	const LevelWadAsset& src,
+	BuildConfig config)
+{
 	DlLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -174,12 +194,18 @@ void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& c
 }
 
 template <typename Header>
-static bool test_level_data_wad(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_level_data_wad(
+	std::vector<u8>& original,
+	std::vector<u8>& repacked,
+	BuildConfig config,
+	const char* hint,
+	AssetTestMode mode)
+{
 	Header original_header = Buffer(original).read<Header>(0, "original level data header");
 	Header repacked_header = Buffer(repacked).read<Header>(0, "repacked level data header");
 	
-	if(original_header.core_index.size != repacked_header.core_index.size) {
-		if(mode == AssetTestMode::PRINT_DIFF_ON_FAIL) {
+	if (original_header.core_index.size != repacked_header.core_index.size) {
+		if (mode == AssetTestMode::PRINT_DIFF_ON_FAIL) {
 			Buffer original_core_index = Buffer(original).subbuf(original_header.core_index.offset, original_header.core_index.size);
 			Buffer repacked_core_index = Buffer(repacked).subbuf(repacked_header.core_index.offset, repacked_header.core_index.size);
 			
@@ -212,7 +238,8 @@ static bool test_level_data_wad(std::vector<u8>& original, std::vector<u8>& repa
 	return true;
 }
 
-static ByteRange write_vector_of_bytes(OutputStream& dest, std::vector<u8>& bytes) {
+static ByteRange write_vector_of_bytes(OutputStream& dest, std::vector<u8>& bytes)
+{
 	ByteRange range;
 	dest.pad(0x40, 0);
 	range.offset = dest.tell();

@@ -19,20 +19,24 @@
 #include "moby_animation.h"
 
 static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count, Game game);
-static s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game);
+static s64 write_moby_sequence(
+	OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game);
 static MobySequence read_dl_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count);
-static s64 write_dl_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count);
+static s64 write_dl_moby_sequence(
+	OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count);
 
-std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count, Game game) {
+std::vector<Opt<MobySequence>> read_moby_sequences(
+	Buffer src, s64 sequence_count, s32 joint_count, Game game)
+{
 	std::vector<Opt<MobySequence>> sequences;
 	auto sequence_offsets = src.read_multiple<s32>(0x48, sequence_count, "moby sequences");
-	for(s32 seq_offset : sequence_offsets) {
-		if(seq_offset == 0) {
+	for (s32 seq_offset : sequence_offsets) {
+		if (seq_offset == 0) {
 			sequences.emplace_back(std::nullopt);
 			continue;
 		}
 		
-		if(game == Game::DL) {
+		if (game == Game::DL) {
 			sequences.emplace_back(read_dl_moby_sequence(src, seq_offset, joint_count));
 		} else {
 			sequences.emplace_back(read_moby_sequence(src, seq_offset, joint_count, game));
@@ -41,9 +45,16 @@ std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_coun
 	return sequences;
 }
 
-void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 class_header_ofs, s64 list_ofs, s32 joint_count, Game game) {
-	for(const Opt<MobySequence>& sequence_opt : sequences) {
-		if(!sequence_opt.has_value()) {
+void write_moby_sequences(
+	OutBuffer dest,
+	const std::vector<Opt<MobySequence>>& sequences,
+	s64 class_header_ofs,
+	s64 list_ofs,
+	s32 joint_count,
+	Game game)
+{
+	for (const Opt<MobySequence>& sequence_opt : sequences) {
+		if (!sequence_opt.has_value()) {
 			dest.write<s32>(list_ofs, 0);
 			list_ofs += 4;
 			continue;
@@ -51,7 +62,7 @@ void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& 
 		
 		const MobySequence& sequence = *sequence_opt;
 		s64 seq_ofs;
-		if(game == Game::DL) {
+		if (game == Game::DL) {
 			seq_ofs = write_dl_moby_sequence(dest, sequence, class_header_ofs, joint_count);
 		} else {
 			seq_ofs = write_moby_sequence(dest, sequence, class_header_ofs, joint_count, game);
@@ -61,7 +72,8 @@ void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& 
 	}
 }
 
-static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count, Game game) {
+static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count, Game game)
+{
 	auto seq_header = src.read<MobySequenceHeader>(seq_ofs, "moby sequence header");
 	MobySequence sequence;
 	sequence.bounding_sphere = seq_header.bounding_sphere.unpack();
@@ -70,8 +82,8 @@ static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count,
 	sequence.unknown_13 = seq_header.unknown_13;
 	
 	auto frame_table = src.read_multiple<s32>(seq_ofs + 0x1c, seq_header.frame_count, "moby sequence table");
-	for(s32 frame_ofs_and_flag : frame_table) {
-		if((frame_ofs_and_flag & 0xf0000000) != 0) {
+	for (s32 frame_ofs_and_flag : frame_table) {
+		if ((frame_ofs_and_flag & 0xf0000000) != 0) {
 			sequence.has_special_data = true;
 		}
 	}
@@ -80,8 +92,8 @@ static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count,
 	sequence.triggers = src.read_multiple<u32>(after_frame_list, seq_header.trigger_count, "moby sequence trigger list").copy();
 	s64 after_trigger_list = after_frame_list + seq_header.trigger_count * 4;
 	
-	if(!sequence.has_special_data) { // Normal case.
-		for(s32 frame_ofs_and_flag : frame_table) {
+	if (!sequence.has_special_data) { // Normal case.
+		for (s32 frame_ofs_and_flag : frame_table) {
 			MobyFrame frame;
 			s32 flag = frame_ofs_and_flag & 0xf0000000;
 			s32 frame_ofs = frame_ofs_and_flag & 0x0fffffff;
@@ -117,7 +129,7 @@ static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count,
 		s64 thing_2_ofs = thing_ofs + 2 + thing_1_count * 8;
 		sequence.special.thing_2 = src.read_multiple<u64>(thing_2_ofs, thing_2_count, "special anim data thing 2").copy();
 		
-		for(s32 frame_ofs_and_flag : frame_table) {
+		for (s32 frame_ofs_and_flag : frame_table) {
 			s32 frame_ofs = frame_ofs_and_flag & 0xfffffff;
 			
 			MobyFrame frame;
@@ -131,29 +143,29 @@ static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count,
 			frame.special.third_part = src.read_multiple<u8>(frame_ofs + third_part_ofs, third_part_size, "special anim data third part").copy();
 			
 			s32 fourth_part_size = joint_count;
-			while(fourth_part_size % 8 != 0) fourth_part_size++;
+			while (fourth_part_size % 8 != 0) fourth_part_size++;
 			fourth_part_size /= 8;
 			frame.special.fourth_part = src.read_multiple<u8>(frame_ofs + fourth_part_ofs, fourth_part_size, "special anim data fourth part").copy();
 			s64 ofs = frame_ofs + fourth_part_ofs + fourth_part_size;
 			
 			auto read_fifth_part = [&](s32 count) {
 				std::vector<u8> part;
-				for(s32 i = 0; i < count; i++) {
+				for (s32 i = 0; i < count; i++) {
 					u8 packed_flag = src.read<u8>(ofs++, "special anim data flag");
 					part.push_back(packed_flag);
 					s32 flag_1 = ((packed_flag & 0b00000011) >> 0);
-					if(flag_1 == 3) flag_1 = 0;
-					for(s32 j = 0; j < flag_1; j++) {
+					if (flag_1 == 3) flag_1 = 0;
+					for (s32 j = 0; j < flag_1; j++) {
 						part.push_back(src.read<u8>(ofs++, "special anim data fifth part"));
 					}
 					s32 flag_2 = ((packed_flag & 0b00001100) >> 2);
-					if(flag_2 == 3) flag_2 = 0;
-					for(s32 j = 0; j < flag_2; j++) {
+					if (flag_2 == 3) flag_2 = 0;
+					for (s32 j = 0; j < flag_2; j++) {
 						part.push_back(src.read<u8>(ofs++, "special anim data fifth part"));
 					}
 					s32 flag_3 = ((packed_flag & 0b00110000) >> 4);
-					if(flag_3 == 3) flag_3 = 0;
-					for(s32 j = 0; j <flag_3; j++) {
+					if (flag_3 == 3) flag_3 = 0;
+					for (s32 j = 0; j <flag_3; j++) {
 						part.push_back(src.read<u8>(ofs++, "special anim data fifth part"));
 					}
 				}
@@ -167,9 +179,9 @@ static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count,
 		}
 	}
 	
-	if(seq_header.triggers != 0) {
+	if (seq_header.triggers != 0) {
 		s64 trigger_data_ofs = seq_ofs + seq_header.triggers;
-		if(game == Game::RAC) {
+		if (game == Game::RAC) {
 			trigger_data_ofs = seq_header.triggers;
 		} else {
 			trigger_data_ofs = seq_ofs + seq_header.triggers;
@@ -180,7 +192,9 @@ static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count,
 	return sequence;
 }
 
-static s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game) {
+static s64 write_moby_sequence(
+	OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game)
+{
 	dest.pad(0x10);
 	s64 seq_header_ofs = dest.alloc<MobySequenceHeader>();
 	
@@ -194,12 +208,12 @@ static s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64
 	s64 frame_pointer_ofs = dest.alloc_multiple<s32>(sequence.frames.size());
 	dest.write_multiple(sequence.triggers);
 	
-	if(sequence.has_special_data) {
+	if (sequence.has_special_data) {
 		s32 first_part_size = 0;
 		s32 second_part_size = 0;
 		s32 third_part_size = 0;
 		
-		if(sequence.frames.size() >= 1) {
+		if (sequence.frames.size() >= 1) {
 			const MobyFrame& frame = sequence.frames[0];
 			first_part_size = (s32) frame.special.first_part.size();
 			second_part_size = (s32) frame.special.second_part.size();
@@ -225,12 +239,12 @@ static s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64
 		dest.write_multiple(sequence.special.thing_2);
 	}
 	
-	if(sequence.trigger_data.has_value()) {
-		if(game == Game::RAC) {
+	if (sequence.trigger_data.has_value()) {
+		if (game == Game::RAC) {
 			dest.pad(0x10);
 		}
 		s64 trigger_data_ofs = dest.write(*sequence.trigger_data);
-		if(game == Game::RAC) {
+		if (game == Game::RAC) {
 			seq_header.triggers = trigger_data_ofs - header_ofs;
 		} else {
 			seq_header.triggers = trigger_data_ofs - seq_header_ofs;
@@ -238,10 +252,10 @@ static s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64
 	}
 	seq_header.animation_info = sequence.animation_info;
 	
-	for(const MobyFrame& frame : sequence.frames) {
-		if(!sequence.has_special_data) {
+	for (const MobyFrame& frame : sequence.frames) {
+		if (!sequence.has_special_data) {
 			s32 data_size_bytes = (joint_count + frame.regular.thing_1.size() + frame.regular.thing_2.size()) * 8;
-			while(data_size_bytes % 0x10 != 0) data_size_bytes++;
+			while (data_size_bytes % 0x10 != 0) data_size_bytes++;
 			
 			Rac123MobyFrameHeader frame_header = {0};
 			frame_header.unknown_0 = frame.regular.unknown_0;
@@ -279,7 +293,8 @@ static s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64
 	return seq_header_ofs;
 }
 
-static MobySequence read_dl_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count) {
+static MobySequence read_dl_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count)
+{
 	MobySequenceHeader header = src.read<MobySequenceHeader>(seq_ofs, "moby sequence header");
 	s32 data_ofs = src.read<s32>(seq_ofs + 0x1c, "moby sequence data offset");
 	auto data_header = src.read<DeadlockedMobySequenceDataHeader>(seq_ofs + data_ofs, "moby sequence data header");
@@ -288,7 +303,9 @@ static MobySequence read_dl_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_cou
 	return seq;
 }
 
-static s64 write_dl_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count) {
+static s64 write_dl_moby_sequence(
+	OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count)
+{
 	s64 seq_ofs = dest.tell();
 	dest.write_multiple(sequence.deadlocked_data);
 	return seq_ofs;

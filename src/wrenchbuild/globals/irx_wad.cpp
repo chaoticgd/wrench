@@ -110,15 +110,18 @@ on_load(Irx, []() {
 	IrxWadAsset::funcs.pack_dl = wrap_packer_func<IrxWadAsset>(pack_uya_dl_irx_wad<DlIrxHeader>);
 })
 
-static void unpack_rac_irx_wad(IrxWadAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_rac_irx_wad(IrxWadAsset& dest, InputStream& src, BuildConfig config)
+{
 	verify_not_reached("R&C1 IRX unpacking not yet implemented.");
 }
 
-static void pack_rac_irx_wad(OutputStream& dest, const IrxWadAsset& src, BuildConfig config) {
+static void pack_rac_irx_wad(OutputStream& dest, const IrxWadAsset& src, BuildConfig config)
+{
 	verify_not_reached("R&C1 IRX packing not yet implemented.");
 }
 
-static void unpack_gc_irx_wad(IrxWadAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_gc_irx_wad(IrxWadAsset& dest, InputStream& src, BuildConfig config)
+{
 	auto header = src.read<GcIrxHeader>(0);
 	unpack_asset(dest.image<TextureAsset>(), src, header.image, config, FMT_TEXTURE_RGBA);
 	unpack_asset(dest.sio2man(), src, header.sio2man, config);
@@ -132,7 +135,8 @@ static void unpack_gc_irx_wad(IrxWadAsset& dest, InputStream& src, BuildConfig c
 	unpack_asset(dest._989snd(), src, header._989snd, config);
 }
 
-static void pack_gc_irx_wad(OutputStream& dest, const IrxWadAsset& src, BuildConfig config) {
+static void pack_gc_irx_wad(OutputStream& dest, const IrxWadAsset& src, BuildConfig config)
+{
 	GcIrxHeader header = {0};
 	dest.write(header);
 	header.image = pack_asset<ByteRange>(dest, src.get_image(), config, 0x40, FMT_TEXTURE_RGBA);
@@ -149,7 +153,8 @@ static void pack_gc_irx_wad(OutputStream& dest, const IrxWadAsset& src, BuildCon
 }
 
 template <typename Header>
-static void unpack_uya_dl_irx_wad(IrxWadAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_uya_dl_irx_wad(IrxWadAsset& dest, InputStream& src, BuildConfig config)
+{
 	auto header = src.read<Header>(0);
 	unpack_asset(dest.sio2man(), src, header.sio2man, config);
 	unpack_asset(dest.mcman(), src, header.mcman, config);
@@ -180,7 +185,8 @@ static void unpack_uya_dl_irx_wad(IrxWadAsset& dest, InputStream& src, BuildConf
 }
 
 template <typename Header>
-static void pack_uya_dl_irx_wad(OutputStream& dest, const IrxWadAsset& src, BuildConfig config) {
+static void pack_uya_dl_irx_wad(OutputStream& dest, const IrxWadAsset& src, BuildConfig config)
+{
 	Header header = {0};
 	dest.write(header);
 	header.sio2man = pack_asset<ByteRange>(dest, src.get_sio2man(), config, 0x40);

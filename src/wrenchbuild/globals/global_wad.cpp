@@ -21,10 +21,16 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_rac_global_wad(GlobalWadAsset& dest, const RacWadInfo& header, InputStream& src, BuildConfig config);
-static void pack_rac_global_wad(OutputStream& dest, RacWadInfo& header, const GlobalWadAsset& src, BuildConfig config, const char* hint);
-
-static void unpack_vags(CollectionAsset& dest, InputStream& src, const Sector32* sectors, s32 count, BuildConfig config);
+static void unpack_rac_global_wad(
+	GlobalWadAsset& dest, const RacWadInfo& header, InputStream& src, BuildConfig config);
+static void pack_rac_global_wad(
+	OutputStream& dest,
+	RacWadInfo& header,
+	const GlobalWadAsset& src,
+	BuildConfig config,
+	const char* hint);
+static void unpack_vags(
+	CollectionAsset& dest, InputStream& src, const Sector32* sectors, s32 count, BuildConfig config);
 
 on_load(Global, []() {
 	GlobalWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<GlobalWadAsset, RacWadInfo>(unpack_rac_global_wad);
@@ -32,7 +38,9 @@ on_load(Global, []() {
 	GlobalWadAsset::funcs.pack_rac1 = wrap_wad_hint_packer_func<GlobalWadAsset, RacWadInfo>(pack_rac_global_wad);
 })
 
-static void unpack_rac_global_wad(GlobalWadAsset& dest, const RacWadInfo& header, InputStream& src, BuildConfig config) {
+static void unpack_rac_global_wad(
+	GlobalWadAsset& dest, const RacWadInfo& header, InputStream& src, BuildConfig config)
+{
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, config, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.save_game(), src, header.save_game, config);
 	unpack_compressed_assets<BinaryAsset>(dest.ratchet_seqs(SWITCH_FILES), src, ARRAY_PAIR(header.ratchet_seqs), config);
@@ -84,7 +92,13 @@ static void unpack_rac_global_wad(GlobalWadAsset& dest, const RacWadInfo& header
 	unpack_assets<BinaryAsset>(dest.things(SWITCH_FILES), src, ARRAY_PAIR(header.things), config);
 }
 
-static void pack_rac_global_wad(OutputStream& dest, RacWadInfo& header, const GlobalWadAsset& src, BuildConfig config, const char* hint) {
+static void pack_rac_global_wad(
+	OutputStream& dest,
+	RacWadInfo& header,
+	const GlobalWadAsset& src,
+	BuildConfig config,
+	const char* hint)
+{
 	bool no_mpegs = strcmp(next_hint(&hint), "nompegs") == 0;
 	
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), config, FMT_TEXTURE_PIF8);
@@ -127,7 +141,7 @@ static void pack_rac_global_wad(OutputStream& dest, RacWadInfo& header, const Gl
 	pack_assets_sa<SectorRange>(dest, ARRAY_PAIR(header.credits_images_ntsc), src.get_credits_images_ntsc(), config, FMT_TEXTURE_RGBA_512_416);
 	pack_assets_sa<SectorRange>(dest, ARRAY_PAIR(header.credits_images_pal), src.get_credits_images_pal(), config, FMT_TEXTURE_RGBA_512_448);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.wad_things), src.get_wad_things(), config, "");
-	if(!no_mpegs) {
+	if (!no_mpegs) {
 		pack_assets_sa(dest, ARRAY_PAIR(header.mpegs), src.get_mpegs(), config, FMT_BINARY_PSS);
 	}
 	pack_assets_sa(dest, ARRAY_PAIR(header.help_audio), src.get_help_audio(), config);
@@ -140,9 +154,15 @@ static void pack_rac_global_wad(OutputStream& dest, RacWadInfo& header, const Gl
 	pack_assets_sa(dest, ARRAY_PAIR(header.things), src.get_things(), config);
 }
 
-static void unpack_vags(CollectionAsset& dest, InputStream& src, const Sector32* sectors, s32 count, BuildConfig config) {
-	for(s32 i = 0; i < count; i++) {
-		if(!sectors[i].empty()) {
+static void unpack_vags(
+	CollectionAsset& dest,
+	InputStream& src,
+	const Sector32* sectors,
+	s32 count,
+	BuildConfig config)
+{
+	for (s32 i = 0; i < count; i++) {
+		if (!sectors[i].empty()) {
 			Sector32 size = get_vag_size(src, sectors[i]);
 			SectorRange range{sectors[i], size};
 			unpack_asset(dest.child<BinaryAsset>(i), src, range, config, FMT_BINARY_VAG);

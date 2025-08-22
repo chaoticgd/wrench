@@ -37,7 +37,8 @@
 #include <assetmgr/asset_util.h>
 #include <assetmgr/asset_dispatch.h>
 
-enum AssetFlags {
+enum AssetFlags
+{
 	ASSET_IS_WAD = (1 << 0),                    // This asset is a WAD file.
 	ASSET_IS_LEVEL_WAD = (1 << 1),              // This asset is a level WAD file.
 	ASSET_IS_BIN_LEAF = (1 << 2),               // This makes unpack_binaries dump this out excluding children.
@@ -47,7 +48,8 @@ enum AssetFlags {
 	ASSET_IS_WEAKLY_DELETED = (1 << 6)          // Like the strongly deleted flag, but is treated as false if not set.
 };
 
-class Asset {
+class Asset
+{
 protected:
 	Asset(AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table);
 public:
@@ -87,24 +89,27 @@ public:
 	AssetType logical_type() const;
 	
 	template <typename Callback>
-	void for_each_physical_child(Callback callback) {
-		for(std::unique_ptr<Asset>& child : _children) {
+	void for_each_physical_child(Callback callback)
+	{
+		for(std::unique_ptr<Asset>& child : m_children) {
 			callback(*child.get());
 		}
 	}
 	
 	
 	template <typename Callback>
-	void for_each_physical_child(Callback callback) const {
-		for(const std::unique_ptr<Asset>& child : _children) {
+	void for_each_physical_child(Callback callback) const
+	{
+		for(const std::unique_ptr<Asset>& child : m_children) {
 			callback(*child.get());
 		}
 	}
 	
 	template <typename Callback>
-	void for_each_logical_child(Callback callback) {
+	void for_each_logical_child(Callback callback)
+	{
 		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
-			for(const std::unique_ptr<Asset>& child : asset->_children) {
+			for(const std::unique_ptr<Asset>& child : asset->m_children) {
 				if(child->higher_precedence() == nullptr && !child->is_deleted()) {
 					callback(child->resolve_references());
 				}
@@ -113,16 +118,18 @@ public:
 	}
 	
 	template <typename Callback>
-	void for_each_logical_child(Callback callback) const {
+	void for_each_logical_child(Callback callback) const
+	{
 		const_cast<Asset&>(*this).for_each_logical_child([&](const Asset& child) {
 			callback(child);
 		});
 	}
 	
 	template <typename ChildType, typename Callback>
-	void for_each_logical_child_of_type(Callback callback) {
+	void for_each_logical_child_of_type(Callback callback)
+	{
 		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
-			for(const std::unique_ptr<Asset>& child : asset->_children) {
+			for(const std::unique_ptr<Asset>& child : asset->m_children) {
 				if(child->higher_precedence() == nullptr && !child->is_deleted()) {
 					Asset& child_2 = child->resolve_references();
 					if(child_2.logical_type() == ChildType::ASSET_TYPE) {
@@ -134,14 +141,16 @@ public:
 	}
 	
 	template <typename ChildType, typename Callback>
-	void for_each_logical_child_of_type(Callback callback) const {
+	void for_each_logical_child_of_type(Callback callback) const
+	{
 		const_cast<Asset&>(*this).for_each_logical_child_of_type<ChildType>([&](const ChildType& child) {
 			callback(child);
 		});
 	}
 	
 	template <typename Callback>
-	void for_each_logical_descendant(Callback callback) {
+	void for_each_logical_descendant(Callback callback)
+	{
 		for_each_logical_child([&](Asset& child) {
 			callback(child);
 			child.for_each_logical_descendant(callback);
@@ -149,7 +158,8 @@ public:
 	}
 	
 	template <typename ChildType>
-	ChildType& child(const char* tag) {
+	ChildType& child(const char* tag)
+	{
 		Asset& asset = physical_child(ChildType::ASSET_TYPE, tag);
 		ChildType& resolved_asset = asset.as<ChildType>();
 		verify(&resolved_asset.file() == &file(),
@@ -159,7 +169,8 @@ public:
 	}
 	
 	template <typename ChildType>
-	ChildType& child(s32 tag) {
+	ChildType& child(s32 tag)
+	{
 		std::string str = std::to_string(tag);
 		Asset& asset = physical_child(ChildType::ASSET_TYPE, str.c_str());
 		ChildType& resolved_asset = asset.as<ChildType>();
@@ -173,30 +184,35 @@ public:
 	Asset* maybe_as(AssetType type);
 	
 	template <typename AssetType>
-	AssetType& as() {
+	AssetType& as()
+	{
 		return static_cast<AssetType&>(as(AssetType::ASSET_TYPE));
 	}
 	
 	template <typename AssetType>
-	const AssetType& as() const {
+	const AssetType& as() const
+	{
 		return const_cast<Asset*>(this)->as<AssetType>();
 	}
 	
 	template <typename AssetType>
-	AssetType* maybe_as() {
+	AssetType* maybe_as()
+	{
 		return static_cast<AssetType*>(maybe_as(AssetType::ASSET_TYPE));
 	}
 	
 	template <typename AssetType>
-	const AssetType* maybe_as() const {
+	const AssetType* maybe_as() const
+	{
 		return const_cast<Asset*>(this)->maybe_as<AssetType>();
 	}
 	
 	template <typename ChildTargetType>
-	ChildTargetType& transmute_child(const char* tag) {
-		for(auto iter = _children.begin(); iter != _children.end(); iter++) {
+	ChildTargetType& transmute_child(const char* tag)
+	{
+		for(auto iter = m_children.begin(); iter != m_children.end(); iter++) {
 			if(iter->get()->tag() == tag) {
-				_children.erase(iter);
+				m_children.erase(iter);
 				break;
 			}
 		}
@@ -218,18 +234,21 @@ public:
 	// Switch to another .asset file, and create a child of the node in the same
 	// place in the tree as the current node.
 	template <typename ChildType>
-	ChildType& foreign_child(std::string path, bool is_absolute, std::string tag) {
+	ChildType& foreign_child(std::string path, bool is_absolute, std::string tag)
+	{
 		return foreign_child_impl(path, is_absolute, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
 	}
 	
 	template <typename ChildType>
-	ChildType& foreign_child(std::string path, bool is_absolute, s32 index) {
+	ChildType& foreign_child(std::string path, bool is_absolute, s32 index)
+	{
 		std::string tag = std::to_string(index);
 		return foreign_child_impl(path, is_absolute, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
 	}
 	
 	template <typename ChildType>
-	ChildType& foreign_child(s32 index) {
+	ChildType& foreign_child(s32 index)
+	{
 		std::string tag = std::to_string(index);
 		fs::path path = fs::path(tag)/tag;
 		return foreign_child_impl(path, false, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
@@ -268,19 +287,20 @@ private:
 	void connect_precedence_pointers();
 	void disconnect_precedence_pointers();
 	
-	AssetType _type;
-	AssetFile& _file;
-	Asset* _parent;
-	std::string _tag;
-	std::vector<std::unique_ptr<Asset>> _children;
-	Asset* _lower_precedence = nullptr;
-	Asset* _higher_precedence = nullptr;
+	AssetType m_type;
+	AssetFile& m_file;
+	Asset* m_parent;
+	std::string m_tag;
+	std::vector<std::unique_ptr<Asset>> m_children;
+	Asset* m_lower_precedence = nullptr;
+	Asset* m_higher_precedence = nullptr;
 
 protected:
-	u32 _attrib_exists = 0;
+	u32 m_attrib_exists = 0;
 };
 
-class AssetFile {
+class AssetFile
+{
 public:
 	AssetFile(AssetForest& forest, AssetBank& pack, const fs::path& relative_path);
 	AssetFile(const AssetFile&) = delete;
@@ -314,14 +334,15 @@ private:
 	std::unique_ptr<InputStream> open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest = nullptr) const;
 	std::string read_text_file(const fs::path& path) const;
 	
-	AssetForest& _forest;
-	AssetBank& _bank;
-	fs::path _relative_directory;
-	std::string _file_name;
-	std::unique_ptr<Asset> _root;
+	AssetForest& m_forest;
+	AssetBank& m_bank;
+	fs::path m_relative_directory;
+	std::string m_file_name;
+	std::unique_ptr<Asset> m_root;
 };
 
-class AssetBank {
+class AssetBank
+{
 public:
 	virtual ~AssetBank();
 	
@@ -354,7 +375,7 @@ protected:
 	std::string get_common_source_path() const;
 	std::string get_game_source_path(Game game) const;
 	
-	std::function<void()> _unlocker; // We can't call virtual functions from the destructor so we use a lambda.
+	std::function<void()> m_unlocker; // We can't call virtual functions from the destructor so we use a lambda.
 	
 private:
 	friend AssetForest;
@@ -373,14 +394,15 @@ private:
 	virtual s32 check_lock() const;
 	virtual void lock();
 	
-	AssetForest& _forest;
-	std::vector<std::unique_ptr<AssetFile>> _asset_files;
-	bool _is_writeable;
-	AssetBank* _lower_precedence = nullptr;
-	AssetBank* _higher_precedence = nullptr;
+	AssetForest& m_forest;
+	std::vector<std::unique_ptr<AssetFile>> m_asset_files;
+	bool m_is_writeable;
+	AssetBank* m_lower_precedence = nullptr;
+	AssetBank* m_higher_precedence = nullptr;
 };
 
-class AssetForest {
+class AssetForest
+{
 public:
 	AssetForest() {}
 	AssetForest(const AssetForest&) = delete;
@@ -396,9 +418,10 @@ public:
 	Asset& lookup_asset(const AssetLink& link, Asset* context);
 	
 	template <typename Bank, typename... ConstructorArgs>
-	AssetBank& mount(ConstructorArgs... args) {
-		AssetBank* bank = _banks.emplace_back(std::make_unique<Bank>(*this, args...)).get();
-		bank->index = (s32) (_banks.size() - 1);
+	AssetBank& mount(ConstructorArgs... args)
+	{
+		AssetBank* bank = m_banks.emplace_back(std::make_unique<Bank>(*this, args...)).get();
+		bank->index = (s32) (m_banks.size() - 1);
 		if(bank->is_writeable()) {
 			if(s32 pid = bank->check_lock()) {
 				fprintf(stderr, "error: Another process (with PID %d) has locked this asset bank. This implies the process is still alive or has previously crashed. To bypass this error, delete the lock file in the asset bank directory.\n", pid);
@@ -407,10 +430,10 @@ public:
 				bank->lock();
 			}
 		}
-		if(_banks.size() >= 2) {
-			AssetBank* lower_bank = _banks[_banks.size() - 2].get();
-			lower_bank->_higher_precedence = bank;
-			bank->_lower_precedence = lower_bank;
+		if(m_banks.size() >= 2) {
+			AssetBank* lower_bank = m_banks[m_banks.size() - 2].get();
+			lower_bank->m_higher_precedence = bank;
+			bank->m_lower_precedence = lower_bank;
 		}
 		bank->read();
 		return *bank;
@@ -424,11 +447,12 @@ public:
 	const std::map<std::string, CppType>& types() const;
 	
 private:
-	std::vector<std::unique_ptr<AssetBank>> _banks;
-	std::map<std::string, CppType> _types;
+	std::vector<std::unique_ptr<AssetBank>> m_banks;
+	std::map<std::string, CppType> m_types;
 };
 
-class LooseAssetBank : public AssetBank {
+class LooseAssetBank : public AssetBank
+{
 	friend AssetBank;
 public:
 	LooseAssetBank(AssetForest& forest, fs::path directory, bool is_writeable);
@@ -444,10 +468,11 @@ private:
 	s32 check_lock() const override;
 	void lock() override;
 	public:
-	fs::path _directory;
+	fs::path m_directory;
 };
 
-class MemoryAssetBank : public AssetBank {
+class MemoryAssetBank : public AssetBank
+{
 public:
 	MemoryAssetBank(AssetForest& forest);
 	
@@ -462,7 +487,7 @@ private:
 	s32 check_lock() const override;
 	void lock() override;
 	
-	std::map<fs::path, std::vector<u8>> _files;
+	std::map<fs::path, std::vector<u8>> m_files;
 };
 
 #endif

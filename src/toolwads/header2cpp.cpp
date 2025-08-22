@@ -24,10 +24,11 @@
 
 #include <platform/fileio.h>
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	size_t retval;
 
-	if(argc <= 3) {
+	if (argc <= 3) {
 		fprintf(stderr, "Invalid number of arguments.");
 		return 1;
 	}
@@ -36,9 +37,9 @@ int main(int argc, char** argv) {
 	assert(dest);
 
 	file_write_string("extern \"C\"{alignas(16) unsigned char wadinfo[]={", dest);
-	for(int i = 2; i < argc; i++) {
+	for (int i = 2; i < argc; i++) {
 		WrenchFileHandle* src = file_open(argv[i], WRENCH_FILE_MODE_READ);
-		if(!src) {
+		if (!src) {
 			fprintf(stderr, "Failed to open file '%s'.\n", argv[i]);
 			return 1;
 		}
@@ -56,7 +57,7 @@ int main(int argc, char** argv) {
 
 		file_close(src);
 
-		for(char byte : header) {
+		for (char byte : header) {
 			file_printf(dest, "0x%hhx,", byte);
 		}
 	}

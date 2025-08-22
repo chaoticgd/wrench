@@ -73,7 +73,8 @@ static const char** SEGMENT_LABELS[GAME_COUNT] = {
 	NULL, RAC2_SEGMENT_LABELS, RAC3_SEGMENT_LABELS, DL_SEGMENT_LABELS
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	if(argc != 2) {
 		fprintf(stderr, "usage: %s path/to/eeMemory.bin\n", argv[0]);
 		fprintf(stderr, "Supports R&C1, R&C2, R&C3 and Deadlocked.\n");
@@ -116,7 +117,8 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
-int detect_game(uint8_t* ee_memory) {
+int detect_game(uint8_t* ee_memory)
+{
 	int i, j, k;
 	for(i = GAME_COUNT - 1; i >= 0; i--) {
 		int pattern_size = strlen(PATTERNS[i]);
@@ -170,7 +172,8 @@ static const int8_t RAC1_MEMMAP_OPCODES[] = {
 		OPCODE_JAL
 };
 
-void build_memory_map_rac1(memory_segment* map, uint8_t* ee_memory) {
+void build_memory_map_rac1(memory_segment* map, uint8_t* ee_memory)
+{
 	// Find the bit in the code where the sizes of all the memory segments get
 	// printed out.
 	int res = find_opcode_pattern((uint32_t*) ee_memory, RAC1_MEMMAP_OPCODES, sizeof(RAC1_MEMMAP_OPCODES));
@@ -211,7 +214,8 @@ void build_memory_map_rac1(memory_segment* map, uint8_t* ee_memory) {
 	RAC1_SEGMENT_SEQ("Part Instances + Stack", 0x560);
 }
 
-int find_opcode_pattern(uint32_t* ee_memory, const int8_t* pattern, int instruction_count) {
+int find_opcode_pattern(uint32_t* ee_memory, const int8_t* pattern, int instruction_count)
+{
 	int32_t i, j;
 	for(i = 0; i < EE_MEMORY_SIZE / 4 - instruction_count; i++) {
 		int match = 1;
@@ -227,7 +231,8 @@ int find_opcode_pattern(uint32_t* ee_memory, const int8_t* pattern, int instruct
 	return -1;
 }
 
-void build_memory_map_rac234(memory_segment* map, uint32_t* ee_memory, int game) {
+void build_memory_map_rac234(memory_segment* map, uint32_t* ee_memory, int game)
+{
 	int32_t i, j;
 	for(i = CODE_SEGMENT_BASE / 0x4; i < EE_MEMORY_SIZE / 4 - SEGMENT_COUNTS[game]; i++) {
 		uint32_t* ptr = ee_memory + i;
@@ -258,7 +263,8 @@ void build_memory_map_rac234(memory_segment* map, uint32_t* ee_memory, int game)
 	exit(1);
 }
 
-void print_memory_map(memory_segment* map, int segment_count) {
+void print_memory_map(memory_segment* map, int segment_count)
+{
 	int i, j;
 	for(i = 0; i < segment_count; i++) {
 		int32_t size = INT32_MAX;

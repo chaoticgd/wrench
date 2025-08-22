@@ -22,7 +22,8 @@
 #include <core/material.h>
 #include <assetmgr/asset_types.h>
 
-struct MaterialSet {
+struct MaterialSet
+{
 	std::vector<Material> materials;
 	std::vector<FileReference> textures;
 };

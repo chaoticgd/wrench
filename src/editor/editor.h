@@ -24,7 +24,8 @@
 #include <core/util.h>
 #include <core/filesystem.h>
 
-class BaseEditor {
+class BaseEditor
+{
 public:
 	virtual ~BaseEditor() {}
 
@@ -34,7 +35,8 @@ public:
 	virtual std::string save() = 0;
 	
 protected:
-	struct UndoRedoCommand {
+	struct UndoRedoCommand
+	{
 		UndoRedoCommand();
 		UndoRedoCommand(const UndoRedoCommand&) = delete;
 		UndoRedoCommand(UndoRedoCommand&& rhs) noexcept;
@@ -48,19 +50,24 @@ protected:
 		void (*cleanup)(void* user_data) = nullptr;
 	};
 
-	std::vector<UndoRedoCommand> _commands;
-	size_t _command_past_last = 0;
-	bool _pushing_command = false;
+	std::vector<UndoRedoCommand> m_commands;
+	size_t m_command_past_last = 0;
+	bool m_pushing_command = false;
 };
 
 template <typename ThisEditor>
-class Editor : public BaseEditor {
+class Editor : public BaseEditor
+{
 public:
 	template <typename UserData>
-	void push_command(UserData data, void (*apply)(ThisEditor& editor, UserData& data), void (*undo)(ThisEditor& editor, UserData& data)) {
-		verify(!_pushing_command, "Recursively entered Editor::push_command.");
-		_pushing_command = true;
-		defer([&]() { _pushing_command = false; });
+	void push_command(
+		UserData data,
+		void (*apply)(ThisEditor& editor, UserData& data),
+		void (*undo)(ThisEditor& editor, UserData& data))
+	{
+		verify(!m_pushing_command, "Recursively entered Editor::push_command.");
+		m_pushing_command = true;
+		defer([&]() { m_pushing_command = false; });
 		
 		UndoRedoCommand cmd;
 		cmd.user_data = new UserData(std::move(data));
@@ -76,9 +83,9 @@ public:
 		
 		cmd.apply(*this, cmd.user_data);
 		
-		_commands.resize(_command_past_last);
-		_commands.emplace_back(std::move(cmd));
-		_command_past_last = _commands.size();
+		m_commands.resize(m_command_past_last);
+		m_commands.emplace_back(std::move(cmd));
+		m_command_past_last = m_commands.size();
 	}
 };
 

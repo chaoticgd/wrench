@@ -25,10 +25,12 @@
 
 static std::vector<TriStripConstraint> setup_shrub_constraints();
 static f32 compute_optimal_scale(const GLTF::Mesh& mesh);
-static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(const std::vector<Vertex>& vertices);
+static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(
+	const std::vector<Vertex>& vertices);
 static s32 compute_lod_k(f32 distance);
 
-ShrubClass read_shrub_class(Buffer src) {
+ShrubClass read_shrub_class(Buffer src)
+{
 	ShrubClass shrub;
 	
 	ShrubClassHeader header = src.read<ShrubClassHeader>(0, "shrub header");
@@ -39,7 +41,7 @@ ShrubClass read_shrub_class(Buffer src) {
 	shrub.scale = header.scale;
 	shrub.o_class = header.o_class;
 	
-	for(auto& entry : src.read_multiple<ShrubPacketEntry>(sizeof(ShrubClassHeader), header.packet_count, "packet entry")) {
+	for (auto& entry : src.read_multiple<ShrubPacketEntry>(sizeof(ShrubClassHeader), header.packet_count, "packet entry")) {
 		ShrubPacket& packet = shrub.packets.emplace_back();
 		
 		Buffer command_buffer = src.subbuf(entry.offset, entry.size);
@@ -63,12 +65,12 @@ ShrubClass read_shrub_class(Buffer src) {
 		s32 next_ad_gif = 0;
 		s32 next_vertex = 0;
 		s32 next_offset = 0;
-		while(next_gif_tag < gif_tags.size() || next_ad_gif < ad_gif.size() || next_vertex < part_1.size()) {
+		while (next_gif_tag < gif_tags.size() || next_ad_gif < ad_gif.size() || next_vertex < part_1.size()) {
 			// GIF tags for the vertices (not the AD data).
-			if(next_gif_tag < gif_tags.size() && gif_tags[next_gif_tag].gs_packet_offset == next_offset) {
+			if (next_gif_tag < gif_tags.size() && gif_tags[next_gif_tag].gs_packet_offset == next_offset) {
 				prim = nullptr;
 				GsPrimRegister reg{(u32) gif_tags[next_gif_tag].tag.prim()};
-				switch(reg.primitive()) {
+				switch (reg.primitive()) {
 					case GS_PRIMITIVE_TRIANGLE:
 						prim_type = GeometryType::TRIANGLE_LIST;
 						break;
@@ -87,7 +89,7 @@ ShrubClass read_shrub_class(Buffer src) {
 			}
 			
 			// AD data to change the texture.
-			if(next_ad_gif < ad_gif.size() && ad_gif[next_ad_gif].gs_packet_offset == next_offset) {
+			if (next_ad_gif < ad_gif.size() && ad_gif[next_ad_gif].gs_packet_offset == next_offset) {
 				packet.primitives.emplace_back(ad_gif[next_ad_gif]);
 				prim = nullptr;
 				
@@ -98,8 +100,8 @@ ShrubClass read_shrub_class(Buffer src) {
 			}
 			
 			// Normal vertices.
-			if(next_vertex < part_1.size() && part_1[next_vertex].gs_packet_offset == next_offset) {
-				if(prim == nullptr) {
+			if (next_vertex < part_1.size() && part_1[next_vertex].gs_packet_offset == next_offset) {
+				if (prim == nullptr) {
 					prim = &packet.primitives.emplace_back().emplace<1>();
 				}
 				
@@ -121,7 +123,7 @@ ShrubClass read_shrub_class(Buffer src) {
 			}
 			
 			// Padding vertices at the end of a small packet, all of which write over the same address.
-			if(next_vertex < part_1.size() && part_1[next_vertex].gs_packet_offset == next_offset - 3) {
+			if (next_vertex < part_1.size() && part_1[next_vertex].gs_packet_offset == next_offset - 3) {
 				break;
 			}
 			
@@ -129,7 +131,7 @@ ShrubClass read_shrub_class(Buffer src) {
 		}
 	}
 	
-	if(header.billboard_offset > 0) {
+	if (header.billboard_offset > 0) {
 		shrub.billboard = src.read<ShrubBillboard>(header.billboard_offset, "shrub billboard");
 	}
 	shrub.normals = src.read_multiple<ShrubNormal>(header.normals_offset, 24, "shrub normals").copy();
@@ -137,7 +139,8 @@ ShrubClass read_shrub_class(Buffer src) {
 	return shrub;
 }
 
-void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
+void write_shrub_class(OutBuffer dest, const ShrubClass& shrub)
+{
 	s64 header_ofs = dest.alloc<ShrubClassHeader>();
 	ShrubClassHeader header = {};
 	
@@ -152,7 +155,7 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 	s64 packet_list_ofs = dest.alloc_multiple<ShrubPacketEntry>(shrub.packets.size());
 	
 	// Write out the VIF command lists.
-	for(const ShrubPacket& packet : shrub.packets) {
+	for (const ShrubPacket& packet : shrub.packets) {
 		ShrubPacketEntry entry;
 		
 		dest.pad(0x10, 0);
@@ -173,8 +176,8 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 		std::vector<ShrubTexturePrimitive> textures;
 		std::vector<ShrubVertexPart1> part_1;
 		std::vector<ShrubVertexPart2> part_2;
-		for(const ShrubPrimitive& primitive : packet.primitives) {
-			if(const ShrubTexturePrimitive* prim = std::get_if<ShrubTexturePrimitive>(&primitive)) {
+		for (const ShrubPrimitive& primitive : packet.primitives) {
+			if (const ShrubTexturePrimitive* prim = std::get_if<ShrubTexturePrimitive>(&primitive)) {
 				packet_header.texture_count++;
 				packet_header.vertex_offset += 4;
 				
@@ -182,13 +185,13 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 				texture.gs_packet_offset = offset;
 				offset += 5;
 			}
-			if(const ShrubVertexPrimitive* prim = std::get_if<ShrubVertexPrimitive>(&primitive)) {
+			if (const ShrubVertexPrimitive* prim = std::get_if<ShrubVertexPrimitive>(&primitive)) {
 				packet_header.gif_tag_count++;
 				packet_header.vertex_offset += 1;
 				packet_header.vertex_count += (s32) prim->vertices.size();
 				
 				GsPrimRegister prim_reg;
-				switch(prim->type) {
+				switch (prim->type) {
 					case GeometryType::TRIANGLE_LIST:
 						prim_reg.set_primitive(GS_PRIMITIVE_TRIANGLE);
 						break;
@@ -219,7 +222,7 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 				gif.gs_packet_offset = offset;
 				offset += 1;
 				
-				for(const ShrubVertex& vertex : prim->vertices) {
+				for (const ShrubVertex& vertex : prim->vertices) {
 					ShrubVertexPart1& p1 = part_1.emplace_back();
 					p1.x = vertex.x;
 					p1.y = vertex.y;
@@ -240,7 +243,7 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 		
 		// Insert padding vertices if there are less than 6 real vertices.
 		s32 vertex_count = (s32) part_1.size();
-		for(s32 i = 0; i < std::max(0, 6 - vertex_count); i++) {
+		for (s32 i = 0; i < std::max(0, 6 - vertex_count); i++) {
 			part_1.emplace_back(part_1.back());
 			part_2.emplace_back(part_2.back());
 			packet_header.vertex_count++;
@@ -298,7 +301,7 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 	}
 	
 	// Write out the billboard.
-	if(shrub.billboard.has_value()) {
+	if (shrub.billboard.has_value()) {
 		dest.pad(0x10, 0);
 		header.billboard_offset = (s32) (dest.tell() - header_ofs);
 		dest.write(*shrub.billboard);
@@ -312,28 +315,29 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 	dest.write(header_ofs, header);
 }
 
-GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
+GLTF::Mesh recover_shrub_class(const ShrubClass& shrub)
+{
 	GLTF::Mesh mesh;
 	mesh.name = "mesh";
 	
 	GLTF::MeshPrimitive* dest_primitive = nullptr;
 	s32 texture_index = -1;
 	
-	for(const ShrubPacket& packet : shrub.packets) {
-		for(const ShrubPrimitive& src_primitive : packet.primitives) {
-			if(const ShrubTexturePrimitive* prim = std::get_if<ShrubTexturePrimitive>(&src_primitive)) {
+	for (const ShrubPacket& packet : shrub.packets) {
+		for (const ShrubPrimitive& src_primitive : packet.primitives) {
+			if (const ShrubTexturePrimitive* prim = std::get_if<ShrubTexturePrimitive>(&src_primitive)) {
 				texture_index = prim->d4_tex0_1.data_lo;
 			}
 			
-			if(const ShrubVertexPrimitive* prim = std::get_if<ShrubVertexPrimitive>(&src_primitive)) {
-				if(dest_primitive == nullptr || texture_index != *dest_primitive->material) {
+			if (const ShrubVertexPrimitive* prim = std::get_if<ShrubVertexPrimitive>(&src_primitive)) {
+				if (dest_primitive == nullptr || texture_index != *dest_primitive->material) {
 					dest_primitive = &mesh.primitives.emplace_back();
 					dest_primitive->attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::NORMAL;
 					dest_primitive->material = texture_index;
 				}
 				
 				s32 base_index = (s32) mesh.vertices.size();
-				for(const ShrubVertex& vertex : prim->vertices) {
+				for (const ShrubVertex& vertex : prim->vertices) {
 					Vertex& dest_vertex = mesh.vertices.emplace_back();
 					f32 x = vertex.x * shrub.scale * (1.f / 1024.f);
 					f32 y = vertex.y * shrub.scale * (1.f / 1024.f);
@@ -347,12 +351,12 @@ GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
 					dest_vertex.tex_coord.t = vu_fixed12_to_float(vertex.t);
 				}
 				
-				if(prim->type == GeometryType::TRIANGLE_LIST) {
-					for(s32 i = base_index; i < (s32) mesh.vertices.size(); i++) {
+				if (prim->type == GeometryType::TRIANGLE_LIST) {
+					for (s32 i = base_index; i < (s32) mesh.vertices.size(); i++) {
 						dest_primitive->indices.emplace_back(i);
 					}
 				} else {
-					for(s32 i = base_index; i < (s32) mesh.vertices.size() - 2; i++) {
+					for (s32 i = base_index; i < (s32) mesh.vertices.size() - 2; i++) {
 						dest_primitive->indices.emplace_back(i + 0);
 						dest_primitive->indices.emplace_back(i + 1);
 						dest_primitive->indices.emplace_back(i + 2);
@@ -372,7 +376,14 @@ GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
 	return mesh;
 }
 
-ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard_info) {
+ShrubClass build_shrub_class(
+	const GLTF::Mesh& mesh,
+	const std::vector<Material>& materials,
+	f32 mip_distance,
+	u16 mode_bits,
+	s16 o_class,
+	Opt<ShrubBillboardInfo> billboard_info)
+{
 	ShrubClass shrub = {};
 	shrub.mip_distance = mip_distance;
 	shrub.mode_bits = mode_bits;
@@ -397,14 +408,14 @@ ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>
 	GeometryPackets output = generate_tristrip_packets(primitives, config);
 	
 	// Build the shrub packets.
-	for(const GeometryPacket& src_packet : output.packets) {
+	for (const GeometryPacket& src_packet : output.packets) {
 		s32 last_effective_material = -1;
 		ShrubPacket& dest_packet = shrub.packets.emplace_back();
-		for(s32 i = 0; i < src_packet.primitive_count; i++) {
+		for (s32 i = 0; i < src_packet.primitive_count; i++) {
 			const GeometryPrimitive& src_primitive = output.primitives[src_packet.primitive_begin + i];
 			verify(src_primitive.effective_material > -1, "Bad material index.");
 			
-			if(src_primitive.effective_material != last_effective_material) {
+			if (src_primitive.effective_material != last_effective_material) {
 				const EffectiveMaterial& effective = effectives.at(src_primitive.effective_material);
 				const Material& material = materials.at(effective.materials.at(0));
 				verify(material.surface.type == MaterialSurfaceType::TEXTURE,
@@ -418,10 +429,10 @@ ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>
 				dest_primitive.d1_tex1_1.data_lo = compute_lod_k(mip_distance);
 				dest_primitive.d1_tex1_1.data_hi = 0x04; // mmin
 				dest_primitive.d2_clamp_1.address = GIF_AD_CLAMP_1;
-				if(material.wrap_mode_s == WrapMode::CLAMP) {
+				if (material.wrap_mode_s == WrapMode::CLAMP) {
 					dest_primitive.d2_clamp_1.data_lo = 1;
 				}
-				if(material.wrap_mode_t == WrapMode::CLAMP) {
+				if (material.wrap_mode_t == WrapMode::CLAMP) {
 					dest_primitive.d2_clamp_1.data_hi = 1;
 				}
 				dest_primitive.d3_miptbp1_1.address = GIF_AD_MIPTBP1_1;
@@ -434,7 +445,7 @@ ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>
 			
 			ShrubVertexPrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<ShrubVertexPrimitive>();
 			dest_primitive.type = src_primitive.type;
-			for(s32 j = 0; j < src_primitive.index_count; j++) {
+			for (s32 j = 0; j < src_primitive.index_count; j++) {
 				ShrubVertex& dest_vertex = dest_primitive.vertices.emplace_back();
 				s32 vertex_index = output.indices.at(src_primitive.index_begin + j);
 				const Vertex& src = mesh.vertices.at(vertex_index);
@@ -455,7 +466,7 @@ ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>
 		}
 	}
 	
-	if(billboard_info.has_value()) {
+	if (billboard_info.has_value()) {
 		ShrubBillboard billboard = {};
 		billboard.fade_distance = billboard_info->fade_distance;
 		billboard.width = billboard_info->width;
@@ -471,7 +482,8 @@ ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>
 	return shrub;
 }
 
-static std::vector<TriStripConstraint> setup_shrub_constraints() {
+static std::vector<TriStripConstraint> setup_shrub_constraints()
+{
 	std::vector<TriStripConstraint> constraints;
 	
 	TriStripConstraint& unpacked_data_size = constraints.emplace_back();
@@ -496,12 +508,13 @@ static std::vector<TriStripConstraint> setup_shrub_constraints() {
 	return constraints;
 }
 
-static f32 compute_optimal_scale(const GLTF::Mesh& mesh) {
+static f32 compute_optimal_scale(const GLTF::Mesh& mesh)
+{
 	// Compute the minimum axis-aligned bounding box.
 	f32 xmin = 0.f, xmax = 0.f;
 	f32 ymin = 0.f, ymax = 0.f;
 	f32 zmin = 0.f, zmax = 0.f;
-	for(const Vertex& v : mesh.vertices) {
+	for (const Vertex& v : mesh.vertices) {
 		xmin = std::min(xmin, v.pos.x);
 		ymin = std::min(ymin, v.pos.y);
 		zmin = std::min(zmin, v.pos.z);
@@ -520,7 +533,9 @@ static f32 compute_optimal_scale(const GLTF::Mesh& mesh) {
 	return required_range * (1024.f / (INT16_MAX - 1.f));
 }
 
-static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(const std::vector<Vertex>& vertices) {
+static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(
+	const std::vector<Vertex>& vertices)
+{
 	// https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere
 	std::vector<glm::vec3> clusters = {
 		{0.0, 1.0, 0.0},
@@ -554,7 +569,7 @@ static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clus
 	// Quantize the normal for each clusters.
 	std::vector<ShrubNormal> normals;
 	normals.reserve(24);
-	for(glm::vec3& cluster : clusters) {
+	for (glm::vec3& cluster : clusters) {
 		ShrubNormal& normal = normals.emplace_back();
 		normal.x = (s16) roundf(cluster.x * INT16_MAX);
 		normal.y = (s16) roundf(cluster.y * INT16_MAX);
@@ -564,18 +579,18 @@ static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clus
 	// Generate a mapping of vertex indices to cluster indices.
 	std::vector<s32> indices;
 	indices.reserve(vertices.size());
-	for(const Vertex& vertex : vertices) {
+	for (const Vertex& vertex : vertices) {
 		// Find which cluster the vertex is in.
 		s32 best = -1;
 		f32 distance = 0.f;
-		for(s32 j = 0; j < 24; j++) {
+		for (s32 j = 0; j < 24; j++) {
 			f32 new_distance = glm::distance(clusters[j], vertex.normal);
-			if(best == -1 || new_distance < distance) {
+			if (best == -1 || new_distance < distance) {
 				best = j;
 				distance = new_distance;
 			}
 		}
-		if(best == -1) {
+		if (best == -1) {
 			printf("warning: Failed to assign vertex to cluster. This might be due to bad normals.\n");
 			best = 0;
 		}
@@ -585,11 +600,12 @@ static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clus
 	return {normals, indices};
 }
 
-static s32 compute_lod_k(f32 distance) {
+static s32 compute_lod_k(f32 distance)
+{
 	// This is similar to the equation in the GS User's Manual and seems to fit
 	// most of the points in the original files. It's kinda off for larger
 	// distances such as those of billbaords but I'm not really sure.
-	if(distance < 0.0001f) {
+	if (distance < 0.0001f) {
 		distance = 0.0001f;
 	}
 	s16 k = (s16) roundf(-log2(distance) * 16 - 73.f);

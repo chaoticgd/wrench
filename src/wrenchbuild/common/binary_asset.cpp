@@ -19,8 +19,17 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint);
-static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const BinaryAsset& src);
+static void unpack_binary_asset(
+	Asset& dest,
+	InputStream& src,
+	const std::vector<u8>* header_src,
+	BuildConfig config,
+	const char* hint);
+static void pack_binary_asset(
+	OutputStream& dest,
+	std::vector<u8>* header_dest,
+	fs::file_time_type* time_dest,
+	const BinaryAsset& src);
 
 on_load(Binary, []() {
 	BinaryAsset::funcs.unpack_rac1 = new AssetUnpackerFunc(unpack_binary_asset);
@@ -34,18 +43,24 @@ on_load(Binary, []() {
 	BinaryAsset::funcs.pack_dl = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
 })
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
+static void unpack_binary_asset(
+	Asset& dest,
+	InputStream& src,
+	const std::vector<u8>* header_src,
+	BuildConfig config,
+	const char* hint)
+{
 	BinaryAsset& binary = dest.as<BinaryAsset>();
 	const char* type = next_hint(&hint);
 	const char* extension = "bin";
-	if(strcmp(type, "ext") == 0) {
+	if (strcmp(type, "ext") == 0) {
 		extension = next_hint(&hint);
 	}
 	std::string file_name = binary.tag() + "." + extension;
 	auto [stream, ref] = binary.file().open_binary_file_for_writing(file_name);
 	verify(stream.get(), "Failed to open file '%s' for writing while unpacking binary asset '%s'.",
 		file_name.c_str(), binary.absolute_link().to_string().c_str());
-	if(header_src && config.game() == Game::RAC) {
+	if (header_src && config.game() == Game::RAC) {
 		s64 padded_header_size = Sector32::size_from_bytes(header_src->size()).bytes();
 		stream->write_v(*header_src);
 		stream->seek(padded_header_size);
@@ -58,15 +73,20 @@ static void unpack_binary_asset(Asset& dest, InputStream& src, const std::vector
 	binary.set_src(ref);
 }
 
-static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const BinaryAsset& src) {
-	if(g_asset_packer_dry_run) {
+static void pack_binary_asset(
+	OutputStream& dest,
+	std::vector<u8>* header_dest,
+	fs::file_time_type* time_dest,
+	const BinaryAsset& src)
+{
+	if (g_asset_packer_dry_run) {
 		return;
 	}
 	
 	auto stream = src.src().open_binary_file_for_reading(time_dest);
 	verify(stream.get(), "Failed to open '%s' for reading while packing binary asset '%s'.",
 		src.src().path.string().c_str(), src.absolute_link().to_string().c_str());
-	if(header_dest) {
+	if (header_dest) {
 		s32 header_size = stream->read<s32>();
 		verify_fatal(header_size == header_dest->size());
 		s64 padded_header_size = Sector32::size_from_bytes(header_size).bytes();

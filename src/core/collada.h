@@ -26,7 +26,8 @@
 // Represents the fields of a material that get written to a COLLADA file, and
 // is used to cross-reference COLLADA materials with material assets using the
 // name field.
-struct ColladaMaterial {
+struct ColladaMaterial
+{
 	std::string name;
 	MaterialSurface surface;
 	s32 collision_id = -1; // Only used by the collision code.
@@ -42,7 +43,8 @@ struct ColladaMaterial {
 	}
 };
 
-struct Joint {
+struct Joint
+{
 	s32 parent = -1;
 	s32 first_child = -1;
 	s32 left_sibling = -1;
@@ -51,7 +53,8 @@ struct Joint {
 	glm::vec3 tip;
 };
 
-struct ColladaScene {
+struct ColladaScene
+{
 	mutable std::vector<std::string> texture_paths;
 	std::vector<ColladaMaterial> materials;
 	std::vector<Mesh> meshes;

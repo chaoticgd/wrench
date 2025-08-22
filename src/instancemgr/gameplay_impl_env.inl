@@ -37,8 +37,10 @@ packed_struct(RacEnvSamplePointPacked,
 	/* 0x2c */ s32 unused_2c;
 )
 
-struct RacEnvSamplePointBlock {
-	static void read(std::vector<EnvSamplePointInstance>& dest, Buffer src, Game game) {
+struct RacEnvSamplePointBlock
+{
+	static void read(std::vector<EnvSamplePointInstance>& dest, Buffer src, Game game)
+	{
 		TableHeader header = src.read<TableHeader>(0, "env sample points block header");
 		auto data = src.read_multiple<RacEnvSamplePointPacked>(0x10, header.count_1, "env sample points");
 		dest.reserve(header.count_1);
@@ -51,7 +53,8 @@ struct RacEnvSamplePointBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<EnvSamplePointInstance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<EnvSamplePointInstance>& src, Game game)
+	{
 		TableHeader header = {(s32) src.size()};
 		dest.write(header);
 		for(EnvSamplePointInstance inst : src) {
@@ -64,7 +67,8 @@ struct RacEnvSamplePointBlock {
 		}
 	}
 	
-	static void swap_env_params(EnvSamplePointInstance& l, RacEnvSamplePointPacked& r) {
+	static void swap_env_params(EnvSamplePointInstance& l, RacEnvSamplePointPacked& r)
+	{
 		SWAP_COLOUR(l.hero_col, r.hero_col);
 		SWAP_PACKED(l.hero_light, r.hero_light);
 		SWAP_PACKED(l.reverb_depth, r.reverb_depth);
@@ -97,8 +101,10 @@ packed_struct(GcUyaDlEnvSamplePointPacked,
 	/* 0x1e */ u16 unused_1e;
 )
 
-struct GcUyaDlEnvSamplePointBlock {
-	static void read(std::vector<EnvSamplePointInstance>& dest, Buffer src, Game game) {
+struct GcUyaDlEnvSamplePointBlock
+{
+	static void read(std::vector<EnvSamplePointInstance>& dest, Buffer src, Game game)
+	{
 		TableHeader header = src.read<TableHeader>(0, "env sample points block header");
 		auto data = src.read_multiple<GcUyaDlEnvSamplePointPacked>(0x10, header.count_1, "env sample points");
 		dest.reserve(header.count_1);
@@ -119,7 +125,8 @@ struct GcUyaDlEnvSamplePointBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<EnvSamplePointInstance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<EnvSamplePointInstance>& src, Game game)
+	{
 		TableHeader header = {(s32) src.size()};
 		dest.write(header);
 		for(EnvSamplePointInstance inst : src) {
@@ -141,7 +148,8 @@ struct GcUyaDlEnvSamplePointBlock {
 		}
 	}
 	
-	static void swap_env_params(EnvSamplePointInstance& l, GcUyaDlEnvSamplePointPacked& r) {
+	static void swap_env_params(EnvSamplePointInstance& l, GcUyaDlEnvSamplePointPacked& r)
+	{
 		SWAP_PACKED(l.hero_light, r.hero_light);
 		SWAP_PACKED(l.reverb_depth, r.reverb_depth);
 		SWAP_PACKED(l.music_track, r.music_track);
@@ -176,8 +184,10 @@ packed_struct(EnvTransitionPacked,
 	/* 0x7c */ s32 unused_7c;
 )
 
-struct EnvTransitionBlock {
-	static void read(Gameplay& gameplay, Buffer src, Game game) {
+struct EnvTransitionBlock
+{
+	static void read(Gameplay& gameplay, Buffer src, Game game)
+	{
 		TableHeader header = src.read<TableHeader>(0, "env transitions block header");
 		s64 ofs = 0x10;
 		ofs += header.count_1 * sizeof(Vec4f);
@@ -197,7 +207,8 @@ struct EnvTransitionBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game)
+	{
 		TableHeader header = {(s32) gameplay.env_transitions->size()};
 		dest.write(header);
 		for(const EnvTransitionInstance& inst : opt_iterator(gameplay.env_transitions)) {
@@ -217,7 +228,8 @@ struct EnvTransitionBlock {
 		return true;
 	}
 	
-	static void swap_env_transition(EnvTransitionInstance& l, EnvTransitionPacked& r) {
+	static void swap_env_transition(EnvTransitionInstance& l, EnvTransitionPacked& r)
+	{
 		SWAP_COLOUR(l.hero_col_1, r.hero_colour_1);
 		SWAP_COLOUR(l.hero_col_2, r.hero_colour_2);
 		SWAP_PACKED(l.hero_light_1, r.hero_light_1);
@@ -245,18 +257,21 @@ packed_struct(CamCollGridPrim,
 	/* 0x24 */ s32 pad[3];
 )
 
-enum CamCollGridVolumeType {
+enum CamCollGridVolumeType
+{
 	CAM_COLL_CUBOID = 3,
 	CAM_COLL_SPHERE = 5,
 	CAM_COLL_CYLINDER = 6,
 	CAM_COLL_PILL = 7
 };
 
-struct CamCollGridBlock {
+struct CamCollGridBlock
+{
 	static const s32 GRID_SIZE_X = 0x40;
 	static const s32 GRID_SIZE_Y = 0x40;
 	
-	static void read(Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game)
+	{
 		auto grid = src.read_multiple<s32>(0x10, GRID_SIZE_X * GRID_SIZE_Y, "camera collision grid");
 		for(s32 list_offset : grid) {
 			if(list_offset != 0) {
@@ -298,7 +313,8 @@ struct CamCollGridBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game)
+	{
 		// Determine which grid cells intersect with the types of volumes we
 		// care about.
 		std::vector<std::vector<CamCollGridPrim>> grid(GRID_SIZE_X * GRID_SIZE_Y);
@@ -342,7 +358,9 @@ struct CamCollGridBlock {
 		return true;
 	}
 	
-	static void populate_grid_with_instance(std::vector<std::vector<CamCollGridPrim>>& grid, const Instance& instance, s32 index) {
+	static void populate_grid_with_instance(
+		std::vector<std::vector<CamCollGridPrim>>& grid, const Instance& instance, s32 index)
+	{
 		const CameraCollisionParams& params = instance.camera_collision();
 		if(!params.enabled) {
 			return;
@@ -441,11 +459,13 @@ static Rgb32 palette[] = {
 #include <core/png.h>
 #endif
 
-struct PointLightGridBlock {
+struct PointLightGridBlock
+{
 	static const s32 GRID_SIZE_X = 0x40;
 	static const s32 GRID_SIZE_Y = 0x40;
 	
-	static void read(Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game)
+	{
 #ifdef GAMEPLAY_DEBUG_LIGHT_GRID
 		Texture debug;
 		debug.format = PixelFormat::RGBA;
@@ -505,7 +525,8 @@ struct PointLightGridBlock {
 #endif
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game)
+	{
 		// Determine which grid cells intersect with the point lights.
 		std::vector<std::vector<s32>> grid(GRID_SIZE_X * GRID_SIZE_Y);
 		for(s32 i = 0; i < (s32) opt_size(src.point_lights); i++) {
@@ -557,7 +578,8 @@ struct PointLightGridBlock {
 		return true;
 	}
 	
-	static bool sphere_intersects_grid_cell(const glm::vec2& position, f32 radius, s32 x, s32 y) {
+	static bool sphere_intersects_grid_cell(const glm::vec2& position, f32 radius, s32 x, s32 y)
+	{
 		glm::vec2 grid_cell_centre = glm::vec2(x, y) * 16.f + 8.f;
 		glm::vec2 relative = glm::abs(position - grid_cell_centre);
 		if(relative.x > 8.f + radius || relative.y > 8.f + radius) return false;
@@ -573,7 +595,8 @@ packed_struct(CameraPacked,
 	/* 0x1c */ s32 pvar_index;
 )
 
-static void swap_instance(CameraInstance& l, CameraPacked& r) {
+static void swap_instance(CameraInstance& l, CameraPacked& r)
+{
 	swap_position_rotation(l, r);
 	SWAP_PACKED(l.pvars().temp_pvar_index, r.pvar_index);
 	SWAP_PACKED(l.o_class(), r.type);
@@ -591,7 +614,8 @@ packed_struct(SoundInstancePacked,
 	f32 pad;
 )
 
-static void swap_instance(SoundInstance& l, SoundInstancePacked& r) {
+static void swap_instance(SoundInstance& l, SoundInstancePacked& r)
+{
 	swap_matrix_inverse_rotation(l, r);
 	SWAP_PACKED(l.pvars().temp_pvar_index, r.pvar_index);
 	SWAP_PACKED(l.o_class(), r.o_class);
@@ -608,7 +632,8 @@ packed_struct(DirectionalLightPacked,
 	/* 0x30 */ Vec4f direction_b;
 )
 
-static void swap_instance(DirLightInstance& l, DirectionalLightPacked& r) {
+static void swap_instance(DirLightInstance& l, DirectionalLightPacked& r)
+{
 	r.colour_a.swap(l.col_a);
 	r.direction_a.swap(l.dir_a);
 	r.colour_b.swap(l.col_b);
@@ -624,7 +649,8 @@ packed_struct(PointLightPacked,
 	/* 0x1c */ u32 unused_1c;
 )
 
-static void swap_instance(PointLightInstance& l, PointLightPacked& r) {
+static void swap_instance(PointLightInstance& l, PointLightPacked& r)
+{
 	swap_position(l, r);
 	SWAP_PACKED(l.radius, r.radius);
 	SWAP_COLOUR(l.colour(), r.colour);
@@ -645,8 +671,10 @@ packed_struct(GcUyaPointLightPacked,
 	/* 0xe */ u16 unused_e;
 )
 
-struct GcUyaPointLightsBlock {
-	static void read(std::vector<PointLightInstance>& dest, Buffer src, Game game) {
+struct GcUyaPointLightsBlock
+{
+	static void read(std::vector<PointLightInstance>& dest, Buffer src, Game game)
+	{
 		const TableHeader& header = src.read<TableHeader>(0, "point lights header");
 		for(s32 i = 0; i < header.count_1; i++) {
 			const GcUyaPointLightPacked& packed = src.read<GcUyaPointLightPacked>(0x10 + 0x800 + i * 0x10, "point light");
@@ -664,7 +692,8 @@ struct GcUyaPointLightsBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<PointLightInstance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<PointLightInstance>& src, Game game)
+	{
 		verify(src.size() < 128, "Too many point lights (max 128)!");
 		
 		TableHeader header = {};

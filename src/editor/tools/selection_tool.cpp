@@ -37,34 +37,37 @@ ToolInfo g_selection_tool_info = {
 static bool selecting;
 static ImVec2 selection_begin;
 
-static void activate() {
+static void activate()
+{
 	
 }
 
-static void deactivate() {
+static void deactivate()
+{
 	
 }
 
-static void update() {
-	if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
+static void update()
+{
+	if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
 		selecting = true;
 		selection_begin = ImGui::GetMousePos();
 	}
 	
-	if(selecting) {
+	if (selecting) {
 		auto draw_list = ImGui::GetWindowDrawList();
 		draw_list->AddRect(selection_begin, ImGui::GetMousePos(), 0xffffffff);
 	}
 	
-	if(ImGui::IsMouseReleased(0) && selecting) {
+	if (ImGui::IsMouseReleased(0) && selecting) {
 		selecting = false;
 		
 		ImVec2 p1 = selection_begin;
 		ImVec2 p2 = ImGui::GetMousePos();
-		if(p1.x > p2.x) {
+		if (p1.x > p2.x) {
 			std::swap(p1.x, p2.x);
 		}
-		if(p1.y > p2.y) {
+		if (p1.y > p2.y) {
 			std::swap(p1.y, p2.y);
 		}
 		p1.y -= 20;

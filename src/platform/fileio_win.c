@@ -28,7 +28,8 @@ static char _fileio_message_error_buffer[128];
 
 const char* FILEIO_ERROR_CONTEXT_STRING = "";
 
-struct _wrench_file_handle {
+struct _wrench_file_handle
+{
 	HANDLE file;
 	int may_flush;
 };
@@ -55,16 +56,19 @@ struct _wrench_file_handle {
 		} \
 	}
 
-struct _file_open_clear_list {
+struct _file_open_clear_list
+{
 	LPWSTR wide_string;
 };
 
-void _file_open_clear(struct _file_open_clear_list* list) {
+void _file_open_clear(struct _file_open_clear_list* list)
+{
 	if(list->wide_string != NULL)
 		free(list->wide_string);
 }
 
-WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
+WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode)
+{
 	_fileio_verify(mode != 0, (WrenchFileHandle*) 0, "No mode was specified when opening a file.");
 	_fileio_verify(filename != (const char*) 0, (WrenchFileHandle*) 0, "Filename is NULL.");
 
@@ -160,7 +164,8 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 	return file;
 }
 
-size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
+size_t file_read(void* buffer, size_t size, WrenchFileHandle* file)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if(size == 0) {
@@ -181,7 +186,8 @@ size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
 	return (size_t) _bytes_read;
 }
 
-size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
+size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if(size == 0) {
@@ -202,7 +208,8 @@ size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
 	return (size_t) _bytes_written;
 }
 
-size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
+size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if(buffer_size == 0) {
@@ -231,7 +238,8 @@ size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
 	return offset;
 }
 
-size_t file_write_string(const char* str, WrenchFileHandle* file) {
+size_t file_write_string(const char* str, WrenchFileHandle* file)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 	_fileio_verify(str != (const char*) 0, 0, "String buffer was NULL.");
 
@@ -253,7 +261,8 @@ size_t file_write_string(const char* str, WrenchFileHandle* file) {
 	return bytes_written;
 }
 
-size_t file_vprintf(WrenchFileHandle* file, const char* format, va_list vlist) {
+size_t file_vprintf(WrenchFileHandle* file, const char* format, va_list vlist)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	int num_chars_required = vsnprintf((char*) 0, 0, format, vlist) + 1;
@@ -268,7 +277,8 @@ size_t file_vprintf(WrenchFileHandle* file, const char* format, va_list vlist) {
 	return num_bytes_written;
 }
 
-size_t file_printf(WrenchFileHandle* file, const char* format, ...) {
+size_t file_printf(WrenchFileHandle* file, const char* format, ...)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	va_list list;
@@ -279,7 +289,8 @@ size_t file_printf(WrenchFileHandle* file, const char* format, ...) {
 	return val;
 }
 
-int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin) {
+int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, EOF, "File handle was NULL.");
 
 	DWORD _move_method = 0;
@@ -302,7 +313,8 @@ int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin) {
 	return (success != 0) ? 0 : EOF;
 }
 
-size_t file_tell(WrenchFileHandle* file) {
+size_t file_tell(WrenchFileHandle* file)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	LARGE_INTEGER _offset;
@@ -316,7 +328,8 @@ size_t file_tell(WrenchFileHandle* file) {
 	return (size_t) _tell.QuadPart;
 }
 
-size_t file_size(WrenchFileHandle* file) {
+size_t file_size(WrenchFileHandle* file)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if(file_flush(file) != 0) {
@@ -332,7 +345,8 @@ size_t file_size(WrenchFileHandle* file) {
 	return (size_t) size.QuadPart;
 }
 
-int file_flush(WrenchFileHandle* file) {
+int file_flush(WrenchFileHandle* file)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, EOF, "File handle was NULL.");
 
 	if(file->may_flush == 0) {
@@ -348,7 +362,8 @@ int file_flush(WrenchFileHandle* file) {
 	return (success) ? 0 : EOF;
 }
 
-int file_close(WrenchFileHandle* file) {
+int file_close(WrenchFileHandle* file)
+{
 	_fileio_verify(file != (WrenchFileHandle*) 0, EOF, "File handle was NULL.");
 	_fileio_verify(file->file != INVALID_HANDLE_VALUE, EOF, "File handle is invalid.");
 

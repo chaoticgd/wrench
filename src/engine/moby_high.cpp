@@ -27,7 +27,9 @@ static std::vector<TriStripConstraint> setup_moby_constraints();
 
 #define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, packet %d has bad " message ".", o_class, (s32) i);
 
-std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, s32 o_class, f32 scale, bool animated) {
+std::vector<GLTF::Mesh> recover_packets(
+	const std::vector<MobyPacket>& packets, s32 o_class, f32 scale, bool animated)
+{
 	std::vector<GLTF::Mesh> output;
 	output.reserve(packets.size());
 	
@@ -35,13 +37,13 @@ std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, 
 	Opt<SkinAttributes> blend_cache[64]; // The game stores blended matrices in VU0 memory.
 	s32 texture_index = 0;
 	
-	for(size_t i = 0; i < packets.size(); i++) {
+	for (size_t i = 0; i < packets.size(); i++) {
 		const MobyPacket& src = packets[i];
 		GLTF::Mesh& dest = output.emplace_back();
 		
 		dest.vertices = unpack_vertices(src.vertex_table, blend_cache, scale, animated);
 		
-		for(size_t j = 0; j < dest.vertices.size(); j++) {
+		for (size_t j = 0; j < dest.vertices.size(); j++) {
 			Vertex& vertex = dest.vertices[j];
 			vertex_cache[vertex.vertex_index & 0x1ff] = vertex;
 			
@@ -50,7 +52,7 @@ std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, 
 			vertex.tex_coord.t = vu_fixed12_to_float(tex_coord.t);
 		}
 		
-		for(u16 dupe : src.vertex_table.duplicate_vertices) {
+		for (u16 dupe : src.vertex_table.duplicate_vertices) {
 			Opt<Vertex> v = vertex_cache[dupe];
 			VERIFY_SUBMESH(v.has_value(), "duplicate vertex");
 			
@@ -64,17 +66,17 @@ std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, 
 		GLTF::MeshPrimitive* primitive = nullptr;
 		s32 ad_gif_index = 0;
 		
-		for(size_t j = 0; j < src.vif.indices.size(); j++) {
+		for (size_t j = 0; j < src.vif.indices.size(); j++) {
 			s8 index = src.vif.indices[j];
 			
-			if(index == 0) {
+			if (index == 0) {
 				// There's an extra index stored in the index header, in
 				// addition to an index stored in some 0x10 byte texture unpack
 				// blocks. When a texture is applied, the next index from this
 				// list is used as the next vertex in the queue, but the
 				// triangle with it as its last index is not actually drawn.
 				s8 secret_index = src.vif.secret_indices.at(ad_gif_index);
-				if(secret_index == 0) {
+				if (secret_index == 0) {
 					// End of packet.
 					VERIFY_SUBMESH(primitive && primitive->indices.size() >= 3, "index buffer");
 					// The VU1 microprogram has multiple vertices in flight
@@ -96,12 +98,12 @@ std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, 
 			
 			// Test if both the current and the next index have the primitive
 			// restart bit set. We need to test two indices to filter out swaps.
-			if(index <= 0) {
-				if(j + 1 < src.vif.indices.size() && src.vif.indices[j + 1] <= 0) {
+			if (index <= 0) {
+				if (j + 1 < src.vif.indices.size() && src.vif.indices[j + 1] <= 0) {
 					// New triangle strip.
 					primitive = &dest.primitives.emplace_back();
 					primitive->attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::NORMAL;
-					if(animated) {
+					if (animated) {
 						primitive->attributes_bitfield |= GLTF::JOINTS_0 | GLTF::WEIGHTS_0;
 					}
 					primitive->material = Opt<s32>(texture_index);
@@ -122,7 +124,8 @@ std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, 
 	return output;
 }
 
-struct RichIndex {
+struct RichIndex
+{
 	u32 index;
 	bool restart;
 	bool is_dupe = 0;
@@ -130,7 +133,7 @@ struct RichIndex {
 
 static std::vector<RichIndex> fake_tristripper(const std::vector<Face>& faces) {
 	std::vector<RichIndex> indices;
-	for(const Face& face : faces) {
+	for (const Face& face : faces) {
 		indices.push_back({(u32) face.v0, 1u});
 		indices.push_back({(u32) face.v1, 1u});
 		indices.push_back({(u32) face.v2, 0u});
@@ -151,13 +154,18 @@ static std::vector<RichIndex> fake_tristripper(const std::vector<Face>& faces) {
 //	std::vector<MobyTexCoord> sts;
 //};
 
-std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const std::vector<EffectiveMaterial>& effectives, const std::vector<Material>& materials, f32 scale) {
+std::vector<MobyPacket> build_packets(
+	const std::vector<GLTF::Mesh> input,
+	const std::vector<EffectiveMaterial>& effectives,
+	const std::vector<Material>& materials,
+	f32 scale)
+{
 	std::vector<MobyPacket> output;
 	VU0MatrixAllocator mat_alloc(max_num_joints_referenced_per_packet(input));
 	std::vector<std::vector<MatrixLivenessInfo>> liveness = compute_matrix_liveness(input);
 	s32 last_effective_material = -1;
 	
-	for(s32 i = 0; i < (s32) input.size(); i++) {
+	for (s32 i = 0; i < (s32) input.size(); i++) {
 		const GLTF::Mesh& src = input[i];
 		MobyPacket& dest = output.emplace_back();
 		
@@ -166,13 +174,13 @@ std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const
 		
 		dest.vif.index_header_first_byte = false;
 		
-		for(const GLTF::MeshPrimitive& primitive : src.primitives) {
-			if(!primitive.material.has_value()) {
+		for (const GLTF::MeshPrimitive& primitive : src.primitives) {
+			if (!primitive.material.has_value()) {
 				continue;
 			}
 			
 			bool use_secret_index = false;
-			if(*primitive.material != last_effective_material) {
+			if (*primitive.material != last_effective_material) {
 				s32 material_index = effectives.at(*primitive.material).materials.at(0);
 				const Material& material = materials.at(material_index);
 				verify(material.surface.type == MaterialSurfaceType::TEXTURE, "Material needs a texture.");
@@ -193,11 +201,11 @@ std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const
 			
 			std::vector<s32> indices = zero_area_tris_to_restart_bit_strip(primitive.indices);
 			
-			for(size_t j = 0; j < indices.size(); j++) {
+			for (size_t j = 0; j < indices.size(); j++) {
 				s32 index = indices[j] & ~(1 << 31);
 				bool restart_bit = j < 2 || (indices[j] & (1 << 31)) != 0;
 				s32 mapped_index = index_mapping.at(index);
-				if(use_secret_index) {
+				if (use_secret_index) {
 					dest.vif.indices.emplace_back(0);
 					dest.vif.secret_indices.emplace_back(mapped_index + 1);
 					use_secret_index = false;
@@ -214,7 +222,7 @@ std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const
 		dest.vif.indices.push_back(1);
 		dest.vif.indices.push_back(0);
 		
-		for(const Vertex& vertex : src.vertices) {
+		for (const Vertex& vertex : src.vertices) {
 			s16 s = vu_float_to_fixed12(vertex.tex_coord.x);
 			s16 t = vu_float_to_fixed12(vertex.tex_coord.y);
 			dest.sts.push_back({s, t});
@@ -224,15 +232,16 @@ std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const
 	return output;
 }
 
-GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string> name) {
+GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string> name)
+{
 	GLTF::Mesh output;
 	output.name = name;
 	
-	for(const GLTF::Mesh& packet : packets) {
+	for (const GLTF::Mesh& packet : packets) {
 		s32 vertex_base = (s32) output.vertices.size();
 		output.vertices.insert(output.vertices.end(), BEGIN_END(packet.vertices));
-		for(GLTF::MeshPrimitive primitive : packet.primitives) {
-			for(s32& index : primitive.indices) {
+		for (GLTF::MeshPrimitive primitive : packet.primitives) {
+			for (s32& index : primitive.indices) {
 				index += vertex_base;
 			}
 			output.primitives.emplace_back(std::move(primitive));
@@ -244,25 +253,29 @@ GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string
 	return output;
 }
 
-std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, const std::vector<s32>& material_to_effective, bool output_broken_indices) {
+std::vector<GLTF::Mesh> split_packets(
+	const GLTF::Mesh& mesh,
+	const std::vector<s32>& material_to_effective,
+	bool output_broken_indices)
+{
 	TriStripConfig config;
 	config.constraints = setup_moby_constraints();
 	config.support_index_buffer = true;
 	config.support_instancing = false;
 	
 	u32 attributes_bitfield = GLTF::POSITION | GLTF::TEXCOORD_0 | GLTF::NORMAL;
-	for(const GLTF::MeshPrimitive& primitive : mesh.primitives) {
+	for (const GLTF::MeshPrimitive& primitive : mesh.primitives) {
 		attributes_bitfield |= primitive.attributes_bitfield;
 	}
 	
 	TriStripPacketGenerator generator(config);
-	for(const GLTF::MeshPrimitive& primitive : mesh.primitives) {
-		if(!primitive.material.has_value()) {
+	for (const GLTF::MeshPrimitive& primitive : mesh.primitives) {
+		if (!primitive.material.has_value()) {
 			continue;
 		}
 		std::vector<s32> indices = zero_area_tris_to_restart_bit_strip(primitive.indices);
 		//verify(*primitive.material >= 0 && *primitive.material < material_to_effective.size(), "Material index out of range.");
-		if(!(*primitive.material >= 0 && *primitive.material < material_to_effective.size())) {
+		if (!(*primitive.material >= 0 && *primitive.material < material_to_effective.size())) {
 			continue;
 		}
 		s32 effective_material = material_to_effective.at(*primitive.material);
@@ -271,9 +284,9 @@ std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, const std::vector<
 	GeometryPackets geo = generator.get_output();
 	
 	std::vector<GLTF::Mesh> output;
-	for(const GeometryPacket& packet : geo.packets) {
+	for (const GeometryPacket& packet : geo.packets) {
 		GLTF::Mesh& dest = output.emplace_back();
-		for(s32 i = 0; i < packet.primitive_count; i++) {
+		for (s32 i = 0; i < packet.primitive_count; i++) {
 			const GeometryPrimitive& src_primitive = geo.primitives[packet.primitive_begin + i];
 			GLTF::MeshPrimitive& dest_primitive = dest.primitives.emplace_back();
 			
@@ -290,7 +303,8 @@ std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, const std::vector<
 	return output;
 }
 
-static std::vector<TriStripConstraint> setup_moby_constraints() {
+static std::vector<TriStripConstraint> setup_moby_constraints()
+{
 	std::vector<TriStripConstraint> constraints;
 	
 	TriStripConstraint& vu1_vertex_buffer_size = constraints.emplace_back();

@@ -21,36 +21,41 @@
 #include <nfd.h>
 #include <gui/gui.h>
 
-void gui::build_settings(PackerParams& params, const std::vector<std::string>* game_builds, const std::vector<std::string>& mod_builds, bool launcher) {
+void gui::build_settings(
+	PackerParams& params,
+	const std::vector<std::string>* game_builds,
+	const std::vector<std::string>& mod_builds,
+	bool launcher)
+{
 	static size_t selected_build = 0;
 	
 	// Merge the list of builds from original game and the ones from any
 	// enabled mods.
 	std::vector<const char*> builds;
-	if(game_builds) {
-		for(const std::string& build : *game_builds) {
+	if (game_builds) {
+		for (const std::string& build : *game_builds) {
 			builds.emplace_back(build.c_str());
 		}
 	}
-	for(const std::string& build : mod_builds) {
+	for (const std::string& build : mod_builds) {
 		builds.emplace_back(build.c_str());
 	}
 	
-	if(selected_build >= builds.size()) {
+	if (selected_build >= builds.size()) {
 		selected_build = 0;
 	}
 	
 	ImGuiStyle& s = ImGui::GetStyle();
 	
 	std::string combo_text;
-	if(builds.empty()) {
+	if (builds.empty()) {
 		combo_text += "(no builds)";
 	} else {
 		combo_text += builds[selected_build];
 		params.build = builds[selected_build];
 	}
 	combo_text += " / ";
-	if(params.debug.single_level_enabled || params.debug.nompegs) {
+	if (params.debug.single_level_enabled || params.debug.nompegs) {
 		combo_text += "test";
 	} else {
 		combo_text += "release";
@@ -59,20 +64,20 @@ void gui::build_settings(PackerParams& params, const std::vector<std::string>* g
 	combo_text += params.output_path;
 	
 	ImGui::SetNextWindowSizeConstraints(ImVec2(400, 0), ImVec2(400, 800));
-	if(ImGui::BeginCombo("##build_settings", combo_text.c_str())) {
+	if (ImGui::BeginCombo("##build_settings", combo_text.c_str())) {
 		ImGui::PushItemWidth(250);
 		
-		if(ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen)) {
 			bool opened = false;
 			
-			if(builds.empty()) {
+			if (builds.empty()) {
 				opened = ImGui::BeginCombo("Build Asset", "(no builds)");
 			} else {
 				opened = ImGui::BeginCombo("Build Asset", builds[selected_build]);
 			}
-			if(opened) {
-				for(size_t i = 0; i < builds.size(); i++) {
-					if(ImGui::Selectable(builds[i], i == selected_build)) {
+			if (opened) {
+				for (size_t i = 0; i < builds.size(); i++) {
+					if (ImGui::Selectable(builds[i], i == selected_build)) {
 						selected_build = i;
 					}
 				}
@@ -82,10 +87,10 @@ void gui::build_settings(PackerParams& params, const std::vector<std::string>* g
 			ImGui::SetNextItemWidth(250 - ImGui::CalcTextSize("Browse").x - s.FramePadding.x * 2 - s.ItemSpacing.x);
 			ImGui::InputText("##output_iso", &params.output_path);
 			ImGui::SameLine();
-			if(ImGui::Button("Browse")) {
+			if (ImGui::Button("Browse")) {
 				nfdchar_t* path;
 				nfdresult_t result = NFD_SaveDialog("iso", nullptr, &path);
-				if(result == NFD_OKAY) {
+				if (result == NFD_OKAY) {
 					params.output_path = path;
 					free(path);
 				}
@@ -95,13 +100,13 @@ void gui::build_settings(PackerParams& params, const std::vector<std::string>* g
 			ImGui::Text("Output ISO");
 			ImGui::Checkbox("Launch emulator after building", &params.launch_emulator);
 			ImGui::BeginDisabled(!params.launch_emulator);
-			if(launcher) {
+			if (launcher) {
 				ImGui::Checkbox("Keep launcher window open", &params.keep_window_open);
 			}
 			ImGui::EndDisabled();
 		}
 		
-		if(ImGui::CollapsingHeader("Testing", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::CollapsingHeader("Testing", ImGuiTreeNodeFlags_DefaultOpen)) {
 			ImGui::SetNextItemWidth(-1);
 			ImGui::Checkbox("##single_level_enable", &params.debug.single_level_enabled);
 			ImGui::SameLine();

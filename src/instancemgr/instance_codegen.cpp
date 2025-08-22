@@ -36,16 +36,17 @@ static void out(const char* format, ...);
 
 static WrenchFileHandle* out_handle = NULL;
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	assert(argc == 3);
 	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
-	if(!file) {
+	if (!file) {
 		fprintf(stderr, "Failed to open input file.\n");
 		return 1;
 	}
 	std::vector<char> bytes;
 	char c;
-	while(file_read(&c, 1, file) == 1) {
+	while (file_read(&c, 1, file) == 1) {
 		bytes.emplace_back(c);
 	}
 	bytes.push_back(0);
@@ -56,7 +57,7 @@ int main(int argc, char** argv) {
 	
 	char* error = NULL;
 	WtfNode* root = wtf_parse((char*) bytes.data(), &error);
-	if(error) {
+	if (error) {
 		fprintf(stderr, "Failed to parse instance schema. %s\n", error);
 		return 1;
 	}
@@ -98,8 +99,9 @@ int main(int argc, char** argv) {
 	out("#endif");
 }
 
-static void generate_instance_macro_calls(WtfNode* root) {
-	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
+static void generate_instance_macro_calls(WtfNode* root)
+{
+	for (const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		const WtfAttribute* variable = wtf_attribute_of_type(type, "variable", WTF_STRING);
 		assert(variable);
 		
@@ -107,19 +109,20 @@ static void generate_instance_macro_calls(WtfNode* root) {
 		assert(link_type);
 		
 		std::string uppercase = type->tag;
-		for(char& c : uppercase) c = toupper(c);
+		for (char& c : uppercase) c = toupper(c);
 		
 		out("DEF_INSTANCE(%s, %s, %s, %s)", type->tag, uppercase.c_str(), variable->string.begin, link_type->string.begin);
 	}
 }
 
-static void generate_instance_type_enum(WtfNode* root) {
+static void generate_instance_type_enum(WtfNode* root)
+{
 	out("enum InstanceType : u32 {");
 	out("\tINST_NONE = 0,");
 	int number = 1;
-	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
+	for (const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		std::string enum_name = type->tag;
-		for(char& c : enum_name) c = toupper(c);
+		for (char& c : enum_name) c = toupper(c);
 		out("\tINST_%s = %d,", enum_name.c_str(), number++);
 	}
 	out("};\n");
@@ -134,19 +137,20 @@ static const struct { const char* wtf_type; const char* cpp_type; const char* se
 	{"Rgb96", "Rgb96", "{}"}
 };
 
-static void generate_instance_types(WtfNode* root) {
-	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
+static void generate_instance_types(WtfNode* root)
+{
+	for (const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		const WtfAttribute* components = wtf_attribute_of_type(type, "components", WTF_STRING);
 		assert(components);
 		
 		const WtfAttribute* transform_mode = wtf_attribute_of_type(type, "transform_mode", WTF_STRING);
 		
 		std::string enum_name = type->tag;
-		for(char& c : enum_name) c = toupper(c);
+		for (char& c : enum_name) c = toupper(c);
 		
 		out("struct %sInstance : Instance {", type->tag);
 		out("\tstatic const InstanceType TYPE = INST_%s;", enum_name.c_str());
-		if(transform_mode) {
+		if (transform_mode) {
 			out("\t%sInstance() : Instance(TYPE, %s, TransformMode::%s) {}", type->tag, components->string.begin, transform_mode->string.begin);
 		} else {
 			out("\t%sInstance() : Instance(TYPE, %s) {}", type->tag, components->string.begin);
@@ -154,22 +158,22 @@ static void generate_instance_types(WtfNode* root) {
 		out("\tstatic void read(Instances& dest, const WtfNode* src);");
 		out("\tstatic void write(WtfWriter* dest, const Instances& src);");
 		out("\t");
-		for(WtfNode* field = type->first_child; field != nullptr; field = field->next_sibling) {
+		for (WtfNode* field = type->first_child; field != nullptr; field = field->next_sibling) {
 			const char* cpp_type = nullptr;
 			const char* set = "0";
-			for(auto& field_type : FIELD_TYPES) {
-				if(strcmp(field_type.wtf_type, field->type_name) == 0) {
+			for (auto& field_type : FIELD_TYPES) {
+				if (strcmp(field_type.wtf_type, field->type_name) == 0) {
 					cpp_type = field_type.cpp_type;
 					set = field_type.set;
 				}
 			}
-			if(strstr(field->type_name, "link")) {
+			if (strstr(field->type_name, "link")) {
 				set = nullptr;
 			}
-			if(!cpp_type) {
+			if (!cpp_type) {
 				cpp_type = field->type_name;
 			}
-			if(set) {
+			if (set) {
 				out("\t%s %s = %s;", cpp_type, field->tag, set);
 			} else {
 				out("\t%s %s;", cpp_type, field->tag);
@@ -180,23 +184,26 @@ static void generate_instance_types(WtfNode* root) {
 	}
 }
 
-static void generate_instance_read_write_funcs(WtfNode* root) {
-	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
+static void generate_instance_read_write_funcs(WtfNode* root)
+{
+	for (const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		const WtfAttribute* variable = wtf_attribute_of_type(type, "variable", WTF_STRING);
 		assert(variable);
 		
-		out("void %sInstance::read(Instances& dest, const WtfNode* src) {", type->tag);
+		out("void %sInstance::read(Instances& dest, const WtfNode* src)", type->tag);
+		out("{");
 		out("\t%sInstance& inst = dest.%s.create(atoi(src->tag));", type->tag, variable->string.begin);
 		out("\tinst.read_common(src);");
-		for(const WtfNode* field = type->first_child; field != nullptr; field = field->next_sibling) {
+		for (const WtfNode* field = type->first_child; field != nullptr; field = field->next_sibling) {
 			out("\tread_inst_field(inst.%s, src, \"%s\");", field->tag, field->tag);
 		}
 		out("}");
 		out("");
-		out("void %sInstance::write(WtfWriter* dest, const Instances& src) {", type->tag);
-		out("\tfor(const %sInstance& inst : src.%s) {", type->tag, variable->string.begin);
+		out("void %sInstance::write(WtfWriter* dest, const Instances& src)", type->tag);
+		out("{");
+		out("\tfor (const %sInstance& inst : src.%s) {", type->tag, variable->string.begin);
 		out("\t\tinst.begin_write(dest);");
-		for(const WtfNode* field = type->first_child; field != nullptr; field = field->next_sibling) {
+		for (const WtfNode* field = type->first_child; field != nullptr; field = field->next_sibling) {
 			out("\t\twrite_inst_field(dest, \"%s\", inst.%s);", field->tag, field->tag);
 		}
 		out("\t\tinst.end_write(dest);");
@@ -206,23 +213,26 @@ static void generate_instance_read_write_funcs(WtfNode* root) {
 	}
 }
 
-static void generate_instance_read_write_table(WtfNode* root) {
+static void generate_instance_read_write_table(WtfNode* root)
+{
 	out("static const InstanceReadWriteFuncs read_write_funcs[] = {");
-	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
+	for (const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		std::string enum_name = type->tag;
-		for(char& c : enum_name) c = toupper(c);
+		for (char& c : enum_name) c = toupper(c);
 		out("\t{INST_%s, %sInstance::read, %sInstance::write},", enum_name.c_str(), type->tag, type->tag);
 	}
 	out("};");
 }
 
-static void generate_instance_type_to_string_func(WtfNode* root) {
-	out("const char* instance_type_to_string(InstanceType type) {");
-	out("\tswitch(type) {");
+static void generate_instance_type_to_string_func(WtfNode* root)
+{
+	out("const char* instance_type_to_string(InstanceType type)");
+	out("{");
+	out("\tswitch (type) {");
 	out("\t\tcase INST_NONE: return \"None\";");
-	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
+	for (const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		std::string enum_name = type->tag;
-		for(char& c : enum_name) c = toupper(c);
+		for (char& c : enum_name) c = toupper(c);
 		out("\t\tcase INST_%s: return \"%s\";", enum_name.c_str(), type->tag);
 	}
 	out("\t}");
@@ -230,7 +240,8 @@ static void generate_instance_type_to_string_func(WtfNode* root) {
 	out("};");
 }
 
-static void out(const char* format, ...) {
+static void out(const char* format, ...)
+{
 	va_list list;
 	va_start(list, format);
 	file_vprintf(out_handle, format, list);

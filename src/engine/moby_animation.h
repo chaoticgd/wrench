@@ -23,7 +23,8 @@
 #include <core/build_config.h>
 #include <engine/basic_types.h>
 
-struct MobyFrame {
+struct MobyFrame
+{
 	struct {
 		f32 unknown_0;
 		u16 unknown_4;
@@ -55,7 +56,8 @@ packed_struct(MobyTriggerData,
 	/* 0x1c */ u32 unknown_1c;
 )
 
-struct MobySequence {
+struct MobySequence
+{
 	glm::vec4 bounding_sphere;
 	std::vector<MobyFrame> frames;
 	std::vector<u32> triggers;
@@ -102,7 +104,14 @@ packed_struct(DeadlockedMobySequenceDataHeader,
 	/* 0xc */ u32 unknown_c;
 )
 
-std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count, Game game);
-void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 class_header_ofs, s64 list_ofs, s32 joint_count, Game game);
+std::vector<Opt<MobySequence>> read_moby_sequences(
+	Buffer src, s64 sequence_count, s32 joint_count, Game game);
+void write_moby_sequences(
+	OutBuffer dest,
+	const std::vector<Opt<MobySequence>>& sequences,
+	s64 class_header_ofs,
+	s64 list_ofs,
+	s32 joint_count,
+	Game game);
 
 #endif

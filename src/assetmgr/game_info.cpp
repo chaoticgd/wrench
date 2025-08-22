@@ -24,10 +24,11 @@
 
 static std::string read_string_attribute(WtfNode* node, const char* name);
 
-GameInfo read_game_info(char* input) {
+GameInfo read_game_info(char* input)
+{
 	char* error_dest = nullptr;
 	WtfNode* root = wtf_parse(input, &error_dest);
-	if(error_dest) {
+	if (error_dest) {
 		fprintf(stderr, "warning: Failed to read gameinfo.txt!\n");
 		return {};
 	}
@@ -35,21 +36,21 @@ GameInfo read_game_info(char* input) {
 	GameInfo info;
 	
 	const WtfAttribute* format_version = wtf_attribute(root, "format_version");
-	if(format_version && format_version->type == WTF_NUMBER) {
+	if (format_version && format_version->type == WTF_NUMBER) {
 		info.format_version = format_version->number.i;
 	}
 	
 	info.name = read_string_attribute(root, "name");
 	
 	const WtfAttribute* type = wtf_attribute(root, "type");
-	if(type && type->type == WTF_STRING) {
-		if(strcmp(type->string.begin, "underlay") == 0) {
+	if (type && type->type == WTF_STRING) {
+		if (strcmp(type->string.begin, "underlay") == 0) {
 			info.type = AssetBankType::UNDERLAY;
-		} else if(strcmp(type->string.begin, "game") == 0) {
+		} else if (strcmp(type->string.begin, "game") == 0) {
 			info.type = AssetBankType::GAME;
-		} else if(strcmp(type->string.begin, "overlay") == 0) {
+		} else if (strcmp(type->string.begin, "overlay") == 0) {
 			info.type = AssetBankType::OVERLAY;
-		} else if(strcmp(type->string.begin, "test") == 0) {
+		} else if (strcmp(type->string.begin, "test") == 0) {
 			info.type = AssetBankType::TEST;
 		} else {
 			info.type = AssetBankType::MOD;
@@ -58,18 +59,18 @@ GameInfo read_game_info(char* input) {
 		fprintf(stderr, "warning: No type attribute in gameinfo.txt file.\n");
 	}
 	
-	if(info.type == AssetBankType::GAME) {
+	if (info.type == AssetBankType::GAME) {
 		const WtfAttribute* game = wtf_attribute(root, "game");
-		if(game && game->type == WTF_STRING) {
+		if (game && game->type == WTF_STRING) {
 			info.game.game = game_from_string(game->string.begin);
 		}
 	}
 	
-	if(info.type == AssetBankType::MOD) {
+	if (info.type == AssetBankType::MOD) {
 		const WtfAttribute* supported_games = wtf_attribute(root, "supported_games");
-		if(supported_games && supported_games->type == WTF_ARRAY) {
-			for(WtfAttribute* element = supported_games->first_array_element; element != nullptr; element = element->next) {
-				if(element->type == WTF_STRING) {
+		if (supported_games && supported_games->type == WTF_ARRAY) {
+			for (WtfAttribute* element = supported_games->first_array_element; element != nullptr; element = element->next) {
+				if (element->type == WTF_STRING) {
 					info.mod.supported_games.emplace_back(game_from_string(element->string.begin));
 				}
 			}
@@ -83,18 +84,18 @@ GameInfo read_game_info(char* input) {
 	info.version = read_string_attribute(root, "version");
 	
 	const WtfAttribute* images = wtf_attribute(root, "images");
-	if(images && images->type == WTF_ARRAY) {
-		for(const WtfAttribute* element = images->first_array_element; element != nullptr; element = element->next) {
-			if(element->type == WTF_STRING) {
+	if (images && images->type == WTF_ARRAY) {
+		for (const WtfAttribute* element = images->first_array_element; element != nullptr; element = element->next) {
+			if (element->type == WTF_STRING) {
 				info.images.emplace_back(element->string.begin);
 			}
 		}
 	}
 	
 	const WtfAttribute* builds = wtf_attribute(root, "builds");
-	if(builds && builds->type == WTF_ARRAY) {
-		for(const WtfAttribute* element = builds->first_array_element; element != nullptr; element = element->next) {
-			if(element->type == WTF_STRING) {
+	if (builds && builds->type == WTF_ARRAY) {
+		for (const WtfAttribute* element = builds->first_array_element; element != nullptr; element = element->next) {
+			if (element->type == WTF_STRING) {
 				info.builds.emplace_back(element->string.begin);
 			}
 		}
@@ -103,7 +104,8 @@ GameInfo read_game_info(char* input) {
 	return info;
 }
 
-void write_game_info(std::string& dest, const GameInfo& info) {
+void write_game_info(std::string& dest, const GameInfo& info)
+{
 	WtfWriter* ctx = wtf_begin_file(dest);
 	
 	wtf_begin_attribute(ctx, "format_version");
@@ -113,29 +115,29 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	wtf_write_string_attribute(ctx, "name", info.name.c_str());
 	
 	wtf_begin_attribute(ctx, "type");
-	if(info.type == AssetBankType::UNDERLAY) {
+	if (info.type == AssetBankType::UNDERLAY) {
 		wtf_write_string(ctx, "underlay");
-	} else if(info.type == AssetBankType::GAME) {
+	} else if (info.type == AssetBankType::GAME) {
 		wtf_write_string(ctx, "game");
-	} else if(info.type == AssetBankType::OVERLAY) {
+	} else if (info.type == AssetBankType::OVERLAY) {
 		wtf_write_string(ctx, "overlay");
-	} else if(info.type == AssetBankType::TEST) {
+	} else if (info.type == AssetBankType::TEST) {
 		wtf_write_string(ctx, "test");
 	} else {
 		wtf_write_string(ctx, "mod");
 	}
 	wtf_end_attribute(ctx);
 	
-	if(info.type == AssetBankType::GAME) {
+	if (info.type == AssetBankType::GAME) {
 		wtf_begin_attribute(ctx, "game");
 		wtf_write_string(ctx, game_to_string(info.game.game).c_str());
 		wtf_end_attribute(ctx);
 	}
 	
-	if(info.type == AssetBankType::MOD) {
+	if (info.type == AssetBankType::MOD) {
 		wtf_begin_attribute(ctx, "supported_games");
 		wtf_begin_array(ctx);
-		for(Game game : info.mod.supported_games) {
+		for (Game game : info.mod.supported_games) {
 			wtf_write_string(ctx, game_to_string(game).c_str());
 		}
 		wtf_end_array(ctx);
@@ -148,7 +150,7 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	
 	wtf_begin_attribute(ctx, "images");
 	wtf_begin_array(ctx);
-	for(const std::string& image : info.images) {
+	for (const std::string& image : info.images) {
 		wtf_write_string(ctx, image.c_str());
 	}
 	wtf_end_array(ctx);
@@ -156,7 +158,7 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	
 	wtf_begin_attribute(ctx, "builds");
 	wtf_begin_array(ctx);
-	for(const std::string& build : info.builds) {
+	for (const std::string& build : info.builds) {
 		wtf_write_string(ctx, build.c_str());
 	}
 	wtf_end_array(ctx);
@@ -165,9 +167,10 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	wtf_end_file(ctx);
 }
 
-static std::string read_string_attribute(WtfNode* node, const char* name) {
+static std::string read_string_attribute(WtfNode* node, const char* name)
+{
 	const WtfAttribute* attribute = wtf_attribute(node, name);
-	if(attribute && attribute->type == WTF_STRING) {
+	if (attribute && attribute->type == WTF_STRING) {
 		return attribute->string.begin;
 	}
 	return "";

@@ -23,11 +23,14 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
 
-static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void unpack_instances_asset(
+	InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config);
-static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, BuildConfig config, const char* hint);
+static void pack_instances_asset(
+	OutputStream& dest, const InstancesAsset& src, BuildConfig config, const char* hint);
 static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config);
-static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
+static bool test_instances_asset(
+	std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint);
 
 on_load(Instances, []() {
@@ -47,19 +50,23 @@ on_load(Instances, []() {
 	InstancesAsset::funcs.test_dl = new AssetTestFunc(test_instances_asset);
 })
 
-static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+static void unpack_instances_asset(
+	InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint)
+{
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
 	unpack_instances(dest, nullptr, buffer, nullptr, config, hint);
 }
 
-s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint) {
+s32 unpack_instances(
+	InstancesAsset& dest, LevelWadAsset* help_occl_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint)
+{
 	std::vector<u8> main_decompressed;
 	verify(decompress_wad(main_decompressed, main), "Failed to decompress instances.");
 	
 	std::string type = next_hint(&hint);
 	
 	s32 core_moby_count = 0;
-	if(type == "mission") {
+	if (type == "mission") {
 		core_moby_count = atoi(next_hint(&hint));
 	}
 	
@@ -74,7 +81,7 @@ s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const 
 	
 	std::vector<u8> occlusion_mappings;
 	
-	if(art) {
+	if (art) {
 		std::vector<u8> art_decompressed;
 		verify(decompress_wad(art_decompressed, *art), "Failed to decompress art instances.");
 		
@@ -91,7 +98,7 @@ s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const 
 	}
 	
 	const char* application_version;
-	if(strlen(wadinfo.build.version_string) != 0) {
+	if (strlen(wadinfo.build.version_string) != 0) {
 		application_version = wadinfo.build.version_string;
 	} else {
 		application_version = wadinfo.build.commit_string;
@@ -100,9 +107,9 @@ s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const 
 	FileReference ref = dest.file().write_text_file(stringf("%s.instances", type.c_str()), text.c_str());
 	dest.set_src(ref);
 	
-	if(help_occl_dest) {
+	if (help_occl_dest) {
 		unpack_help_messages(*help_occl_dest, help, config);
-		if(!occlusion_mappings.empty()) {
+		if (!occlusion_mappings.empty()) {
 			OcclusionAsset& occl = help_occl_dest->occlusion();
 			auto [stream, ref] = occl.file().open_binary_file_for_writing(fs::path(std::string("occlusion_mappings.bin")));
 			stream->write_n(occlusion_mappings.data(), occlusion_mappings.size());
@@ -112,9 +119,9 @@ s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const 
 	
 	// Merge types.
 	std::map<std::string, CppType>& types_dest = dest.forest().types();
-	for(CppType& type : pvar_types) {
+	for (CppType& type : pvar_types) {
 		auto iter = types_dest.find(type.name);
-		if(iter != types_dest.end()) {
+		if (iter != types_dest.end()) {
 			destructively_merge_cpp_structs(iter->second, type);
 		} else {
 			types_dest.emplace(type.name, std::move(type));
@@ -124,58 +131,65 @@ s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const 
 	return instances.moby_instances.size();
 }
 
-static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config) {
-	if(src.us_english.has_value()) {
+static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config)
+{
+	if (src.us_english.has_value()) {
 		MemoryInputStream us_english_stream(*src.us_english);
 		unpack_asset_impl(dest.help_messages_us_english(), us_english_stream, nullptr, config);
 	}
-	if(src.uk_english.has_value()) {
+	if (src.uk_english.has_value()) {
 		MemoryInputStream uk_english_stream(*src.uk_english);
 		unpack_asset_impl(dest.help_messages_uk_english(), uk_english_stream, nullptr, config);
 	}
-	if(src.french.has_value()) {
+	if (src.french.has_value()) {
 		MemoryInputStream french_stream(*src.french);
 		unpack_asset_impl(dest.help_messages_french(), french_stream, nullptr, config);
 	}
-	if(src.german.has_value()) {
+	if (src.german.has_value()) {
 		MemoryInputStream german_stream(*src.german);
 		unpack_asset_impl(dest.help_messages_german(), german_stream, nullptr, config);
 	}
-	if(src.spanish.has_value()) {
+	if (src.spanish.has_value()) {
 		MemoryInputStream spanish_stream(*src.spanish);
 		unpack_asset_impl(dest.help_messages_spanish(), spanish_stream, nullptr, config);
 	}
-	if(src.italian.has_value()) {
+	if (src.italian.has_value()) {
 		MemoryInputStream italian_stream(*src.italian);
 		unpack_asset_impl(dest.help_messages_italian(), italian_stream, nullptr, config);
 	}
-	if(src.japanese.has_value()) {
+	if (src.japanese.has_value()) {
 		MemoryInputStream japanese_stream(*src.japanese);
 		unpack_asset_impl(dest.help_messages_japanese(), japanese_stream, nullptr, config);
 	}
-	if(src.korean.has_value()) {
+	if (src.korean.has_value()) {
 		MemoryInputStream korean_stream(*src.korean);
 		unpack_asset_impl(dest.help_messages_korean(), korean_stream, nullptr, config);
 	}
 }
 
-Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, const std::map<std::string, CppType>& types_src, const BuildConfig& config, const char* hint) {
-	if(g_asset_packer_dry_run) {
+Gameplay load_gameplay(
+	const Asset& src,
+	const LevelWadAsset* help_occl_src,
+	const std::map<std::string, CppType>& types_src,
+	const BuildConfig& config,
+	const char* hint)
+{
+	if (g_asset_packer_dry_run) {
 		return {};
 	}
 	
 	std::vector<u8> gameplay_buffer;
-	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
+	if (const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
 		std::string instances_wtf = asset->src().read_text_file();
 		Instances instances = read_instances(instances_wtf);
 		Opt<HelpMessages> help;
-		if(help_occl_src) {
+		if (help_occl_src) {
 			pack_help_messages(help.emplace(), *help_occl_src, config);
 		}
 		Gameplay gameplay;
 		move_instances_to_gameplay(gameplay, instances, &(*help), nullptr, types_src);
 		return gameplay;
-	} else if(const BinaryAsset* asset = src.maybe_as<BinaryAsset>()) {
+	} else if (const BinaryAsset* asset = src.maybe_as<BinaryAsset>()) {
 		std::unique_ptr<InputStream> gameplay_stream = asset->src().open_binary_file_for_reading();
 		std::vector<u8> buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
 		Gameplay gameplay;
@@ -185,8 +199,13 @@ Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, con
 	verify_not_reached("Instances asset is of an invalid type.");
 }
 
-static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, BuildConfig config, const char* hint) {
-	if(g_asset_packer_dry_run) {
+static void pack_instances_asset(
+	OutputStream& dest,
+	const InstancesAsset& src,
+	BuildConfig config,
+	const char* hint)
+{
+	if (g_asset_packer_dry_run) {
 		return;
 	}
 	
@@ -198,7 +217,7 @@ static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, 
 	// If we're packing a mission instances file, we also read the gameplay core
 	// to determine ID to index mappings for moby instances. TODO: Cache this.
 	Opt<Instances> core;
-	if(type == "mission") {
+	if (type == "mission") {
 		const InstancesAsset& gameplay_core = src.get_core();
 		std::string gameplay_core_str = gameplay_core.src().read_text_file();
 		core = read_instances(gameplay_core_str);
@@ -212,42 +231,45 @@ static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, 
 	dest.write_v(buffer);
 }
 
-static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config) {
-	if(src.has_help_messages_us_english()) {
+static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config)
+{
+	if (src.has_help_messages_us_english()) {
 		MemoryOutputStream stream(dest.us_english.emplace());
 		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_us_english(), config);
 	}
-	if(src.has_help_messages_uk_english()) {
+	if (src.has_help_messages_uk_english()) {
 		MemoryOutputStream stream(dest.uk_english.emplace());
 		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_uk_english(), config);
 	}
-	if(src.has_help_messages_french()) {
+	if (src.has_help_messages_french()) {
 		MemoryOutputStream stream(dest.french.emplace());
 		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_french(), config);
 	}
-	if(src.has_help_messages_german()) {
+	if (src.has_help_messages_german()) {
 		MemoryOutputStream stream(dest.german.emplace());
 		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_german(), config);
 	}
-	if(src.has_help_messages_spanish()) {
+	if (src.has_help_messages_spanish()) {
 		MemoryOutputStream stream(dest.spanish.emplace());
 		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_spanish(), config);
 	}
-	if(src.has_help_messages_italian()) {
+	if (src.has_help_messages_italian()) {
 		MemoryOutputStream stream(dest.italian.emplace());
 		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_italian(), config);
 	}
-	if(src.has_help_messages_japanese()) {
+	if (src.has_help_messages_japanese()) {
 		MemoryOutputStream stream(dest.japanese.emplace());
 		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_japanese(), config);
 	}
-	if(src.has_help_messages_korean()) {
+	if (src.has_help_messages_korean()) {
 		MemoryOutputStream stream(dest.korean.emplace());
 		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_korean(), config);
 	}
 }
 
-static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_instances_asset(
+	std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode)
+{
 	const std::vector<GameplayBlockDescription>* blocks = get_gameplay_block_descriptions(config.game(), hint);
 	
 	// Parse C++ types from the overlay asset bank.
@@ -267,13 +289,13 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	move_gameplay_to_instances(instances_in, &help_messages, &occlusion, &pvar_types, gameplay_in, config.game());
 	
 	// Add recovered type information to the parsed map of pvar types.
-	for(CppType& pvar_type : pvar_types) {
+	for (CppType& pvar_type : pvar_types) {
 		type_forest.types().emplace(pvar_type.name, std::move(pvar_type));
 	}
 	
 	// Write out instances file and read it back.
 	const char* application_version;
-	if(strlen(wadinfo.build.version_string) != 0) {
+	if (strlen(wadinfo.build.version_string) != 0) {
 		application_version = wadinfo.build.version_string;
 	} else {
 		application_version = wadinfo.build.commit_string;
@@ -294,9 +316,11 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	return headers_equal && data_equal;
 }
 
-static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint) {
+static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(
+	Game game, const char* hint)
+{
 	const std::vector<GameplayBlockDescription>* blocks = nullptr;
-	switch(game) {
+	switch (game) {
 		case Game::RAC:
 			blocks = &RAC_GAMEPLAY_BLOCKS;
 			break;
@@ -305,11 +329,11 @@ static const std::vector<GameplayBlockDescription>* get_gameplay_block_descripti
 			blocks = &GC_UYA_GAMEPLAY_BLOCKS;
 			break;
 		case Game::DL:
-			if(strcmp(hint, FMT_INSTANCES_GAMEPLAY) == 0) {
+			if (strcmp(hint, FMT_INSTANCES_GAMEPLAY) == 0) {
 				blocks = &DL_GAMEPLAY_CORE_BLOCKS;
-			} else if(strcmp(hint, FMT_INSTANCES_ART) == 0) {
+			} else if (strcmp(hint, FMT_INSTANCES_ART) == 0) {
 				blocks = &DL_ART_INSTANCE_BLOCKS;
-			} else if(strcmp(hint, FMT_INSTANCES_MISSION) == 0) {
+			} else if (strcmp(hint, FMT_INSTANCES_MISSION) == 0) {
 				blocks = &DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS;
 			} else {
 				verify_not_reached("Invalid hint. Must be '%s', '%s' or '%s'.",

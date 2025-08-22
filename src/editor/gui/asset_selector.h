@@ -18,7 +18,8 @@
 
 #include <assetmgr/asset.h>
 
-struct AssetSelector {
+struct AssetSelector
+{
 	s32 required_type_count = 0;
 	AssetType required_types[10];
 	Opt<AssetType> omit_type;
@@ -28,4 +29,5 @@ struct AssetSelector {
 	Asset* selected = nullptr;
 };
 
-Asset* asset_selector(const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest);
+Asset* asset_selector(
+	const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest);

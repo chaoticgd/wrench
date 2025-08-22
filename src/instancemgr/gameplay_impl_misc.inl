@@ -69,8 +69,10 @@ packed_struct(ChunkPlanePacked,
 )
 static_assert(sizeof(ChunkPlanePacked) == 0x20);
 
-struct LevelSettingsBlock {
-	static void read(LevelSettings& dest, Buffer src, Game game) {
+struct LevelSettingsBlock
+{
+	static void read(LevelSettings& dest, Buffer src, Game game)
+	{
 		s32 ofs = 0;
 		if(game == Game::RAC) {
 			RacLevelSettingsFirstPart first_part = src.read<RacLevelSettingsFirstPart>(ofs, "level settings");
@@ -119,7 +121,8 @@ struct LevelSettingsBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const LevelSettings& src, Game game) {
+	static void write(OutBuffer dest, const LevelSettings& src, Game game)
+	{
 		LevelSettings copy = src;
 		if(game == Game::RAC) {
 			RacLevelSettingsFirstPart first_part_packed;
@@ -168,7 +171,8 @@ struct LevelSettingsBlock {
 		}
 	}
 	
-	static void swap_rac_first_part(LevelSettings& l, RacLevelSettingsFirstPart& r) {
+	static void swap_rac_first_part(LevelSettings& l, RacLevelSettingsFirstPart& r)
+	{
 		SWAP_COLOUR_OPT(l.background_colour, r.background_colour);
 		SWAP_COLOUR_OPT(l.fog_colour, r.fog_colour);
 		SWAP_PACKED(l.fog_near_dist, r.fog_near_distance);
@@ -187,7 +191,8 @@ struct LevelSettingsBlock {
 		r.pad[1] = 0;
 	}
 	
-	static void swap_gc_uya_dl_first_part(LevelSettings& l, GcUyaDlLevelSettingsFirstPart& r) {
+	static void swap_gc_uya_dl_first_part(LevelSettings& l, GcUyaDlLevelSettingsFirstPart& r)
+	{
 		SWAP_COLOUR_OPT(l.background_colour, r.background_colour);
 		SWAP_COLOUR_OPT(l.fog_colour, r.fog_colour);
 		SWAP_PACKED(l.fog_near_dist, r.fog_near_distance);
@@ -226,8 +231,10 @@ packed_struct(HelpMessageEntry,
 )
 
 template <bool is_korean>
-struct HelpMessageBlock {
-	static void read(std::vector<HelpMessage>& dest, Buffer src, Game game) {
+struct HelpMessageBlock
+{
+	static void read(std::vector<HelpMessage>& dest, Buffer src, Game game)
+	{
 		auto& header = src.read<HelpMessageHeader>(0, "string block header");
 		auto table = src.read_multiple<HelpMessageEntry>(8, header.count, "string table");
 		
@@ -249,7 +256,8 @@ struct HelpMessageBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<HelpMessage>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<HelpMessage>& src, Game game)
+	{
 		s64 header_ofs = dest.alloc<HelpMessageHeader>();
 		s64 table_ofs = dest.alloc_multiple<HelpMessageEntry>(src.size());
 		
@@ -292,8 +300,10 @@ struct HelpMessageBlock {
 };
 
 template <bool is_korean>
-struct BinHelpMessageBlock {
-	static void read(std::vector<u8>& dest, Buffer src, Game game) {
+struct BinHelpMessageBlock
+{
+	static void read(std::vector<u8>& dest, Buffer src, Game game)
+	{
 		auto& header = src.read<HelpMessageHeader>(0, "string block header");
 		
 		s32 size;
@@ -306,12 +316,14 @@ struct BinHelpMessageBlock {
 		dest = src.read_multiple<u8>(0, size, "help messages").copy();
 	}
 	
-	static void write(OutBuffer dest, const std::vector<u8>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<u8>& src, Game game)
+	{
 		dest.write_multiple(src);
 	}
 };
 
-static std::vector<std::vector<glm::vec4>> read_splines(Buffer src, s32 count, s32 data_offset) {
+static std::vector<std::vector<glm::vec4>> read_splines(Buffer src, s32 count, s32 data_offset)
+{
 	std::vector<std::vector<glm::vec4>> splines;
 	auto relative_offsets = src.read_multiple<s32>(0, count, "spline offsets");
 	for(s32 relative_offset : relative_offsets) {
@@ -323,7 +335,8 @@ static std::vector<std::vector<glm::vec4>> read_splines(Buffer src, s32 count, s
 	return splines;
 }
 
-static s32 write_splines(OutBuffer dest, const std::vector<std::vector<glm::vec4>>& src) {
+static s32 write_splines(OutBuffer dest, const std::vector<std::vector<glm::vec4>>& src)
+{
 	s64 offsets_pos = dest.alloc_multiple<s32>(src.size());
 	dest.pad(0x10, 0);
 	s32 data_offset = (s32) dest.tell();
@@ -348,8 +361,10 @@ packed_struct(PathBlockHeader,
 	s32 pad;
 )
 
-struct PathBlock {
-	static void read(std::vector<PathInstance>& dest, Buffer src, Game game) {
+struct PathBlock
+{
+	static void read(std::vector<PathInstance>& dest, Buffer src, Game game)
+	{
 		auto& header = src.read<PathBlockHeader>(0, "path block header");
 		std::vector<std::vector<glm::vec4>> splines = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
 		for(size_t i = 0; i < splines.size(); i++) {
@@ -359,7 +374,8 @@ struct PathBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<PathInstance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<PathInstance>& src, Game game)
+	{
 		std::vector<std::vector<glm::vec4>> splines;
 		for(const PathInstance& inst : src) {
 			splines.emplace_back(inst.spline());
@@ -383,8 +399,10 @@ packed_struct(GrindPathData,
 	s32 pad;
 )
 
-struct GrindPathBlock {
-	static void read(Gameplay& gameplay, Buffer src, Game game) {
+struct GrindPathBlock
+{
+	static void read(Gameplay& gameplay, Buffer src, Game game)
+	{
 		auto& header = src.read<PathBlockHeader>(0, "spline block header");
 		auto grindpaths = src.read_multiple<GrindPathData>(0x10, header.spline_count, "grindrail data");
 		s64 offsets_pos = 0x10 + header.spline_count * sizeof(GrindPathData);
@@ -401,7 +419,8 @@ struct GrindPathBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game)
+	{
 		s64 header_ofs = dest.alloc<PathBlockHeader>();
 		std::vector<std::vector<glm::vec4>> splines;
 		for(const GrindPathInstance& inst : opt_iterator(gameplay.grind_paths)) {
@@ -436,22 +455,26 @@ packed_struct(ShapePacked,
 	/* 0x7c */ f32 unused_7c;
 )
 
-static void swap_instance(CuboidInstance& l, ShapePacked& r) {
+static void swap_instance(CuboidInstance& l, ShapePacked& r)
+{
 	swap_matrix_inverse_rotation(l, r);
 	r.unused_7c = 0.f;
 }
 
-static void swap_instance(SphereInstance& l, ShapePacked& r) {
+static void swap_instance(SphereInstance& l, ShapePacked& r)
+{
 	swap_matrix_inverse_rotation(l, r);
 	r.unused_7c = 0.f;
 }
 
-static void swap_instance(CylinderInstance& l, ShapePacked& r) {
+static void swap_instance(CylinderInstance& l, ShapePacked& r)
+{
 	swap_matrix_inverse_rotation(l, r);
 	r.unused_7c = 0.f;
 }
 
-static void swap_instance(PillInstance& l, ShapePacked& r) {
+static void swap_instance(PillInstance& l, ShapePacked& r)
+{
 	swap_matrix_inverse_rotation(l, r);
 	r.unused_7c = 0.f;
 }
@@ -470,7 +493,8 @@ packed_struct(GameplayAreaPacked,
 	/* 0x1c */ s32 relative_part_offsets[5];
 )
 
-enum AreaPart {
+enum AreaPart
+{
 	AREA_PART_PATHS = 0,
 	AREA_PART_CUBOIDS = 1,
 	AREA_PART_SPHERES = 2,
@@ -478,8 +502,10 @@ enum AreaPart {
 	AREA_PART_NEGATIVE_CUBOIDS = 4
 };
 
-struct AreasBlock {
-	static void read(Gameplay& gameplay, Buffer src, Game game) {
+struct AreasBlock
+{
+	static void read(Gameplay& gameplay, Buffer src, Game game)
+	{
 		src = src.subbuf(4); // Skip past size field.
 		auto header = src.read<AreasHeader>(0, "area list block header");
 		auto table = src.read_multiple<GameplayAreaPacked>(sizeof(AreasHeader), header.area_count, "area list table");
@@ -523,7 +549,8 @@ struct AreasBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game)
+	{
 		s64 size_ofs = dest.alloc<s32>();
 		s64 header_ofs = dest.alloc<AreasHeader>();
 		s64 table_ofs = dest.alloc_multiple<GameplayAreaPacked>(opt_size(gameplay.areas));
@@ -624,19 +651,23 @@ packed_struct(OcclusionMappingsGameplayHeader,
 	s32 pad = 0;
 )
 
-struct OcclusionMappingsBlock {
-	static void read(std::vector<u8>& dest, Buffer src, Game game) {
+struct OcclusionMappingsBlock
+{
+	static void read(std::vector<u8>& dest, Buffer src, Game game)
+	{
 		auto& header = src.read<OcclusionMappingsGameplayHeader>(0, "occlusion header");
 		s32 total_count = header.tfrag_mapping_count + header.tie_mapping_count + header.moby_mapping_count;
 		dest = src.read_multiple<u8>(0, 0x10 + total_count * 8).copy();
 	}
 	
-	static void write(OutBuffer dest, const std::vector<u8>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<u8>& src, Game game)
+	{
 		dest.write_multiple(src);
 	}
 };
 
-std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game) {
+std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game)
+{
 	std::vector<u8> dest;
 	if(gameplay.occlusion.has_value()) {
 		OcclusionMappingsBlock::write(dest, *gameplay.occlusion, game);

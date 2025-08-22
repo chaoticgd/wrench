@@ -29,7 +29,8 @@
 class InputStream;
 class OutputStream;
 
-class Stream {
+class Stream
+{
 protected:
 	Stream() = default;
 public:
@@ -46,7 +47,8 @@ public:
 	mutable std::string last_error;
 };
 
-class InputStream : public Stream {
+class InputStream : public Stream
+{
 public:
 	virtual bool read_n(u8* dest, s64 size) = 0;
 	
@@ -87,7 +89,8 @@ public:
 	}
 };
 
-class OutputStream : public Stream {
+class OutputStream : public Stream
+{
 public:
 	virtual bool write_n(const u8* src, s64 size) = 0;
 
@@ -111,18 +114,18 @@ public:
 	
 	template <typename T>
 	s64 alloc() {
-		static_assert(sizeof(T) <= sizeof(zeroes));
+		static_assert(sizeof(T) <= sizeof(m_zeroes));
 		s64 ofs = tell();
-		write_n(zeroes, sizeof(T));
+		write_n(m_zeroes, sizeof(T));
 		return ofs;
 	}
 	
 	template <typename T>
 	s64 alloc_multiple(s64 count) {
-		static_assert(sizeof(T) <= sizeof(zeroes));
+		static_assert(sizeof(T) <= sizeof(m_zeroes));
 		s64 ofs = tell();
 		for(s64 i = 0; i < count; i++) {
-			write_n(zeroes, sizeof(T));
+			write_n(m_zeroes, sizeof(T));
 		}
 		return ofs;
 	}
@@ -130,10 +133,11 @@ public:
 	void pad(s64 alignment, u8 padding);
 
 private:
-	static const constexpr u8 zeroes[4096] = {0};
+	static const constexpr u8 m_zeroes[4096] = {0};
 };
 
-class BlackHoleOutputStream : public OutputStream {
+class BlackHoleOutputStream : public OutputStream
+{
 public:
 	BlackHoleOutputStream();
 	
@@ -144,11 +148,12 @@ public:
 	bool write_n(const u8* src, s64 size) override;
 	
 private:
-	s64 ofs = 0;
-	s64 top = 0;
+	s64 m_ofs = 0;
+	s64 m_top = 0;
 };
 
-class MemoryInputStream : public InputStream {
+class MemoryInputStream : public InputStream
+{
 public:
 	MemoryInputStream(const u8* begin_, const u8* end_);
 	MemoryInputStream(const std::vector<u8>& bytes);
@@ -160,12 +165,13 @@ public:
 	bool read_n(u8*, s64 size) override;
 	
 private:
-	const u8* begin;
-	const u8* end;
-	s64 ofs = 0;
+	const u8* m_begin;
+	const u8* m_end;
+	s64 m_ofs = 0;
 };
 
-class MemoryOutputStream : public OutputStream {
+class MemoryOutputStream : public OutputStream
+{
 public:
 	MemoryOutputStream(std::vector<u8>& backing_);
 	
@@ -176,11 +182,12 @@ public:
 	bool write_n(const u8* src, s64 size) override;
 	
 private:
-	std::vector<u8>& backing;
-	s64 ofs = 0;
+	std::vector<u8>& m_backing;
+	s64 m_ofs = 0;
 };
 
-class FileInputStream : public InputStream {
+class FileInputStream : public InputStream
+{
 public:
 	FileInputStream();
 	~FileInputStream() override;
@@ -193,11 +200,13 @@ public:
 	
 	bool read_n(u8* dest, s64 size) override;
 
-	WrenchFileHandle* file = nullptr;
-	std::string error_message;
+private:
+	WrenchFileHandle* m_file = nullptr;
+	std::string m_error_message;
 };
 
-class FileOutputStream : public OutputStream {
+class FileOutputStream : public OutputStream
+{
 public:
 	FileOutputStream();
 	~FileOutputStream() override;
@@ -210,10 +219,11 @@ public:
 	
 	bool write_n(const u8* src, s64 size) override;
 	
-	WrenchFileHandle* file = nullptr;
+	WrenchFileHandle* m_file = nullptr;
 };
 
-class SubInputStream : public InputStream {
+class SubInputStream : public InputStream
+{
 public:
 	SubInputStream(InputStream& stream_, ByteRange64 range_);
 	SubInputStream(InputStream& stream_, s64 base_, s64 bytes_);
@@ -227,11 +237,12 @@ public:
 	s64 offset_relative_to(InputStream* outer) const;
 
 private:
-	InputStream& stream;
-	ByteRange64 range;
+	InputStream& m_stream;
+	ByteRange64 m_range;
 };
 
-class SubOutputStream : public OutputStream {
+class SubOutputStream : public OutputStream
+{
 public:
 	SubOutputStream(OutputStream& stream_, s64 zero_);
 	
@@ -242,8 +253,8 @@ public:
 	bool write_n(const u8* src, s64 size) override;
 	
 private:
-	OutputStream& stream;
-	s64 zero;
+	OutputStream& m_stream;
+	s64 m_zero;
 };
 
 #endif

@@ -47,14 +47,35 @@ packed_struct(DlLevelAudioWadHeader,
 	/* 0x298 */ SectorByteRange spare;
 )
 
-static void unpack_rac_level_audio_wad(LevelAudioWadAsset& dest, const RacLevelAudioWadHeader& header, InputStream& src, BuildConfig config);
-static void pack_rac_level_audio_wad(OutputStream& dest, RacLevelAudioWadHeader& header, const LevelAudioWadAsset& src, BuildConfig config);
-static void unpack_gc_level_audio_wad(LevelAudioWadAsset& dest, const GcLevelAudioWadHeader& header, InputStream& src, BuildConfig config);
-static void pack_gc_level_audio_wad(OutputStream& dest, GcLevelAudioWadHeader& header, const LevelAudioWadAsset& src, BuildConfig config);
+static void unpack_rac_level_audio_wad(
+	LevelAudioWadAsset& dest,
+	const RacLevelAudioWadHeader& header,
+	InputStream& src,
+	BuildConfig config);
+static void pack_rac_level_audio_wad(
+	OutputStream& dest,
+	RacLevelAudioWadHeader& header,
+	const LevelAudioWadAsset& src,
+	BuildConfig config);
+static void unpack_gc_level_audio_wad(
+	LevelAudioWadAsset& dest,
+	const GcLevelAudioWadHeader& header,
+	InputStream& src,
+	BuildConfig config);
+static void pack_gc_level_audio_wad(
+	OutputStream& dest,
+	GcLevelAudioWadHeader& header,
+	const LevelAudioWadAsset& src,
+	BuildConfig config);
 template <typename Header>
-static void unpack_uya_dl_level_audio_wad(LevelAudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
+static void unpack_uya_dl_level_audio_wad(
+	LevelAudioWadAsset& dest,
+	const Header& header,
+	InputStream& src,
+	BuildConfig config);
 template <typename Header>
-static void pack_uya_dl_level_audio_wad(OutputStream& dest, Header& header, const LevelAudioWadAsset& src, BuildConfig config);
+static void pack_uya_dl_level_audio_wad(
+	OutputStream& dest, Header& header, const LevelAudioWadAsset& src, BuildConfig config);
 
 on_load(LevelAudio, []() {
 	LevelAudioWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<LevelAudioWadAsset, RacLevelAudioWadHeader>(unpack_rac_level_audio_wad, false);
@@ -68,21 +89,32 @@ on_load(LevelAudio, []() {
 	LevelAudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelAudioWadAsset, DlLevelAudioWadHeader>(pack_uya_dl_level_audio_wad<DlLevelAudioWadHeader>);
 })
 
-static void unpack_rac_level_audio_wad(LevelAudioWadAsset& dest, const RacLevelAudioWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_rac_level_audio_wad(
+	LevelAudioWadAsset& dest, const RacLevelAudioWadHeader& header, InputStream& src, BuildConfig config)
+{
 	
 }
-static void pack_rac_level_audio_wad(OutputStream& dest, RacLevelAudioWadHeader& header, const LevelAudioWadAsset& src, BuildConfig config) {
+static void pack_rac_level_audio_wad(
+	OutputStream& dest,
+	RacLevelAudioWadHeader& header,
+	const LevelAudioWadAsset& src,
+	BuildConfig config)
+{
 	
 }
 
-static void unpack_gc_level_audio_wad(LevelAudioWadAsset& dest, const GcLevelAudioWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_gc_level_audio_wad(
+	LevelAudioWadAsset& dest, const GcLevelAudioWadHeader& header, InputStream& src, BuildConfig config)
+{
 	unpack_assets<BinaryAsset>(dest.bin_data(SWITCH_FILES), src, ARRAY_PAIR(header.bin_data), config, FMT_BINARY_VAG);
 	unpack_asset(dest.upgrade_sample(), src, header.upgrade_sample, config, FMT_BINARY_VAG);
 	unpack_asset(dest.thermanator_freeze(), src, header.thermanator_freeze, config, FMT_BINARY_VAG);
 	unpack_asset(dest.thermanator_thaw(), src, header.thermanator_thaw, config, FMT_BINARY_VAG);
 }
 
-static void pack_gc_level_audio_wad(OutputStream& dest, GcLevelAudioWadHeader& header, const LevelAudioWadAsset& src, BuildConfig config) {
+static void pack_gc_level_audio_wad(
+	OutputStream& dest, GcLevelAudioWadHeader& header, const LevelAudioWadAsset& src, BuildConfig config)
+{
 	pack_assets_sa(dest, ARRAY_PAIR(header.bin_data), src.get_bin_data(), config);
 	header.upgrade_sample = pack_asset_sa<SectorByteRange>(dest, src.get_upgrade_sample(), config, FMT_BINARY_VAG);
 	header.thermanator_freeze = pack_asset_sa<SectorByteRange>(dest, src.get_thermanator_freeze(), config, FMT_BINARY_VAG);
@@ -90,7 +122,9 @@ static void pack_gc_level_audio_wad(OutputStream& dest, GcLevelAudioWadHeader& h
 }
 
 template <typename Header>
-static void unpack_uya_dl_level_audio_wad(LevelAudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config) {
+static void unpack_uya_dl_level_audio_wad(
+	LevelAudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config)
+{
 	unpack_assets<BinaryAsset>(dest.bin_data(SWITCH_FILES), src, ARRAY_PAIR(header.bin_data), config, FMT_BINARY_VAG);
 	unpack_asset(dest.upgrade_sample(), src, header.upgrade_sample, config, FMT_BINARY_VAG);
 	unpack_asset(dest.platinum_bolt(), src, header.platinum_bolt, config, FMT_BINARY_VAG);
@@ -98,7 +132,9 @@ static void unpack_uya_dl_level_audio_wad(LevelAudioWadAsset& dest, const Header
 }
 
 template <typename Header>
-static void pack_uya_dl_level_audio_wad(OutputStream& dest, Header& header, const LevelAudioWadAsset& src, BuildConfig config) {
+static void pack_uya_dl_level_audio_wad(
+	OutputStream& dest, Header& header, const LevelAudioWadAsset& src, BuildConfig config)
+{
 	pack_assets_sa(dest, ARRAY_PAIR(header.bin_data), src.get_bin_data(), config, FMT_BINARY_VAG);
 	header.upgrade_sample = pack_asset_sa<SectorByteRange>(dest, src.get_upgrade_sample(), config, FMT_BINARY_VAG);
 	header.platinum_bolt = pack_asset_sa<SectorByteRange>(dest, src.get_platinum_bolt(), config, FMT_BINARY_VAG);

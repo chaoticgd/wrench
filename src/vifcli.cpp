@@ -23,8 +23,9 @@
 #include <core/vif.h>
 #include <core/filesystem.h>
 
-int main(int argc, char** argv) {
-	if(argc != 3) {
+int main(int argc, char** argv)
+{
+	if (argc != 3) {
 		fprintf(stderr, "usage: %s <input file> <offset>", (argc > 0) ? argv[0] : "vif");
 		return 1;
 	}
@@ -34,9 +35,9 @@ int main(int argc, char** argv) {
 	
 	std::vector<u8> data = read_file(src_path);
 	std::vector<VifPacket> command_list = read_vif_command_list(Buffer(data).subbuf(offset));
-	while(command_list.size() > 0) {
+	while (command_list.size() > 0) {
 		VifPacket& packet = command_list.front();
-		if(packet.error == "") {
+		if (packet.error == "") {
 			std::string code_string = packet.code.to_string();
 			printf("%08x %s\n", (s32) (offset + packet.offset), code_string.c_str());
 			command_list.erase(command_list.begin());

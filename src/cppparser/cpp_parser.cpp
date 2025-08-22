@@ -18,26 +18,31 @@
 
 #include "cpp_parser.h"
 
-struct CppParserState {
+struct CppParserState
+{
 	const std::vector<CppToken>& tokens;
 	size_t pos = 0;
 	
-	const CppToken& cur() const {
+	const CppToken& cur() const
+	{
 		verify(pos < tokens.size(), "Unexpected end of file.");
 		return tokens[pos];
 	}
 	
-	void advance() {
+	void advance()
+	{
 		verify(pos < tokens.size(), "Unexpected end of file.");
 		pos = tokens[pos].next;
 	}
 	
-	const CppToken& peek() const {
+	const CppToken& peek() const
+	{
 		verify(pos < tokens.size() && tokens[pos].next < tokens.size(), "Unexpected end of file.");
 		return tokens[tokens[pos].next];
 	}
 	
-	bool eof() const {
+	bool eof() const
+	{
 		return pos < tokens.size();
 	}
 };
@@ -48,40 +53,41 @@ static CppType parse_field(CppParserState& parser);
 static CppType parse_type_name(CppParserState& parser);
 static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppParserState& parser, size_t token);
 
-bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<CppToken>& tokens) {
+bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<CppToken>& tokens)
+{
 	CppParserState parser{tokens};
 	bool enabled = false;
 	bool ever_enabled_for_this_file = false;
 	
-	while(parser.pos < tokens.size()) {
-		if(tokens[parser.pos].type == CPP_PREPROCESSOR_DIRECTIVE) {
+	while (parser.pos < tokens.size()) {
+		if (tokens[parser.pos].type == CPP_PREPROCESSOR_DIRECTIVE) {
 			std::string_view str(tokens[parser.pos].str_begin, tokens[parser.pos].str_end);
-			if(str.starts_with("pragma wrench parser on")) {
+			if (str.starts_with("pragma wrench parser on")) {
 				enabled = true;
 				ever_enabled_for_this_file = true;
-			} else if(str.starts_with("pragma wrench parser off")) {
+			} else if (str.starts_with("pragma wrench parser off")) {
 				enabled = false;
 			}
 		}
 		
-		if(!enabled || tokens[parser.pos].type != CPP_KEYWORD) {
+		if (!enabled || tokens[parser.pos].type != CPP_KEYWORD) {
 			parser.pos++;
 			continue;
 		}
 		
-		if(tokens[parser.pos].keyword == CPP_KEYWORD_struct || tokens[parser.pos].keyword == CPP_KEYWORD_union) {
+		if (tokens[parser.pos].keyword == CPP_KEYWORD_struct || tokens[parser.pos].keyword == CPP_KEYWORD_union) {
 			size_t second_pos = tokens[parser.pos].next;
 			
 			// Parse alignof expression.
 			size_t next_pos = tokens.size();
 			s32 alignment = -1;
-			if(second_pos < tokens.size() && tokens[second_pos].type == CPP_KEYWORD && tokens[second_pos].keyword == CPP_KEYWORD_alignas) {
+			if (second_pos < tokens.size() && tokens[second_pos].type == CPP_KEYWORD && tokens[second_pos].keyword == CPP_KEYWORD_alignas) {
 				size_t third_pos = tokens[second_pos].next;
-				if(third_pos < tokens.size() && tokens[third_pos].type == CPP_OPERATOR && tokens[third_pos].op == CPP_OP_OPENING_ROUND) {
+				if (third_pos < tokens.size() && tokens[third_pos].type == CPP_OPERATOR && tokens[third_pos].op == CPP_OP_OPENING_ROUND) {
 					size_t fourth_pos = tokens[third_pos].next;
-					if(fourth_pos < tokens.size() && tokens[fourth_pos].type == CPP_INTEGER_LITERAL) {
+					if (fourth_pos < tokens.size() && tokens[fourth_pos].type == CPP_INTEGER_LITERAL) {
 						size_t fifth_pos = tokens[fourth_pos].next;
-						if(fifth_pos < tokens.size() && tokens[fifth_pos].type == CPP_OPERATOR && tokens[fifth_pos].op == CPP_OP_CLOSING_ROUND) {
+						if (fifth_pos < tokens.size() && tokens[fifth_pos].type == CPP_OPERATOR && tokens[fifth_pos].op == CPP_OP_CLOSING_ROUND) {
 							alignment = (s32) tokens[fourth_pos].i;
 							next_pos = tokens[fifth_pos].next;
 						}
@@ -92,15 +98,15 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 			}
 			
 			// Parse struct body.
-			if(next_pos < tokens.size() && tokens[next_pos].type == CPP_IDENTIFIER) {
+			if (next_pos < tokens.size() && tokens[next_pos].type == CPP_IDENTIFIER) {
 				size_t third_pos = tokens[next_pos].next;
-				if(third_pos < tokens.size() && tokens[third_pos].type == CPP_OPERATOR && tokens[third_pos].op == CPP_OP_OPENING_CURLY) {
+				if (third_pos < tokens.size() && tokens[third_pos].type == CPP_OPERATOR && tokens[third_pos].op == CPP_OP_OPENING_CURLY) {
 					std::string_view name(tokens[next_pos].str_begin, tokens[next_pos].str_end);
 					CppType type(CPP_STRUCT_OR_UNION);
 					type.struct_or_union.is_union = tokens[parser.pos].keyword == CPP_KEYWORD_union;
 					type.name = name;
 					parser.advance(); // struct or union
-					if(alignment > -1) {
+					if (alignment > -1) {
 						parser.advance(); // alignof
 						parser.advance(); // (
 						parser.advance(); // integer literal
@@ -116,11 +122,11 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 			}
 		}
 		
-		if(tokens[parser.pos].keyword == CPP_KEYWORD_enum) {
+		if (tokens[parser.pos].keyword == CPP_KEYWORD_enum) {
 			size_t second_pos = tokens[parser.pos].next;
-			if(second_pos < tokens.size() && tokens[second_pos].type == CPP_IDENTIFIER) {
+			if (second_pos < tokens.size() && tokens[second_pos].type == CPP_IDENTIFIER) {
 				size_t third_pos = tokens[second_pos].next;
-				if(third_pos < tokens.size() && tokens[third_pos].type == CPP_OPERATOR && tokens[third_pos].op == CPP_OP_OPENING_CURLY) {
+				if (third_pos < tokens.size() && tokens[third_pos].type == CPP_OPERATOR && tokens[third_pos].op == CPP_OP_OPENING_CURLY) {
 					std::string_view name(tokens[second_pos].str_begin, tokens[second_pos].str_end);
 					CppType type(CPP_ENUM);
 					type.name = name;
@@ -134,7 +140,7 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 			}
 		}
 		
-		if(tokens[parser.pos].keyword == CPP_KEYWORD_typedef) {
+		if (tokens[parser.pos].keyword == CPP_KEYWORD_typedef) {
 			std::vector<CppPreprocessorDirective> directives = parse_preprocessor_directives(parser, parser.pos);
 			parser.advance();
 			CppType type = parse_field(parser);
@@ -148,10 +154,11 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 	return ever_enabled_for_this_file;
 }
 
-static void parse_enum(CppType& dest, CppParserState& parser) {
-	while(true) {
+static void parse_enum(CppType& dest, CppParserState& parser)
+{
+	while (true) {
 		const CppToken& first = parser.cur();
-		if(first.type == CPP_OPERATOR && first.op == CPP_OP_CLOSING_CURLY) {
+		if (first.type == CPP_OPERATOR && first.op == CPP_OP_CLOSING_CURLY) {
 			parser.advance();
 			break;
 		}
@@ -170,16 +177,17 @@ static void parse_enum(CppType& dest, CppParserState& parser) {
 		dest.enumeration.constants.emplace_back(third.i, std::string(first.str_begin, first.str_end));
 		
 		const CppToken& comma = parser.cur();
-		if(comma.type == CPP_OPERATOR && comma.op == CPP_OP_COMMA) {
+		if (comma.type == CPP_OPERATOR && comma.op == CPP_OP_COMMA) {
 			parser.advance();
 		}
 	}
 }
 
-static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
-	while(true) {
+static void parse_struct_or_union(CppType& dest, CppParserState& parser)
+{
+	while (true) {
 		const CppToken& terminator = parser.cur();
-		if(terminator.type == CPP_OPERATOR && terminator.op == CPP_OP_CLOSING_CURLY) {
+		if (terminator.type == CPP_OPERATOR && terminator.op == CPP_OP_CLOSING_CURLY) {
 			parser.advance();
 			break;
 		}
@@ -195,14 +203,15 @@ static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
 	parser.advance();
 }
 
-static CppType parse_field(CppParserState& parser) {
+static CppType parse_field(CppParserState& parser)
+{
 	std::vector<CppPreprocessorDirective> directives = parse_preprocessor_directives(parser, parser.pos);
 	CppType field_type = parse_type_name(parser);
 	
 	// Parse pointers.
-	while(true) {
+	while (true) {
 		const CppToken& token = parser.cur();
-		if(token.type != CPP_OPERATOR || (token.op != CPP_OP_STAR && token.op != CPP_OP_AMPERSAND)) {
+		if (token.type != CPP_OPERATOR || (token.op != CPP_OP_STAR && token.op != CPP_OP_AMPERSAND)) {
 			break;
 		}
 		
@@ -220,7 +229,7 @@ static CppType parse_field(CppParserState& parser) {
 	
 	// Parse bitfields.
 	const CppToken& bitfield_operator = parser.cur();
-	if(bitfield_operator.type == CPP_OPERATOR && bitfield_operator.op == CPP_OP_COLON) {
+	if (bitfield_operator.type == CPP_OPERATOR && bitfield_operator.op == CPP_OP_COLON) {
 		verify(field_type.descriptor == CPP_BUILT_IN,
 			"A bitfield storage unit can only be a built-in type (line %d).\n", bitfield_operator.line);
 		parser.advance();
@@ -241,9 +250,9 @@ static CppType parse_field(CppParserState& parser) {
 	
 	// Parse array subscripts.
 	std::vector<s32> array_indices;
-	while(true) {
+	while (true) {
 		const CppToken& opening_bracket_token = parser.cur();
-		if(opening_bracket_token.type != CPP_OPERATOR || opening_bracket_token.op != CPP_OP_OPENING_SQUARE) {
+		if (opening_bracket_token.type != CPP_OPERATOR || opening_bracket_token.op != CPP_OP_OPENING_SQUARE) {
 			break;
 		}
 		parser.advance();
@@ -258,7 +267,7 @@ static CppType parse_field(CppParserState& parser) {
 			"Expected ']' on line %d, got %s.", closing_bracket_token.line, cpp_token_type(closing_bracket_token.type));
 		parser.advance();
 	}
-	for(size_t i = array_indices.size(); i > 0; i--) {
+	for (size_t i = array_indices.size(); i > 0; i--) {
 		CppType array_type(CPP_ARRAY);
 		array_type.array.element_count = array_indices[i - 1];
 		array_type.array.element_type = std::make_unique<CppType>(std::move(field_type));
@@ -270,36 +279,37 @@ static CppType parse_field(CppParserState& parser) {
 	return field_type;
 }
 
-static CppType parse_type_name(CppParserState& parser) {
+static CppType parse_type_name(CppParserState& parser)
+{
 	const CppToken& first = parser.cur();
 	
-	if(first.type == CPP_KEYWORD) {
+	if (first.type == CPP_KEYWORD) {
 		u8 has_keyword[128];
 		bool has_double_long = false;
 		memset(has_keyword, 0, CPP_KEYWORD_COUNT);
 		
 		// Parse tokens until a token of a type that can't be part of a built-in
 		// type name is encountered.
-		while(true) {
+		while (true) {
 			const CppToken& token = parser.cur();
-			if(token.type != CPP_KEYWORD) break;
+			if (token.type != CPP_KEYWORD) break;
 			
 			bool good = false;
-			if(token.keyword == CPP_KEYWORD_bool) good = true;
-			if(token.keyword == CPP_KEYWORD_char) good = true;
-			if(token.keyword == CPP_KEYWORD_short) good = true;
-			if(token.keyword == CPP_KEYWORD_int) good = true;
-			if(token.keyword == CPP_KEYWORD_long) good = true;
-			if(token.keyword == CPP_KEYWORD_float) good = true;
-			if(token.keyword == CPP_KEYWORD_double) good = true;
-			if(token.keyword == CPP_KEYWORD_void) good = true;
-			if(token.keyword == CPP_KEYWORD_signed) good = true;
-			if(token.keyword == CPP_KEYWORD_unsigned) good = true;
-			if(token.keyword == CPP_KEYWORD_const) good = true;
-			if(token.keyword == CPP_KEYWORD_mutable) good = true;
+			if (token.keyword == CPP_KEYWORD_bool) good = true;
+			if (token.keyword == CPP_KEYWORD_char) good = true;
+			if (token.keyword == CPP_KEYWORD_short) good = true;
+			if (token.keyword == CPP_KEYWORD_int) good = true;
+			if (token.keyword == CPP_KEYWORD_long) good = true;
+			if (token.keyword == CPP_KEYWORD_float) good = true;
+			if (token.keyword == CPP_KEYWORD_double) good = true;
+			if (token.keyword == CPP_KEYWORD_void) good = true;
+			if (token.keyword == CPP_KEYWORD_signed) good = true;
+			if (token.keyword == CPP_KEYWORD_unsigned) good = true;
+			if (token.keyword == CPP_KEYWORD_const) good = true;
+			if (token.keyword == CPP_KEYWORD_mutable) good = true;
 			
-			if(good) {
-				if(token.keyword == CPP_KEYWORD_long && has_keyword[CPP_KEYWORD_long]) {
+			if (good) {
+				if (token.keyword == CPP_KEYWORD_long && has_keyword[CPP_KEYWORD_long]) {
 					has_double_long = true;
 				}
 				has_keyword[token.keyword] = 1;
@@ -310,44 +320,44 @@ static CppType parse_type_name(CppParserState& parser) {
 		}
 		
 		CppType type(CPP_BUILT_IN);
-		if(has_keyword[CPP_KEYWORD_float]) {
+		if (has_keyword[CPP_KEYWORD_float]) {
 			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'float' on line %d.", first.line);
 			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'float' on line %d.", first.line);
 			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'float' on line %d.", first.line);
 			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'float' on line %d.", first.line);
 			type.built_in = CPP_FLOAT;
-		} else if(has_keyword[CPP_KEYWORD_double]) {
+		} else if (has_keyword[CPP_KEYWORD_double]) {
 			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'double' on line %d.", first.line);
 			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'double' on line %d.", first.line);
 			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'double' on line %d.", first.line);
 			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'double'. on line %d", first.line);
 			type.built_in = CPP_DOUBLE;
-		} else if(has_keyword[CPP_KEYWORD_bool]) {
+		} else if (has_keyword[CPP_KEYWORD_bool]) {
 			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'bool' on line %d.", first.line);
 			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'bool' on line %d.", first.line);
 			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'bool' on line %d.", first.line);
 			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'bool' on line %d.", first.line);
 			type.built_in = CPP_BOOL;
-		} else if(has_keyword[CPP_KEYWORD_char]) {
+		} else if (has_keyword[CPP_KEYWORD_char]) {
 			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'char' on line %d.", first.line);
 			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'char' on line %d.", first.line);
 			type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_UCHAR : CPP_CHAR;
-		} else if(has_keyword[CPP_KEYWORD_short]) {
+		} else if (has_keyword[CPP_KEYWORD_short]) {
 			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'short' on line %d.", first.line);
 			type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_USHORT : CPP_SHORT;
-		} else if(has_keyword[CPP_KEYWORD_long]) {
-			if(has_double_long) {
+		} else if (has_keyword[CPP_KEYWORD_long]) {
+			if (has_double_long) {
 				type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_ULONGLONG : CPP_LONGLONG;
 			} else {
 				type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_ULONG : CPP_LONG;
 			}
-		} else if(has_keyword[CPP_KEYWORD_int]) {
+		} else if (has_keyword[CPP_KEYWORD_int]) {
 			type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_UINT : CPP_INT;
-		} else if(has_keyword[CPP_KEYWORD_void]) {
+		} else if (has_keyword[CPP_KEYWORD_void]) {
 			type.built_in = CPP_VOID;
 		}
 		return type;
-	} else if(first.type == CPP_IDENTIFIER) {
+	} else if (first.type == CPP_IDENTIFIER) {
 		std::string str(first.str_begin, first.str_end);
 		parser.advance();
 		
@@ -364,8 +374,8 @@ static CppType parse_type_name(CppParserState& parser) {
 			{CPP_U128, "u128"},
 		};
 		
-		for(const auto& entry : fixed_width_integers) {
-			if(str == entry.name) {
+		for (const auto& entry : fixed_width_integers) {
+			if (str == entry.name) {
 				CppType type(CPP_BUILT_IN);
 				type.built_in = entry.built_in;
 				return type;
@@ -386,20 +396,22 @@ static const CppPreprocessorDirective CPP_DIRECTIVES[] = {
 	{CPP_DIRECTIVE_ENUM, "enum"}
 };
 
-static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppParserState& parser, size_t token) {
+static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(
+	CppParserState& parser, size_t token)
+{
 	std::vector<CppPreprocessorDirective> directives;
 	
-	while(token > 0 && parser.tokens[token - 1].type == CPP_PREPROCESSOR_DIRECTIVE) {
+	while (token > 0 && parser.tokens[token - 1].type == CPP_PREPROCESSOR_DIRECTIVE) {
 		std::string line(parser.tokens[token - 1].str_begin, parser.tokens[token - 1].str_end);
-		if(line.starts_with("pragma wrench ")) {
+		if (line.starts_with("pragma wrench ")) {
 			line = line.substr(14);
 			
 			bool found = false;
-			for(const CppPreprocessorDirective& info : CPP_DIRECTIVES) {
-				if(line.starts_with(info.string)) {
+			for (const CppPreprocessorDirective& info : CPP_DIRECTIVES) {
+				if (line.starts_with(info.string)) {
 					CppPreprocessorDirective& directive = directives.emplace_back();
 					directive.type = info.type;
-					if(line.size() >= info.string.size() + 1 && line[info.string.size()] == ' ') {
+					if (line.size() >= info.string.size() + 1 && line[info.string.size()] == ' ') {
 						directive.string = line.substr(info.string.size() + 1);
 					}
 					

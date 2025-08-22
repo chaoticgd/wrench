@@ -22,11 +22,12 @@ static GLuint frame_buffer_texture = 0;
 
 static void enumerate_instances_referenced_by_selected(Instances& instances);
 
-void view_3d() {
+void view_3d()
+{
 	app& a = *g_app;
 	
 	auto lvl = a.get_level();
-	if(lvl == nullptr) {
+	if (lvl == nullptr) {
 		ImGui::TextWrapped("%s", "");
 		ImGui::TextWrapped("   No level open. To open a level, use the level selector in the menu bar.");
 		return;
@@ -65,65 +66,66 @@ void view_3d() {
 	g_tools[g_active_tool]->funcs.update();
 }
 
-static void enumerate_instances_referenced_by_selected(Instances& instances) {
+static void enumerate_instances_referenced_by_selected(Instances& instances)
+{
 	instances.for_each([&](Instance& instance) {
 		instance.referenced_by_selected = false;
 	});
 	
-	for(MobyGroupInstance& group : instances.moby_groups) {
-		if(group.selected) {
-			for(mobylink link : group.members) {
-				if(MobyInstance* inst = instances.moby_instances.from_id(link.id)) {
+	for (MobyGroupInstance& group : instances.moby_groups) {
+		if (group.selected) {
+			for (mobylink link : group.members) {
+				if (MobyInstance* inst = instances.moby_instances.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
 		}
 	}
 	
-	for(TieGroupInstance& group : instances.tie_groups) {
-		if(group.selected) {
-			for(tielink link : group.members) {
-				if(TieInstance* inst = instances.tie_instances.from_id(link.id)) {
+	for (TieGroupInstance& group : instances.tie_groups) {
+		if (group.selected) {
+			for (tielink link : group.members) {
+				if (TieInstance* inst = instances.tie_instances.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
 		}
 	}
 	
-	for(ShrubGroupInstance& group : instances.shrub_groups) {
-		if(group.selected) {
-			for(shrublink link : group.members) {
-				if(ShrubInstance* inst = instances.shrub_instances.from_id(link.id)) {
+	for (ShrubGroupInstance& group : instances.shrub_groups) {
+		if (group.selected) {
+			for (shrublink link : group.members) {
+				if (ShrubInstance* inst = instances.shrub_instances.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
 		}
 	}
 	
-	for(AreaInstance& area : instances.areas) {
-		if(area.selected) {
-			for(pathlink link : area.paths) {
-				if(PathInstance* inst = instances.paths.from_id(link.id)) {
+	for (AreaInstance& area : instances.areas) {
+		if (area.selected) {
+			for (pathlink link : area.paths) {
+				if (PathInstance* inst = instances.paths.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
-			for(cuboidlink link : area.cuboids) {
-				if(CuboidInstance* inst = instances.cuboids.from_id(link.id)) {
+			for (cuboidlink link : area.cuboids) {
+				if (CuboidInstance* inst = instances.cuboids.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
-			for(spherelink link : area.spheres) {
-				if(SphereInstance* inst = instances.spheres.from_id(link.id)) {
+			for (spherelink link : area.spheres) {
+				if (SphereInstance* inst = instances.spheres.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
-			for(cylinderlink link : area.cylinders) {
-				if(CylinderInstance* inst = instances.cylinders.from_id(link.id)) {
+			for (cylinderlink link : area.cylinders) {
+				if (CylinderInstance* inst = instances.cylinders.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}
-			for(cuboidlink link : area.negative_cuboids) {
-				if(CuboidInstance* inst = instances.cuboids.from_id(link.id)) {
+			for (cuboidlink link : area.negative_cuboids) {
+				if (CuboidInstance* inst = instances.cuboids.from_id(link.id)) {
 					inst->referenced_by_selected = true;
 				}
 			}

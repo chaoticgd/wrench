@@ -20,37 +20,41 @@
 
 #include <stdarg.h>
 
-Buffer Buffer::subbuf(s64 offset) const {
+Buffer Buffer::subbuf(s64 offset) const
+{
 	verify(offset >= 0, "Failed to create buffer: Offset cannot be negative.");
 	verify(lo + offset <= hi, "Failed to create buffer: Out of bounds.");
 	return Buffer(lo + offset, hi);
 }
 
-Buffer Buffer::subbuf(s64 offset, s64 new_size) const {
+Buffer Buffer::subbuf(s64 offset, s64 new_size) const
+{
 	verify(offset >= 0, "Failed to create buffer: Offset cannot be negative.");
 	verify(lo + offset + new_size <= hi, "Failed to create buffer: Out of bounds.");
 	return Buffer(lo + offset, lo + offset + new_size);
 }
 
-std::vector<u8> Buffer::read_bytes(s64 offset, s64 size, const char* subject) const {
+std::vector<u8> Buffer::read_bytes(s64 offset, s64 size, const char* subject) const
+{
 	return read_multiple<u8>(offset, size, subject).copy();
 }
 
-std::string Buffer::read_string(s64 offset, bool is_korean) const {
+std::string Buffer::read_string(s64 offset, bool is_korean) const
+{
 	verify(offset >= 0, "Failed to read string: Offset cannot be negative.");
 	verify(lo + offset <= hi, "Failed to read string: Attempted to read past end of buffer.");
 	std::string result;
-	if(!is_korean) {
-		for(const u8* ptr = lo + offset; ptr < hi && *ptr != '\0'; ptr++) {
+	if (!is_korean) {
+		for (const u8* ptr = lo + offset; ptr < hi && *ptr != '\0'; ptr++) {
 			result += *ptr;
 		}
 	} else {
 		// HACK: I'm not sure what this character encoding is, but I'm
 		// pretty sure this isn't the correct way to parse it. Have fun with
 		// data corruption down the road thanks to this!
-		for(const u8* ptr = lo + offset; ptr < hi && *ptr != '\0'; ptr++) {
+		for (const u8* ptr = lo + offset; ptr < hi && *ptr != '\0'; ptr++) {
 			result += *ptr;
-			if((*ptr == 0x14 || *ptr == 0x38 || *ptr == 0x61)
+			if ((*ptr == 0x14 || *ptr == 0x38 || *ptr == 0x61)
 				&& ptr + 2 < hi && ptr[1] == '\0' && ptr[2] == '\0') {
 				result += *(++ptr);
 				result += *(++ptr);
@@ -60,7 +64,8 @@ std::string Buffer::read_string(s64 offset, bool is_korean) const {
 	return result;
 }
 
-std::string Buffer::read_fixed_string(s64 offset, s64 size) const {
+std::string Buffer::read_fixed_string(s64 offset, s64 size) const
+{
 	verify(offset >= 0, "Failed to read string: Offset cannot be negative.");
 	verify(lo + offset + size <= hi, "Failed to read string: Attempted to read past end of buffer.");
 	std::string string;
@@ -69,19 +74,21 @@ std::string Buffer::read_fixed_string(s64 offset, s64 size) const {
 	return string;
 }
 
-void Buffer::hexdump(FILE* file, s64 column, const char* ansi_colour_code) const {
+void Buffer::hexdump(FILE* file, s64 column, const char* ansi_colour_code) const
+{
 	fprintf(file, "\033[%sm", ansi_colour_code);
-	for(s64 i = 0; i < size(); i++) {
+	for (s64 i = 0; i < size(); i++) {
 		fprintf(file, "%02hhx", lo[i]);
-		if((i + column) % 0x10 == 0xf) {
+		if ((i + column) % 0x10 == 0xf) {
 			fprintf(file, "\n");
 		}
 	}
 	fprintf(file, "\033[0m");
 }
 
-bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff, const std::vector<ByteRange64>* ignore_list) {
-	if(size == DIFF_REST_OF_BUFFER) {
+bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff, const std::vector<ByteRange64>* ignore_list)
+{
+	if (size == DIFF_REST_OF_BUFFER) {
 		lhs = lhs.subbuf(offset);
 		rhs = rhs.subbuf(offset);
 	} else {
@@ -94,13 +101,13 @@ bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff,
 	
 	// Determine which bytes should be ignored.
 	std::vector<bool> ignore;
-	if(ignore_list) {
-		for(ByteRange64 range : *ignore_list) {
+	if (ignore_list) {
+		for (ByteRange64 range : *ignore_list) {
 			range.offset -= offset;
-			if(ignore.size() < range.offset + range.size) {
+			if (ignore.size() < range.offset + range.size) {
 				ignore.resize(range.offset + range.size, false);
 			}
-			for(s64 i = 0; i < range.size; i++) {
+			for (s64 i = 0; i < range.size; i++) {
 				ignore[range.offset + i] = true;
 			}
 		}
@@ -109,52 +116,52 @@ bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff,
 	// Figure out if the buffers are equal. If they are not, find the first byte
 	// that doesn't match.
 	s64 diff_pos = -1;
-	for(s64 i = 0; i < min_size; i++) {
-		if(lhs[i] != rhs[i]) {
-			if(ignore.size() <= i || !ignore[i]) {
+	for (s64 i = 0; i < min_size; i++) {
+		if (lhs[i] != rhs[i]) {
+			if (ignore.size() <= i || !ignore[i]) {
 				diff_pos = i;
 				break;
 			}
 		}
 	}
-	if(diff_pos == -1) {
-		if(lhs.size() == rhs.size()) {
+	if (diff_pos == -1) {
+		if (lhs.size() == rhs.size()) {
 			return true;
 		} else {
 			diff_pos = min_size;
 		}
 	}
 	
-	if(!print_diff) {
+	if (!print_diff) {
 		return false;
 	}
 	
 	s64 row_start = (diff_pos / 0x10) * 0x10;
 	s64 hexdump_begin = std::max((s64) 0, row_start - 0x50);
 	s64 hexdump_end = max_size;
-	for(s64 i = hexdump_begin; i < hexdump_end; i += 0x10) {
+	for (s64 i = hexdump_begin; i < hexdump_end; i += 0x10) {
 		printf("%08x: ", (s32) (offset + i));
-		for(Buffer current : {lhs, rhs}) {
-			for(s64 j = 0; j < 0x10; j++) {
+		for (Buffer current : {lhs, rhs}) {
+			for (s64 j = 0; j < 0x10; j++) {
 				s64 pos = i + j;
 				const char* colour = nullptr;
-				if(lhs.in_bounds(pos) && rhs.in_bounds(pos)) {
-					if(lhs[pos] == rhs[pos]) {
+				if (lhs.in_bounds(pos) && rhs.in_bounds(pos)) {
+					if (lhs[pos] == rhs[pos]) {
 						colour = "32";
-					} else if(ignore.size() > pos && ignore[pos]) {
+					} else if (ignore.size() > pos && ignore[pos]) {
 						colour = "36";
 					} else {
 						colour = "31";
 					}
-				} else if(current.in_bounds(pos)) {
+				} else if (current.in_bounds(pos)) {
 					colour = "33";
 				} else {
 					printf("   ");
 				}
-				if(colour != nullptr) {
+				if (colour != nullptr) {
 					printf("\033[%sm%02x\033[0m ", colour, current[pos]);
 				}
-				if(j % 4 == 3 && j != 0xf) {
+				if (j % 4 == 3 && j != 0xf) {
 					printf(" ");
 				}
 			}
@@ -167,17 +174,19 @@ bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff,
 	return false;
 }
 
-void OutBuffer::pad(s64 align, u8 padding) {
-	if(vec.size() % align != 0) {
+void OutBuffer::pad(s64 align, u8 padding)
+{
+	if (vec.size() % align != 0) {
 		s64 pad_size = align - (vec.size() % align);
 		vec.resize(vec.size() + pad_size, padding);
 	}
 }
 
-void OutBuffer::writesf(s32 indent_level, const char* format, va_list args) {
+void OutBuffer::writesf(s32 indent_level, const char* format, va_list args)
+{
 	static char temp[16 * 1024];
 	
-	for(s32 i = 0; i < indent_level; i++) {
+	for (s32 i = 0; i < indent_level; i++) {
 		temp[i] = '\t';
 	}
 	
@@ -190,10 +199,11 @@ void OutBuffer::writesf(s32 indent_level, const char* format, va_list args) {
 	memcpy(vec.data() + write_ofs, temp, count);
 }
 
-void OutBuffer::writelf(s32 indent_level, const char* format, va_list args) {
+void OutBuffer::writelf(s32 indent_level, const char* format, va_list args)
+{
 	static char temp[16 * 1024];
 	
-	for(s32 i = 0; i < indent_level; i++) {
+	for (s32 i = 0; i < indent_level; i++) {
 		temp[i] = '\t';
 	}
 	
@@ -207,28 +217,32 @@ void OutBuffer::writelf(s32 indent_level, const char* format, va_list args) {
 	vec[write_ofs + count] = '\n';
 }
 
-void OutBuffer::writesf(s32 indent_level, const char* format, ...) {
+void OutBuffer::writesf(s32 indent_level, const char* format, ...)
+{
 	va_list args;
 	va_start(args, format);
 	writesf(indent_level, format, args);
 	va_end(args);
 }
 
-void OutBuffer::writelf(s32 indent_level, const char* format, ...) {
+void OutBuffer::writelf(s32 indent_level, const char* format, ...)
+{
 	va_list args;
 	va_start(args, format);
 	writelf(indent_level, format, args);
 	va_end(args);
 }
 
-void OutBuffer::writesf(const char* format, ...) {
+void OutBuffer::writesf(const char* format, ...)
+{
 	va_list args;
 	va_start(args, format);
 	writesf(0, format, args);
 	va_end(args);
 }
 
-void OutBuffer::writelf(const char* format, ...) {
+void OutBuffer::writelf(const char* format, ...)
+{
 	va_list args;
 	va_start(args, format);
 	writelf(0, format, args);

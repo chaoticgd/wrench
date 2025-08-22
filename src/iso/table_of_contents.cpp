@@ -35,13 +35,14 @@ static SectorByteRange add_sector_byte_range(SectorByteRange range, Sector32 lsn
 static SectorRange sub_sector_range(SectorRange range, Sector32 lsn);
 static SectorByteRange sub_sector_byte_range(SectorByteRange range, Sector32 lsn);
 
-table_of_contents read_table_of_contents(InputStream& src, Game game) {
+table_of_contents read_table_of_contents(InputStream& src, Game game)
+{
 	table_of_contents toc;
-	if(game == Game::RAC) {
+	if (game == Game::RAC) {
 		toc = read_table_of_contents_rac(src);
 	} else {
 		toc = read_table_of_contents_rac234(src);
-		if(toc.levels.size() == 0) {
+		if (toc.levels.size() == 0) {
 			fprintf(stderr, "error: Unable to locate level table!\n");
 			exit(1);
 		}
@@ -49,23 +50,26 @@ table_of_contents read_table_of_contents(InputStream& src, Game game) {
 	return toc;
 }
 
-s64 write_table_of_contents(OutputStream& iso, const table_of_contents& toc, Game game) {
-	if(game == Game::RAC) {
+s64 write_table_of_contents(OutputStream& iso, const table_of_contents& toc, Game game)
+{
+	if (game == Game::RAC) {
 		return write_table_of_contents_rac(iso, toc, game);
 	} else {
 		return write_table_of_contents_rac234(iso, toc, game);
 	}
 }
 
-Sector32 calculate_table_of_contents_size(const table_of_contents& toc, Game game) {
-	if(game == Game::RAC) {
+Sector32 calculate_table_of_contents_size(const table_of_contents& toc, Game game)
+{
+	if (game == Game::RAC) {
 		return calculate_table_of_contents_size_rac(toc);
 	} else {
 		return calculate_table_of_contents_size_rac234(toc);
 	}
 }
 
-table_of_contents read_table_of_contents_rac(InputStream& src) {
+table_of_contents read_table_of_contents_rac(InputStream& src)
+{
 	s32 magic, toc_size;
 	src.seek(RAC_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	verify(src.read_n((u8*) &magic, 4) == 1, "Failed to read R&C1 table of contents.");
@@ -83,13 +87,13 @@ table_of_contents read_table_of_contents_rac(InputStream& src) {
 	global.header = bytes;
 	toc.globals.emplace_back(std::move(global));
 	
-	for(s64 ofs = 8; ofs < buffer.size(); ofs += 8) {
+	for (s64 ofs = 8; ofs < buffer.size(); ofs += 8) {
 		Sector32 lsn = buffer.read<Sector32>(ofs, "sector");
-		if(lsn.sectors != 0) {
+		if (lsn.sectors != 0) {
 			src.seek(lsn.bytes());
 			std::vector<u8> header_bytes = src.read_multiple<u8>(0x2434);
 			Buffer header_buffer(header_bytes);
-			if(header_buffer.read<s32>(4, "file header") == 0x2434) {
+			if (header_buffer.read<s32>(4, "file header") == 0x2434) {
 				Rac1AmalgamatedWadHeader header = header_buffer.read<Rac1AmalgamatedWadHeader>(0, "level header");
 				
 				LevelInfo level;
@@ -105,7 +109,8 @@ table_of_contents read_table_of_contents_rac(InputStream& src) {
 	return toc;
 }
 
-s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc, Game game) {
+s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc, Game game)
+{
 	verify_fatal(toc.globals.size() == 1);
 	const GlobalWadInfo& global = toc.globals[0];
 	DumbRacWadInfo info = Buffer(global.header).read<DumbRacWadInfo>(0, "wad info");
@@ -113,19 +118,19 @@ s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc,
 	info.header_size = sizeof(DumbRacWadInfo);
 	
 	// Convert relative sector offsets to absolute sector numbers.
-	for(SectorRange& range : info.sector_ranges_1) {
+	for (SectorRange& range : info.sector_ranges_1) {
 		range.offset.sectors += global.sector.sectors;
 	}
-	for(Sector32& sector : info.sectors_1) {
+	for (Sector32& sector : info.sectors_1) {
 		sector.sectors += global.sector.sectors;
 	}
-	for(SectorRange& range : info.sector_ranges_2) {
+	for (SectorRange& range : info.sector_ranges_2) {
 		range.offset.sectors += global.sector.sectors;
 	}
-	for(SectorByteRange& range : info.sector_byte_ranges) {
+	for (SectorByteRange& range : info.sector_byte_ranges) {
 		range.offset.sectors += global.sector.sectors;
 	}
-	for(Sector32& sector : info.sectors_2) {
+	for (Sector32& sector : info.sectors_2) {
 		sector.sectors += global.sector.sectors;
 	}
 	
@@ -134,12 +139,12 @@ s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc,
 	s64 level_headers_start_ofs = wad_info_ofs + sizeof(RacWadInfo);
 	iso.seek(level_headers_start_ofs);
 	
-	for(s32 i = 0; i < std::min(toc.levels.size(), ARRAY_SIZE(info.levels)); i++) {
+	for (s32 i = 0; i < std::min(toc.levels.size(), ARRAY_SIZE(info.levels)); i++) {
 		Rac1AmalgamatedWadHeader header = {};
 		header.header_size = sizeof(Rac1AmalgamatedWadHeader);
 		
 		const Opt<LevelWadInfo>& level_info = toc.levels[i].level;
-		if(level_info.has_value()) {
+		if (level_info.has_value()) {
 			const RacLevelWadHeader& level = Buffer(level_info->header).read<RacLevelWadHeader>(0, "level header");
 			header.id = level.id;
 			header.data = add_sector_range(level.data, level_info->file_lba);
@@ -149,33 +154,33 @@ s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc,
 		}
 		
 		const Opt<LevelWadInfo>& audio_info = toc.levels[i].audio;
-		if(audio_info.has_value()) {
+		if (audio_info.has_value()) {
 			const RacLevelAudioWadHeader& audio = Buffer(audio_info->header).read<RacLevelAudioWadHeader>(0, "level audio header");
-			for(s32 i = 0; i < ARRAY_SIZE(header.bindata); i++) {
-				if(!audio.bindata[i].empty()) {
+			for (s32 i = 0; i < ARRAY_SIZE(header.bindata); i++) {
+				if (!audio.bindata[i].empty()) {
 					header.bindata[i] = add_sector_byte_range(audio.bindata[i], audio_info->file_lba);
 				}
 			}
-			for(s32 i = 0; i < ARRAY_SIZE(header.music); i++) {
-				if(!audio.music[i].empty()) {
+			for (s32 i = 0; i < ARRAY_SIZE(header.music); i++) {
+				if (!audio.music[i].empty()) {
 					header.music[i] = {audio.music[i].sectors + audio_info->file_lba.sectors};
 				}
 			}
 		}
 		
 		const Opt<LevelWadInfo>& scene_info = toc.levels[i].scene;
-		if(scene_info.has_value()) {
+		if (scene_info.has_value()) {
 			const RacLevelSceneWadHeader& scene = Buffer(scene_info->header).read<RacLevelSceneWadHeader>(0, "level scene header");
-			for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
+			for (s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
 				RacSceneHeader& dest_scene = header.scenes[i];
 				const RacSceneHeader& src_scene = scene.scenes[i];
-				for(s32 i = 0; i < ARRAY_SIZE(dest_scene.sounds); i++) {
-					if(!src_scene.sounds[i].empty()) {
+				for (s32 i = 0; i < ARRAY_SIZE(dest_scene.sounds); i++) {
+					if (!src_scene.sounds[i].empty()) {
 						dest_scene.sounds[i] = {src_scene.sounds[i].sectors + scene_info->file_lba.sectors};
 					}
 				}
-				for(s32 i = 0; i < ARRAY_SIZE(dest_scene.wads); i++) {
-					if(!src_scene.wads[i].empty()) {
+				for (s32 i = 0; i < ARRAY_SIZE(dest_scene.wads); i++) {
+					if (!src_scene.wads[i].empty()) {
 						dest_scene.wads[i] = {src_scene.wads[i].sectors + scene_info->file_lba.sectors};
 					}
 				}
@@ -195,13 +200,15 @@ s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc,
 	return toc_end;
 }
 
-Sector32 calculate_table_of_contents_size_rac(const table_of_contents& toc) {
+Sector32 calculate_table_of_contents_size_rac(const table_of_contents& toc)
+{
 	Sector32 wad_info_size = Sector32::size_from_bytes(sizeof(RacWadInfo));
 	Sector32 level_header_size = Sector32::size_from_bytes(sizeof(Rac1AmalgamatedWadHeader));
 	return {wad_info_size.sectors + level_header_size.sectors * (s32) toc.levels.size()};
 }
 
-static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header) {
+static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header)
+{
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
 	low = {std::min(low.sectors, header.data.offset.sectors)};
@@ -243,19 +250,19 @@ static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(InputStream& src, Rac1Amalg
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
 	Sector32 high = {0};
-	for(s32 i = 0; i < ARRAY_SIZE(header.bindata); i++) {
-		if(header.bindata[i].offset.sectors > 0) {
+	for (s32 i = 0; i < ARRAY_SIZE(header.bindata); i++) {
+		if (header.bindata[i].offset.sectors > 0) {
 			low = {std::min(low.sectors, header.bindata[i].offset.sectors)};
 			high = {std::max(high.sectors, header.bindata[i].end().sectors)};
 		}
 	}
-	for(s32 i = 0; i < ARRAY_SIZE(header.music); i++) {
-		if(header.music[i].sectors > 0) {
+	for (s32 i = 0; i < ARRAY_SIZE(header.music); i++) {
+		if (header.music[i].sectors > 0) {
 			low = {std::min(low.sectors, header.music[i].sectors)};
 			high = {std::max(high.sectors, header.music[i].sectors + get_vag_size(src, header.music[i].sectors).sectors)};
 		}
 	}
-	if(low.sectors == INT32_MAX || high.sectors == 0) {
+	if (low.sectors == INT32_MAX || high.sectors == 0) {
 		return {};
 	}
 	
@@ -265,13 +272,13 @@ static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(InputStream& src, Rac1Amalg
 	// Rewrite header, convert absolute sector numbers to relative sector offsets.
 	RacLevelAudioWadHeader audio_header = {0};
 	audio_header.header_size = sizeof(RacLevelAudioWadHeader);
-	for(s32 i = 0; i < ARRAY_SIZE(header.bindata); i++) {
-		if(header.bindata[i].offset.sectors > 0) {
+	for (s32 i = 0; i < ARRAY_SIZE(header.bindata); i++) {
+		if (header.bindata[i].offset.sectors > 0) {
 			audio_header.bindata[i] = sub_sector_byte_range(header.bindata[i], adjust);
 		}
 	}
-	for(s32 i = 0; i < ARRAY_SIZE(header.music); i++) {
-		if(header.music[i].sectors > 0) {
+	for (s32 i = 0; i < ARRAY_SIZE(header.music); i++) {
+		if (header.music[i].sectors > 0) {
 			audio_header.music[i] = {header.music[i].sectors - adjust.sectors};
 		}
 	}
@@ -293,22 +300,22 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1Amalg
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
 	Sector32 high = {0};
-	for(s32 i = 0; i < sizeof(header.scenes) / sizeof(header.scenes[0]); i++) {
+	for (s32 i = 0; i < sizeof(header.scenes) / sizeof(header.scenes[0]); i++) {
 		const RacSceneHeader& scene = header.scenes[i];
-		for(s32 j = 0; j < ARRAY_SIZE(scene.sounds); j++) {
-			if(scene.sounds[j].sectors > 0) {
+		for (s32 j = 0; j < ARRAY_SIZE(scene.sounds); j++) {
+			if (scene.sounds[j].sectors > 0) {
 				low = {std::min(low.sectors, scene.sounds[j].sectors)};
 				high = {std::max(high.sectors, scene.sounds[j].sectors + get_vag_size(src, scene.sounds[j].sectors).sectors)};
 			}
 		}
-		for(s32 j = 0; j < ARRAY_SIZE(scene.wads); j++) {
-			if(scene.wads[j].sectors > 0) {
+		for (s32 j = 0; j < ARRAY_SIZE(scene.wads); j++) {
+			if (scene.wads[j].sectors > 0) {
 				low = {std::min(low.sectors, scene.wads[j].sectors)};
 				high = {std::max(high.sectors, scene.wads[j].sectors + get_lz_size(src, scene.wads[j].sectors).sectors)};
 			}
 		}
 	}
-	if(low.sectors == INT32_MAX || high.sectors == 0) {
+	if (low.sectors == INT32_MAX || high.sectors == 0) {
 		return {};
 	}
 	
@@ -318,16 +325,16 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1Amalg
 	// Rewrite header, convert absolute sector numbers to relative sector offsets.
 	RacLevelSceneWadHeader scene_header = {0};
 	scene_header.header_size = sizeof(RacLevelSceneWadHeader);
-	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
+	for (s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
 		RacSceneHeader& dest = scene_header.scenes[i];
 		RacSceneHeader& src = header.scenes[i];
-		for(s32 j = 0; j < ARRAY_SIZE(dest.sounds); j++) {
-			if(src.sounds[j].sectors > 0) {
+		for (s32 j = 0; j < ARRAY_SIZE(dest.sounds); j++) {
+			if (src.sounds[j].sectors > 0) {
 				dest.sounds[j] = {src.sounds[j].sectors - adjust.sectors};
 			}
 		}
-		for(s32 j = 0; j < ARRAY_SIZE(dest.wads); j++) {
-			if(src.wads[j].sectors > 0) {
+		for (s32 j = 0; j < ARRAY_SIZE(dest.wads); j++) {
+			if (src.wads[j].sectors > 0) {
 				dest.wads[j] = {src.wads[j].sectors - adjust.sectors};
 			}
 		}
@@ -346,15 +353,17 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1Amalg
 	return scene_part;
 }
 
-static Sector32 get_lz_size(InputStream& src, Sector32 sector) {
+static Sector32 get_lz_size(InputStream& src, Sector32 sector)
+{
 	LzHeader header = src.read<LzHeader>(sector.bytes());
-	if(memcmp(header.magic, "WAD", 3) != 0) {
+	if (memcmp(header.magic, "WAD", 3) != 0) {
 		return {1};
 	}
 	return Sector32::size_from_bytes(header.compressed_size);
 }
 
-table_of_contents read_table_of_contents_rac234(InputStream& src) {
+table_of_contents read_table_of_contents_rac234(InputStream& src)
+{
 	src.seek(GC_UYA_DL_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	std::vector<u8> bytes = src.read_multiple<u8>(TOC_MAX_SIZE);
 	Buffer buffer(bytes);
@@ -362,19 +371,19 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 	table_of_contents toc;
 	
 	s64 approximate_level_table_offset = guess_rac234_level_table_offset(buffer);
-	if(approximate_level_table_offset == 0x0) {
+	if (approximate_level_table_offset == 0x0) {
 		// We've failed to find the level table, at least try to find some of the other tables.
 		approximate_level_table_offset = 0xffff;
 	}
 	
 	s64 global_index = 0;
 	s64 ofs = 0;
-	while(ofs + 4 * 6 < approximate_level_table_offset) {
+	while (ofs + 4 * 6 < approximate_level_table_offset) {
 		GlobalWadInfo global;
 		global.index = global_index++;
 		global.offset_in_toc = ofs;
 		s32 header_size = buffer.read<s32>(ofs, "global header");
-		if(header_size < 8 || header_size > 0xffff) {
+		if (header_size < 8 || header_size > 0xffff) {
 			break;
 		}
 		global.sector = buffer.read<Sector32>(ofs + 4, "global header");
@@ -384,7 +393,7 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 	}
 	
 	auto level_table = buffer.read_multiple<toc_level_table_entry>(ofs, TOC_MAX_LEVELS, "level table");
-	for(s32 i = 0; i < TOC_MAX_LEVELS; i++) {
+	for (s32 i = 0; i < TOC_MAX_LEVELS; i++) {
 		toc_level_table_entry entry = level_table[i];
 		
 		LevelInfo level;
@@ -393,16 +402,16 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 		
 		// The games have the fields in different orders, so we check the type
 		// of what each field points to so we can support them all.
-		for(s32 j = 0; j < 3; j++) {
+		for (s32 j = 0; j < 3; j++) {
 			LevelWadInfo part;
 			part.header_lba = entry.parts[j].offset;
 			part.file_size = entry.parts[j].size;
 			
 			Sector32 sector = {part.header_lba.sectors - (s32) GC_UYA_DL_TABLE_OF_CONTENTS_LBA};
-			if(sector.sectors <= 0) {
+			if (sector.sectors <= 0) {
 				continue;
 			}
-			if(sector.bytes() > buffer.size()) {
+			if (sector.bytes() > buffer.size()) {
 				break;
 			}
 			s32 header_size = buffer.read<s32>(sector.bytes(), "level header size");
@@ -412,7 +421,7 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 			
 			const auto& [game, type, name] = identify_wad(part.header);
 			
-			switch(type) {
+			switch (type) {
 				case WadType::LEVEL: level.level = std::move(part); break;
 				case WadType::LEVEL_AUDIO: level.audio = std::move(part); break;
 				case WadType::LEVEL_SCENE: level.scene = std::move(part); break;
@@ -426,39 +435,41 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 	return toc;
 }
 
-static s64 guess_rac234_level_table_offset(Buffer src) {
+static s64 guess_rac234_level_table_offset(Buffer src)
+{
 	// Check that the two next entries are valid. This is necessary to
 	// get past a false positive in Deadlocked.
-	for(s64 i = 0; i < src.size() / 4 - 12; i++) {
+	for (s64 i = 0; i < src.size() / 4 - 12; i++) {
 		int parts = 0;
-		for(int j = 0; j < 6; j++) {
+		for (int j = 0; j < 6; j++) {
 			Sector32 lsn = src.read<Sector32>((i + j * 2) * 4, "table of contents");
 			s64 header_offset = lsn.bytes() - GC_UYA_DL_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
-			if(lsn.sectors == 0 || header_offset > TOC_MAX_SIZE - 4) {
+			if (lsn.sectors == 0 || header_offset > TOC_MAX_SIZE - 4) {
 				break;
 			}
-			if(header_offset > 0 && header_offset + 4 <= src.size()) {
+			if (header_offset > 0 && header_offset + 4 <= src.size()) {
 				s32 header_size = src.read<s32>(header_offset, "level header");
-				if(header_size > 0 && header_size < 0x10000 && header_offset + header_size <= src.size()) {
+				if (header_size > 0 && header_size < 0x10000 && header_offset + header_size <= src.size()) {
 					Buffer header = src.subbuf(header_offset, header_size);
 					const auto& [game, type, name] = identify_wad(header);
-					if(game != Game::UNKNOWN || type != WadType::UNKNOWN) {
+					if (game != Game::UNKNOWN || type != WadType::UNKNOWN) {
 						parts++;
 					}
 				}
 			}
 		}
-		if(parts == 6) {
+		if (parts == 6) {
 			return i * 4;
 		}
 	}
 	return 0;
 }
 
-s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& toc, Game game) {
+s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& toc, Game game)
+{
 	iso.seek(GC_UYA_DL_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	
-	for(const GlobalWadInfo& global : toc.globals) {
+	for (const GlobalWadInfo& global : toc.globals) {
 		verify_fatal(global.header.size() > 8);
 		iso.write<s32>(Buffer(global.header).read<s32>(0, "global header"));
 		iso.write<s32>(global.sector.sectors);
@@ -474,7 +485,7 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 	
 	// Size limits hardcoded in the boot ELF.
 	s32 max_sectors;
-	switch(game) {
+	switch (game) {
 		case Game::GC:  max_sectors = 0xb;  break;
 		case Game::UYA: max_sectors = 0x10; break;
 		case Game::DL:  max_sectors = 0x1a; break;
@@ -483,11 +494,11 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 	verify(toc_start_size.sectors <= max_sectors,
 		"Table of contents too big. This could be because there are too many levels, or due to a bug.");
 	
-	for(size_t i = 0; i < toc.levels.size(); i++) {
+	for (size_t i = 0; i < toc.levels.size(); i++) {
 		const LevelInfo& level = toc.levels[i];
 		s32 j = 0;
-		for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
-			if(wad) {
+		for (const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
+			if (wad) {
 				iso.pad(SECTOR_SIZE, 0);
 				s64 header_lba = iso.tell() / SECTOR_SIZE;
 				*(Sector32*) &wad->header[4] = wad->file_lba;
@@ -497,7 +508,7 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 				// for R&C2 versus R&C3 and Deadlocked.
 				s32 field = 0;
 				bool is_rac2 = game == Game::GC || game == Game::UNKNOWN;
-				switch(j++) {
+				switch (j++) {
 					case 0: field = !is_rac2; break;
 					case 1: field = is_rac2; break;
 					case 2: field = 2; break;
@@ -519,17 +530,18 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 	return toc_end;
 }
 
-Sector32 calculate_table_of_contents_size_rac234(const table_of_contents& toc) {
+Sector32 calculate_table_of_contents_size_rac234(const table_of_contents& toc)
+{
 	s64 resident_toc_size_bytes = 0;
-	for(const GlobalWadInfo& global : toc.globals) {
+	for (const GlobalWadInfo& global : toc.globals) {
 		verify_fatal(global.header.size() > 0);
 		resident_toc_size_bytes += global.header.size();
 	}
 	resident_toc_size_bytes += toc.levels.size() * sizeof(SectorRange) * 3;
 	Sector32 toc_size = Sector32::size_from_bytes(resident_toc_size_bytes);
-	for(auto& level : toc.levels) {
-		for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
-			if(wad) {
+	for (auto& level : toc.levels) {
+		for (const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
+			if (wad) {
 				verify_fatal(wad->header.size() > 0);
 				toc_size.sectors += Sector32::size_from_bytes(wad->header.size()).sectors;
 			}
@@ -538,18 +550,22 @@ Sector32 calculate_table_of_contents_size_rac234(const table_of_contents& toc) {
 	return toc_size;
 }
 
-static SectorRange add_sector_range(SectorRange range, Sector32 lsn) {
+static SectorRange add_sector_range(SectorRange range, Sector32 lsn)
+{
 	return {{range.offset.sectors + lsn.sectors}, range.size};
 }
 
-static SectorByteRange add_sector_byte_range(SectorByteRange range, Sector32 lsn) {
+static SectorByteRange add_sector_byte_range(SectorByteRange range, Sector32 lsn)
+{
 	return {{range.offset.sectors + lsn.sectors}, range.size_bytes};
 }
 
-static SectorRange sub_sector_range(SectorRange range, Sector32 lsn) {
+static SectorRange sub_sector_range(SectorRange range, Sector32 lsn)
+{
 	return {{range.offset.sectors - lsn.sectors}, range.size};
 }
 
-static SectorByteRange sub_sector_byte_range(SectorByteRange range, Sector32 lsn) {
+static SectorByteRange sub_sector_byte_range(SectorByteRange range, Sector32 lsn)
+{
 	return {{range.offset.sectors - lsn.sectors}, range.size_bytes};
 }

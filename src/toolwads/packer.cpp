@@ -36,9 +36,10 @@ static s32 parse_positive_embedded_int(const char* str);
 
 std::string build_dir;
 
-int main(int argc, char** argv) {
-	if(argc != 2) {
-		if(argc != 0) {
+int main(int argc, char** argv)
+{
+	if (argc != 2) {
+		if (argc != 0) {
 			fprintf(stderr, "usage: %s <build dir>\n", argv[0]);
 		}
 		exit(1);
@@ -71,7 +72,8 @@ int main(int argc, char** argv) {
 extern const char* git_commit;
 extern const char* git_tag;
 
-static void pack_build_wad() {
+static void pack_build_wad()
+{
 	FileOutputStream wad;
 	verify_fatal(wad.open(build_dir + "/build.wad"));
 	
@@ -84,25 +86,25 @@ static void pack_build_wad() {
 	header.version_minor = -1;
 	header.version_patch = -1;
 	
-	if(git_tag && git_tag[0] == 'v') {
+	if (git_tag && git_tag[0] == 'v') {
 		// Parse the version number from the git tag.
 		const char* major_pos = git_tag + 1;
 		header.version_major = parse_positive_embedded_int(major_pos);
 		
 		const char* minor_pos = major_pos;
-		while(*minor_pos != '.' && *minor_pos != '\0') {
+		while (*minor_pos != '.' && *minor_pos != '\0') {
 			minor_pos++;
 		}
-		if(*minor_pos != '\0') {
+		if (*minor_pos != '\0') {
 			minor_pos++;
 			header.version_minor = parse_positive_embedded_int(minor_pos);
 		}
 		
 		const char* patch_pos = minor_pos;
-		while(*patch_pos != '.' && *patch_pos != '\0') {
+		while (*patch_pos != '.' && *patch_pos != '\0') {
 			patch_pos++;
 		}
-		if(*patch_pos != '\0') {
+		if (*patch_pos != '\0') {
 			patch_pos++;
 			header.version_patch = parse_positive_embedded_int(patch_pos);
 		}
@@ -113,7 +115,7 @@ static void pack_build_wad() {
 	}
 	
 	// Store the git commit.
-	if(git_commit && strlen(git_commit) != 0) {
+	if (git_commit && strlen(git_commit) != 0) {
 		verify_fatal(strlen(git_commit) == 40);
 		strncpy(header.commit_string, git_commit, sizeof(header.commit_string));
 	}
@@ -121,7 +123,8 @@ static void pack_build_wad() {
 	wad.write<BuildWadHeader>(0, header);
 }
 
-static void pack_gui_wad() {
+static void pack_gui_wad()
+{
 	FileOutputStream wad;
 	verify_fatal(wad.open(build_dir + "/gui.wad"));
 	
@@ -153,7 +156,8 @@ static void pack_gui_wad() {
 	wad.write<GuiWadHeader>(0, header);
 }
 
-static void pack_launcher_wad() {
+static void pack_launcher_wad()
+{
 	FileOutputStream wad;
 	verify_fatal(wad.open(build_dir + "/launcher.wad"));
 	
@@ -168,7 +172,8 @@ static void pack_launcher_wad() {
 	wad.write<LauncherWadHeader>(0, header);
 }
 
-static SectorRange pack_oobe_wad(OutputStream& dest) {
+static SectorRange pack_oobe_wad(OutputStream& dest)
+{
 	dest.pad(SECTOR_SIZE, 0);
 	s64 offset = dest.tell();
 	
@@ -194,7 +199,8 @@ static SectorRange pack_oobe_wad(OutputStream& dest) {
 	return range;
 }
 
-static void pack_editor_wad() {
+static void pack_editor_wad()
+{
 	FileOutputStream wad;
 	verify_fatal(wad.open(build_dir + "/editor.wad"));
 	
@@ -228,29 +234,30 @@ static void pack_editor_wad() {
 	wad.write<EditorWadHeader>(0, header);
 }
 
-static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path) {
+static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path)
+{
 	dest.pad(SECTOR_SIZE, 0);
 	s64 offset = dest.tell();
 	
 	std::ifstream image_file((std::string(src_path)));
 	
 	u8 buffer[32][16];
-	for(s32 y = 0; y < 32; y++) {
+	for (s32 y = 0; y < 32; y++) {
 		std::string line;
 		std::getline(image_file, line);
-		if(line.size() > 32) {
+		if (line.size() > 32) {
 			line = line.substr(0, 32);
 		}
-		for(size_t x = 0; x < line.size(); x++) {
+		for (size_t x = 0; x < line.size(); x++) {
 			u8 nibble = (line[x] == '#') ? 0xf : 0x0;
-			if(x % 2 == 0) {
+			if (x % 2 == 0) {
 				buffer[y][x / 2] = nibble << 4;
 			} else {
 				buffer[y][x / 2] |= nibble;
 			}
 		}
-		for(size_t x = line.size(); x < 32; x++) {
-			if(x % 2 == 0) {
+		for (size_t x = line.size(); x < 32; x++) {
+			if (x % 2 == 0) {
 				buffer[y][x / 2] = 0;
 			} else {
 				buffer[y][x / 2] &= 0xf0;
@@ -265,7 +272,8 @@ static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path) {
 	return range;
 }
 
-static void pack_memcard_wad() {
+static void pack_memcard_wad()
+{
 	FileOutputStream wad;
 	verify_fatal(wad.open(build_dir + "/memcard.wad"));
 	
@@ -285,7 +293,8 @@ static void pack_memcard_wad() {
 
 // *****************************************************************************
 
-static SectorRange pack_file(OutputStream& dest, const char* src_path) {
+static SectorRange pack_file(OutputStream& dest, const char* src_path)
+{
 	dest.pad(SECTOR_SIZE, 0);
 	s64 offset = dest.tell();
 	
@@ -305,7 +314,8 @@ static SectorRange pack_file(OutputStream& dest, const char* src_path) {
 	return range;
 }
 
-static SectorRange pack_compressed_image(OutputStream& dest, const char* src_path) {
+static SectorRange pack_compressed_image(OutputStream& dest, const char* src_path)
+{
 	dest.pad(SECTOR_SIZE, 0);
 	s32 offset = dest.tell();
 	
@@ -325,7 +335,8 @@ static SectorRange pack_compressed_image(OutputStream& dest, const char* src_pat
 	return range;
 }
 
-static ByteRange pack_image(OutputStream& dest, const char* src_path) {
+static ByteRange pack_image(OutputStream& dest, const char* src_path)
+{
 	s32 offset = (s32) dest.tell();
 	
 	FileInputStream src;
@@ -345,13 +356,14 @@ static ByteRange pack_image(OutputStream& dest, const char* src_path) {
 }
 
 
-static s32 parse_positive_embedded_int(const char* str) {
+static s32 parse_positive_embedded_int(const char* str)
+{
 	char copy[16] = {};
 	s32 size = strlen(str);
-	for(s32 i = 0; i < std::min(16, size); i++) {
-		if(str[i] >= '0' && str[i] <= '9') {
+	for (s32 i = 0; i < std::min(16, size); i++) {
+		if (str[i] >= '0' && str[i] <= '9') {
 			copy[i] = str[i];
-		} else if(i == 0) {
+		} else if (i == 0) {
 			return -1;
 		} else {
 			break;

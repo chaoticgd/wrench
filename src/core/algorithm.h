@@ -28,7 +28,8 @@
 // should return a negative number, and if lhs > rhs, it should return a
 // non-zero positive function, otherwise it should return zero.
 template <typename Container, typename CompareFunc, typename MarkFunc>
-s32 mark_duplicates(Container& container, CompareFunc compare, MarkFunc mark) {
+s32 mark_duplicates(Container& container, CompareFunc compare, MarkFunc mark)
+{
 	std::vector<s32> order(container.size());
 	for(s32 i = 0; i < (s32) container.size(); i++)
 		order[i] = i;

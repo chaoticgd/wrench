@@ -52,13 +52,15 @@ const char* PIPEIO_ERROR_CONTEXT_STRING = "";
 		} \
 	}
 
-struct _wrench_pipe_handle {
+struct _wrench_pipe_handle
+{
 	HANDLE pipe;
 	HANDLE process;
 	HANDLE thread;
 };
 
-struct _pipe_open_clear_list {
+struct _pipe_open_clear_list
+{
 	HANDLE read_handle;
 	HANDLE write_handle;
 	LPWSTR wide_string;

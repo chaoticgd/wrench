@@ -21,4 +21,5 @@
 static const s32 MAX_LANES = 4;
 
 void inspector();
-bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count);
+bool inspector_input_text_n(
+	std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count);

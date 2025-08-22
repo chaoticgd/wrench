@@ -24,19 +24,21 @@
 #define INIT_TFACE_INDICES \
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 
-struct TfragFace {
+struct TfragFace
+{
 	s32 ad_gif;
 	s32 indices[4];
 };
 
-struct TfragVertexEx {
+struct TfragVertexEx
+{
 	const TfragVertexPosition* position;
 	s32 parents[2] = {-1, -1};
 	s32 tfaces[MAX_TFACES_TOUCHING_VERTEX] = INIT_TFACE_INDICES;
 	
 	bool push_tface(s32 tface) {
-		for(s32 i = 0; i < ARRAY_SIZE(tfaces); i++) {
-			if(tfaces[i] == -1) {
+		for (s32 i = 0; i < ARRAY_SIZE(tfaces); i++) {
+			if (tfaces[i] == -1) {
 				tfaces[i] = tface;
 				return true;
 			}
@@ -45,10 +47,10 @@ struct TfragVertexEx {
 	}
 	
 	bool set_tfaces(const TfragVertexEx& left_parent, TfragVertexEx& right_parent) {
-		for(s32 i = 0; i < ARRAY_SIZE(tfaces); i++) {
-			if(left_parent.tfaces[i] > -1) {
-				for(s32 j = 0; j < ARRAY_SIZE(tfaces); j++) {
-					if(left_parent.tfaces[i] == right_parent.tfaces[j] && !push_tface(left_parent.tfaces[i])) {
+		for (s32 i = 0; i < ARRAY_SIZE(tfaces); i++) {
+			if (left_parent.tfaces[i] > -1) {
+				for (s32 j = 0; j < ARRAY_SIZE(tfaces); j++) {
+					if (left_parent.tfaces[i] == right_parent.tfaces[j] && !push_tface(left_parent.tfaces[i])) {
 						return false;
 					}
 				}
@@ -59,24 +61,29 @@ struct TfragVertexEx {
 };
 
 static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, const Tfrag& tfrag, const std::vector<TfragVertexInfo>& vertex_infos);
-static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strips, const std::vector<u8>& indices);
-static s32 map_face_to_tface(const TfragFace& face, const std::vector<TfragVertexEx>& vertices, const std::vector<TfragVertexInfo>& vertex_infos);
+static std::vector<TfragFace> recover_faces(
+	const std::vector<TfragStrip>& strips, const std::vector<u8>& indices);
+static s32 map_face_to_tface(
+	const TfragFace& face,
+	const std::vector<TfragVertexEx>& vertices,
+	const std::vector<TfragVertexInfo>& vertex_infos);
 
-ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
-	if(tfrag_debug_output_enabled()) {
+ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags)
+{
+	if (tfrag_debug_output_enabled()) {
 		return recover_tfrags_debug(tfrags);
 	}
 	
 	s32 texture_count = 0;
-	for(const Tfrag& tfrag : tfrags.fragments) {
-		for(const TfragTexturePrimitive& primitive : tfrag.common_textures) {
+	for (const Tfrag& tfrag : tfrags.fragments) {
+		for (const TfragTexturePrimitive& primitive : tfrag.common_textures) {
 			texture_count = std::max(texture_count, primitive.d1_tex0_1.data_lo + 1);
 		}
 	}
 	
 	ColladaScene scene;
 	
-	for(s32 i = 0; i < texture_count; i++) {
+	for (s32 i = 0; i < texture_count; i++) {
 		ColladaMaterial& material = scene.materials.emplace_back();
 		material.name = stringf("%d", i);
 		material.surface = MaterialSurface(i);
@@ -86,7 +93,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 	
 	Mesh* mesh = nullptr;
 	
-	if((flags & TFRAG_SEPARATE_MESHES) == 0 && !tfrags.fragments.empty()) {
+	if ((flags & TFRAG_SEPARATE_MESHES) == 0 && !tfrags.fragments.empty()) {
 		mesh = &scene.meshes.emplace_back();
 		mesh->name = "mesh";
 		mesh->flags = MESH_HAS_QUADS | MESH_HAS_TEX_COORDS | MESH_HAS_VERTEX_COLOURS;
@@ -95,10 +102,10 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 		lost_and_found.material = 0;
 	}
 	
-	for(s32 i = 0; i < (s32) tfrags.fragments.size(); i++) {
+	for (s32 i = 0; i < (s32) tfrags.fragments.size(); i++) {
 		const Tfrag& tfrag = tfrags.fragments[i];
 		
-		if(flags & TFRAG_SEPARATE_MESHES) {
+		if (flags & TFRAG_SEPARATE_MESHES) {
 			mesh = &scene.meshes.emplace_back();
 			mesh->name = stringf("tfrag_%d", i);
 			mesh->flags = MESH_HAS_QUADS | MESH_HAS_TEX_COORDS | MESH_HAS_VERTEX_COLOURS;
@@ -109,13 +116,13 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 		
 		// Enumerate vertex positions from different LODs.
 		std::vector<TfragVertexEx> vertices;
-		for(const TfragVertexPosition& position : tfrag.common_positions) {
+		for (const TfragVertexPosition& position : tfrag.common_positions) {
 			vertices.emplace_back().position = &position;
 		}
-		for(const TfragVertexPosition& position : tfrag.lod_01_positions) {
+		for (const TfragVertexPosition& position : tfrag.lod_01_positions) {
 			vertices.emplace_back().position = &position;
 		}
-		for(const TfragVertexPosition& position : tfrag.lod_0_positions) {
+		for (const TfragVertexPosition& position : tfrag.lod_0_positions) {
 			vertices.emplace_back().position = &position;
 		}
 		
@@ -130,7 +137,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 		
 		// Create the vertices.
 		size_t vertex_base = mesh->vertices.size();
-		for(const TfragVertexInfo& src : vertex_infos) {
+		for (const TfragVertexInfo& src : vertex_infos) {
 			Vertex& dest = mesh->vertices.emplace_back();
 			s16 index = src.vertex / 2;
 			verify_fatal(index >= 0 && index < vertices.size());
@@ -158,16 +165,16 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 			dest.tex_coord.t = vu_fixed12_to_float(src.t);
 			dest.normal = glm::vec3(nx, ny, nz);
 
-			if(dest.tex_coord.s < 0)
+			if (dest.tex_coord.s < 0)
 				dest.tex_coord.s *= 0.5f;
-			if(dest.tex_coord.t < 0)
+			if (dest.tex_coord.t < 0)
 				dest.tex_coord.t *= 0.5f;
 
 			const TfragRgba& colour = tfrag.rgbas.at(index);
 			dest.colour.r = colour.r;
 			dest.colour.g = colour.g;
 			dest.colour.b = colour.b;
-			if(colour.a < 0x80) {
+			if (colour.a < 0x80) {
 				dest.colour.a = colour.a * 2;
 			} else {
 				dest.colour.a = 255;
@@ -177,16 +184,16 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 		// Create the faces.
 		std::vector<s32> tfaces(tface_count, -1);
 		std::vector<TfragFace> lod_0_faces = recover_faces(tfrag.lod_0_strips, tfrag.lod_0_indices);
-		for(const TfragFace& face : lod_0_faces) {
+		for (const TfragFace& face : lod_0_faces) {
 			// Identify which tface this face is a part of.
 			s32 tface_index = map_face_to_tface(face, vertices, vertex_infos);
 			
 			// Create a submesh for this tface if it doesn't already exist.
 			SubMesh* submesh = nullptr;
-			if(tface_index > -1) {
+			if (tface_index > -1) {
 				verify(tface_index < tfaces.size(), "Bad tfaces.");
 				s32& submesh_index = tfaces.at(tface_index);
-				if(submesh_index == -1) {
+				if (submesh_index == -1) {
 					submesh_index = (s32) mesh->submeshes.size();
 					submesh = &mesh->submeshes.emplace_back();
 					submesh->material = tfrag.common_textures.at(face.ad_gif).d1_tex0_1.data_lo;
@@ -206,27 +213,31 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 		}
 	}
 
-	for(size_t i = 0; i < scene.meshes.size(); i++) {
+	for (size_t i = 0; i < scene.meshes.size(); i++) {
 		fix_winding_orders_of_triangles_based_on_normals(scene.meshes[i]);
 	}
 
 	return scene;
 }
 
-static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, const Tfrag& tfrag, const std::vector<TfragVertexInfo>& vertex_infos) {
+static size_t propagate_tface_information(
+	std::vector<TfragVertexEx>& vertices,
+	const Tfrag& tfrag,
+	const std::vector<TfragVertexInfo>& vertex_infos)
+{
 	// Determine parent-child relationships.
-	for(size_t i = 0; i < tfrag.lod_01_vertex_info.size(); i++) {
+	for (size_t i = 0; i < tfrag.lod_01_vertex_info.size(); i++) {
 		const TfragVertexInfo& info = tfrag.lod_01_vertex_info[i];
 		TfragVertexEx& vertex = vertices.at(info.vertex / 2);
-		if(i < tfrag.lod_01_parent_indices.size()) {
+		if (i < tfrag.lod_01_parent_indices.size()) {
 			vertex.parents[0] = vertex_infos.at(tfrag.lod_01_parent_indices[i]).vertex / 2;
 		}
 		vertex.parents[1] = info.parent / 2;
 	}
-	for(size_t i = 0; i < tfrag.lod_0_vertex_info.size(); i++) {
+	for (size_t i = 0; i < tfrag.lod_0_vertex_info.size(); i++) {
 		const TfragVertexInfo& info = tfrag.lod_0_vertex_info[i];
 		TfragVertexEx& vertex = vertices.at(info.vertex / 2);
-		if(i < tfrag.lod_0_parent_indices.size()) {
+		if (i < tfrag.lod_0_parent_indices.size()) {
 			vertex.parents[0] = vertex_infos.at(tfrag.lod_0_parent_indices[i]).vertex / 2;
 		}
 		vertex.parents[1] = info.parent / 2;
@@ -234,9 +245,9 @@ static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, 
 	
 	// Mark all the LOD 2 vertices as belonging to particular tfaces.
 	std::vector<TfragFace> lod_2_faces = recover_faces(tfrag.lod_2_strips, tfrag.lod_2_indices);
-	for(size_t i = 0; i < lod_2_faces.size(); i++) {
-		for(s32 index : lod_2_faces[i].indices) {
-			if(index > -1) {
+	for (size_t i = 0; i < lod_2_faces.size(); i++) {
+		for (s32 index : lod_2_faces[i].indices) {
+			if (index > -1) {
 				TfragVertexEx& vertex = vertices.at(vertex_infos.at(index).vertex / 2);
 				verify(vertex.push_tface(i), "Overloaded vertex (lod 2).");
 			}
@@ -244,7 +255,7 @@ static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, 
 	}
 	
 	// Propagate tface information to LOD 1 vertices.
-	for(size_t i = 0; i < tfrag.lod_01_positions.size(); i++) {
+	for (size_t i = 0; i < tfrag.lod_01_positions.size(); i++) {
 		TfragVertexEx& vertex = vertices.at(tfrag.common_positions.size() + i);
 		TfragVertexEx& left_parent = vertices.at(vertex.parents[0]);
 		TfragVertexEx& right_parent = vertices.at(vertex.parents[1]);
@@ -252,7 +263,7 @@ static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, 
 	}
 	
 	// Propagate tface information to LOD 0 vertices.
-	for(size_t i = 0; i < tfrag.lod_0_positions.size(); i++) {
+	for (size_t i = 0; i < tfrag.lod_0_positions.size(); i++) {
 		TfragVertexEx& vertex = vertices.at(tfrag.common_positions.size() + tfrag.lod_01_positions.size() + i);
 		TfragVertexEx& left_parent = vertices.at(vertex.parents[0]);
 		TfragVertexEx& right_parent = vertices.at(vertex.parents[1]);
@@ -262,25 +273,27 @@ static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, 
 	return lod_2_faces.size();
 }
 
-static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strips, const std::vector<u8>& indices) {
+static std::vector<TfragFace> recover_faces(
+	const std::vector<TfragStrip>& strips, const std::vector<u8>& indices)
+{
 	std::vector<TfragFace> tfaces;
 	s32 active_ad_gif = -1;
 	s32 next_strip = 0;
-	for(const TfragStrip& strip : strips) {
+	for (const TfragStrip& strip : strips) {
 		s8 vertex_count = strip.vertex_count_and_flag;
-		if(vertex_count <= 0) {
-			if(vertex_count == 0) {
+		if (vertex_count <= 0) {
+			if (vertex_count == 0) {
 				break;
-			} else if(strip.ad_gif_offset >= 0) {
+			} else if (strip.ad_gif_offset >= 0) {
 				active_ad_gif = strip.ad_gif_offset / 0x5;
 			}
 			vertex_count += 128;
 		}
-		if(vertex_count % 2 == 0) {
-			for(s32 i = 0; i < vertex_count - 2; i += 2) {
+		if (vertex_count % 2 == 0) {
+			for (s32 i = 0; i < vertex_count - 2; i += 2) {
 				TfragFace& face = tfaces.emplace_back();
 				face.ad_gif = active_ad_gif;
-				for(s32 j = 0; j < 4; j++) {
+				for (s32 j = 0; j < 4; j++) {
 					// 1 - 3    4 - 1
 					// | / | -> |   |
 					// 2 - 4    3 - 2
@@ -290,7 +303,7 @@ static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strip
 				}
 			}
 		} else {
-			for(s32 i = 0; i < vertex_count - 2; i++) {
+			for (s32 i = 0; i < vertex_count - 2; i++) {
 				TfragFace& face = tfaces.emplace_back();
 				face.ad_gif = active_ad_gif;
 				face.indices[0] = indices.at(next_strip + i + 0);
@@ -305,34 +318,38 @@ static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strip
 	return tfaces;
 }
 
-static s32 map_face_to_tface(const TfragFace& face, const std::vector<TfragVertexEx>& vertices, const std::vector<TfragVertexInfo>& vertex_infos) {
+static s32 map_face_to_tface(
+	const TfragFace& face,
+	const std::vector<TfragVertexEx>& vertices,
+	const std::vector<TfragVertexInfo>& vertex_infos)
+{
 	s32 tface_index = -1;
-	if(face.indices[3] > -1) {
+	if (face.indices[3] > -1) {
 		s32 tface_indices[MAX_TFACES_TOUCHING_VERTEX] = INIT_TFACE_INDICES;
 		memcpy(tface_indices, vertices.at(vertex_infos.at(face.indices[0]).vertex / 2).tfaces, sizeof(tface_indices));
-		for(s32 i = 1; i < ARRAY_SIZE(face.indices); i++) {
+		for (s32 i = 1; i < ARRAY_SIZE(face.indices); i++) {
 			const TfragVertexEx& vertex = vertices.at(vertex_infos.at(face.indices[i]).vertex / 2);
-			for(s32 j = 0; j < ARRAY_SIZE(tface_indices); j++) {
+			for (s32 j = 0; j < ARRAY_SIZE(tface_indices); j++) {
 				bool found = false;
-				for(s32 k = 0; k < ARRAY_SIZE(vertex.tfaces); k++) {
-					if(vertex.tfaces[k] == tface_indices[j]) {
+				for (s32 k = 0; k < ARRAY_SIZE(vertex.tfaces); k++) {
+					if (vertex.tfaces[k] == tface_indices[j]) {
 						found = true;
 					}
 				}
-				if(!found) {
+				if (!found) {
 					tface_indices[j] = -1;
 				}
 			}
 		}
 		
-		for(s32 i = 0; i < ARRAY_SIZE(tface_indices); i++) {
+		for (s32 i = 0; i < ARRAY_SIZE(tface_indices); i++) {
 			bool matches = true;
-			for(s32 j = 0; j < ARRAY_SIZE(tface_indices); j++) {
-				if((i == j) ? (tface_indices[j] == -1) : (tface_indices[j] != -1 && tface_indices[j] != tface_indices[i])) {
+			for (s32 j = 0; j < ARRAY_SIZE(tface_indices); j++) {
+				if ((i == j) ? (tface_indices[j] == -1) : (tface_indices[j] != -1 && tface_indices[j] != tface_indices[i])) {
 					matches = false;
 				}
 			}
-			if(matches) {
+			if (matches) {
 				tface_index = tface_indices[i];
 				break;
 			}

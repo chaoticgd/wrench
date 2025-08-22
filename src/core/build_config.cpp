@@ -19,53 +19,61 @@
 #include "build_config.h"
 
 BuildConfig::BuildConfig(Game game, Region region, bool is_testing)
-	: _game(game), _region(region), _is_testing(is_testing) {}
+	: m_game(game), m_region(region), m_is_testing(is_testing) {}
 
 BuildConfig::BuildConfig(const std::string& game, const std::string& region, bool is_testing)
 	: BuildConfig(game_from_string(game), region_from_string(region), is_testing) {}
 
-Game BuildConfig::game() const {
-	return _game;
+Game BuildConfig::game() const
+{
+	return m_game;
 }
 
-Region BuildConfig::region() const {
-	return _region;
+Region BuildConfig::region() const
+{
+	return m_region;
 }
 
-bool BuildConfig::is_testing() const {
-	return _is_testing;
+bool BuildConfig::is_testing() const
+{
+	return m_is_testing;
 }
 
-bool BuildConfig::is_ntsc() const {
+bool BuildConfig::is_ntsc() const
+{
 	return region() != Region::EU;
 }
 
-float BuildConfig::framerate() {
-	if(is_ntsc()) {
+float BuildConfig::framerate()
+{
+	if (is_ntsc()) {
 		return NTSC_FRAMERATE;
 	} else {
 		return PAL_FRAMERATE;
 	}
 }
 
-float BuildConfig::half_framerate() {
-	if(is_ntsc()) {
+float BuildConfig::half_framerate()
+{
+	if (is_ntsc()) {
 		return HALF_NTSC_FRAMERATE;
 	} else {
 		return HALF_PAL_FRAMERATE;
 	}
 }
 
-Game game_from_string(const std::string& game) {
-	if(game == "rac") return Game::RAC;
-	if(game == "gc") return Game::GC;
-	if(game == "uya") return Game::UYA;
-	if(game == "dl") return Game::DL;
+Game game_from_string(const std::string& game)
+{
+	if (game == "rac") return Game::RAC;
+	if (game == "gc") return Game::GC;
+	if (game == "uya") return Game::UYA;
+	if (game == "dl") return Game::DL;
 	return Game::UNKNOWN;
 }
 
-std::string game_to_string(Game game) {
-	switch(game) {
+std::string game_to_string(Game game)
+{
+	switch (game) {
 		case Game::RAC: return "rac";
 		case Game::GC: return "gc";
 		case Game::UYA: return "uya";
@@ -74,15 +82,17 @@ std::string game_to_string(Game game) {
 	}
 }
 
-Region region_from_string(const std::string& region) {
-	if(region == "us") return Region::US;
-	if(region == "eu") return Region::EU;
-	if(region == "japan") return Region::JAPAN;
+Region region_from_string(const std::string& region)
+{
+	if (region == "us") return Region::US;
+	if (region == "eu") return Region::EU;
+	if (region == "japan") return Region::JAPAN;
 	return Region::UNKNOWN;
 }
 
-std::string region_to_string(Region region) {
-	switch(region) {
+std::string region_to_string(Region region)
+{
+	switch (region) {
 		case Region::US: return "us";
 		case Region::EU: return "eu";
 		case Region::JAPAN: return "japan";

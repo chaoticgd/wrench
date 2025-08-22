@@ -42,15 +42,16 @@ static const gui::Chapter SETTINGS[] = {
 static bool open = false;
 static gui::Config scratch_config;
 
-void gui::settings_screen() {
-	if(!open) {
+void gui::settings_screen()
+{
+	if (!open) {
 		scratch_config = g_config;
 		open = true;
 	}
 	
 	static const gui::Page* page = nullptr;
 	gui::BookResult result = gui::book(&page, "Settings##the_popup", ARRAY_PAIR(SETTINGS), gui::BookButtons::OKAY_CANCEL_APPLY);
-	switch(result) {
+	switch (result) {
 		case gui::BookResult::OKAY: {
 			g_config = scratch_config;
 			g_config.write();
@@ -70,14 +71,15 @@ void gui::settings_screen() {
 	}
 }
 
-static void paths_page() {
+static void paths_page()
+{
 	ImGui::InputText("Base Folder", &scratch_config.paths.base_folder);
 	static size_t selection = 0;
-	if(ImGui::BeginListBox("Mods Folders")) {
-		for(size_t i = 0; i < scratch_config.paths.mods_folders.size(); i++) {
+	if (ImGui::BeginListBox("Mods Folders")) {
+		for (size_t i = 0; i < scratch_config.paths.mods_folders.size(); i++) {
 			ImGui::PushID(i);
 			std::string label = scratch_config.paths.mods_folders[i] + "##selectable";
-			if(ImGui::Selectable(label.c_str(), i == selection)) {
+			if (ImGui::Selectable(label.c_str(), i == selection)) {
 				selection = i;
 			}
 			ImGui::PopID();
@@ -88,20 +90,20 @@ static void paths_page() {
 	bool selection_is_valid = selection < scratch_config.paths.mods_folders.size();
 	
 	static std::string add_path;
-	if(ImGui::Button("Add")) {
+	if (ImGui::Button("Add")) {
 		add_path = "";
 		ImGui::OpenPopup("Add Mod Folder");
 	}
 	ImGui::SetNextWindowSize(ImVec2(400, -1));
-	if(ImGui::BeginPopupModal("Add Mod Folder")) {
+	if (ImGui::BeginPopupModal("Add Mod Folder")) {
 		ImGui::SetNextItemWidth(-1);
 		ImGui::InputText("##input", &add_path);
-		if(ImGui::Button("Okay")) {
+		if (ImGui::Button("Okay")) {
 			scratch_config.paths.mods_folders.push_back(add_path);
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
-		if(ImGui::Button("Cancel")) {
+		if (ImGui::Button("Cancel")) {
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::EndPopup();
@@ -109,27 +111,27 @@ static void paths_page() {
 	
 	static std::string edit_path;
 	ImGui::SameLine();
-	if(ImGui::Button("Edit") && selection_is_valid) {
+	if (ImGui::Button("Edit") && selection_is_valid) {
 		edit_path = scratch_config.paths.mods_folders[selection];
 		ImGui::OpenPopup("Edit Mod Folder");
 	}
 	ImGui::SetNextWindowSize(ImVec2(400, -1));
-	if(ImGui::BeginPopupModal("Edit Mod Folder")) {
+	if (ImGui::BeginPopupModal("Edit Mod Folder")) {
 		ImGui::SetNextItemWidth(-1);
 		ImGui::InputText("##input", &edit_path);
-		if(ImGui::Button("Okay")) {
+		if (ImGui::Button("Okay")) {
 			scratch_config.paths.mods_folders[selection] = edit_path;
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
-		if(ImGui::Button("Cancel")) {
+		if (ImGui::Button("Cancel")) {
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::EndPopup();
 	}
 	
 	ImGui::SameLine();
-	if(ImGui::Button("Remove") && selection_is_valid) {
+	if (ImGui::Button("Remove") && selection_is_valid) {
 		scratch_config.paths.mods_folders.erase(scratch_config.paths.mods_folders.begin() + selection);
 	}
 	
@@ -140,8 +142,9 @@ static void paths_page() {
 	ImGui::InputText("Emulator Path", &scratch_config.paths.emulator_path);
 }
 
-static void user_interface_page() {
-	if(ImGui::BeginListBox("Style")) {
+static void user_interface_page()
+{
+	if (ImGui::BeginListBox("Style")) {
 		bool sel = true;
 		ImGui::Selectable("Dark", &sel);
 		ImGui::Selectable("Light");
@@ -159,6 +162,7 @@ static void user_interface_page() {
 	ImGui::Checkbox("Enable Developer Features", &scratch_config.ui.developer);
 }
 
-static void level_editor_page() {
+static void level_editor_page()
+{
 	ImGui::Text("Level editor settings!");
 }

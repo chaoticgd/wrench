@@ -23,23 +23,27 @@
 
 namespace gui {
 
-struct Page {
+struct Page
+{
 	const char* name;
 	void (*function)();
 };
 
-struct Chapter {
+struct Chapter
+{
 	const char* name;
 	const Page* pages;
 	s32 count;
 };
 
-enum class BookButtons {
+enum class BookButtons
+{
 	CLOSE,
 	OKAY_CANCEL_APPLY
 };
 
-enum class BookResult {
+enum class BookResult
+{
 	NONE,
 	CLOSE,
 	OKAY,

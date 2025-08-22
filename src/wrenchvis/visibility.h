@@ -37,13 +37,15 @@
 #define VIS_MAX_CHUNKS 3
 #define VIS_MAX_SAMPLES_PER_OCTANT 8
 
-struct VisInstance {
+struct VisInstance
+{
 	s32 mesh;
 	s32 chunk;
 	glm::mat4 matrix;
 };
 
-struct VisSamplePoint {
+struct VisSamplePoint
+{
 	s32 x = -1;
 	s32 y = -1;
 	s32 z = -1;
@@ -51,7 +53,8 @@ struct VisSamplePoint {
 	friend auto operator<=>(const VisSamplePoint& lhs, const VisSamplePoint& rhs) = default;
 };
 
-struct VisInput {
+struct VisInput
+{
 	// The size of a single octant. Normally 4x4x4.
 	s32 octant_size_x;
 	s32 octant_size_y;
@@ -66,7 +69,8 @@ struct VisInput {
 	std::vector<const Mesh*> meshes;
 };
 
-struct VisOutput {
+struct VisOutput
+{
 	// For each object type, a mapping from the index of said object to the
 	// index of the bit in the visibility mask which should be checked to see
 	// if the object needs to be drawn.

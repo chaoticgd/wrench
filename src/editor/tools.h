@@ -26,14 +26,16 @@ typedef void ToolUpdateFunc();
 typedef void ToolDrawFunc();
 typedef void ToolDeactivateFunc();
 
-struct ToolFuncs {
+struct ToolFuncs
+{
 	ToolActivateFunc* activate;
 	ToolDeactivateFunc* deactivate;
 	ToolUpdateFunc* update;
 	ToolDrawFunc* draw;
 };
 
-struct ToolInfo {
+struct ToolInfo
+{
 	const char* name;
 	ToolFuncs funcs;
 };

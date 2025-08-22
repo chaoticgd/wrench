@@ -30,7 +30,8 @@
 #include <core/collada.h>
 #include <core/filesystem.h>
 
-struct AssetType {
+struct AssetType
+{
 	s16 id = -1;
 	
 	bool operator==(const AssetType& rhs) const { return id == rhs.id; }
@@ -42,7 +43,8 @@ struct AssetType {
 using AssetVisitorCallback = std::function<void(const char* key, std::any value, std::function<void(std::any)> setter)>;
 using ConstAssetVisitorCallback = std::function<void(const char* key, std::any value)>;
 
-struct AssetLinkPointers {
+struct AssetLinkPointers
+{
 	const char* prefix = nullptr;
 	std::vector<const char*> tags;
 };
@@ -50,7 +52,8 @@ struct AssetLinkPointers {
 // Stores a link to an asset e.g. "gc.levels.0" as a single string in memory
 // with the seperators replaced with nulls so pointers to each section can be
 // used as strings directly.
-class AssetLink {
+class AssetLink
+{
 public:
 	AssetLink();
 	AssetLink(const char* src);
@@ -61,16 +64,17 @@ public:
 	void add_tag(const char* tag);
 	std::string to_string() const;
 private:
-	bool prefix = false;
-	s16 tags = 0;
-	std::vector<char> data; // = [prefix \0] fragment(0) \0 ... \0 fragment(fragments-1)
+	bool m_prefix = false;
+	s16 m_tags = 0;
+	std::vector<char> m_data; // = [prefix \0] fragment(0) \0 ... \0 fragment(fragments-1)
 };
 
 class AssetForest;
 class AssetBank;
 class AssetFile;
 
-struct FileReference {
+struct FileReference
+{
 	FileReference() {}
 	FileReference(const AssetFile& owner_, fs::path path_)
 		: owner(&owner_)
@@ -86,7 +90,8 @@ struct FileReference {
 std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs);
 std::vector<GLTF::ModelFile*> read_glb_files(std::vector<std::unique_ptr<GLTF::ModelFile>>& owners, std::vector<FileReference> refs);
 
-enum AssetAccessorMode {
+enum AssetAccessorMode
+{
 	DO_NOT_SWITCH_FILES,
 	SWITCH_FILES
 };

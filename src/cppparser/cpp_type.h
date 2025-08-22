@@ -25,7 +25,8 @@
 #include <core/buffer.h>
 #include <cppparser/cpp_lexer.h>
 
-enum CppTypeDescriptor {
+enum CppTypeDescriptor
+{
 	CPP_ARRAY,
 	CPP_BITFIELD,
 	CPP_BUILT_IN,
@@ -37,12 +38,14 @@ enum CppTypeDescriptor {
 
 struct CppType;
 
-struct CppArray {
+struct CppArray
+{
 	s32 element_count = 0;
 	std::unique_ptr<CppType> element_type;
 };
 
-struct CppBitField {
+struct CppBitField
+{
 	s32 bit_offset = 0;
 	s32 bit_size = 0;
 	std::unique_ptr<CppType> storage_unit_type;
@@ -73,7 +76,8 @@ inline u64 cpp_zero_bitfield(u64 storage_unit, s32 bit_offset, s32 bit_size)
 	return storage_unit & ~(((static_cast<u64>(1) << bit_size) - 1) << bit_offset);
 }
 
-enum CppBuiltIn {
+enum CppBuiltIn
+{
 	CPP_VOID,
 	CPP_CHAR, CPP_UCHAR, CPP_SCHAR,
 	CPP_SHORT, CPP_USHORT,
@@ -113,43 +117,51 @@ inline bool cpp_is_built_in_signed(CppBuiltIn x) {
 		|| x == CPP_S128;
 	}
 
-struct CppEnum {
+struct CppEnum
+{
 	std::vector<std::pair<s32, std::string>> constants;
 };
 
-struct CppStructOrUnion {
+struct CppStructOrUnion
+{
 	bool is_union = false;
 	std::vector<CppType> fields;
 };
 
-struct CppUnion {
+struct CppUnion
+{
 	std::vector<CppType> fields;
 };
 
-struct CppTypeName {
+struct CppTypeName
+{
 	std::string string;
 };
 
-struct CppPointerOrReference {
+struct CppPointerOrReference
+{
 	bool is_reference = false;
 	std::unique_ptr<CppType> value_type;
 };
 
-enum CppPreprocessorDirectiveType {
+enum CppPreprocessorDirectiveType
+{
 	CPP_DIRECTIVE_BCD,
 	CPP_DIRECTIVE_BITFLAGS,
 	CPP_DIRECTIVE_ELEMENTNAMES,
 	CPP_DIRECTIVE_ENUM
 };
 
-struct CppPreprocessorDirective {
+struct CppPreprocessorDirective
+{
 	CppPreprocessorDirectiveType type;
 	std::string string;
 	
 	bool operator==(const CppPreprocessorDirective& rhs) const { return type == rhs.type && string == rhs.string; }
 };
 
-struct CppType {
+struct CppType
+{
 	std::string name;
 	s32 offset = -1;
 	s32 size = -1;
@@ -175,7 +187,8 @@ struct CppType {
 	CppType& operator=(CppType&& rhs);
 };
 
-struct CppABI {
+struct CppABI
+{
 	s32 built_in_sizes[CPP_BUILT_IN_COUNT];
 	s32 built_in_alignments[CPP_BUILT_IN_COUNT];
 	s32 enum_size;

@@ -44,7 +44,8 @@ packed_struct(ShrubBillboard,
 	/* 0x30 */ GifAdData16 d3_miptbp1_1;
 )
 
-struct ShrubBillboardInfo {
+struct ShrubBillboardInfo
+{
 	f32 fade_distance;
 	f32 width;
 	f32 height;
@@ -105,7 +106,8 @@ packed_struct(ShrubTexturePrimitive,
 	/* 0x30 */ GifAdData16 d4_tex0_1;
 )
 
-struct ShrubVertex {
+struct ShrubVertex
+{
 	s16 x;
 	s16 y;
 	s16 z;
@@ -115,14 +117,16 @@ struct ShrubVertex {
 	s16 n;
 };
 
-struct ShrubVertexPrimitive {
+struct ShrubVertexPrimitive
+{
 	GeometryType type;
 	std::vector<ShrubVertex> vertices;
 };
 
 using ShrubPrimitive = std::variant<ShrubTexturePrimitive, ShrubVertexPrimitive>;
 
-struct ShrubPacket {
+struct ShrubPacket
+{
 	std::vector<ShrubPrimitive> primitives;
 };
 
@@ -133,7 +137,8 @@ packed_struct(ShrubNormal,
 	s16 pad = 0;
 )
 
-struct ShrubClass {
+struct ShrubClass
+{
 	Vec4f bounding_sphere;
 	f32 mip_distance;
 	u16 mode_bits;
@@ -148,6 +153,12 @@ ShrubClass read_shrub_class(Buffer src);
 void write_shrub_class(OutBuffer dest, const ShrubClass& shrub);
 
 GLTF::Mesh recover_shrub_class(const ShrubClass& shrub);
-ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard);
+ShrubClass build_shrub_class(
+	const GLTF::Mesh& mesh,
+	const std::vector<Material>& materials,
+	f32 mip_distance,
+	u16 mode_bits,
+	s16 o_class,
+	Opt<ShrubBillboardInfo> billboard);
 
 #endif

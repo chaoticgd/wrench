@@ -31,33 +31,38 @@ namespace MOBY {
 void prepare_skin_matrices(const std::vector<MobyMatrixTransfer>& preloop_matrix_transfers, Opt<SkinAttributes> blend_cache[64], bool animated);
 SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64], const MobyVertex& mv, s32 ind, s32 two_way_count, s32 three_way_count);
 
-struct MatrixAllocation {
+struct MatrixAllocation
+{
 	u8 address = 0;
 	bool first_use = true;
 	bool first_use_pre = true;
 	s32 generation = -1;
 };
 
-struct MatrixSlot {
+struct MatrixSlot
+{
 	s32 generation = 0;
 	s32 liveness = -1;
 	SkinAttributes current_contents;
 };
 
-struct VertexLocation {
+struct VertexLocation
+{
 	size_t packet;
 	size_t vertex;
 	
 	const Vertex& find_vertex_in(const std::vector<GLTF::Mesh>& packets) const;
 };
 
-struct MatrixLivenessInfo {
+struct MatrixLivenessInfo
+{
 	s32 population_count = 0;
 	s32 last_packet = -1;
 	VertexLocation first_vertex;
 };
 
-class VU0MatrixAllocator {
+class VU0MatrixAllocator
+{
 	std::map<SkinAttributes, MatrixAllocation> allocations;
 	std::array<MatrixSlot, 0x40> slots;
 	u8 first_transfer_store_addr = 0x0;
@@ -77,12 +82,18 @@ public:
 
 s32 max_num_joints_referenced_per_packet(const std::vector<GLTF::Mesh>& packets);
 std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<GLTF::Mesh>& packets);
-struct MatrixTransferSchedule {
+struct MatrixTransferSchedule
+{
 	std::vector<MobyMatrixTransfer> last_packet_transfers;
 	std::vector<MobyMatrixTransfer> preloop_transfers;
 	std::vector<MobyMatrixTransfer> two_way_transfers;
 };
-MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const GLTF::Mesh& packet, MobyPacketLowLevel* last_packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness);
+MatrixTransferSchedule schedule_matrix_transfers(
+	s32 smi,
+	const GLTF::Mesh& packet,
+	MobyPacketLowLevel* last_packet,
+	VU0MatrixAllocator& mat_alloc,
+	const std::vector<MatrixLivenessInfo>& liveness);
 s32 max_num_joints_referenced_per_packet(const std::vector<GLTF::Mesh>& packets);
 std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<GLTF::Mesh>& packets);
 

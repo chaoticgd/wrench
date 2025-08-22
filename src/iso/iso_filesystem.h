@@ -124,7 +124,8 @@ packed_struct(IsoPrimaryVolumeDescriptor,
 )
 static_assert(sizeof(IsoPrimaryVolumeDescriptor) == 0x800);
 
-struct IsoFileRecord {
+struct IsoFileRecord
+{
 	std::string name;
 	Sector32 lba;
 	u32 size;
@@ -132,7 +133,8 @@ struct IsoFileRecord {
 	fs::file_time_type modified_time;
 };
 
-struct IsoDirectory {
+struct IsoDirectory
+{
 	std::string name;
 	std::vector<IsoFileRecord> files;
 	std::vector<IsoDirectory> subdirs;
@@ -145,7 +147,8 @@ struct IsoDirectory {
 	u32 size = 0;
 };
 
-struct IsoFilesystem {
+struct IsoFilesystem
+{
 	IsoPrimaryVolumeDescriptor pvd;
 	IsoDirectory root;
 };

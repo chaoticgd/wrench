@@ -29,7 +29,8 @@
 #include <gui/config.h>
 #include <gui/commands.h>
 
-enum class LauncherMode {
+enum class LauncherMode
+{
 	DRAWING_GUI,
 	RUNNING_EMULATOR,
 	EXIT
@@ -37,7 +38,8 @@ enum class LauncherMode {
 
 struct GLFWwindow;
 
-struct LauncherState {
+struct LauncherState
+{
 	LauncherMode mode;
 	FileInputStream wad;
 	FileInputStream buildwad;

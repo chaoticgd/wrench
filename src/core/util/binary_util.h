@@ -44,7 +44,8 @@
 
 static const s64 SECTOR_SIZE = 0x800;
 
-struct ByteRange64 {
+struct ByteRange64
+{
 	ByteRange64(s64 o, s64 s) : offset(o), size(s) {}
 	s64 offset;
 	s64 size;
@@ -54,15 +55,18 @@ packed_struct(ByteRange,
 	s32 offset;
 	s32 size;
 	
-	ByteRange64 bytes() {
+	ByteRange64 bytes()
+	{
 		return {offset, size};
 	}
 	
-	bool empty() const {
+	bool empty() const
+	{
 		return size <= 0;
 	}
 	
-	static ByteRange from_bytes(s64 offset, s64 size) {
+	static ByteRange from_bytes(s64 offset, s64 size)
+	{
 		return {(s32) offset, (s32) size};
 	}
 )
@@ -78,15 +82,18 @@ packed_struct(Sector32,
 	Sector32() : sectors(0) {}
 	Sector32(s32 s) : sectors(s) {}
 	
-	s64 bytes() const {
+	s64 bytes() const
+	{
 		return sectors * SECTOR_SIZE;
 	}
 	
-	bool empty() const {
+	bool empty() const
+	{
 		return sectors <= 0;
 	}
 	
-	static Sector32 size_from_bytes(s64 size_in_bytes) {
+	static Sector32 size_from_bytes(s64 size_in_bytes)
+	{
 		if(size_in_bytes % SECTOR_SIZE != 0) {
 			size_in_bytes += SECTOR_SIZE - (size_in_bytes % SECTOR_SIZE);
 		}
@@ -96,7 +103,8 @@ packed_struct(Sector32,
 		return { size_in_sectors };
 	}
 	
-	static Sector32 from_bytes(s64 offset, s64) {
+	static Sector32 from_bytes(s64 offset, s64)
+	{
 		return size_from_bytes(offset);
 	}
 )
@@ -105,19 +113,23 @@ packed_struct(SectorRange,
 	Sector32 offset;
 	Sector32 size;
 	
-	Sector32 end() const {
+	Sector32 end() const
+	{
 		return {offset.sectors + size.sectors};
 	}
 	
-	ByteRange64 bytes() const {
+	ByteRange64 bytes() const
+	{
 		return {offset.bytes(), size.bytes()};
 	}
 	
-	bool empty() const {
+	bool empty() const
+	{
 		return size.sectors <= 0;
 	}
 	
-	static SectorRange from_bytes(s64 offset, s64 size) {
+	static SectorRange from_bytes(s64 offset, s64 size)
+	{
 		return SectorRange{Sector32::size_from_bytes(offset), Sector32::size_from_bytes(size)};
 	}
 )
@@ -126,19 +138,23 @@ packed_struct(SectorByteRange,
 	Sector32 offset;
 	s32 size_bytes;
 	
-	Sector32 end() const {
+	Sector32 end() const
+	{
 		return {offset.sectors + Sector32::size_from_bytes(size_bytes).sectors};
 	}
 	
-	ByteRange64 bytes() const {
+	ByteRange64 bytes() const
+	{
 		return {offset.bytes(), size_bytes};
 	}
 	
-	bool empty() const {
+	bool empty() const
+	{
 		return size_bytes <= 0;
 	}
 	
-	static SectorByteRange from_bytes(s64 offset, s64 size) {
+	static SectorByteRange from_bytes(s64 offset, s64 size)
+	{
 		return SectorByteRange{Sector32::size_from_bytes(offset), (s32) size};
 	}
 )

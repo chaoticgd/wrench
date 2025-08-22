@@ -25,14 +25,16 @@
 // are missing compared to a proper C++ compiler, for example there is no logic
 // for executing preprocessor macros since that's not relevant for our use case.
 
-enum CppKeyword {
+enum CppKeyword
+{
 	CPP_KEYWORD_NONE = 0,
 #define DEF_CPP_KEYWORD(keyword) CPP_KEYWORD_##keyword,
 #include "cpp_keywords.h"
 #undef DEF_CPP_KEYWORD
 };
 
-struct CppKeywordTableEntry {
+struct CppKeywordTableEntry
+{
 	CppKeyword keyword;
 	const char* string;
 };
@@ -40,21 +42,24 @@ extern const CppKeywordTableEntry CPP_KEYWORDS[];
 extern const s32 CPP_KEYWORD_COUNT;
 
 #define CPP_MULTICHAR(str) (((str)[0] << 0) | ((str)[1] << 8) | ((str)[2] << 16) | ((str)[3] << 24))
-enum CppOperator : u32 {
+enum CppOperator : u32
+{
 	CPP_OP_NONE = 0,
 	#define DEF_CPP_OPERATOR(string, identifier) CPP_OP_##identifier = CPP_MULTICHAR(string),
 	#include "cpp_operators.h"
 	#undef DEF_CPP_OPERATOR
 };
 
-struct CppOperatorTableEntry {
+struct CppOperatorTableEntry
+{
 	CppOperator op;
 	const char* string;
 };
 extern const CppOperatorTableEntry CPP_OPERATORS[];
 extern const s32 CPP_OPERATOR_COUNT;
 
-enum CppTokenType {
+enum CppTokenType
+{
 	CPP_IDENTIFIER,
 	CPP_KEYWORD,
 	CPP_BOOLEAN_LITERAL,
@@ -67,7 +72,8 @@ enum CppTokenType {
 	CPP_PREPROCESSOR_DIRECTIVE
 };
 
-struct CppToken {
+struct CppToken
+{
 	CppTokenType type;
 	const char* str_begin = nullptr;
 	const char* str_end = nullptr;

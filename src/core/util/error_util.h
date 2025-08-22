@@ -25,7 +25,8 @@
 // so that it can be printed out if there's an error.
 extern const char* UTIL_ERROR_CONTEXT_STRING;
 
-struct RuntimeError : std::exception {
+struct RuntimeError : std::exception
+{
 	RuntimeError(const char* f, int l, const char* format, ...);
 	virtual const char* what() const noexcept;
 	void print() const;
@@ -58,7 +59,8 @@ struct RuntimeError : std::exception {
 // All these ugly _impl function templates are necessary so we can pass zero
 // varargs without getting a syntax error because of the additional comma.
 template <typename... Args>
-void verify_impl(const char* file, int line, const char* error_message, Args... args) {
+void verify_impl(const char* file, int line, const char* error_message, Args... args)
+{
 	throw RuntimeError(file, line, error_message, args...);
 }
 #define verify(condition, ...) \
@@ -66,13 +68,15 @@ void verify_impl(const char* file, int line, const char* error_message, Args... 
 		verify_impl(__FILE__, __LINE__, __VA_ARGS__); \
 	}
 template <typename... Args>
-[[noreturn]] void verify_not_reached_impl(const char* file, int line, const char* error_message, Args... args) {
+[[noreturn]] void verify_not_reached_impl(const char* file, int line, const char* error_message, Args... args)
+{
 	throw RuntimeError(file, line, error_message, args...);
 }
 #define verify_not_reached(...) \
 	verify_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
 
-struct ErrorContext {
+struct ErrorContext
+{
 	ErrorContext(const char* format, ...);
 	~ErrorContext();
 };
@@ -85,7 +89,8 @@ struct ErrorContext {
 #pragma GCC diagnostic pop
 
 template <typename Dest, typename Src>
-static Dest checked_int_cast(Src src) {
+static Dest checked_int_cast(Src src)
+{
 	verify(src >= std::numeric_limits<Dest>::min()
 		&& src <= std::numeric_limits<Dest>::max(),
 		"Value unrepresentable due to a narrowing conversion.");

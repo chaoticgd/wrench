@@ -18,7 +18,8 @@
 
 #include "material_asset.h"
 
-MaterialSet read_material_assets(const CollectionAsset& src) {
+MaterialSet read_material_assets(const CollectionAsset& src)
+{
 	std::vector<Material> materials;
 	std::vector<FileReference> textures;
 	std::map<std::pair<const AssetFile*, std::string>, s32> texture_indices;
@@ -30,7 +31,7 @@ MaterialSet read_material_assets(const CollectionAsset& src) {
 		std::string diffuse_path = asset.get_diffuse().src().path.string();
 		auto key = std::make_pair(&diffuse.file(), diffuse_path);
 		auto iter = texture_indices.find(key);
-		if(iter == texture_indices.end()) {
+		if (iter == texture_indices.end()) {
 			texture_indices[key] = next_texture_index;
 			material.surface = MaterialSurface(next_texture_index);
 			next_texture_index++;
@@ -38,13 +39,13 @@ MaterialSet read_material_assets(const CollectionAsset& src) {
 		} else {
 			material.surface = MaterialSurface(iter->second);
 		}
-		if(asset.has_wrap_mode()) {
+		if (asset.has_wrap_mode()) {
 			std::vector<std::string> wrap_mode = asset.wrap_mode();
-			if(wrap_mode.size() == 2) {
-				if(wrap_mode[0] == "clamp") {
+			if (wrap_mode.size() == 2) {
+				if (wrap_mode[0] == "clamp") {
 					material.wrap_mode_s = WrapMode::CLAMP;
 				}
-				if(wrap_mode[1] == "clamp") {
+				if (wrap_mode[1] == "clamp") {
 					material.wrap_mode_t = WrapMode::CLAMP;
 				}
 			}

@@ -37,38 +37,40 @@ on_load(FlatWad, []() {
 	FlatWadAsset::funcs.pack_dl = wrap_packer_func<FlatWadAsset>(pack_flat_wad_asset);
 })
 
-static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, BuildConfig config)
+{
 	s32 header_size = src.read<s32>(0);
 	std::vector<SectorRange> ranges = src.read_multiple<SectorRange>(0x8, header_size / 0x8);
-	for(size_t i = 0; i < ranges.size(); i++) {
+	for (size_t i = 0; i < ranges.size(); i++) {
 		s32 offset = 0x8 + i * 0x8;
 		SubInputStream stream(src, ranges[i].bytes());
-		if(!unpack_image(dest, stream, offset, config)) {
+		if (!unpack_image(dest, stream, offset, config)) {
 			unpack_asset(dest.child<BinaryAsset>(stringf("%04d_%04x", offset, offset).c_str()), src, ranges[i], config);
 		}
 	}
 }
 
-static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, BuildConfig config) {
-	if(src.size() < 8) {
+static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, BuildConfig config)
+{
+	if (src.size() < 8) {
 		return false;
 	}
 	
 	char header[8];
 	src.seek(0);
 	src.read_n((u8*) header, sizeof(header));
-	if(memcmp(header, "WAD", 3) == 0) {
+	if (memcmp(header, "WAD", 3) == 0) {
 		std::vector<u8> bytes;
 		std::vector<u8> compressed_bytes = src.read_multiple<u8>(0, src.size());
 		decompress_wad(bytes, compressed_bytes);
 		MemoryInputStream stream(bytes);
-		if(!unpack_image(dest, stream, offset, config)) {
+		if (!unpack_image(dest, stream, offset, config)) {
 			unpack_asset(dest.child<BinaryAsset>(stringf("%04d_%04x_dcmp", offset, offset).c_str()), stream, ByteRange{0, (s32) stream.size()}, config);
 		}
 		return true;
 	}
 	
-	if(memcmp(header, "2FIP", 4) == 0) {
+	if (memcmp(header, "2FIP", 4) == 0) {
 		unpack_asset(dest.child<TextureAsset>(stringf("%04d_%04x_pif", offset, offset).c_str()), src, ByteRange{0, (s32) src.size()}, config, FMT_TEXTURE_PIF8);
 		return true;
 	}
@@ -76,7 +78,7 @@ static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Build
 	s32 width = *(s32*) &header[0];
 	s32 height = *(s32*) &header[4];
 	bool common_size = is_common_texture_size(width) || is_common_texture_size(height);
-	if(width > 0 && height > 0 && common_size && src.size() >= 0x10 + width * height * 4) {
+	if (width > 0 && height > 0 && common_size && src.size() >= 0x10 + width * height * 4) {
 		unpack_asset(dest.child<TextureAsset>(stringf("%04d_%04x_rgba", offset, offset).c_str()), src, ByteRange{0, (s32) src.size()}, config, FMT_TEXTURE_RGBA);
 		return true;
 	}
@@ -84,16 +86,18 @@ static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Build
 	return false;
 }
 
-static bool is_common_texture_size(s32 number) {
-	for(s32 i = 32; i < 1024; i *= 2) {
-		if(i == number) {
+static bool is_common_texture_size(s32 number)
+{
+	for (s32 i = 32; i < 1024; i *= 2) {
+		if (i == number) {
 			return true;
 		}
 	}
 	return false;
 }
 
-static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, BuildConfig config) {
+static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, BuildConfig config)
+{
 	s32 header_size = 0;
 	src.for_each_logical_child([&](const Asset& child) {
 		header_size = std::max(header_size, (s32) parse_number(child.tag()) + 0x8);

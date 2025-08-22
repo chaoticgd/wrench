@@ -23,7 +23,8 @@
 #include <instancemgr/gameplay.h>
 
 template <typename Packed>
-static void swap_matrix(Instance& inst, Packed& packed) {
+static void swap_matrix(Instance& inst, Packed& packed)
+{
 	glm::mat4 write_matrix = inst.transform().matrix();
 	write_matrix[3][3] = 0.01f;
 	glm::mat4 read_matrix = packed.matrix.unpack();
@@ -33,7 +34,8 @@ static void swap_matrix(Instance& inst, Packed& packed) {
 }
 
 template <typename Packed>
-static void swap_matrix_inverse_rotation(Instance& inst, Packed& packed) {
+static void swap_matrix_inverse_rotation(Instance& inst, Packed& packed)
+{
 	glm::mat4 write_matrix = inst.transform().matrix();
 	write_matrix[3][3] = 0.01f;
 	glm::mat4 write_inverse_matrix = inst.transform().inverse_matrix();
@@ -58,14 +60,16 @@ static void swap_matrix_inverse_rotation(Instance& inst, Packed& packed) {
 }
 
 template <typename Packed>
-static void swap_position(Instance& instance, Packed& packed) {
+static void swap_position(Instance& instance, Packed& packed)
+{
 	glm::vec3 pos = instance.transform().pos();
 	instance.transform().set_from_pos_rot_scale(packed.position.unpack());
 	packed.position = Vec3f::pack(pos);
 }
 
 template <typename Packed>
-static void swap_position_rotation(Instance& instance, Packed& packed) {
+static void swap_position_rotation(Instance& instance, Packed& packed)
+{
 	glm::vec3 pos = instance.transform().pos();
 	glm::vec3 rot = instance.transform().rot();
 	instance.transform().set_from_pos_rot_scale(packed.position.unpack(), packed.rotation.unpack());
@@ -74,7 +78,8 @@ static void swap_position_rotation(Instance& instance, Packed& packed) {
 }
 
 template <typename Packed>
-static void swap_position_rotation_scale(Instance& instance, Packed& packed) {
+static void swap_position_rotation_scale(Instance& instance, Packed& packed)
+{
 	glm::vec3 pos = instance.transform().pos();
 	glm::vec3 rot = instance.transform().rot();
 	f32 scale = instance.transform().scale();
@@ -142,8 +147,10 @@ packed_struct(TableHeader,
 )
 
 template <typename T>
-struct TableBlock {
-	static void read(std::vector<T>& dest, Buffer src, Game game) {
+struct TableBlock
+{
+	static void read(std::vector<T>& dest, Buffer src, Game game)
+	{
 		auto header = src.read<TableHeader>(0, "table header");
 		verify(header.pad[0] == 0, "TableBlock contains more than one table.");
 		dest = src.read_multiple<T>(0x10, header.count_1, "table body").copy();
@@ -159,8 +166,10 @@ struct TableBlock {
 };
 
 template <typename ThisInstance, typename Packed>
-struct InstanceBlock {
-	static void read(std::vector<ThisInstance>& dest, Buffer src, Game game) {
+struct InstanceBlock
+{
+	static void read(std::vector<ThisInstance>& dest, Buffer src, Game game)
+	{
 		TableHeader header = src.read<TableHeader>(0, "instance block header");
 		auto entries = src.read_multiple<Packed>(0x10, header.count_1, "instances");
 		s32 index = 0;
@@ -172,7 +181,8 @@ struct InstanceBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<ThisInstance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<ThisInstance>& src, Game game)
+	{
 		TableHeader header = {(s32) src.size()};
 		dest.write(header);
 		for(ThisInstance instance : src) {

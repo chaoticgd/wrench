@@ -25,7 +25,8 @@
 
 namespace gui {
 
-struct PathConfig {
+struct PathConfig
+{
 	std::string base_folder;
 	std::vector<std::string> mods_folders;
 	std::string games_folder;
@@ -37,7 +38,8 @@ struct PathConfig {
 	void write(WtfWriter* ctx) const;
 };
 
-struct UiConfig {
+struct UiConfig
+{
 	bool custom_scale = false;
 	f32 scale = 1.f;
 	bool developer = true;
@@ -46,7 +48,8 @@ struct UiConfig {
 	void write(WtfWriter* ctx) const;
 };
 
-struct Config {
+struct Config
+{
 	PathConfig paths;
 	UiConfig ui;
 	

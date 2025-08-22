@@ -22,7 +22,8 @@
 #include <glm/glm.hpp>
 #include <core/util.h>
 
-struct Face {
+struct Face
+{
 	s32 v0;
 	s32 v1;
 	s32 v2;
@@ -48,7 +49,8 @@ struct Face {
 	}
 };
 
-struct SkinAttributes {
+struct SkinAttributes
+{
 	u8 count = 0;
 	s8 joints[3] = {0, 0, 0};
 	u8 weights[3] = {0, 0, 0};
@@ -56,7 +58,8 @@ struct SkinAttributes {
 	friend auto operator<=>(const SkinAttributes&, const SkinAttributes&) = default;
 };
 
-struct ColourAttribute {
+struct ColourAttribute
+{
 	u8 r = 0;
 	u8 g = 0;
 	u8 b = 0;
@@ -65,7 +68,8 @@ struct ColourAttribute {
 	friend auto operator<=>(const ColourAttribute&, const ColourAttribute&) = default;
 };
 
-struct Vertex {
+struct Vertex
+{
 	glm::vec3 pos;
 	glm::vec3 normal = {0, 0, 0};
 	SkinAttributes skin;
@@ -100,19 +104,22 @@ struct Vertex {
 	}
 };
 
-enum MeshFlags {
+enum MeshFlags
+{
 	MESH_HAS_QUADS = 1 << 0,
 	MESH_HAS_NORMALS = 1 << 1,
 	MESH_HAS_VERTEX_COLOURS = 1 << 2,
 	MESH_HAS_TEX_COORDS = 1 << 3
 };
 
-struct SubMesh {
+struct SubMesh
+{
 	s32 material = -1;
 	std::vector<Face> faces;
 };
 
-struct Mesh {
+struct Mesh
+{
 	std::string name;
 	u32 flags = 0;
 	std::vector<Vertex> vertices;
@@ -131,7 +138,8 @@ bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps = 0.0000
 
 Mesh merge_meshes(const std::vector<Mesh>& meshes, std::string name, u32 flags);
 
-struct BSphereVertexList {
+struct BSphereVertexList
+{
 	const Vertex* vertices;
 	size_t vertex_count;
 };

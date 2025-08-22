@@ -23,14 +23,16 @@
 
 #include "util.h"
 
-struct Timer {
+struct Timer
+{
 	const char* task;
 	std::chrono::high_resolution_clock::time_point start_time;
 };
 static std::vector<Timer> timers;
 
-void start_timer(const char* task) {
-	for(size_t i = 0; i < timers.size(); i++) {
+void start_timer(const char* task)
+{
+	for (size_t i = 0; i < timers.size(); i++) {
 		printf("  ");
 	}
 	printf("%s: started\n", task);
@@ -38,11 +40,12 @@ void start_timer(const char* task) {
 	timers.back().start_time = std::chrono::high_resolution_clock::now();
 }
 
-void stop_timer() {
+void stop_timer()
+{
 	auto end_time = std::chrono::high_resolution_clock::now();
 	Timer timer = timers.back();
 	timers.pop_back();
-	for(size_t i = 0; i < timers.size(); i++) {
+	for (size_t i = 0; i < timers.size(); i++) {
 		printf("  ");
 	}
 	f64 time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - timer.start_time).count() * 1e-6;

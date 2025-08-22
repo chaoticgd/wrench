@@ -34,7 +34,8 @@ extern const char* FILEIO_ERROR_CONTEXT_STRING;
 struct _wrench_file_handle;
 typedef struct _wrench_file_handle WrenchFileHandle;
 
-enum _wrench_file_mode {
+enum _wrench_file_mode
+{
 	// Opens a file with read access, fails if file does not exist.
 	WRENCH_FILE_MODE_READ = 1,
 	// Opens a file with write access, deletes original file if it exists.
@@ -49,7 +50,8 @@ enum _wrench_file_mode {
 	WRENCH_FILE_MODE_READ_WRITE_APPEND = 6
 } typedef WrenchFileMode;
 
-enum _wrench_file_origin {
+enum _wrench_file_origin
+{
 	// Origin is the beginning of the file.
 	WRENCH_FILE_ORIGIN_START = 1,
 	// Origin is the position of the current file pointer.

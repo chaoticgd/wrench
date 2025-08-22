@@ -56,12 +56,18 @@ packed_struct(DlMiscWadHeader,
 	/* 0x48 */ SectorRange gadget;
 )
 
-static void unpack_gc_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, BuildConfig config);
-static void pack_gc_misc_wad(OutputStream& dest, GcMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config);
-static void unpack_uya_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, BuildConfig config);
-static void pack_uya_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config);
-static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header, InputStream& src, BuildConfig config);
-static void pack_dl_misc_wad(OutputStream& dest, DlMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config);
+static void unpack_gc_misc_wad(
+	MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_gc_misc_wad(
+	OutputStream& dest, GcMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config);
+static void unpack_uya_misc_wad(
+	MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_uya_misc_wad(
+	OutputStream& dest, UyaMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config);
+static void unpack_dl_misc_wad(
+	MiscWadAsset& dest, const DlMiscWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_dl_misc_wad(
+	OutputStream& dest, DlMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config);
 
 on_load(Misc, []() {
 	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset, GcMiscWadHeader>(unpack_gc_misc_wad);
@@ -73,7 +79,9 @@ on_load(Misc, []() {
 	MiscWadAsset::funcs.pack_dl = wrap_wad_packer_func<MiscWadAsset, DlMiscWadHeader>(pack_dl_misc_wad);
 })
 
-static void unpack_gc_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_gc_misc_wad(
+	MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, BuildConfig config)
+{
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, config, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.irx(SWITCH_FILES), src, header.irx, config);
 	unpack_asset(dest.save_game(), src, header.save_game, config);
@@ -83,7 +91,9 @@ static void unpack_gc_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header
 	unpack_asset(dest.exit(), src, header.exit, config);
 }
 
-static void pack_gc_misc_wad(OutputStream& dest, GcMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config) {
+static void pack_gc_misc_wad(
+	OutputStream& dest, GcMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config)
+{
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), config, FMT_TEXTURE_PIF8);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), config, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), config);
@@ -93,7 +103,9 @@ static void pack_gc_misc_wad(OutputStream& dest, GcMiscWadHeader& header, const 
 	header.exit = pack_asset_sa<SectorRange>(dest, src.get_exit(), config);
 }
 
-static void unpack_uya_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_uya_misc_wad(
+	MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, BuildConfig config)
+{
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, config, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.irx(SWITCH_FILES), src, header.irx, config);
 	unpack_asset(dest.save_game(), src, header.save_game, config);
@@ -102,7 +114,9 @@ static void unpack_uya_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& head
 	unpack_asset(dest.boot(SWITCH_FILES), src, header.boot, config);
 }
 
-static void pack_uya_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config) {
+static void pack_uya_misc_wad(
+	OutputStream& dest, UyaMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config)
+{
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), config, FMT_TEXTURE_PIF8);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), config, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), config);
@@ -111,7 +125,9 @@ static void pack_uya_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, cons
 	header.boot = pack_asset_sa<SectorRange>(dest, src.get_boot(), config);
 }
 
-static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_dl_misc_wad(
+	MiscWadAsset& dest, const DlMiscWadHeader& header, InputStream& src, BuildConfig config)
+{
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, config, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.irx(SWITCH_FILES), src, header.irx, config);
 	unpack_asset(dest.save_game(), src, header.save_game, config);
@@ -120,7 +136,9 @@ static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header
 	unpack_asset(dest.gadget(), src, header.gadget, config);
 }
 
-static void pack_dl_misc_wad(OutputStream& dest, DlMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config) {
+static void pack_dl_misc_wad(
+	OutputStream& dest, DlMiscWadHeader& header, const MiscWadAsset& src, BuildConfig config)
+{
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), config, FMT_TEXTURE_PIF8);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), config, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), config);

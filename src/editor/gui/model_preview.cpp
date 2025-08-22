@@ -21,7 +21,13 @@
 #include <editor/app.h>
 #include <editor/renderer.h>
 
-void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<RenderMaterial>* materials, bool wireframe, ModelPreviewParams& params) {
+void model_preview(
+	GLuint* texture,
+	const RenderMesh* mesh,
+	const std::vector<RenderMaterial>* materials,
+	bool wireframe,
+	ModelPreviewParams& params)
+{
 	ImVec2 view_pos = ImGui::GetWindowPos();
 	view_pos.x += ImGui::GetWindowContentRegionMin().x;
 	view_pos.y += ImGui::GetWindowContentRegionMin().y;
@@ -43,7 +49,7 @@ void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<Re
 	
 	// Get a ratio of how wide the largest dimension of the model is compared to the render window width.
 	f32 zoom_ratio;
-	if(view_size.x < view_size.y) {
+	if (view_size.x < view_size.y) {
 		zoom_ratio = model_size / view_size.x;
 	} else { // Same as above, but use height if the render window is shorter than wide.
 		zoom_ratio = model_size / view_size.y;
@@ -64,7 +70,7 @@ void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<Re
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glViewport(0, 0, view_size.x, view_size.y);
 		
-		if(mesh && materials) {
+		if (mesh && materials) {
 			draw_model_preview(*mesh, *materials, &matrix, view, projection, wireframe);
 		}
 	});
@@ -77,18 +83,18 @@ void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<Re
 	ImGuiIO& io = ImGui::GetIO();
 	glm::vec2 mouse_delta = glm::vec2(io.MouseDelta.y, io.MouseDelta.x) * 0.01f;
 	
-	if(image_hovered || is_dragging) {
-		if(ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+	if (image_hovered || is_dragging) {
+		if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
 			is_dragging = true;
 			params.rot += mouse_delta;
 		}
 		
 		params.zoom *= io.MouseWheel * g_app->delta_time * 0.0001 + 1;
-		if(params.zoom < 0.f) params.zoom = 0.f;
-		if(params.zoom > 1.f) params.zoom = 1.f;
+		if (params.zoom < 0.f) params.zoom = 0.f;
+		if (params.zoom > 1.f) params.zoom = 1.f;
 	}
 	
-	if(ImGui::IsMouseReleased(0)) {
+	if (ImGui::IsMouseReleased(0)) {
 		is_dragging = false;
 	}
 }

@@ -29,12 +29,17 @@
 
 namespace MOBY {
 
-std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, s32 o_class, f32 scale, bool animated);
+std::vector<GLTF::Mesh> recover_packets(
+	const std::vector<MobyPacket>& packets, s32 o_class, f32 scale, bool animated);
 
 // Expects the input meshes to have restart bit tristrips instead of zero area
 // tristrips (see comment below). Also, it expects the input meshes to have
 // effective material indices instead of regular indices.
-std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const std::vector<EffectiveMaterial>& effectives, const std::vector<Material>& materials, f32 scale);
+std::vector<MobyPacket> build_packets(
+	const std::vector<GLTF::Mesh> input,
+	const std::vector<EffectiveMaterial>& effectives,
+	const std::vector<Material>& materials,
+	f32 scale);
 
 GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string> name);
 
@@ -43,7 +48,10 @@ GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string
 // Hence, to export the result as a glTF mesh you'll have to convert it back
 // (see src/core/tristrip.h). Also, the "material" indices are actually
 // effective material indices.
-std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, const std::vector<s32>& material_to_effective, bool output_broken_indices);
+std::vector<GLTF::Mesh> split_packets(
+	const GLTF::Mesh& mesh,
+	const std::vector<s32>& material_to_effective,
+	bool output_broken_indices);
 
 }
 

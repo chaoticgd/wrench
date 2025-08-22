@@ -20,7 +20,11 @@
 #include <wrenchbuild/asset_packer.h>
 
 static void unpack_file_asset(FileAsset& dest, InputStream& src, BuildConfig config);
-static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const FileAsset& src);
+static void pack_file_asset(
+	OutputStream& dest,
+	std::vector<u8>* header_dest,
+	fs::file_time_type* time_dest,
+	const FileAsset& src);
 
 on_load(File, []() {
 	FileAsset::funcs.unpack_rac1 = wrap_unpacker_func<FileAsset>(unpack_file_asset);
@@ -34,7 +38,8 @@ on_load(File, []() {
 	FileAsset::funcs.pack_dl = wrap_bin_packer_func<FileAsset>(pack_file_asset);
 })
 
-static void unpack_file_asset(FileAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_file_asset(FileAsset& dest, InputStream& src, BuildConfig config)
+{
 	auto [stream, ref] = dest.file().open_binary_file_for_writing(fs::path(dest.path()));
 	verify(stream.get(), "Failed to open file '%s' for writing file asset '%s'.",
 		dest.path().c_str(),
@@ -44,8 +49,13 @@ static void unpack_file_asset(FileAsset& dest, InputStream& src, BuildConfig con
 	dest.set_src(ref);
 }
 
-static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const FileAsset& src) {
-	if(g_asset_packer_dry_run) {
+static void pack_file_asset(
+	OutputStream& dest,
+	std::vector<u8>* header_dest,
+	fs::file_time_type* time_dest,
+	const FileAsset& src)
+{
+	if (g_asset_packer_dry_run) {
 		return;
 	}
 	

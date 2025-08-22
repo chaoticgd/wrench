@@ -39,7 +39,8 @@ const glm::mat4 RATCHET_TO_OPENGL_MATRIX = {
 	0,  0, 0, 1
 };
 
-struct RenderSettings {
+struct RenderSettings
+{
 	bool camera_control { false };
 	glm::vec3 camera_position { 0, 0, 0 };
 	glm::vec2 camera_rotation { 0, 0 };
@@ -78,15 +79,25 @@ struct RenderSettings {
 void init_renderer();
 void shutdown_renderer();
 void prepare_frame(Level& lvl);
-void draw_level(Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings);
-void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings);
-void draw_model_preview(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4* bb, const glm::mat4& view, const glm::mat4& projection, bool wireframe);
+void draw_level(
+	Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings);
+void draw_pickframe(
+	Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings);
+void draw_model_preview(
+	const RenderMesh& mesh,
+	const std::vector<RenderMaterial>& materials,
+	const glm::mat4* bb,
+	const glm::mat4& view,
+	const glm::mat4& projection,
+	bool wireframe);
 void draw_drag_ghosts(Level& lvl, const std::vector<InstanceId>& ids, const RenderSettings& settings);
 
 glm::mat4 compose_view_matrix(const glm::vec3& cam_pos, const glm::vec2& cam_rot);
 glm::mat4 compose_projection_matrix(const ImVec2& view_size);
-glm::vec3 apply_local_to_screen(const glm::mat4& world_to_clip, const glm::mat4& local_to_world, const ImVec2& view_size);
-glm::vec3 create_ray(const glm::mat4& world_to_clip, const ImVec2& screen_pos, const ImVec2& view_pos, const ImVec2& view_size);
+glm::vec3 apply_local_to_screen(
+	const glm::mat4& world_to_clip, const glm::mat4& local_to_world, const ImVec2& view_size);
+glm::vec3 create_ray(
+	const glm::mat4& world_to_clip, const ImVec2& screen_pos, const ImVec2& view_pos, const ImVec2& view_size);
 
 void reset_camera(app* a);
 

@@ -30,7 +30,8 @@
 
 static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config);
 static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config);
-static void unpack_sky_textures(GLTF::ModelFile& gltf, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky);
+static void unpack_sky_textures(
+	GLTF::ModelFile& gltf, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky);
 static std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src);
 static bool test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 
@@ -51,7 +52,8 @@ on_load(Sky, []() {
 	SkyAsset::funcs.test_dl  = wrap_diff_test_func(test_sky_asset);
 })
 
-static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config)
+{
 	std::vector<u8> buffer = src.read_multiple<u8>(src.size());
 	Sky sky = read_sky(buffer, config.game(), config.framerate());
 	
@@ -67,7 +69,7 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	unpack_sky_textures(gltf, dest.fx(), dest.materials(), sky);
 	
 	// Copy all the meshes into the scene.
-	for(size_t i = 0; i < sky.shells.size(); i++) {
+	for (size_t i = 0; i < sky.shells.size(); i++) {
 		SkyShell& shell = sky.shells[i];
 		
 		scene->nodes.emplace_back((s32) gltf.nodes.size());
@@ -78,10 +80,10 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 		gltf.meshes.emplace_back(std::move(shell.mesh));
 	}
 	
-	for(size_t i = 0; i < gltf.meshes.size(); i++) {
+	for (size_t i = 0; i < gltf.meshes.size(); i++) {
 		gltf.meshes[i].name = stringf("shell_%d", (s32) i);
-		for(GLTF::MeshPrimitive& primitive : gltf.meshes[i].primitives) {
-			if(primitive.material.has_value()) {
+		for (GLTF::MeshPrimitive& primitive : gltf.meshes[i].primitives) {
+			if (primitive.material.has_value()) {
 				*primitive.material -= sky.fx.size();
 			} else {
 				primitive.material = (s32) sky.texture_mappings.size() - sky.fx.size();
@@ -95,11 +97,11 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	stream->write_v(glb);
 	
 	// Create the assets for the shells and clusters.
-	for(size_t i = 0; i < sky.shells.size(); i++) {
+	for (size_t i = 0; i < sky.shells.size(); i++) {
 		SkyShell& shell_src = sky.shells[i];
 		SkyShellAsset& shell_dest = shells.child<SkyShellAsset>(i);
 		
-		if(config.game() != Game::RAC && config.game() != Game::GC) {
+		if (config.game() != Game::RAC && config.game() != Game::GC) {
 			shell_dest.set_bloom(shell_src.bloom);
 			shell_dest.set_starting_rotation(shell_src.rotation);
 			shell_dest.set_angular_velocity(shell_src.angular_velocity);
@@ -111,10 +113,11 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	}
 }
 
-static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config) {
+static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config)
+{
 	Sky sky;
 	
-	if(src.has_colour()) {
+	if (src.has_colour()) {
 		glm::vec4 col = src.colour();
 		sky.colour = {
 			(u8) roundf(col.r * 255.f),
@@ -123,10 +126,10 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 			(u8) (fabs(col.a - 1.f) < 0.0001f ? 0x80 : roundf(col.a * 127.f))
 		};
 	}
-	if(src.has_clear_screen()) {
+	if (src.has_clear_screen()) {
 		sky.clear_screen = src.clear_screen();
 	}
-	if(src.has_maximum_sprite_count()) {
+	if (src.has_maximum_sprite_count()) {
 		sky.maximum_sprite_count = src.maximum_sprite_count();
 	}
 	
@@ -147,14 +150,14 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	src.get_shells().for_each_logical_child_of_type<SkyShellAsset>([&](const SkyShellAsset& shell_asset) {
 		SkyShell& shell = sky.shells.emplace_back();
 		shell.textured = false;
-		if(config.game() != Game::RAC && config.game() != Game::GC) {
-			if(shell_asset.has_bloom()) {
+		if (config.game() != Game::RAC && config.game() != Game::GC) {
+			if (shell_asset.has_bloom()) {
 				shell.bloom = shell_asset.bloom();
 			}
-			if(shell_asset.has_starting_rotation()) {
+			if (shell_asset.has_starting_rotation()) {
 				shell.rotation = shell_asset.starting_rotation();
 			}
-			if(shell_asset.has_angular_velocity()) {
+			if (shell_asset.has_angular_velocity()) {
 				shell.angular_velocity = shell_asset.angular_velocity();
 			}
 		}
@@ -168,13 +171,13 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 		verify(*node->mesh >= 0 && *node->mesh < gltf.meshes.size(), "Node '%s' has no invalid mesh index.", name.c_str());
 		GLTF::Mesh mesh = gltf.meshes[*node->mesh];
 		bool has_set_textured = false;
-		for(GLTF::MeshPrimitive& primitive : mesh.primitives) {
+		for (GLTF::MeshPrimitive& primitive : mesh.primitives) {
 			bool primitive_has_texture = false;
-			if(primitive.material.has_value()) {
+			if (primitive.material.has_value()) {
 				Opt<std::string>& material_name = gltf.materials.at(*primitive.material).name;
 				verify(material_name.has_value(), "Material %d has no name.", *primitive.material);
 				auto mapping = material_to_texture.find(*material_name);
-				if(mapping != material_to_texture.end()) {
+				if (mapping != material_to_texture.end()) {
 					primitive.material = mapping->second;
 					shell.textured = true;
 					primitive_has_texture = true;
@@ -192,11 +195,13 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	dest.write_v(buffer);
 }
 
-static void unpack_sky_textures(GLTF::ModelFile& gltf, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky) {
+static void unpack_sky_textures(
+	GLTF::ModelFile& gltf, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky)
+{
 	std::vector<FileReference> texture_refs;
 	
 	// Write out the textures.
-	for(s32 i = 0; i < (s32) sky.textures.size(); i++) {
+	for (s32 i = 0; i < (s32) sky.textures.size(); i++) {
 		auto [stream, ref] = materials.file().open_binary_file_for_writing(stringf("%d.png", i));
 		write_png(*stream, sky.textures[i]);
 		GLTF::Image& image = gltf.images.emplace_back();
@@ -205,13 +210,13 @@ static void unpack_sky_textures(GLTF::ModelFile& gltf, CollectionAsset& fx, Coll
 		texture_refs.emplace_back(std::move(ref));
 	}
 	
-	for(s32 i = 0; i < (s32) sky.fx.size(); i++) {
+	for (s32 i = 0; i < (s32) sky.fx.size(); i++) {
 		TextureAsset& texture = fx.child<TextureAsset>(i);
 		texture.set_src(texture_refs.at(sky.texture_mappings.at(i)));
 	}
 	
 	// Create shell material assets.
-	for(s32 i = (s32) sky.fx.size(); i < (s32) sky.texture_mappings.size(); i++) {
+	for (s32 i = (s32) sky.fx.size(); i < (s32) sky.texture_mappings.size(); i++) {
 		GLTF::Material& material = gltf.materials.emplace_back();
 		material.name = stringf("material_%d", i - (s32) sky.fx.size());
 		material.pbr_metallic_roughness.emplace();
@@ -244,7 +249,8 @@ static void unpack_sky_textures(GLTF::ModelFile& gltf, CollectionAsset& fx, Coll
 	gouraud_asset.set_name("gouraud");
 }
 
-struct TextureLoad {
+struct TextureLoad
+{
 	FileReference ref;
 	Texture texture;
 };
@@ -262,17 +268,17 @@ std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src) {
 	});
 	
 	src.get_materials().for_each_logical_child_of_type<MaterialAsset>([&](const MaterialAsset& material) {
-		if(material.has_diffuse()) {
+		if (material.has_diffuse()) {
 			const TextureAsset& texture = material.get_diffuse();
 			FileReference ref = texture.src();
 			s32 index = -1;
-			for(s32 i = 0; i < (s32) refs.size(); i++) {
-				if(refs[i].owner == ref.owner && refs[i].path == ref.path) {
+			for (s32 i = 0; i < (s32) refs.size(); i++) {
+				if (refs[i].owner == ref.owner && refs[i].path == ref.path) {
 					index = i;
 					break;
 				}
 			}
-			if(index == -1) {
+			if (index == -1) {
 				index = refs.size();
 				refs.emplace_back(std::move((ref)));
 			}
@@ -282,7 +288,7 @@ std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src) {
 	});
 	
 	// Read in the textures from disk.
-	for(FileReference& ref : refs) {
+	for (FileReference& ref : refs) {
 		auto stream = ref.open_binary_file_for_reading();
 		Opt<Texture> texture = read_png(*stream);
 		verify(texture.has_value(), "Failed to read sky texture.");
@@ -292,16 +298,22 @@ std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src) {
 	return material_to_texture;
 }
 
-static bool test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_sky_asset(
+	std::vector<u8>& original,
+	std::vector<u8>& repacked,
+	BuildConfig config,
+	const char* hint,
+	AssetTestMode mode)
+{
 	SkyHeader header = Buffer(original).read<SkyHeader>(0, "header");
 	bool headers_equal = diff_buffers(original, repacked, 0, header.texture_data, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 	
 	// Don't test the bounding spheres.
 	std::vector<ByteRange64> ignore;
 	verify(header.shell_count <= 8, "Bad shell count.");
-	for(s32 i = 0; i < header.shell_count; i++) {
+	for (s32 i = 0; i < header.shell_count; i++) {
 		s16 cluster_count = Buffer(original).read<s16>(header.shells[i], "shell header");
-		for(s32 j = 0; j < cluster_count; j++) {
+		for (s32 j = 0; j < cluster_count; j++) {
 			s64 cluster_header_ofs = header.shells[i] + 0x10 + j * sizeof(SkyClusterHeader);
 			ignore.emplace_back(cluster_header_ofs, sizeof(SkyClusterHeader::bounding_sphere));
 		}

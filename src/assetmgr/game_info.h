@@ -22,7 +22,8 @@
 #include <core/util.h>
 #include <core/build_config.h>
 
-enum class AssetBankType {
+enum class AssetBankType
+{
 	UNDERLAY,
 	GAME,
 	OVERLAY,
@@ -30,7 +31,8 @@ enum class AssetBankType {
 	TEST
 };
 
-struct GameInfo {
+struct GameInfo
+{
 	s32 format_version;
 	std::string name;
 	AssetBankType type;

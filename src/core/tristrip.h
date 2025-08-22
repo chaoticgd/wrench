@@ -22,20 +22,23 @@
 #include <core/gltf.h>
 #include <core/material.h>
 
-enum class GeometryType {
+enum class GeometryType
+{
 	TRIANGLE_LIST,
 	TRIANGLE_STRIP,
 	TRIANGLE_FAN
 };
 
-struct GeometryPrimitive {
+struct GeometryPrimitive
+{
 	GeometryType type;
 	s32 index_begin;
 	s32 index_count;
 	s32 effective_material = 0;
 };
 
-struct GeometryPrimitives {
+struct GeometryPrimitives
+{
 	std::vector<GeometryPrimitive> primitives;
 	std::vector<s32> indices;
 };

@@ -18,23 +18,24 @@
 
 #include "render_mesh.h"
 
-RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
+RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals)
+{
 	RenderMesh render_mesh;
 	
-	for(const SubMesh& submesh : mesh.submeshes) {
+	for (const SubMesh& submesh : mesh.submeshes) {
 		RenderSubMesh render_submesh;
 		
 		render_submesh.material = submesh.material;
 		
 		std::vector<Vertex> vertices;
-		for(const Face& face : submesh.faces) {
-			if(face.is_quad()) {
+		for (const Face& face : submesh.faces) {
+			if (face.is_quad()) {
 				Vertex v0 = mesh.vertices[face.v0];
 				Vertex v1 = mesh.vertices[face.v1];
 				Vertex v2 = mesh.vertices[face.v2];
 				Vertex v3 = mesh.vertices[face.v3];
 				
-				if(generate_normals) {
+				if (generate_normals) {
 					glm::vec3 normal = glm::normalize(glm::cross(v2.pos - v0.pos, v1.pos - v0.pos));
 					v0.normal = normal;
 					v1.normal = normal;
@@ -53,7 +54,7 @@ RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
 				Vertex v1 = mesh.vertices[face.v1];
 				Vertex v2 = mesh.vertices[face.v2];
 				
-				if(generate_normals) {
+				if (generate_normals) {
 					glm::vec3 normal = glm::normalize(glm::cross(v2.pos - v0.pos, v1.pos - v0.pos));
 					v0.normal = normal;
 					v1.normal = normal;
@@ -77,21 +78,22 @@ RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
 	return render_mesh;
 }
 
-RenderMesh upload_gltf_mesh(const GLTF::Mesh& mesh, bool generate_normals) {
+RenderMesh upload_gltf_mesh(const GLTF::Mesh& mesh, bool generate_normals)
+{
 	RenderMesh render_mesh;
 	
-	for(const GLTF::MeshPrimitive& primitive : mesh.primitives) {
+	for (const GLTF::MeshPrimitive& primitive : mesh.primitives) {
 		RenderSubMesh render_submesh;
 		
 		render_submesh.material = primitive.material.has_value() ? *primitive.material : -1;
 		
 		std::vector<Vertex> vertices;
-		for(size_t i = 0; i < primitive.indices.size() / 3; i++) {
+		for (size_t i = 0; i < primitive.indices.size() / 3; i++) {
 			Vertex v0 = mesh.vertices[primitive.indices[i * 3 + 0]];
 			Vertex v1 = mesh.vertices[primitive.indices[i * 3 + 1]];
 			Vertex v2 = mesh.vertices[primitive.indices[i * 3 + 2]];
 			
-			if(generate_normals) {
+			if (generate_normals) {
 				glm::vec3 normal = glm::normalize(glm::cross(v2.pos - v0.pos, v1.pos - v0.pos));
 				v0.normal = normal;
 				v1.normal = normal;
@@ -114,32 +116,38 @@ RenderMesh upload_gltf_mesh(const GLTF::Mesh& mesh, bool generate_normals) {
 	return render_mesh;
 }
 
-std::vector<RenderMaterial> upload_collada_materials(const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures) {
+std::vector<RenderMaterial> upload_collada_materials(
+	const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures)
+{
 	std::vector<RenderMaterial> rms;
-	for(const ColladaMaterial& material : materials) {
+	for (const ColladaMaterial& material : materials) {
 		rms.emplace_back(upload_collada_material(material, textures));
 	}
 	return rms;
 }
 
-std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materials, const std::vector<Texture>& textures) {
+std::vector<RenderMaterial> upload_materials(
+	const std::vector<Material>& materials, const std::vector<Texture>& textures)
+{
 	std::vector<RenderMaterial> render_materials;
-	for(const Material& material : materials) {
+	for (const Material& material : materials) {
 		render_materials.emplace_back(upload_material(material, textures));
 	}
 	return render_materials;
 }
 
-RenderMaterial upload_collada_material(const ColladaMaterial& material, const std::vector<Texture>& textures) {
+RenderMaterial upload_collada_material(
+	const ColladaMaterial& material, const std::vector<Texture>& textures)
+{
 	RenderMaterial rm;
 	s32 texture_index;
-	if(material.surface.type == MaterialSurfaceType::COLOUR) {
+	if (material.surface.type == MaterialSurfaceType::COLOUR) {
 		rm.colour = material.surface.colour;
 		texture_index = 0;
 	} else {
 		texture_index = material.surface.texture;
 	}
-	if(texture_index < textures.size()) {
+	if (texture_index < textures.size()) {
 		Texture texture = textures.at(texture_index);
 		texture.to_rgba();
 		glGenTextures(1, &rm.texture.id);
@@ -153,16 +161,17 @@ RenderMaterial upload_collada_material(const ColladaMaterial& material, const st
 	return rm;
 }
 
-RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures) {
+RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures)
+{
 	RenderMaterial render_material;
 	s32 texture_index;
-	if(material.surface.type == MaterialSurfaceType::COLOUR) {
+	if (material.surface.type == MaterialSurfaceType::COLOUR) {
 		render_material.colour = material.surface.colour;
 		texture_index = 0;
 	} else {
 		texture_index = material.surface.texture;
 	}
-	if(texture_index < textures.size()) {
+	if (texture_index < textures.size()) {
 		Texture texture = textures.at(texture_index);
 		texture.to_rgba();
 		glGenTextures(1, &render_material.texture.id);

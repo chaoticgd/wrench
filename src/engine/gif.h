@@ -21,7 +21,8 @@
 
 #include <core/util.h>
 
-enum GsPrimitiveType {
+enum GsPrimitiveType
+{
 	GS_PRIMITIVE_POINT = 0b000,
 	GS_PRIMITIVE_LINE = 0b001,
 	GS_PRIMITIVE_LINE_STRIP = 0b010,
@@ -72,7 +73,8 @@ packed_struct(GsPrimRegister,
 	void set_fix(u32 field) { val |= (field << 10); }
 )
 
-enum GifDataFormat {
+enum GifDataFormat
+{
 	GIF_DATA_FORMAT_PACKED = 0b00,
 	GIF_DATA_FORMAT_REGLIST = 0b01,
 	GIF_DATA_FORMAT_IMAGE = 0b10,
@@ -125,7 +127,8 @@ packed_struct(GifAdData16,
 	/* 0xc */ u32 pad_c;
 )
 
-enum GifAdAddress {
+enum GifAdAddress
+{
 	GIF_AD_PRIM       = 0x00,
 	GIF_AD_RGBAQ      = 0x01,
 	GIF_AD_ST         = 0x02,

@@ -43,8 +43,8 @@ on_load(TieClass, []() {
 })
 
 static void unpack_tie_class(TieClassAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
-	if(g_asset_unpacker.dump_binaries) {
-		if(!dest.has_core()) {
+	if (g_asset_unpacker.dump_binaries) {
+		if (!dest.has_core()) {
 			unpack_asset_impl(dest.core<TieClassCoreAsset>(), src, nullptr, config);
 		}
 		return;
@@ -65,11 +65,11 @@ static void unpack_tie_class(TieClassAsset& dest, InputStream& src, BuildConfig 
 }
 
 static void pack_tie_class(OutputStream& dest, const TieClassAsset& src, BuildConfig config, const char* hint) {
-	if(g_asset_packer_dry_run) {
+	if (g_asset_packer_dry_run) {
 		return;
 	}
 	
-	if(src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
+	if (src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
 		pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config, nullptr);
 		return;
 	} else {

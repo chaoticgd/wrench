@@ -22,8 +22,9 @@
 
 static std::vector<u8> extract_file(std::vector<u8>& file);
 
-int main(int argc, const char** argv) {
-	if(argc != 3) {
+int main(int argc, const char** argv)
+{
+	if (argc != 3) {
 		fprintf(stderr, "usage: %s <input file> <output file>\n", (argc > 0) ? argv[0] : "unpackbin");
 		return 1;
 	}
@@ -36,20 +37,20 @@ int main(int argc, const char** argv) {
 	ElfFile elf = read_ratchet_executable(decompressed);
 	printf("%d sections\n", (s32) elf.sections.size());
 	bool success = false;
-	if(elf.sections.size() == DONOR_UYA_BOOT_ELF_HEADERS.sections.size()) {
+	if (elf.sections.size() == DONOR_UYA_BOOT_ELF_HEADERS.sections.size()) {
 		success = fill_in_elf_headers(elf, DONOR_UYA_BOOT_ELF_HEADERS);
-	} else if(elf.sections.size() == DONOR_DL_BOOT_ELF_HEADERS.sections.size()) {
+	} else if (elf.sections.size() == DONOR_DL_BOOT_ELF_HEADERS.sections.size()) {
 		success = fill_in_elf_headers(elf, DONOR_DL_BOOT_ELF_HEADERS);
-	} else if(elf.sections.size() == DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS.sections.size()) {
+	} else if (elf.sections.size() == DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS.sections.size()) {
 		success = fill_in_elf_headers(elf, DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS);
-	} else if(elf.sections.size() == DONOR_DL_LEVEL_ELF_NOBITS_HEADERS.sections.size()) {
-		if(elf.sections[2].header.type == SHT_NOBITS) {
+	} else if (elf.sections.size() == DONOR_DL_LEVEL_ELF_NOBITS_HEADERS.sections.size()) {
+		if (elf.sections[2].header.type == SHT_NOBITS) {
 			success = fill_in_elf_headers(elf, DONOR_DL_LEVEL_ELF_NOBITS_HEADERS);
 		} else {
 			success = fill_in_elf_headers(elf, DONOR_DL_LEVEL_ELF_PROGBITS_HEADERS);
 		}
 	}
-	if(!success) {
+	if (!success) {
 		fprintf(stderr, "warning: Failed to recover section information!\n");
 	}
 	std::vector<u8> output;
@@ -58,15 +59,16 @@ int main(int argc, const char** argv) {
 	return 0;
 }
 
-static std::vector<u8> extract_file(std::vector<u8>& file) {
+static std::vector<u8> extract_file(std::vector<u8>& file)
+{
 	s64 wad_ofs = -1;
-	for(s64 i = 0; i < file.size() - 3; i++) {
-		if(memcmp(&file.data()[i], "WAD", 3) == 0) {
+	for (s64 i = 0; i < file.size() - 3; i++) {
+		if (memcmp(&file.data()[i], "WAD", 3) == 0) {
 			wad_ofs = i;
 			break;
 		}
 	}
-	if(wad_ofs > -1) {
+	if (wad_ofs > -1) {
 		std::vector<u8> decompressed;
 		decompress_wad(decompressed, WadBuffer{file.data() + wad_ofs, file.data() + file.size()});
 		file.clear();

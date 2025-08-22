@@ -52,26 +52,30 @@ packed_struct(MobyTexturePrimitive,
 	/* 0x3c */ u32 super_secret_index_4;
 )
 
-enum MobySpecialTextureIndex {
+enum MobySpecialTextureIndex
+{
 	MOBY_TEX_NONE = -1,
 	MOBY_TEX_CHROME = -2,
 	MOBY_TEX_GLASS = -3
 };
 
-struct SharedVifData {
+struct SharedVifData
+{
 	std::vector<s8> indices;
 	std::vector<s8> secret_indices;
 	std::vector<MobyTexturePrimitive> textures;
 	u8 index_header_first_byte = 0xff;
 };
 
-struct MobyPacket {
+struct MobyPacket
+{
 	VertexTable vertex_table;
 	SharedVifData vif;
 	std::vector<MobyTexCoord> sts;
 };
 
-struct MobyMetalPacket {
+struct MobyMetalPacket
+{
 	MetalVertexTable vertex_table;
 	SharedVifData vif;
 };
@@ -108,7 +112,8 @@ packed_struct(MobyVec4,
 	s16 w;
 )
 
-struct MobyBangle {
+struct MobyBangle
+{
 	std::vector<MobyPacket> high_lod;
 	std::vector<MobyPacket> low_lod;
 	MobyVec4 vectors[2];
@@ -117,10 +122,19 @@ struct MobyBangle {
 using GifUsageTable = std::vector<MobyGifUsage>;
 
 std::vector<MobyPacket> read_packets(Buffer src, s64 table_ofs, s64 count, MobyFormat format);
-void write_packets(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobyPacket* packets_in, size_t packet_count, f32 scale, MobyFormat format, s64 class_header_ofs);
+void write_packets(
+	OutBuffer dest,
+	GifUsageTable& gif_usage,
+	s64 table_ofs,
+	const MobyPacket* packets_in,
+	size_t packet_count,
+	f32 scale,
+	MobyFormat format,
+	s64 class_header_ofs);
 
 std::vector<MobyMetalPacket> read_metal_packets(Buffer src, s64 table_ofs, s64 count);
-void write_metal_packets(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalPacket>& packets, s64 class_header_ofs);
+void write_metal_packets(
+	OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalPacket>& packets, s64 class_header_ofs);
 
 void map_indices(MobyPacket& packet, const std::vector<size_t>& index_mapping);
 

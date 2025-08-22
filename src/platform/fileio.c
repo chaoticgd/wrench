@@ -31,16 +31,23 @@ const char* FILEIO_ERROR_CONTEXT_STRING = error_buffer;
 
 // This file provides a standard implementation of the fileio API.
 
-enum _last_unflushed_op { _last_unflushed_op_none = 0, _last_unflushed_op_read = 1, _last_unflushed_op_write = 2 };
+enum _last_unflushed_op
+{
+	_last_unflushed_op_none = 0,
+	_last_unflushed_op_read = 1,
+	_last_unflushed_op_write = 2
+};
 
-struct _wrench_file_handle {
+struct _wrench_file_handle
+{
 	FILE* file;
 	int may_flush;
 	int update_mode;
 	enum _last_unflushed_op last_op;
 };
 
-WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
+WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode)
+{
 	assert(filename);
 	assert(mode);
 
@@ -102,7 +109,8 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 	return file;
 }
 
-size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
+size_t file_read(void* buffer, size_t size, WrenchFileHandle* file)
+{
 	assert(file);
 
 	if(size == 0) {
@@ -128,7 +136,8 @@ size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
 	return val;
 }
 
-size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
+size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file)
+{
 	assert(file);
 
 	if(size == 0) {
@@ -154,7 +163,8 @@ size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
 	return val;
 }
 
-size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
+size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file)
+{
 	assert(file);
 
 	if(buffer_size == 0) {
@@ -183,13 +193,15 @@ size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
 	return offset;
 }
 
-size_t file_write_string(const char* str, WrenchFileHandle* file) {
+size_t file_write_string(const char* str, WrenchFileHandle* file)
+{
 	assert(str);
 	assert(file);
 	return file_write(str, strlen(str), file);
 }
 
-size_t file_vprintf(WrenchFileHandle* file, const char* format, va_list vlist) {
+size_t file_vprintf(WrenchFileHandle* file, const char* format, va_list vlist)
+{
 	assert(file);
 	
 	int val = vfprintf(file->file, format, vlist);
@@ -202,7 +214,8 @@ size_t file_vprintf(WrenchFileHandle* file, const char* format, va_list vlist) {
 	return val;
 }
 
-size_t file_printf(WrenchFileHandle* file, const char* format, ...) {
+size_t file_printf(WrenchFileHandle* file, const char* format, ...)
+{
 	assert(file);
 	
 	va_list list;
@@ -213,7 +226,8 @@ size_t file_printf(WrenchFileHandle* file, const char* format, ...) {
 	return val;
 }
 
-int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin) {
+int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin)
+{
 	assert(file);
 	
 	int _origin;
@@ -237,14 +251,16 @@ int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin) {
 	return val;
 }
 
-size_t file_tell(WrenchFileHandle* file) {
+size_t file_tell(WrenchFileHandle* file)
+{
 	assert(file);
 	
 	snprintf(error_buffer, sizeof(error_buffer), "%s", message_ok);
 	return ftell(file->file);
 }
 
-size_t file_size(WrenchFileHandle* file) {
+size_t file_size(WrenchFileHandle* file)
+{
 	assert(file);
 	
 	size_t offset = file_tell(file);
@@ -263,7 +279,8 @@ size_t file_size(WrenchFileHandle* file) {
 	return size_val;
 }
 
-int file_flush(WrenchFileHandle* file) {
+int file_flush(WrenchFileHandle* file)
+{
 	assert(file);
 
 	if(file->may_flush == 0 || file->update_mode != 0 || file->last_op != _last_unflushed_op_write) {
@@ -283,7 +300,8 @@ int file_flush(WrenchFileHandle* file) {
 	return val;
 }
 
-int file_close(WrenchFileHandle* file) {
+int file_close(WrenchFileHandle* file)
+{
 	assert(file);
 	assert(file->file);
 

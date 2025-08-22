@@ -21,7 +21,8 @@
 #include <core/filesystem.h>
 #include <gui/config.h>
 
-struct BinPaths {
+struct BinPaths
+{
 	std::string wrenchbuild;
 	std::string wrencheditor;
 	std::string wrenchvis;
@@ -29,14 +30,16 @@ struct BinPaths {
 
 static BinPaths bin_paths;
 
-void gui::setup_bin_paths(const char* bin_path) {
+void gui::setup_bin_paths(const char* bin_path)
+{
 	fs::path directory = fs::path(bin_path).remove_filename();
 	bin_paths.wrenchbuild = (directory/"wrenchbuild").string();
 	bin_paths.wrencheditor = (directory/"wrencheditor").string();
 	bin_paths.wrenchvis = (directory/"wrenchvis").string();
 }
 
-void gui::run_unpacker(const UnpackerParams& params, CommandThread& command) {
+void gui::run_unpacker(const UnpackerParams& params, CommandThread& command)
+{
 	std::vector<std::string> args;
 	args.emplace_back(bin_paths.wrenchbuild);
 	args.emplace_back("unpack");
@@ -48,7 +51,8 @@ void gui::run_unpacker(const UnpackerParams& params, CommandThread& command) {
 	command.start(args);
 }
 
-std::string gui::run_packer(const PackerParams& params, CommandThread& command) {
+std::string gui::run_packer(const PackerParams& params, CommandThread& command)
+{
 	std::string output_path;
 	
 	std::vector<std::string> args;
@@ -56,23 +60,23 @@ std::string gui::run_packer(const PackerParams& params, CommandThread& command) 
 	args.emplace_back("pack");
 	args.emplace_back(params.game_path);
 	args.emplace_back(params.overlay_path);
-	for(const std::string& mod_path : params.mod_paths) {
+	for (const std::string& mod_path : params.mod_paths) {
 		args.emplace_back(mod_path);
 	}
 	args.emplace_back("-a");
 	args.emplace_back(params.build);
 	args.emplace_back("-o");
-	if(fs::path(params.output_path).is_relative()) {
+	if (fs::path(params.output_path).is_relative()) {
 		output_path = (fs::path(g_config.paths.builds_folder)/params.output_path).string();
 	} else {
 		output_path = params.output_path;
 	}
 	args.emplace_back(output_path);
 	args.emplace_back("-h");
-	if(params.debug.single_level_enabled || params.debug.nompegs) {
+	if (params.debug.single_level_enabled || params.debug.nompegs) {
 		std::string single_level = params.debug.single_level_enabled ? params.debug.single_level_tag : "";
 		std::string flags;
-		if(params.debug.nompegs) {
+		if (params.debug.nompegs) {
 			flags += "nompegs";
 		}
 		args.emplace_back("testlf," + single_level + "," + flags);
@@ -84,7 +88,8 @@ std::string gui::run_packer(const PackerParams& params, CommandThread& command) 
 	return output_path;
 }
 
-void gui::run_occlusion_rebuild(const RebuildOcclusionParams& params, CommandThread& command) {
+void gui::run_occlusion_rebuild(const RebuildOcclusionParams& params, CommandThread& command)
+{
 	std::vector<std::string> args;
 	args.emplace_back(bin_paths.wrenchvis);
 	args.emplace_back(params.game_path);
@@ -93,7 +98,8 @@ void gui::run_occlusion_rebuild(const RebuildOcclusionParams& params, CommandThr
 	command.start(args);
 }
 
-void gui::open_in_editor(const EditorParams& params) {
+void gui::open_in_editor(const EditorParams& params)
+{
 	const char* args[] = {
 		bin_paths.wrencheditor.c_str(),
 		params.game_path.c_str(),
@@ -102,7 +108,8 @@ void gui::open_in_editor(const EditorParams& params) {
 	execute_command(ARRAY_SIZE(args), args, false);
 }
 
-void gui::run_emulator(const EmulatorParams& params, bool blocking) {
+void gui::run_emulator(const EmulatorParams& params, bool blocking)
+{
 	const char* args[] = {
 		g_config.paths.emulator_path.c_str(),
 		params.iso_path.c_str()

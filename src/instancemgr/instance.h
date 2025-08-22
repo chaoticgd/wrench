@@ -47,7 +47,8 @@ struct Instances;
 struct WtfNode;
 struct WtfWriter;
 
-struct InstanceId {
+struct InstanceId
+{
 	InstanceType type;
 	s32 value;
 	
@@ -58,7 +59,8 @@ static constexpr const InstanceId NULL_INSTANCE_ID = {
 	INST_NONE, -1
 };
 
-enum InstanceComponent : u32 {
+enum InstanceComponent : u32
+{
 	COM_NONE = 0,
 	COM_TRANSFORM = (1 << 1),
 	COM_CLASS = (1 << 2),
@@ -69,7 +71,8 @@ enum InstanceComponent : u32 {
 	COM_CAMERA_COLLISION = (1 << 7)
 };
 
-enum class TransformMode {
+enum class TransformMode
+{
 	NONE,
 	MATRIX,
 	MATRIX_INVERSE,
@@ -80,10 +83,11 @@ enum class TransformMode {
 	POSITION_ROTATION_SCALE
 };
 
-class TransformComponent {
+class TransformComponent
+{
 public:
-	TransformComponent() : _mode(TransformMode::NONE) {}
-	TransformComponent(TransformMode mode) : _mode(mode) {}
+	TransformComponent() : m_mode(TransformMode::NONE) {}
+	TransformComponent(TransformMode mode) : m_mode(mode) {}
 
 	const glm::mat4& matrix() const;
 	const glm::mat4& inverse_matrix() const;
@@ -96,20 +100,22 @@ public:
 	void read(const WtfNode* src);
 	void write(WtfWriter* dest) const;
 private:
-	TransformMode _mode;
-	glm::mat4 _matrix = glm::mat4(1.f);
-	glm::mat4 _inverse_matrix = glm::mat4(1.f);
-	glm::vec3 _rot = glm::vec3(0.f);
-	f32 _scale = 1.f;
+	TransformMode m_mode;
+	glm::mat4 m_matrix = glm::mat4(1.f);
+	glm::mat4 m_inverse_matrix = glm::mat4(1.f);
+	glm::vec3 m_rot = glm::vec3(0.f);
+	f32 m_scale = 1.f;
 };
 
-enum class PvarPointerType {
+enum class PvarPointerType
+{
 	NULLPTR, // Null pointer.
 	RELATIVE, // Pointer relative to the beginning of the pvar structure.
 	SHARED // Pointer to a structure in the shared data section.
 };
 
-struct PvarPointer {
+struct PvarPointer
+{
 	s32 offset = -1;
 	PvarPointerType type = PvarPointerType::NULLPTR;
 	s32 shared_data_id = -1;
@@ -117,7 +123,8 @@ struct PvarPointer {
 	friend auto operator<=>(const PvarPointer& lhs, const PvarPointer& rhs) = default;
 };
 
-struct PvarComponent {
+struct PvarComponent
+{
 	std::vector<u8> data;
 	std::vector<PvarPointer> pointers; // Must always be sorted!
 	mutable s32 temp_pvar_index = -1;
@@ -129,7 +136,8 @@ struct PvarComponent {
 
 using GlobalPvarPointers = std::vector<std::pair<s32, s32>>;
 
-struct CameraCollisionParams {
+struct CameraCollisionParams
+{
 	bool enabled = false;
 	s32 flags = 0;
 	s32 i_value = 0;
@@ -138,14 +146,15 @@ struct CameraCollisionParams {
 	friend auto operator<=>(const CameraCollisionParams& lhs, const CameraCollisionParams& rhs) = default;
 };
 
-struct Instance {
+struct Instance
+{
 	virtual ~Instance() {}
 	
-	InstanceId id() const { return _id; }
-	void set_id_value(s32 value) { verify_fatal(_id.value == -1); _id.value = value; }
-	InstanceType type() const { return _id.type; }
-	u32 components_mask() const { return _components_mask; }
-	bool has_component(InstanceComponent component) const { return (_components_mask & component) == component; }
+	InstanceId id() const { return m_id; }
+	void set_id_value(s32 value) { verify_fatal(m_id.value == -1); m_id.value = value; }
+	InstanceType type() const { return m_id.type; }
+	u32 components_mask() const { return m_components_mask; }
+	bool has_component(InstanceComponent component) const { return (m_components_mask & component) == component; }
 	bool selected = false;
 	bool referenced_by_selected = false;
 	bool is_dragging = false;
@@ -178,23 +187,23 @@ struct Instance {
 	
 protected:
 	Instance(InstanceType type, u32 components_mask)
-		: _id({type, -1})
-		, _components_mask(components_mask) {}
+		: m_id({type, -1})
+		, m_components_mask(components_mask) {}
 	Instance(InstanceType type, u32 components_mask, TransformMode transform_mode)
-		: _id({type, -1})
-		, _components_mask(components_mask)
-		, _transform(transform_mode) {}
+		: m_id({type, -1})
+		, m_components_mask(components_mask)
+		, m_transform(transform_mode) {}
 private:
-	InstanceId _id;
-	u32 _components_mask;
-	TransformComponent _transform;
-	s32 _o_class = -1;
-	PvarComponent _pvars;
-	glm::vec3 _colour = glm::vec3(0.f, 0.f, 0.f);
-	f32 _draw_distance = 0.f;
-	std::vector<glm::vec4> _spline;
-	glm::vec4 _bounding_sphere = glm::vec4(0.f);
-	CameraCollisionParams _camera_collision;
+	InstanceId m_id;
+	u32 m_components_mask;
+	TransformComponent m_transform;
+	s32 m_o_class = -1;
+	PvarComponent m_pvars;
+	glm::vec3 m_colour = glm::vec3(0.f, 0.f, 0.f);
+	f32 m_draw_distance = 0.f;
+	std::vector<glm::vec4> m_spline;
+	glm::vec4 m_bounding_sphere = glm::vec4(0.f);
+	CameraCollisionParams m_camera_collision;
 };
 
 const char* instance_type_to_string(InstanceType type);
@@ -203,12 +212,14 @@ const char* instance_type_to_string(InstanceType type);
 #include "_generated_instance_types.inl"
 #undef GENERATED_INSTANCE_TYPES
 
-enum MobyModeBits1 {
+enum MobyModeBits1
+{
 	MOBY_MB1_HAS_SUB_VARS = 0x20
 };
 
 template <typename ThisInstance>
-class InstanceList {
+class InstanceList
+{
 private:
 	std::vector<ThisInstance> _instances;
 	std::map<s32, s32> _id_to_index;

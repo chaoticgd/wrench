@@ -22,11 +22,14 @@ static void create_pvar_type(CppType& type);
 static void move_assign_pvar_type(CppType& lhs, CppType& rhs);
 static void destroy_pvar_type(CppType& type);
 
-CppType::CppType(CppTypeDescriptor d) : descriptor(d) {
+CppType::CppType(CppTypeDescriptor d)
+	: descriptor(d)
+{
 	create_pvar_type(*this);
 }
 
-CppType::CppType(CppType&& rhs) {
+CppType::CppType(CppType&& rhs)
+{
 	name = std::move(rhs.name);
 	offset = rhs.offset;
 	size = rhs.size;
@@ -38,12 +41,14 @@ CppType::CppType(CppType&& rhs) {
 	move_assign_pvar_type(*this, rhs);
 }
 
-CppType::~CppType() {
+CppType::~CppType()
+{
 	destroy_pvar_type(*this);
 }
 
-CppType& CppType::operator=(CppType&& rhs) {
-	if(this == &rhs) {
+CppType& CppType::operator=(CppType&& rhs)
+{
+	if (this == &rhs) {
 		return *this;
 	}
 	
@@ -62,8 +67,9 @@ CppType& CppType::operator=(CppType&& rhs) {
 	return *this;
 }
 
-static void create_pvar_type(CppType& type) {
-	switch(type.descriptor) {
+static void create_pvar_type(CppType& type)
+{
+	switch (type.descriptor) {
 		case CPP_ARRAY: {
 			new (&type.array) CppArray;
 			break;
@@ -95,8 +101,9 @@ static void create_pvar_type(CppType& type) {
 	}
 }
 
-static void move_assign_pvar_type(CppType& lhs, CppType& rhs) {
-	switch(lhs.descriptor) {
+static void move_assign_pvar_type(CppType& lhs, CppType& rhs)
+{
+	switch (lhs.descriptor) {
 		case CPP_ARRAY: {
 			lhs.array = std::move(rhs.array);
 			break;
@@ -128,8 +135,9 @@ static void move_assign_pvar_type(CppType& lhs, CppType& rhs) {
 	}
 }
 
-static void destroy_pvar_type(CppType& type) {
-	switch(type.descriptor) {
+static void destroy_pvar_type(CppType& type)
+{
+	switch (type.descriptor) {
 		case CPP_ARRAY: {
 			type.array.~CppArray();
 			break;
@@ -163,8 +171,9 @@ static void destroy_pvar_type(CppType& type) {
 
 // *****************************************************************************
 
-void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const CppABI& abi) {
-	switch(type.descriptor) {
+void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const CppABI& abi)
+{
+	switch (type.descriptor) {
 		case CPP_ARRAY: {
 			verify_fatal(type.array.element_type.get());
 			layout_cpp_type(*type.array.element_type, types, abi);
@@ -191,8 +200,8 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
-			for(CppType& field : type.struct_or_union.fields) {
-				if(field.descriptor == CPP_BITFIELD) {
+			for (CppType& field : type.struct_or_union.fields) {
+				if (field.descriptor == CPP_BITFIELD) {
 					verify(!type.struct_or_union.is_union, "Union '%s' contains a bitfield.", type.name.c_str());
 				}
 			}
@@ -201,20 +210,20 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 			
 			bool has_custom_alignment = type.alignment > -1;
 			s32 offset = 0;
-			if(!has_custom_alignment) {
+			if (!has_custom_alignment) {
 				type.alignment = 1;
 			}
-			for(size_t i = 0; i < type.struct_or_union.fields.size(); i++) {
+			for (size_t i = 0; i < type.struct_or_union.fields.size(); i++) {
 				CppType& field = type.struct_or_union.fields[i];
 				
 				layout_cpp_type(field, types, abi);
-				if(!has_custom_alignment) {
+				if (!has_custom_alignment) {
 					type.alignment = std::max(field.alignment, type.alignment);
 				}
 				field.offset = align32(offset, field.alignment);
 				
 				bool add_offset = !type.struct_or_union.is_union;
-				if(field.descriptor == CPP_BITFIELD) {
+				if (field.descriptor == CPP_BITFIELD) {
 					// Check if this is the last bitfield for the storage unit.
 					bool end_of_group = true;
 					if (i + 1 < type.struct_or_union.fields.size()) {
@@ -227,7 +236,7 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 					field.bitfield.bit_offset = bit_offset;
 					bit_offset += field.bitfield.bit_size;
 					
-					if(end_of_group) {
+					if (end_of_group) {
 						verify(bit_offset == field.bitfield.storage_unit_type->size * 8,
 							"Sum of bitfield sizes (%d) not equal to size of storage unit (%d) for type '%s'.",
 							bit_offset, field.bitfield.storage_unit_type->size * 8, type.name.c_str());
@@ -237,7 +246,7 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 					add_offset &= end_of_group;
 				}
 				
-				if(add_offset) {
+				if (add_offset) {
 					offset = field.offset + field.size;
 				}
 			}
@@ -247,7 +256,7 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 		case CPP_TYPE_NAME: {
 			auto iter = types.find(type.type_name.string);
 			verify(iter != types.end(), "Failed to lookup type '%s'.", type.type_name.string.c_str());
-			if(iter->second.size < 0 || iter->second.alignment < 0) {
+			if (iter->second.size < 0 || iter->second.alignment < 0) {
 				layout_cpp_type(iter->second, types, abi);
 			}
 			type.size = iter->second.size;
@@ -263,7 +272,8 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 }
 
 // State passed down to recursive dump_cpp_type calls.
-struct CppDumpContext {
+struct CppDumpContext
+{
 	const char* name = nullptr;
 	std::vector<char> pointers;
 	std::vector<s32> array_subscripts;
@@ -273,26 +283,30 @@ struct CppDumpContext {
 	s32 digits_for_offset = 3;
 };
 
-static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDumpContext& parent_context);
+static void dump_cpp_type_impl(
+	OutBuffer& dest, const CppType& type, const CppDumpContext& parent_context);
 static void dump_pointers_name_and_subscripts(OutBuffer& dest, CppDumpContext& context);
 static void indent_cpp(OutBuffer& dest, const CppDumpContext& context);
 
-void dump_cpp_type(OutBuffer& dest, const CppType& type) {
+void dump_cpp_type(OutBuffer& dest, const CppType& type)
+{
 	CppDumpContext context;
-	if(type.size > -1) {
+	if (type.size > -1) {
 		context.digits_for_offset = (s32) ceilf(log2(type.size) / 4.f);
 	}
 	dump_cpp_type_impl(dest, type, context);
 }
 
-static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDumpContext& parent_context) {
+static void dump_cpp_type_impl(
+	OutBuffer& dest, const CppType& type, const CppDumpContext& parent_context)
+{
 	CppDumpContext context = parent_context;
-	if(!type.name.empty()) {
+	if (!type.name.empty()) {
 		context.name = type.name.c_str();
 	}
 	context.depth++;
 	
-	switch(type.descriptor) {
+	switch (type.descriptor) {
 		case CPP_ARRAY: {
 			context.array_subscripts.emplace_back(type.array.element_count);
 			verify_fatal(type.array.element_type.get());
@@ -311,20 +325,20 @@ static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDu
 			break;
 		}
 		case CPP_ENUM: {
-			if(context.depth == 1 && context.name) {
+			if (context.depth == 1 && context.name) {
 				dest.writelf("enum %s {", context.name);
 			} else {
 				dest.writelf("enum {");
 			}
 			context.indentation++;
-			for(size_t i = 0; i < type.enumeration.constants.size(); i++) {
+			for (size_t i = 0; i < type.enumeration.constants.size(); i++) {
 				auto& [number, name] = type.enumeration.constants[i];
 				indent_cpp(dest, context);
 				dest.writelf("%s = %d%s", name.c_str(), number, i + 1 == type.enumeration.constants.size());
 			}
 			context.indentation--;
 			indent_cpp(dest, context);
-			if(context.depth == 1 || !context.name) {
+			if (context.depth == 1 || !context.name) {
 				dest.writelf("};");
 			} else {
 				dest.writelf("} %s;", context.name);
@@ -333,20 +347,20 @@ static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDu
 		}
 		case CPP_STRUCT_OR_UNION: {
 			const char* keyword = type.struct_or_union.is_union ? "union" : "struct";
-			if(context.depth == 1 && context.name) {
+			if (context.depth == 1 && context.name) {
 				dest.writesf("%s %s {", keyword, context.name);
 			} else {
 				dest.writesf("%s {", keyword);
 			}
-			if(type.size > -1) {
+			if (type.size > -1) {
 				dest.writelf(" // 0x%x", type.size);
 			} else {
 				dest.write<char>('\n');
 			}
 			context.indentation++;
-			for(const CppType& field : type.struct_or_union.fields) {
+			for (const CppType& field : type.struct_or_union.fields) {
 				indent_cpp(dest, context);
-				if(field.offset > -1) {
+				if (field.offset > -1) {
 					dest.writesf("/* 0x%0*x */ ", context.digits_for_offset, context.offset + field.offset);
 				}
 				dump_cpp_type_impl(dest, field, context);
@@ -354,7 +368,7 @@ static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDu
 			}
 			context.indentation--;
 			indent_cpp(dest, context);
-			if(context.depth == 1 || !context.name) {
+			if (context.depth == 1 || !context.name) {
 				dest.writelf("};");
 			} else {
 				dest.writelf("} %s;", context.name);
@@ -376,37 +390,40 @@ static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDu
 	}
 }
 
-static void dump_pointers_name_and_subscripts(OutBuffer& dest, CppDumpContext& context) {
+static void dump_pointers_name_and_subscripts(OutBuffer& dest, CppDumpContext& context)
+{
 	dest.writesf(" ");
-	for(size_t i = context.pointers.size(); i > 0; i--) {
+	for (size_t i = context.pointers.size(); i > 0; i--) {
 		dest.writesf("%c", context.pointers[i - 1]);
 	}
 	context.pointers.clear();
-	if(context.name) {
+	if (context.name) {
 		dest.writesf("%s", context.name);
 		context.name = nullptr;
 	}
-	for(s32 subscript : context.array_subscripts) {
+	for (s32 subscript : context.array_subscripts) {
 		dest.writesf("[%d]", subscript);
 	}
 	context.array_subscripts.clear();
 }
 
-static void indent_cpp(OutBuffer& dest, const CppDumpContext& context) {
-	for(s32 i = 0; i < context.indentation; i++) {
+static void indent_cpp(OutBuffer& dest, const CppDumpContext& context)
+{
+	for (s32 i = 0; i < context.indentation; i++) {
 		dest.writesf("\t");
 	}
 }
 
 
-void destructively_merge_cpp_structs(CppType& dest, CppType& src) {
+void destructively_merge_cpp_structs(CppType& dest, CppType& src)
+{
 	verify_fatal(dest.name == src.name);
 	verify_fatal(dest.descriptor == CPP_STRUCT_OR_UNION && !dest.struct_or_union.is_union);
 	verify_fatal(src.descriptor == CPP_STRUCT_OR_UNION && !src.struct_or_union.is_union);
-	for(CppType& dest_field : dest.struct_or_union.fields) {
-		if(dest_field.name.starts_with("unknown")) {
-			for(CppType& src_field : src.struct_or_union.fields) {
-				if(src_field.offset == dest_field.offset && src_field.size == dest_field.size) {
+	for (CppType& dest_field : dest.struct_or_union.fields) {
+		if (dest_field.name.starts_with("unknown")) {
+			for (CppType& src_field : src.struct_or_union.fields) {
+				if (src_field.offset == dest_field.offset && src_field.size == dest_field.size) {
 					dest_field = std::move(src_field);
 				}
 			}
@@ -414,8 +431,9 @@ void destructively_merge_cpp_structs(CppType& dest, CppType& src) {
 	}
 }
 
-const char* cpp_built_in(CppBuiltIn built_in) {
-	switch(built_in) {
+const char* cpp_built_in(CppBuiltIn built_in)
+{
+	switch (built_in) {
 		case CPP_VOID: return "void";
 		case CPP_CHAR: return "char";
 		case CPP_UCHAR: return "unsigned char";
@@ -446,9 +464,11 @@ const char* cpp_built_in(CppBuiltIn built_in) {
 	return "error";
 }
 
-const CppPreprocessorDirective* cpp_directive(const CppType& type, CppPreprocessorDirectiveType directive_type) {
-	for(const CppPreprocessorDirective& directive : type.preprocessor_directives) {
-		if(directive.type == directive_type) {
+const CppPreprocessorDirective* cpp_directive(
+	const CppType& type, CppPreprocessorDirectiveType directive_type)
+{
+	for (const CppPreprocessorDirective& directive : type.preprocessor_directives) {
+		if (directive.type == directive_type) {
 			return &directive;
 		}
 	}

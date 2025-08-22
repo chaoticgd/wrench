@@ -157,19 +157,22 @@ packed_struct(TieFatVertex,
 	/* 0x16 0x2c */ u16 gs_packet_write_ofs_2;
 )
 
-struct TiePrimitive {
+struct TiePrimitive
+{
 	s32 material_index;
 	std::vector<TieDinkyVertex> vertices;
 	s32 winding_order;
 };
 
-struct TiePacket {
+struct TiePacket
+{
 	std::vector<TiePrimitive> primitives;
 	std::vector<u8> multipass;
 	std::vector<u8> scissor;
 };
 
-struct TieLod {
+struct TieLod
+{
 	std::vector<TiePacket> packets;
 };
 
@@ -181,7 +184,8 @@ packed_struct(TieAdGifs,
 	/* 0x40 */ GifAdData16 d5_miptbp2_1;
 )
 
-struct TieClass {
+struct TieClass
+{
 	TieLod lods[3];
 	f32 scale;
 	std::vector<TieAdGifs> ad_gifs;

@@ -32,7 +32,8 @@ template <typename T> T read_inst_float_list(const WtfAttribute* attrib, const c
 std::vector<u8> read_inst_byte_list(const WtfAttribute* attrib, const char* name);
 
 template <typename Dest>
-static void read_inst_attrib(Dest& dest, const WtfAttribute* src, const char* name) {
+static void read_inst_attrib(Dest& dest, const WtfAttribute* src, const char* name)
+{
 	if constexpr(std::is_same_v<Dest, bool>) {
 		verify(src->type == WTF_BOOLEAN, "Invalid '%s' field.", name);
 		dest = src->boolean;
@@ -64,14 +65,16 @@ static void read_inst_attrib(Dest& dest, const WtfAttribute* src, const char* na
 }
 
 template <typename T>
-static void read_inst_field(T& dest, const WtfNode* src, const char* name) {
+static void read_inst_field(T& dest, const WtfNode* src, const char* name)
+{
 	const WtfAttribute* attrib = wtf_attribute(src, name);
 	verify(attrib, "Missing '%s' field.", name);
 	read_inst_attrib(dest, attrib, name);
 }
 
 template <typename Value>
-static void write_inst_attrib(WtfWriter* ctx, const Value& value) {
+static void write_inst_attrib(WtfWriter* ctx, const Value& value)
+{
 	if constexpr(std::is_same_v<Value, bool>) {
 		wtf_write_boolean(ctx, value);
 	} else if constexpr(std::is_integral_v<Value>) {
@@ -99,7 +102,8 @@ static void write_inst_attrib(WtfWriter* ctx, const Value& value) {
 }
 
 template <typename T>
-static void write_inst_field(WtfWriter* ctx, const char* name, const T& value) {
+static void write_inst_field(WtfWriter* ctx, const char* name, const T& value)
+{
 	wtf_begin_attribute(ctx, name);
 	write_inst_attrib(ctx, value);
 	wtf_end_attribute(ctx);

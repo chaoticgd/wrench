@@ -21,20 +21,23 @@
 
 #include "util.h"
 
-enum class PixelFormat {
+enum class PixelFormat
+{
 	RGBA,
 	GRAYSCALE,
 	PALETTED_4,
 	PALETTED_8
 };
 
-struct TextureMipmaps {
+struct TextureMipmaps
+{
 	s32 mip_levels = 0;
 	std::vector<u8> mips[4];
 	std::vector<u32> palette;
 };
 
-class Texture {
+class Texture
+{
 public:
 	Texture();
 	
@@ -74,7 +77,7 @@ public:
 	bool operator==(const Texture& rhs) const;
 	
 private:
-	std::vector<u32> _palette;
+	std::vector<u32> m_palette;
 };
 
 #endif

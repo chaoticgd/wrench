@@ -21,7 +21,8 @@
 #include <wrenchbuild/asset_packer.h>
 
 static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig config, const char* hint);
-static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildConfig config, const char* hint);
+static void pack_elf_asset(
+	OutputStream& dest, const ElfFileAsset& src, BuildConfig config, const char* hint);
 static bool extract_file(std::vector<u8>& ratchet, const std::vector<u8>& packed);
 
 on_load(ElfFile, []() {
@@ -46,13 +47,13 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 	verify(stream.get(), "Cannot open ELF file '%s' for writing.", path.c_str());
 	dest.set_src(ref);
 	
-	if(convert_from_packed_executable) {
+	if (convert_from_packed_executable) {
 		std::vector<u8> packed_bytes = src.read_multiple<u8>(0, src.size());
 		std::vector<u8> ratchet_bytes;
-		if(extract_file(ratchet_bytes, packed_bytes)) {
+		if (extract_file(ratchet_bytes, packed_bytes)) {
 			ElfFile elf = read_ratchet_executable(ratchet_bytes);
 			const ElfFile* donor_elf = nullptr;
-			switch(config.game()) {
+			switch (config.game()) {
 				case Game::RAC:
 				case Game::GC:
 					break;
@@ -76,12 +77,12 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 			src.seek(0);
 			Stream::copy(*stream, src, src.size());
 		}
-	} else if(convert_from_ratchet_executable) {
+	} else if (convert_from_ratchet_executable) {
 		std::vector<u8> ratchet_bytes = src.read_multiple<u8>(0, src.size());
 		ElfFile elf = read_ratchet_executable(ratchet_bytes);
 		const ElfFile* donor_elf = nullptr;
-		if(config.game() == Game::DL) {
-			if(elf.sections.size() >= 3 && elf.sections[2].header.type == SHT_NOBITS) {
+		if (config.game() == Game::DL) {
+			if (elf.sections.size() >= 3 && elf.sections[2].header.type == SHT_NOBITS) {
 				donor_elf = &DONOR_DL_LEVEL_ELF_NOBITS_HEADERS;
 			} else {
 				donor_elf = &DONOR_DL_LEVEL_ELF_PROGBITS_HEADERS;
@@ -100,8 +101,9 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 	}
 }
 
-static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildConfig config, const char* hint) {
-	if(g_asset_packer_dry_run) {
+static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildConfig config, const char* hint)
+{
+	if (g_asset_packer_dry_run) {
 		return;
 	}
 	
@@ -110,7 +112,7 @@ static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildCon
 	auto stream = src.src().open_binary_file_for_reading();
 	verify(stream.get(), "Cannot open ELF file '%s' for reading.", src.src().path.string().c_str());
 	
-	if(convert_to_ratchet_executable) {
+	if (convert_to_ratchet_executable) {
 		std::vector<u8> elf_bytes = stream->read_multiple<u8>(0, stream->size());
 		ElfFile elf = read_elf_file(elf_bytes);
 		std::vector<u8> ratchet_bytes;
@@ -121,15 +123,16 @@ static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildCon
 	}
 }
 
-static bool extract_file(std::vector<u8>& ratchet, const std::vector<u8>& packed) {
+static bool extract_file(std::vector<u8>& ratchet, const std::vector<u8>& packed)
+{
 	s64 wad_ofs = -1;
-	for(s64 i = 0; i < packed.size() - 3; i++) {
-		if(memcmp(&packed.data()[i], "WAD", 3) == 0) {
+	for (s64 i = 0; i < packed.size() - 3; i++) {
+		if (memcmp(&packed.data()[i], "WAD", 3) == 0) {
 			wad_ofs = i;
 			break;
 		}
 	}
-	if(wad_ofs > -1) {
+	if (wad_ofs > -1) {
 		decompress_wad(ratchet, WadBuffer{packed.data() + wad_ofs, packed.data() + packed.size()});
 		return true;
 	} else {

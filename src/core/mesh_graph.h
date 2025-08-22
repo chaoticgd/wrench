@@ -44,18 +44,22 @@ INDEX_WRAPPER_TYPE(MaterialIndex)
 #define NULL_FACE_INDEX FaceIndex{-1}
 #define NULL_MATERIAL_INDEX MaterialIndex{-1}
 
-class MeshGraph {
-	struct VertexInfo {
+class MeshGraph
+{
+	struct VertexInfo
+	{
 		std::vector<EdgeIndex> edges;
 		s32 ref_count = 0;
 	};
 	std::vector<VertexInfo> _vertices;
-	struct EdgeInfo {
+	struct EdgeInfo
+	{
 		VertexIndex v[2];
 		FaceIndex faces[2] = {NULL_FACE_INDEX, NULL_FACE_INDEX};
 	};
 	std::vector<EdgeInfo> _edges;
-	struct FaceInfo {
+	struct FaceInfo
+	{
 		VertexIndex v[3];
 		MaterialIndex material;
 		s32 strip_index = -1;

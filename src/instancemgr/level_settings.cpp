@@ -23,16 +23,17 @@
 #include <instancemgr/wtf_glue.h>
 #include <instancemgr/gameplay_convert.h>
 
-LevelSettings read_level_settings(const WtfNode* node) {
+LevelSettings read_level_settings(const WtfNode* node)
+{
 	LevelSettings settings;
 	
 	const WtfAttribute* background_col_attrib = wtf_attribute(node, "background_col");
-	if(background_col_attrib) {
+	if (background_col_attrib) {
 		settings.background_colour.emplace();
 		read_inst_attrib(*settings.background_colour, background_col_attrib, "background_col");
 	}
 	const WtfAttribute* fog_col_attrib = wtf_attribute(node, "fog_col");
-	if(fog_col_attrib) {
+	if (fog_col_attrib) {
 		settings.fog_colour.emplace();
 		read_inst_attrib(*settings.fog_colour, fog_col_attrib, "fog_col");
 	}
@@ -50,29 +51,29 @@ LevelSettings read_level_settings(const WtfNode* node) {
 	read_inst_field(settings.ship_camera_cuboid_end, node, "ship_camera_cuboid_end");
 	
 	const WtfAttribute* core_sounds_count_attrib = wtf_attribute_of_type(node, "core_sounds_count", WTF_NUMBER);
-	if(core_sounds_count_attrib) {
+	if (core_sounds_count_attrib) {
 		settings.core_sounds_count = core_sounds_count_attrib->number.i;
 	}
 	
 	const WtfAttribute* rac3_third_part_attrib = wtf_attribute_of_type(node, "rac3_third_part", WTF_NUMBER);
-	if(rac3_third_part_attrib) {
+	if (rac3_third_part_attrib) {
 		settings.rac3_third_part = rac3_third_part_attrib->number.i;
 	}
 	
 	const WtfAttribute* dbg_attack_damage_attrib = wtf_attribute(node, "dbg_attack_damage");
-	if(dbg_attack_damage_attrib) {
+	if (dbg_attack_damage_attrib) {
 		settings.dbg_attack_damage.emplace();
 		read_inst_attrib(*settings.dbg_attack_damage, dbg_attack_damage_attrib, "dbg_attack_damage");
 	}
 	
-	for(const WtfNode* plane_node = wtf_first_child(node, "ChunkPlane"); plane_node != nullptr; plane_node = wtf_next_sibling(plane_node, "ChunkPlane")) {
+	for (const WtfNode* plane_node = wtf_first_child(node, "ChunkPlane"); plane_node != nullptr; plane_node = wtf_next_sibling(plane_node, "ChunkPlane")) {
 		ChunkPlane& plane = settings.chunk_planes.emplace_back();
 		read_inst_field(plane.point, plane_node, "point");
 		read_inst_field(plane.normal, plane_node, "normal");
 	}
 	
-	for(const WtfNode* third_part = wtf_first_child(node, "DlThirdPart"); third_part != nullptr; third_part = wtf_next_sibling(third_part, "DlThirdPart")) {
-		if(!settings.third_part.has_value()) {
+	for (const WtfNode* third_part = wtf_first_child(node, "DlThirdPart"); third_part != nullptr; third_part = wtf_next_sibling(third_part, "DlThirdPart")) {
+		if (!settings.third_part.has_value()) {
 			settings.third_part.emplace();
 		}
 		LevelSettingsThirdPart& dest = settings.third_part->emplace_back();
@@ -83,7 +84,7 @@ LevelSettings read_level_settings(const WtfNode* node) {
 	}
 	
 	const WtfNode* reward_stats = wtf_child(node, nullptr, "reward_stats");
-	if(reward_stats) {
+	if (reward_stats) {
 		settings.reward_stats.emplace();
 		read_inst_field(settings.reward_stats->xp_decay_rate, reward_stats, "xp_decay_rate");
 		read_inst_field(settings.reward_stats->xp_decay_min, reward_stats, "xp_decay_min");
@@ -94,7 +95,7 @@ LevelSettings read_level_settings(const WtfNode* node) {
 	}
 	
 	const WtfNode* fifth_part = wtf_child(node, nullptr, "fifth_part");
-	if(fifth_part) {
+	if (fifth_part) {
 		settings.fifth_part.emplace();
 		read_inst_field(settings.fifth_part->unknown_0, fifth_part, "unknown_0");
 		read_inst_field(settings.fifth_part->moby_inst_count, fifth_part, "moby_inst_count");
@@ -107,9 +108,10 @@ LevelSettings read_level_settings(const WtfNode* node) {
 	return settings;
 }
 
-void rewrite_level_settings_links(LevelSettings& settings, const Instances& instances) {
+void rewrite_level_settings_links(LevelSettings& settings, const Instances& instances)
+{
 	settings.ship_path = rewrite_link(settings.ship_path.id, INST_PATH, instances, "gameplay level settings");
-	if(settings.ship_path.id > -1) {
+	if (settings.ship_path.id > -1) {
 		settings.ship_camera_cuboid_start = rewrite_link(settings.ship_camera_cuboid_start.id, INST_CUBOID, instances, "gameplay level settings");
 		settings.ship_camera_cuboid_end = rewrite_link(settings.ship_camera_cuboid_end.id, INST_CUBOID, instances, "gameplay level settings");
 	} else {
@@ -118,11 +120,12 @@ void rewrite_level_settings_links(LevelSettings& settings, const Instances& inst
 	}
 }
 
-void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
-	if(settings.background_colour.has_value()) {
+void write_level_settings(WtfWriter* ctx, const LevelSettings& settings)
+{
+	if (settings.background_colour.has_value()) {
 		write_inst_field(ctx, "background_col", *settings.background_colour);
 	}
-	if(settings.fog_colour.has_value()) {
+	if (settings.fog_colour.has_value()) {
 		write_inst_field(ctx, "fog_col", *settings.fog_colour);
 	}
 	write_inst_field(ctx, "fog_near_dist", settings.fog_near_dist);
@@ -138,19 +141,19 @@ void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
 	write_inst_field(ctx, "ship_camera_cuboid_start", settings.ship_camera_cuboid_start);
 	write_inst_field(ctx, "ship_camera_cuboid_end", settings.ship_camera_cuboid_end);
 	
-	if(settings.core_sounds_count.has_value()) {
+	if (settings.core_sounds_count.has_value()) {
 		wtf_write_integer_attribute(ctx, "core_sounds_count", *settings.core_sounds_count);
 	}
 	
-	if(settings.rac3_third_part.has_value()) {
+	if (settings.rac3_third_part.has_value()) {
 		wtf_write_integer_attribute(ctx, "rac3_third_part", *settings.rac3_third_part);
 	}
 	
-	if(settings.dbg_attack_damage.has_value()) {
+	if (settings.dbg_attack_damage.has_value()) {
 		write_inst_field(ctx, "dbg_attack_damage", *settings.dbg_attack_damage);
 	}
 	
-	for(s32 i = 0; i < (s32) settings.chunk_planes.size(); i++) {
+	for (s32 i = 0; i < (s32) settings.chunk_planes.size(); i++) {
 		const ChunkPlane& plane = settings.chunk_planes[i];
 		wtf_begin_node(ctx, "ChunkPlane", std::to_string(i).c_str());
 		write_inst_field(ctx, "point", plane.point);
@@ -158,7 +161,7 @@ void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
 		wtf_end_node(ctx);
 	}
 	
-	for(s32 i = 0; i < (s32) opt_size(settings.third_part); i++) {
+	for (s32 i = 0; i < (s32) opt_size(settings.third_part); i++) {
 		const LevelSettingsThirdPart& third_part = (*settings.third_part)[i];
 		wtf_begin_node(ctx, "DlThirdPart", std::to_string(i).c_str());
 		write_inst_field(ctx, "unknown_0", third_part.unknown_0);
@@ -168,7 +171,7 @@ void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
 		wtf_end_node(ctx);
 	}
 	
-	if(settings.reward_stats.has_value()) {
+	if (settings.reward_stats.has_value()) {
 		wtf_begin_node(ctx, nullptr, "reward_stats");
 		const LevelSettingsRewardStats& stats = *settings.reward_stats;
 		write_inst_field(ctx, "xp_decay_rate", stats.xp_decay_rate);
@@ -180,7 +183,7 @@ void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
 		wtf_end_node(ctx);
 	}
 	
-	if(settings.fifth_part.has_value()) {
+	if (settings.fifth_part.has_value()) {
 		wtf_begin_node(ctx, nullptr, "fifth_part");
 		const LevelSettingsFifthPart& fifth_part = *settings.fifth_part;
 		write_inst_field(ctx, "unknown_0", fifth_part.unknown_0);
@@ -193,17 +196,18 @@ void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
 	}
 }
 
-s32 chunk_index_from_position(const glm::vec3& point, const LevelSettings& level_settings) {
-	if(!level_settings.chunk_planes.empty()) {
+s32 chunk_index_from_position(const glm::vec3& point, const LevelSettings& level_settings)
+{
+	if (!level_settings.chunk_planes.empty()) {
 		glm::vec3 plane_1_point = level_settings.chunk_planes[0].point;
 		glm::vec3 plane_1_normal = level_settings.chunk_planes[0].normal;
-		if(glm::dot(plane_1_normal, point - plane_1_point) > 0.f) {
+		if (glm::dot(plane_1_normal, point - plane_1_point) > 0.f) {
 			return 1;
 		}
-		if(level_settings.chunk_planes.size() > 1) {
+		if (level_settings.chunk_planes.size() > 1) {
 			glm::vec3 plane_2_point = level_settings.chunk_planes[1].point;
 			glm::vec3 plane_2_normal = level_settings.chunk_planes[1].normal;
-			if(glm::dot(plane_2_normal, point - plane_2_point) > 0.f) {
+			if (glm::dot(plane_2_normal, point - plane_2_point) > 0.f) {
 				return 2;
 			}
 		}

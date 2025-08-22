@@ -24,11 +24,13 @@
 
 namespace gui {
 
-struct UnpackerParams {
+struct UnpackerParams
+{
 	std::string iso_path;
 };
 
-struct PackerParams {
+struct PackerParams
+{
 	std::string game_path;
 	std::string overlay_path;
 	std::vector<std::string> mod_paths;
@@ -43,18 +45,21 @@ struct PackerParams {
 	} debug;
 };
 
-struct RebuildOcclusionParams {
+struct RebuildOcclusionParams
+{
 	std::string game_path;
 	std::string mod_path;
 	std::string level_wad_asset;
 };
 
-struct EditorParams {
+struct EditorParams
+{
 	std::string game_path;
 	std::string mod_path;
 };
 
-struct EmulatorParams {
+struct EmulatorParams
+{
 	std::string iso_path;
 };
 

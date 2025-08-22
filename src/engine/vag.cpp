@@ -18,9 +18,10 @@
 
 #include "vag.h"
 
-Sector32 get_vag_size(InputStream& src, Sector32 sector) {
+Sector32 get_vag_size(InputStream& src, Sector32 sector)
+{
 	VagHeader header = src.read<VagHeader>(sector.bytes());
-	if(memcmp(header.magic, "VAGp", 4) != 0) {
+	if (memcmp(header.magic, "VAGp", 4) != 0) {
 		return {1};
 	}
 	return Sector32::size_from_bytes(sizeof(VagHeader) + byte_swap_32(header.data_size));

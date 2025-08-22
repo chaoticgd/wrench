@@ -27,26 +27,32 @@
 #include <core/texture.h>
 #include <gui/gui.h>
 
-struct RenderSubMesh {
+struct RenderSubMesh
+{
 	GLuint material;
 	GlBuffer vertex_buffer;
 	s32 vertex_count = 0;
 };
 
-struct RenderMaterial {
+struct RenderMaterial
+{
 	glm::vec4 colour{1.f, 1.f, 1.f, 1.f};
 	GlTexture texture;
 };
 
-struct RenderMesh {
+struct RenderMesh
+{
 	std::vector<RenderSubMesh> submeshes;
 };
 
 RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals);
 RenderMesh upload_gltf_mesh(const GLTF::Mesh& mesh, bool generate_normals);
-std::vector<RenderMaterial> upload_collada_materials(const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures);
-std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materials, const std::vector<Texture>& textures);
-RenderMaterial upload_collada_material(const ColladaMaterial& material, const std::vector<Texture>& textures);
+std::vector<RenderMaterial> upload_collada_materials(
+	const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures);
+std::vector<RenderMaterial> upload_materials(
+	const std::vector<Material>& materials, const std::vector<Texture>& textures);
+RenderMaterial upload_collada_material(
+	const ColladaMaterial& material, const std::vector<Texture>& textures);
 RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures);
 
 #endif

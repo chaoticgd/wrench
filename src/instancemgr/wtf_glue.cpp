@@ -18,30 +18,34 @@
 
 #include "wtf_glue.h"
 
-bool read_inst_bool(const WtfNode* node, const char* name) {
+bool read_inst_bool(const WtfNode* node, const char* name)
+{
 	const WtfAttribute* attrib = wtf_attribute_of_type(node, name, WTF_BOOLEAN);
 	verify(attrib, "Missing '%s' field.", name);
 	return (bool) attrib->boolean;
 }
 
-s32 read_inst_int(const WtfNode* node, const char* name) {
+s32 read_inst_int(const WtfNode* node, const char* name)
+{
 	const WtfAttribute* attrib = wtf_attribute_of_type(node, name, WTF_NUMBER);
 	verify(attrib, "Missing '%s' field.", name);
 	return attrib->number.i;
 }
 
-f32 read_inst_float(const WtfNode* node, const char* name) {
+f32 read_inst_float(const WtfNode* node, const char* name)
+{
 	const WtfAttribute* attrib = wtf_attribute_of_type(node, name, WTF_NUMBER);
 	verify(attrib, "Missing '%s' field.", name);
 	return attrib->number.f;
 }
 
 template <typename T>
-T read_inst_float_list(const WtfAttribute* attrib, const char* name) {
+T read_inst_float_list(const WtfAttribute* attrib, const char* name)
+{
 	verify(attrib->type == WTF_ARRAY, "Invalid '%s' field.", name);
 	T dest;
 	s32 index = 0;
-	for(const WtfAttribute* value = attrib->first_array_element; value != nullptr; value = value->next) {
+	for (const WtfAttribute* value = attrib->first_array_element; value != nullptr; value = value->next) {
 		verify(value->type == WTF_NUMBER && index < (sizeof(T) / sizeof(f32)), "Invalid '%s' attribute.", name);
 		*((f32*) &dest + index++) = value->number.f;
 	}
@@ -54,11 +58,12 @@ template glm::vec4 read_inst_float_list<glm::vec4>(const WtfAttribute* attrib, c
 template glm::mat3x4 read_inst_float_list<glm::mat3x4>(const WtfAttribute* attrib, const char* name);
 template glm::mat4 read_inst_float_list<glm::mat4>(const WtfAttribute* attrib, const char* name);
 
-std::vector<u8> read_inst_byte_list(const WtfAttribute* attrib, const char* name) {
+std::vector<u8> read_inst_byte_list(const WtfAttribute* attrib, const char* name)
+{
 	verify(attrib, "Missing '%s' attribute.", name);
 	verify(attrib->type == WTF_ARRAY, "Invalid '%s' field.", name);
 	std::vector<u8> dest;
-	for(const WtfAttribute* value = attrib->first_array_element; value != nullptr; value = value->next) {
+	for (const WtfAttribute* value = attrib->first_array_element; value != nullptr; value = value->next) {
 		verify(value->type == WTF_NUMBER, "Invalid '%s' field.", name);
 		dest.emplace_back((u8) value->number.i);
 	}

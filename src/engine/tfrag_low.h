@@ -154,7 +154,8 @@ packed_struct(TfragStrip,
 	/* 0x03 0x0c */ s8 pad;
 )
 
-struct TfragMemoryMap {
+struct TfragMemoryMap
+{
 	s32 header_common_addr = -1;
 	s32 ad_gifs_common_addr = -1;
 	s32 positions_common_addr = -1;
@@ -172,7 +173,8 @@ struct TfragMemoryMap {
 };
 
 // A full tfrag, including all LOD levels and migration information.
-struct Tfrag {
+struct Tfrag
+{
 	Vec4f bsphere;
 	u8 lod_2_rgba_count;
 	u8 lod_1_rgba_count;
@@ -209,7 +211,8 @@ struct Tfrag {
 	u16 positions_slack; // Space between the positions and vertex info arrays in VU memory.
 };
 
-struct Tfrags {
+struct Tfrags
+{
 	f32 thingy;
 	u32 mysterious_second_thingy;
 	std::vector<Tfrag> fragments;

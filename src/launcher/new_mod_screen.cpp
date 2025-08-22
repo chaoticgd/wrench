@@ -24,30 +24,31 @@
 #include <assetmgr/asset_types.h>
 #include <gui/config.h>
 
-bool new_mod_screen() {
+bool new_mod_screen()
+{
 	bool result = false;
 	
 	ImVec2 centre = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(ImVec2(400, 170), ImGuiCond_Always);
 	
-	if(ImGui::BeginPopupModal("New Mod##the_popup", nullptr, ImGuiWindowFlags_NoResize)) {
+	if (ImGui::BeginPopupModal("New Mod##the_popup", nullptr, ImGuiWindowFlags_NoResize)) {
 		static size_t mods_folder = 0;
 		static std::string folder;
 		static GameInfo info;
 		static bool open_folder = true;
 		
-		if(g_config.paths.mods_folders.size() >= 1) {
+		if (g_config.paths.mods_folders.size() >= 1) {
 			bool drop_down;
-			if(mods_folder < g_config.paths.mods_folders.size()) {
+			if (mods_folder < g_config.paths.mods_folders.size()) {
 				drop_down = ImGui::BeginCombo("Parent Folder", g_config.paths.mods_folders[mods_folder].c_str());
 			} else {
 				drop_down = ImGui::BeginCombo("Parent Folder", "(select mods folder)");
 			}
 			
-			if(drop_down) {
-				for(size_t i = 0; i < g_config.paths.mods_folders.size(); i++) {
-					if(ImGui::Selectable(g_config.paths.mods_folders[i].c_str())) {
+			if (drop_down) {
+				for (size_t i = 0; i < g_config.paths.mods_folders.size(); i++) {
+					if (ImGui::Selectable(g_config.paths.mods_folders[i].c_str())) {
 						mods_folder = i;
 					}
 				}
@@ -57,7 +58,7 @@ bool new_mod_screen() {
 			ImGui::InputText("Folder Name", &folder);
 			ImGui::InputText("Display Name", &info.name);
 			
-			if(mods_folder < g_config.paths.mods_folders.size() && ImGui::Button("Create")) {
+			if (mods_folder < g_config.paths.mods_folders.size() && ImGui::Button("Create")) {
 				info.format_version = ASSET_FORMAT_VERSION;
 				info.type = AssetBankType::MOD;
 				info.mod.supported_games = {Game::RAC, Game::GC, Game::UYA, Game::DL};
@@ -71,7 +72,7 @@ bool new_mod_screen() {
 				stream.open(path/"gameinfo.txt");
 				stream.write_n((u8*) text.data(), text.size());
 				
-				if(open_folder) {
+				if (open_folder) {
 					open_in_file_manager(path.string().c_str());
 				}
 				
@@ -88,7 +89,7 @@ bool new_mod_screen() {
 		}
 		
 		ImGui::SameLine();
-		if(ImGui::Button("Cancel")) {
+		if (ImGui::Button("Cancel")) {
 			mods_folder = 0;
 			folder = "";
 			info = {};

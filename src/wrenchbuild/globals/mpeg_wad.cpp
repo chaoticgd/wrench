@@ -61,11 +61,13 @@ on_load(Mpeg, []() {
 	MpegWadAsset::funcs.pack_dl = wrap_wad_hint_packer_func<MpegWadAsset, UyaDlMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
 })
 
-static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& header, InputStream& src, BuildConfig config) {
-	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
-		if(!header.mpegs[i].empty()) {
+static void unpack_rac_mpeg_wad(
+	MpegWadAsset& dest, const RacMpegWadHeader& header, InputStream& src, BuildConfig config)
+{
+	for (s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
+		if (!header.mpegs[i].empty()) {
 			MpegAsset& mpeg = dest.mpegs().foreign_child<MpegAsset>(i);
-			if(config.is_ntsc()) {
+			if (config.is_ntsc()) {
 				unpack_asset(mpeg.video_ntsc(), src, header.mpegs[i], config, FMT_BINARY_PSS);
 			} else {
 				unpack_asset(mpeg.video_pal(), src, header.mpegs[i], config, FMT_BINARY_PSS);
@@ -74,21 +76,27 @@ static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& head
 	}
 }
 
-static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, const MpegWadAsset& src, BuildConfig config, const char* hint) {
-	if(strcmp(next_hint(&hint), "nompegs") == 0) {
+static void pack_rac_mpeg_wad(
+	OutputStream& dest,
+	RacMpegWadHeader& header,
+	const MpegWadAsset& src,
+	BuildConfig config,
+	const char* hint)
+{
+	if (strcmp(next_hint(&hint), "nompegs") == 0) {
 		return;
 	}
 	
 	const CollectionAsset& mpegs = src.get_mpegs();
-	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
-		if(mpegs.has_child(i)) {
+	for (s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
+		if (mpegs.has_child(i)) {
 			const MpegAsset& mpeg = mpegs.get_child(i).as<MpegAsset>();
-			if(config.is_ntsc()) {
-				if(mpeg.has_video_ntsc()) {
+			if (config.is_ntsc()) {
+				if (mpeg.has_video_ntsc()) {
 					header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_ntsc(), config);
 				}
 			} else {
-				if(mpeg.has_video_pal()) {
+				if (mpeg.has_video_pal()) {
 					header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_pal(), config);
 				}
 			}
@@ -97,11 +105,13 @@ static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, cons
 }
 
 template <typename Header>
-static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, InputStream& src, BuildConfig config) {
-	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
-		if(!header.mpegs[i].subtitles.empty() || !header.mpegs[i].video.empty()) {
+static void unpack_gc_uya_dl_mpeg_wad(
+	MpegWadAsset& dest, const Header& header, InputStream& src, BuildConfig config)
+{
+	for (s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
+		if (!header.mpegs[i].subtitles.empty() || !header.mpegs[i].video.empty()) {
 			MpegAsset& mpeg = dest.mpegs().foreign_child<MpegAsset>(i);
-			if(config.is_ntsc()) {
+			if (config.is_ntsc()) {
 				unpack_asset(mpeg.video_ntsc(), src, header.mpegs[i].video, config, FMT_BINARY_PSS);
 			} else {
 				unpack_asset(mpeg.video_pal(), src, header.mpegs[i].video, config, FMT_BINARY_PSS);
@@ -113,24 +123,26 @@ static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, 
 }
 
 template <typename Header>
-static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const MpegWadAsset& src, BuildConfig config, const char* hint) {
-	if(strcmp(next_hint(&hint), "nompegs") == 0) {
+static void pack_gc_uya_dl_mpeg_wad(
+	OutputStream& dest, Header& header, const MpegWadAsset& src, BuildConfig config, const char* hint)
+{
+	if (strcmp(next_hint(&hint), "nompegs") == 0) {
 		return;
 	}
 	
 	const CollectionAsset& mpegs = src.get_mpegs();
-	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
-		if(mpegs.has_child(i)) {
+	for (s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
+		if (mpegs.has_child(i)) {
 			const MpegAsset& mpeg = mpegs.get_child(i).as<MpegAsset>();
-			if(mpeg.has_subtitles()) {
+			if (mpeg.has_subtitles()) {
 				header.mpegs[i].subtitles = pack_asset_sa<SectorByteRange>(dest, mpeg.get_subtitles(), config, FMT_COLLECTION_SUBTITLES);
 			}
-			if(config.is_ntsc()) {
-				if(mpeg.has_video_ntsc()) {
+			if (config.is_ntsc()) {
+				if (mpeg.has_video_ntsc()) {
 					header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_ntsc(), config);
 				}
 			} else {
-				if(mpeg.has_video_pal()) {
+				if (mpeg.has_video_pal()) {
 					header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_pal(), config);
 				}
 			}

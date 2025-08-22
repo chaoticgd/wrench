@@ -24,10 +24,26 @@
 #include <wrenchbuild/level/level_chunks.h>
 
 void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);
-void pack_rac_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config);
+void pack_rac_level_data_wad(
+	OutputStream& dest,
+	const std::vector<LevelChunk>& chunks,
+	const LevelWadAsset& src,
+	BuildConfig config);
+
 void unpack_gc_uya_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);
-void pack_gc_uya_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config);
+void pack_gc_uya_level_data_wad(
+	OutputStream& dest,
+	const std::vector<LevelChunk>& chunks,
+	const LevelWadAsset& src,
+	BuildConfig config);
+
 s32 unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);
-void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& art_instances, std::vector<u8>& gameplay, const LevelWadAsset& src, BuildConfig config);
+void pack_dl_level_data_wad(
+	OutputStream& dest,
+	const std::vector<LevelChunk>& chunks,
+	std::vector<u8>& art_instances,
+	std::vector<u8>& gameplay,
+	const LevelWadAsset& src,
+	BuildConfig config);
 
 #endif

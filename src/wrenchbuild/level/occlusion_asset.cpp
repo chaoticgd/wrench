@@ -35,7 +35,8 @@ on_load(Occlusion, []() {
 	OcclusionAsset::funcs.pack_dl = wrap_packer_func<OcclusionAsset>(pack_occlusion);
 })
 
-static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig config)
+{
 	dest.set_memory_budget(src.size());
 	
 	std::vector<u8> grid_buffer = src.read_multiple<u8>(0, src.size());
@@ -57,8 +58,9 @@ static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig
 	dest.set_grid(ref);
 }
 
-static void pack_occlusion(OutputStream& dest, const OcclusionAsset& src, BuildConfig config) {
-	if(g_asset_packer_dry_run) {
+static void pack_occlusion(OutputStream& dest, const OcclusionAsset& src, BuildConfig config)
+{
+	if (g_asset_packer_dry_run) {
 		return;
 	}
 	

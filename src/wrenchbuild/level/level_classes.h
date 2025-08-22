@@ -25,13 +25,68 @@
 
 struct LevelCoreHeader;
 
-void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, const std::vector<GsRamEntry>& gs_table, InputStream& gs_ram, const std::vector<s64>& block_bounds, BuildConfig config, s32 moby_stash_addr, const std::set<s32>& moby_stash);
-void pack_moby_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config);
-void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, BuildConfig config);
-void pack_tie_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config);
-void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, BuildConfig config);
-void pack_shrub_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config);
-std::array<ArrayRange, 3> allocate_class_tables(OutputStream& index, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs);
+void unpack_moby_classes(
+	CollectionAsset& data_dest,
+	CollectionAsset& refs_dest,
+	const LevelCoreHeader& header,
+	InputStream& index,
+	InputStream& data,
+	const std::vector<GsRamEntry>& gs_table,
+	InputStream& gs_ram,
+	const std::vector<s64>& block_bounds,
+	BuildConfig config,
+	s32 moby_stash_addr,
+	const std::set<s32>& moby_stash);
+void pack_moby_classes(
+	OutputStream& index,
+	OutputStream& core,
+	const CollectionAsset& classes,
+	const std::vector<LevelTexture>& textures,
+	s32 table,
+	s32 texture_index,
+	BuildConfig config);
+
+void unpack_tie_classes(
+	CollectionAsset& data_dest,
+	CollectionAsset& refs_dest,
+	const LevelCoreHeader& header,
+	InputStream& index,
+	InputStream& data,
+	InputStream& gs_ram,
+	const std::vector<s64>& block_bounds,
+	BuildConfig config);
+void pack_tie_classes(
+	OutputStream& index,
+	OutputStream& core,
+	const CollectionAsset& classes,
+	const std::vector<LevelTexture>& textures,
+	s32 table,
+	s32 texture_index,
+	BuildConfig config);
+
+void unpack_shrub_classes(
+	CollectionAsset& data_dest,
+	CollectionAsset& refs_dest,
+	const LevelCoreHeader& header,
+	InputStream& index,
+	InputStream& data,
+	InputStream& gs_ram,
+	const std::vector<s64>& block_bounds,
+	BuildConfig config);
+void pack_shrub_classes(
+	OutputStream& index,
+	OutputStream& core,
+	const CollectionAsset& classes,
+	const std::vector<LevelTexture>& textures,
+	s32 table,
+	s32 texture_index,
+	BuildConfig config);
+
+std::array<ArrayRange, 3> allocate_class_tables(
+	OutputStream& index,
+	const CollectionAsset& mobies,
+	const CollectionAsset& ties,
+	const CollectionAsset& shrubs);
 
 
 #endif

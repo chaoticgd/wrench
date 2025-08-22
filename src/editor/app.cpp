@@ -26,38 +26,44 @@
 #include "renderer.h"
 #include "fs_includes.h"
 
-Level* app::get_level() {
-	return _lvl ? &(*_lvl) : nullptr;
+Level* app::get_level()
+{
+	return m_lvl ? &(*m_lvl) : nullptr;
 }
 
-const Level* app::get_level() const {
-	return _lvl ? &(*_lvl) : nullptr;
+const Level* app::get_level() const
+{
+	return m_lvl ? &(*m_lvl) : nullptr;
 }
 
-BaseEditor* app::get_editor() {
+BaseEditor* app::get_editor()
+{
 	return get_level();
 }
 
-void app::load_level(LevelAsset& asset) {
-	_lvl.emplace();
-	_lvl->read(asset, game);
+void app::load_level(LevelAsset& asset)
+{
+	m_lvl.emplace();
+	m_lvl->read(asset, game);
 	reset_camera(this);
 }
 
-bool app::has_camera_control() {
+bool app::has_camera_control()
+{
 	return render_settings.camera_control;
 }
 
-GlTexture load_icon(s32 index) {
+GlTexture load_icon(s32 index)
+{
 	u8 buffer[32][16];
 	g_editorwad.seek(wadinfo.editor.tool_icons[index].offset.bytes());
 	g_editorwad.read_n((u8*) buffer, sizeof(buffer));
 	
 	uint32_t image_buffer[32][32];
-	for(s32 y = 0; y < 32; y++) {
-		for(s32 x = 0; x < 32; x++) {
+	for (s32 y = 0; y < 32; y++) {
+		for (s32 x = 0; x < 32; x++) {
 			u8 gray;
-			if(x % 2 == 0) {
+			if (x % 2 == 0) {
 				gray = ((buffer[y][x / 2] & 0xf0) >> 4) * 17;
 			} else {
 				gray = ((buffer[y][x / 2] & 0x0f) >> 0) * 17;

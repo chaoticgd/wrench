@@ -34,7 +34,8 @@ on_load(Collision, []() {
 	CollisionAsset::funcs.pack_dl = wrap_packer_func<CollisionAsset>(pack_collision_asset);
 })
 
-static void unpack_collision_asset(CollisionAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_collision_asset(CollisionAsset& dest, InputStream& src, BuildConfig config)
+{
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
 	ColladaScene scene = read_collision(bytes);
 	std::vector<u8> collada = write_collada(scene);
@@ -46,30 +47,38 @@ static void unpack_collision_asset(CollisionAsset& dest, InputStream& src, Build
 	mesh.set_name(scene.meshes.at(0).name);
 	
 	CollectionAsset& materials = dest.materials();
-	for(ColladaMaterial& material : scene.materials) {
+	for (ColladaMaterial& material : scene.materials) {
 		CollisionMaterialAsset& asset = materials.child<CollisionMaterialAsset>(material.name.c_str());
 		asset.set_name(material.name);
 		asset.set_id(material.collision_id);
 	}
 }
 
-static void pack_collision_asset(OutputStream& dest, const CollisionAsset& src, BuildConfig config) {
-	if(g_asset_packer_dry_run) {
+static void pack_collision_asset(OutputStream& dest, const CollisionAsset& src, BuildConfig config)
+{
+	if (g_asset_packer_dry_run) {
 		return;
 	}
 	
 	pack_level_collision(dest, src, nullptr, nullptr, -1);
 }
 
-struct ColInstance {
+struct ColInstance
+{
 	s32 mesh;
 	glm::mat4 matrix;
 };
 
-void pack_level_collision(OutputStream& dest, const CollisionAsset& src, const LevelWadAsset* level_wad, const Gameplay* gameplay, s32 chunk) {
+void pack_level_collision(
+	OutputStream& dest,
+	const CollisionAsset& src,
+	const LevelWadAsset* level_wad,
+	const Gameplay* gameplay,
+	s32 chunk)
+{
 	ColladaScene scene;
 	
-	for(s32 i = 0; i < 256; i++) {
+	for (s32 i = 0; i < 256; i++) {
 		ColladaMaterial& material = scene.materials.emplace_back();
 		material.collision_id = i;
 	}
@@ -79,26 +88,26 @@ void pack_level_collision(OutputStream& dest, const CollisionAsset& src, const L
 	
 	append_collision(mesh, src, glm::mat4(1.f));
 	
-	if(level_wad && gameplay && gameplay->level_settings.has_value()) {
+	if (level_wad && gameplay && gameplay->level_settings.has_value()) {
 		const CollectionAsset& moby_classes = level_wad->get_moby_classes();
-		for(const MobyInstance& inst : opt_iterator(gameplay->moby_instances)) {
-			if(inst.has_static_collision && chunk_index_from_position(inst.transform().pos(), *gameplay->level_settings) == chunk) {
+		for (const MobyInstance& inst : opt_iterator(gameplay->moby_instances)) {
+			if (inst.has_static_collision && chunk_index_from_position(inst.transform().pos(), *gameplay->level_settings) == chunk) {
 				const MobyClassAsset& class_asset = moby_classes.get_child(inst.o_class()).as<MobyClassAsset>();
 				append_collision(mesh, class_asset.get_static_collision(), inst.transform().matrix());
 			}
 		}
 		
 		const CollectionAsset& tie_classes = level_wad->get_tie_classes();
-		for(const TieInstance& inst : opt_iterator(gameplay->tie_instances)) {
-			if(inst.has_static_collision && chunk_index_from_position(inst.transform().pos(), *gameplay->level_settings) == chunk) {
+		for (const TieInstance& inst : opt_iterator(gameplay->tie_instances)) {
+			if (inst.has_static_collision && chunk_index_from_position(inst.transform().pos(), *gameplay->level_settings) == chunk) {
 				const TieClassAsset& class_asset = tie_classes.get_child(inst.o_class()).as<TieClassAsset>();
 				append_collision(mesh, class_asset.get_static_collision(), inst.transform().matrix());
 			}
 		}
 		
 		const CollectionAsset& shrub_classes = level_wad->get_shrub_classes();
-		for(const ShrubInstance& inst : opt_iterator(gameplay->shrub_instances)) {
-			if(inst.has_static_collision && chunk_index_from_position(inst.transform().pos(), *gameplay->level_settings) == chunk) {
+		for (const ShrubInstance& inst : opt_iterator(gameplay->shrub_instances)) {
+			if (inst.has_static_collision && chunk_index_from_position(inst.transform().pos(), *gameplay->level_settings) == chunk) {
 				const ShrubClassAsset& class_asset = shrub_classes.get_child(inst.o_class()).as<ShrubClassAsset>();
 				append_collision(mesh, class_asset.get_static_collision(), inst.transform().matrix());
 			}
@@ -110,7 +119,8 @@ void pack_level_collision(OutputStream& dest, const CollisionAsset& src, const L
 	dest.write_v(bytes);
 }
 
-static void append_collision(Mesh& dest, const CollisionAsset& src, const glm::mat4& matrix) {
+static void append_collision(Mesh& dest, const CollisionAsset& src, const glm::mat4& matrix)
+{
 	const MeshAsset& mesh_asset = src.get_mesh();
 	std::string xml = mesh_asset.src().read_text_file();
 	ColladaScene scene = read_collada((char*) xml.data());
@@ -119,8 +129,8 @@ static void append_collision(Mesh& dest, const CollisionAsset& src, const glm::m
 		std::string name = asset.name();
 		s32 id = asset.id();
 		
-		for(ColladaMaterial& material : scene.materials) {
-			if(material.name == name) {
+		for (ColladaMaterial& material : scene.materials) {
+			if (material.name == name) {
 				material.collision_id = id;
 			}
 		}
@@ -130,21 +140,21 @@ static void append_collision(Mesh& dest, const CollisionAsset& src, const glm::m
 	verify(mesh, "Cannot find mesh '%s' in collision model.", mesh_asset.name());
 	
 	s32 vertex_base = (s32) dest.vertices.size();
-	for(const Vertex& vertex_src : mesh->vertices) {
+	for (const Vertex& vertex_src : mesh->vertices) {
 		Vertex& vertex_dest = dest.vertices.emplace_back(vertex_src);
 		vertex_dest.pos = matrix * glm::vec4(vertex_dest.pos, 1.f);
 	}
 	
-	for(const SubMesh& submesh_src : mesh->submeshes) {
+	for (const SubMesh& submesh_src : mesh->submeshes) {
 		SubMesh& submesh_dest = dest.submeshes.emplace_back();
 		submesh_dest.material = scene.materials.at(submesh_src.material).collision_id;
 		verify(submesh_dest.material != -1, "Tried to reference collision material that doesn't exist.");
 		submesh_dest.faces = submesh_src.faces;
-		for(Face& face : submesh_dest.faces) {
+		for (Face& face : submesh_dest.faces) {
 			face.v0 += vertex_base;
 			face.v1 += vertex_base;
 			face.v2 += vertex_base;
-			if(face.v3 > -1) {
+			if (face.v3 > -1) {
 				face.v3 += vertex_base;
 			}
 		}

@@ -23,7 +23,8 @@
 
 #include "asset.h"
 
-class ZippedAssetBank : public AssetBank {
+class ZippedAssetBank : public AssetBank
+{
 public:
 	ZippedAssetBank(AssetForest& forest, const char* zip_path, fs::path prefix = "");
 	~ZippedAssetBank();
@@ -39,11 +40,12 @@ private:
 	s32 check_lock() const override;
 	void lock() override;
 	
-	zip_t* _zip;
-	fs::path _prefix;
+	zip_t* m_zip;
+	fs::path m_prefix;
 };
 
-class ZipInputStream : public InputStream {
+class ZipInputStream : public InputStream
+{
 public:
 	ZipInputStream() {}
 	~ZipInputStream();
@@ -57,8 +59,8 @@ public:
 	bool read_n(u8* dest, s64 size) override;
 	
 private:
-	zip_file_t* _file = nullptr;
-	s64 _size;
+	zip_file_t* m_file = nullptr;
+	s64 m_size;
 };
 
 #endif

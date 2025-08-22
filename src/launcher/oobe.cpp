@@ -29,7 +29,8 @@ static std::vector<u8> wad;
 static OobeWadHeader* header;
 static GlTexture welcome;
 
-bool run_oobe() {
+bool run_oobe()
+{
 	ByteRange64 oobe_range = wadinfo.launcher.oobe.bytes();
 	std::vector<u8> compressed = g_launcher.wad.read_multiple<u8>(oobe_range.offset, oobe_range.size);
 	decompress_wad(wad, compressed);
@@ -46,7 +47,7 @@ bool run_oobe() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	
-	while(!glfwWindowShouldClose(window) && !done) {
+	while (!glfwWindowShouldClose(window) && !done) {
 		gui::run_frame(window, oobe);
 	}
 	
@@ -57,7 +58,8 @@ bool run_oobe() {
 	return done;
 }
 
-static void oobe(f32 delta_time) {
+static void oobe(f32 delta_time)
+{
 	ImDrawList& background = *ImGui::GetBackgroundDrawList();
 	background.AddRectFilledMultiColor(ImVec2(0, 0), ImGui::GetMainViewport()->Size,
 		0xffff0000, 0xffff0000, 0xff000000, 0xff000000);
@@ -69,7 +71,7 @@ static void oobe(f32 delta_time) {
 	ImGui::Begin("Wrench Setup", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 	
 	static bool first_frame = true;
-	if(first_frame) {
+	if (first_frame) {
 		g_config.set_to_defaults();
 		first_frame = false;
 	}
@@ -83,7 +85,7 @@ static void oobe(f32 delta_time) {
 	ImGui::AlignTextToFramePadding();
 	ImGui::TextWrapped("%s", config_path.c_str());
 	ImGui::SameLine();
-	if(ImGui::Button("Copy Path")) {
+	if (ImGui::Button("Copy Path")) {
 		ImGui::SetClipboardText(config_path.c_str());
 	}
 	
@@ -103,7 +105,7 @@ static void oobe(f32 delta_time) {
 #endif
 	
 	ImGui::Separator();
-	if(ImGui::Button("Confirm")) {
+	if (ImGui::Button("Confirm")) {
 		fs::create_directories(g_config.paths.base_folder);
 		fs::create_directories(g_config.paths.mods_folders[0]);
 		fs::create_directories(g_config.paths.games_folder);
