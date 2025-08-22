@@ -74,7 +74,8 @@ static WadFileDescription WAD_FILE_TYPES[] = {
 	{"scene" , Game::UNKNOWN, WadType::LEVEL_SCENE, 0x2420}
 };
 
-std::tuple<Game, WadType, const char*> identify_wad(Buffer header) {
+std::tuple<Game, WadType, const char*> identify_wad(Buffer header)
+{
 	for(WadFileDescription& desc : WAD_FILE_TYPES) {
 		if(desc.header_size != header.size()) {
 			continue;
@@ -99,7 +100,8 @@ std::tuple<Game, WadType, const char*> identify_wad(Buffer header) {
 	return {Game::UNKNOWN, WadType::UNKNOWN, "unknown"};
 }
 
-s32 header_size_of_wad(Game game, WadType type) {
+s32 header_size_of_wad(Game game, WadType type)
+{
 	for(WadFileDescription& desc : WAD_FILE_TYPES) {
 		if(desc.game == game && desc.type == type) {
 			return desc.header_size;

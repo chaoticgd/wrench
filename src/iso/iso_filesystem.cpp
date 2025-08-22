@@ -29,7 +29,8 @@ packed_struct(IsoPathTableEntry,
 
 void read_directory_record(IsoDirectory& dest, Buffer src, s64 ofs, size_t size, size_t depth);
 
-IsoFilesystem read_iso_filesystem(InputStream& src) {
+IsoFilesystem read_iso_filesystem(InputStream& src)
+{
 	src.seek(0);
 	std::vector<u8> filesystem_buf = src.read_multiple<u8>(MAX_FILESYSTEM_SIZE_BYTES);
 	IsoFilesystem filesystem;
@@ -40,7 +41,8 @@ IsoFilesystem read_iso_filesystem(InputStream& src) {
 	return filesystem;
 }
 
-bool read_iso_filesystem(IsoFilesystem& dest, Buffer src) {
+bool read_iso_filesystem(IsoFilesystem& dest, Buffer src)
+{
 	IsoFilesystem filesystem;
 	
 	filesystem.pvd = src.read<IsoPrimaryVolumeDescriptor>(0x10 * SECTOR_SIZE, "primary volume descriptor");
@@ -63,7 +65,8 @@ bool read_iso_filesystem(IsoFilesystem& dest, Buffer src) {
 	return true;
 }
 
-void read_directory_record(IsoDirectory& dest, Buffer src, s64 ofs, size_t size, size_t depth) {
+void read_directory_record(IsoDirectory& dest, Buffer src, s64 ofs, size_t size, size_t depth)
+{
 	verify(depth <= 8, "Depth limit (8 levels) reached!");
 	
 	s64 end = ofs + size;
@@ -110,7 +113,8 @@ void read_directory_record(IsoDirectory& dest, Buffer src, s64 ofs, size_t size,
 	verify(i != 1000, "Iteration limit exceeded while reading directory!");
 }
 
-static void copy_and_pad(char* dest, const char* src, size_t size) {
+static void copy_and_pad(char* dest, const char* src, size_t size)
+{
 	size_t i;
 	for(i = 0; i < strlen(src); i++) {
 		dest[i] = src[i];
@@ -120,7 +124,8 @@ static void copy_and_pad(char* dest, const char* src, size_t size) {
 	}
 }
 
-static void flatten_subdirs(std::vector<IsoDirectory*>* flat_dirs, IsoDirectory* dir) {
+static void flatten_subdirs(std::vector<IsoDirectory*>* flat_dirs, IsoDirectory* dir)
+{
 	for(IsoDirectory& subdir : dir->subdirs) {
 		subdir.parent = dir;
 		subdir.index = flat_dirs->size();
@@ -133,7 +138,8 @@ static void flatten_subdirs(std::vector<IsoDirectory*>* flat_dirs, IsoDirectory*
 static void write_directory_records(OutputStream& dest, const IsoDirectory& dir);
 static void write_directory_record(OutputStream& dest, const IsoFileRecord& file, u8 flags);
 
-void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
+void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir)
+{
 	dest.seek(16 * SECTOR_SIZE);
 	
 	IsoPvdDateTime zeroed_datetime = {{0}};
@@ -315,7 +321,8 @@ void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
 	}
 }
 
-static void write_directory_records(OutputStream& dest, const IsoDirectory& dir) {
+static void write_directory_records(OutputStream& dest, const IsoDirectory& dir)
+{
 	// Either this is being written out to a dummy stream to calculate the space
 	// required for the directory record, or this should be being written out at
 	// the correct LBA.
@@ -338,7 +345,8 @@ static void write_directory_records(OutputStream& dest, const IsoDirectory& dir)
 	}
 }
 
-static void write_directory_record(OutputStream& dest, const IsoFileRecord& file, u8 flags) {
+static void write_directory_record(OutputStream& dest, const IsoFileRecord& file, u8 flags)
+{
 	IsoDirectoryRecord record = {0};
 	record.record_length =
 		sizeof(IsoDirectoryRecord) +
@@ -380,6 +388,7 @@ static void write_directory_record(OutputStream& dest, const IsoFileRecord& file
 	}
 }
 
-void print_file_record(const IsoFileRecord& record) {
+void print_file_record(const IsoFileRecord& record)
+{
 	printf("%-16ld%-16ld%s\n", (size_t) record.lba.sectors, (size_t) record.size, record.name.c_str());
 }

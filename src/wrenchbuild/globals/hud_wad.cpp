@@ -150,7 +150,9 @@ on_load(Hud, []() {
 	HudWadAsset::funcs.pack_dl = wrap_wad_packer_func<HudWadAsset, DlHudWadHeader>(pack_hud_wad);
 })
 
-static void unpack_hud_wad(HudWadAsset& dest, const DlHudWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_hud_wad(
+	HudWadAsset& dest, const DlHudWadHeader& header, InputStream& src, BuildConfig config)
+{
 	unpack_assets<TextureAsset>(dest.online_images(SWITCH_FILES), src, ARRAY_PAIR(header.online_images), config, FMT_TEXTURE_PIF8);
 	unpack_assets<BinaryAsset>(dest.ratchet_seqs(SWITCH_FILES), src, ARRAY_PAIR(header.ratchet_seqs), config);
 	unpack_assets<BinaryAsset>(dest.hud_seqs(SWITCH_FILES), src, ARRAY_PAIR(header.hud_seqs), config);
@@ -189,7 +191,9 @@ static void unpack_hud_wad(HudWadAsset& dest, const DlHudWadHeader& header, Inpu
 	unpack_assets<TextureAsset>(dest.tourney_plates_large(SWITCH_FILES), src, ARRAY_PAIR(header.tourney_plates_large), config, FMT_TEXTURE_PIF8);
 }
 
-static void pack_hud_wad(OutputStream& dest, DlHudWadHeader& header, const HudWadAsset& src, BuildConfig config) {
+static void pack_hud_wad(
+	OutputStream& dest, DlHudWadHeader& header, const HudWadAsset& src, BuildConfig config)
+{
 	pack_assets_sa(dest, ARRAY_PAIR(header.online_images), src.get_online_images(), config, FMT_TEXTURE_PIF8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.ratchet_seqs), src.get_ratchet_seqs(), config);
 	pack_assets_sa(dest, ARRAY_PAIR(header.hud_seqs), src.get_hud_seqs(), config);

@@ -18,9 +18,16 @@
 
 #include "book.h"
 
-static void navigation(const gui::Page** current_page, const gui::Chapter* chapters, s32 chapter_count, f32 buttons_height);
+static void navigation(
+	const gui::Page** current_page, const gui::Chapter* chapters, s32 chapter_count, f32 buttons_height);
 
-gui::BookResult gui::book(const Page** current_page, const char* id, const Chapter* chapters, s32 chapter_count, BookButtons buttons) {
+gui::BookResult gui::book(
+	const Page** current_page,
+	const char* id,
+	const Chapter* chapters,
+	s32 chapter_count,
+	BookButtons buttons)
+{
 	ImGuiStyle& s = ImGui::GetStyle();
 	ImVec2 buttons_size(0, 0);
 	switch(buttons) {
@@ -100,7 +107,9 @@ gui::BookResult gui::book(const Page** current_page, const char* id, const Chapt
 	return result;
 }
 
-static void navigation(const gui::Page** current_page, const gui::Chapter* chapters, s32 chapter_count, f32 buttons_height) {
+static void navigation(
+	const gui::Page** current_page, const gui::Chapter* chapters, s32 chapter_count, f32 buttons_height)
+{
 	if(*current_page == nullptr) {
 		verify_fatal(chapter_count > 0 && chapters[0].count > 0);
 		*current_page = &chapters[0].pages[0];

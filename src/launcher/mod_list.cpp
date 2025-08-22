@@ -34,7 +34,8 @@ static void update_mod_builds();
 static std::vector<Mod> mods;
 static size_t selected_mod = SIZE_MAX;
 
-Mod* mod_list(const std::string& filter) {
+Mod* mod_list(const std::string& filter)
+{
 	verify_fatal(g_mod_images.size() >= 1);
 	
 	std::string filter_lower = filter;
@@ -123,7 +124,8 @@ Mod* mod_list(const std::string& filter) {
 	return &mods[selected_mod];
 }
 
-void load_mod_list(const std::vector<std::string>& mods_folders) {
+void load_mod_list(const std::vector<std::string>& mods_folders)
+{
 	free_mod_list();
 	
 	for(std::string mods_dir : mods_folders) {
@@ -181,7 +183,8 @@ void load_mod_list(const std::vector<std::string>& mods_folders) {
 	update_mod_builds();
 }
 
-static void update_mod_images() {
+static void update_mod_images()
+{
 	g_mod_images.clear();
 	
 	if(selected_mod < mods.size() && mods[selected_mod].info.images.size() >= 1) {
@@ -213,7 +216,8 @@ static void update_mod_images() {
 	}
 }
 
-static void update_mod_builds() {
+static void update_mod_builds()
+{
 	g_mod_builds.clear();
 	std::set<std::string> builds;
 	for(const Mod& mod : mods) {
@@ -228,14 +232,16 @@ static void update_mod_builds() {
 	}
 }
 
-void free_mod_list() {
+void free_mod_list()
+{
 	mods.clear();
 	selected_mod = SIZE_MAX;
 	g_mod_images.clear();
 	g_mod_builds.clear();
 }
 
-std::vector<std::string> enabled_mods() {
+std::vector<std::string> enabled_mods()
+{
 	std::vector<std::string> result;
 	for(const Mod& mod : mods) {
 		if(mod.enabled) {
@@ -245,7 +251,8 @@ std::vector<std::string> enabled_mods() {
 	return result;
 }
 
-bool any_mods_enabled() {
+bool any_mods_enabled()
+{
 	for(const Mod& mod : mods) {
 		if(mod.enabled) {
 			return true;

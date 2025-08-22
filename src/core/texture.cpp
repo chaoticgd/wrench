@@ -23,7 +23,8 @@ static u8 map_palette_index(u8 index);
 
 Texture::Texture() {}
 
-Texture Texture::create_rgba(s32 width, s32 height, std::vector<u8> data) {
+Texture Texture::create_rgba(s32 width, s32 height, std::vector<u8> data)
+{
 	verify_fatal(data.size() == width * height * 4);
 	
 	Texture texture;
@@ -34,7 +35,8 @@ Texture Texture::create_rgba(s32 width, s32 height, std::vector<u8> data) {
 	return texture;
 }
 
-Texture Texture::create_grayscale(s32 width, s32 height, std::vector<u8> data) {
+Texture Texture::create_grayscale(s32 width, s32 height, std::vector<u8> data)
+{
 	verify_fatal(data.size() == width * height);
 	
 	Texture texture;
@@ -45,7 +47,9 @@ Texture Texture::create_grayscale(s32 width, s32 height, std::vector<u8> data) {
 	return texture;
 }
 
-Texture Texture::create_4bit_paletted(s32 width, s32 height, std::vector<u8> data, std::vector<u32> palette) {
+Texture Texture::create_4bit_paletted(
+	s32 width, s32 height, std::vector<u8> data, std::vector<u32> palette)
+{
 	verify_fatal(data.size() == (width * height / 2));
 	verify_fatal(palette.size() <= 16);
 	
@@ -58,7 +62,9 @@ Texture Texture::create_4bit_paletted(s32 width, s32 height, std::vector<u8> dat
 	return texture;
 }
 
-Texture Texture::create_8bit_paletted(s32 width, s32 height, std::vector<u8> data, std::vector<u32> palette) {
+Texture Texture::create_8bit_paletted(
+	s32 width, s32 height, std::vector<u8> data, std::vector<u32> palette)
+{
 	verify_fatal(data.size() == width * height);
 	verify_fatal(palette.size() <= 256);
 	
@@ -71,7 +77,8 @@ Texture Texture::create_8bit_paletted(s32 width, s32 height, std::vector<u8> dat
 	return texture;
 }
 
-s32 Texture::bits_per_component() const {
+s32 Texture::bits_per_component() const
+{
 	switch(format) {
 		case PixelFormat::RGBA: return 8;
 		case PixelFormat::PALETTED_4: return 4;
@@ -81,7 +88,8 @@ s32 Texture::bits_per_component() const {
 	verify_fatal(0);
 }
 
-s32 Texture::bits_per_pixel() const {
+s32 Texture::bits_per_pixel() const
+{
 	switch(format) {
 		case PixelFormat::RGBA: return 32;
 		case PixelFormat::PALETTED_4: return 4;
@@ -91,17 +99,20 @@ s32 Texture::bits_per_pixel() const {
 	verify_fatal(0);
 }
 
-std::vector<u32>& Texture::palette() {
+std::vector<u32>& Texture::palette()
+{
 	verify_fatal(format == PixelFormat::PALETTED_4 || format == PixelFormat::PALETTED_8)
 	return m_palette;
 }
 
-const std::vector<u32>& Texture::palette() const {
+const std::vector<u32>& Texture::palette() const
+{
 	verify_fatal(format == PixelFormat::PALETTED_4 || format == PixelFormat::PALETTED_8)
 	return m_palette;
 }
 
-void Texture::to_rgba() {
+void Texture::to_rgba()
+{
 	std::vector<u8> rgba(width * height * 4);
 	switch(format) {
 		case PixelFormat::RGBA: {
@@ -141,7 +152,8 @@ void Texture::to_rgba() {
 	format = PixelFormat::RGBA;
 }
 
-void Texture::to_grayscale() {
+void Texture::to_grayscale()
+{
 	std::vector<u8> grays(width * height * 4);
 	switch(format) {
 		case PixelFormat::RGBA: {
@@ -198,7 +210,8 @@ void Texture::to_grayscale() {
 	format = PixelFormat::GRAYSCALE;
 }
 
-void Texture::to_4bit_paletted() {
+void Texture::to_4bit_paletted()
+{
 	switch(format) {
 		case PixelFormat::RGBA: {
 			verify_not_reached("Automatic palettization not yet implemented.");
@@ -231,7 +244,8 @@ void Texture::to_4bit_paletted() {
 	format = PixelFormat::PALETTED_4;
 }
 
-void Texture::to_8bit_paletted() {
+void Texture::to_8bit_paletted()
+{
 	switch(format) {
 		case PixelFormat::RGBA: {
 			verify_not_reached("Automatic palettization not yet implemented.");
@@ -265,7 +279,8 @@ void Texture::to_8bit_paletted() {
 	format = PixelFormat::PALETTED_8;
 }
 
-void Texture::reswizzle() {
+void Texture::reswizzle()
+{
 	switch(format) {
 		case PixelFormat::PALETTED_4: {
 			verify_not_reached("Swizzling this type of texture not yet implemented.");
@@ -289,7 +304,8 @@ void Texture::reswizzle() {
 	}
 }
 
-void Texture::swizzle() {
+void Texture::swizzle()
+{
 	switch(format) {
 		case PixelFormat::PALETTED_4: {
 			verify_not_reached("Swizzling this type of texture not yet implemented.");
@@ -313,14 +329,16 @@ void Texture::swizzle() {
 	}
 }
 
-void Texture::swizzle_palette() {
+void Texture::swizzle_palette()
+{
 	std::vector<u32> original = palette();
 	for(size_t i = 0; i < palette().size(); i++) {
 		palette()[i] = original.at(map_palette_index(i));
 	}
 }
 
-void Texture::multiply_alphas() {
+void Texture::multiply_alphas()
+{
 	switch(format) {
 		case PixelFormat::RGBA:
 		case PixelFormat::GRAYSCALE: {
@@ -350,7 +368,8 @@ void Texture::multiply_alphas() {
 	}
 }
 
-void Texture::divide_alphas(bool handle_80s) {
+void Texture::divide_alphas(bool handle_80s)
+{
 	switch(format) {
 		case PixelFormat::RGBA:
 		case PixelFormat::GRAYSCALE: {
@@ -380,7 +399,8 @@ void Texture::divide_alphas(bool handle_80s) {
 	}
 }
 
-TextureMipmaps Texture::generate_mipmaps(s32 max_mip_levels) {
+TextureMipmaps Texture::generate_mipmaps(s32 max_mip_levels)
+{
 	Texture texture = *this;
 	texture.to_8bit_paletted();
 	
@@ -405,7 +425,8 @@ TextureMipmaps Texture::generate_mipmaps(s32 max_mip_levels) {
 	return output;
 }
 
-void Texture::reduce() {
+void Texture::reduce()
+{
 	std::vector<u8> reduced((width * height) / 4);
 	for(s32 y = 0; y < (height / 2); y++) {
 		for(s32 x = 0; x < (width / 2); x++) {
@@ -417,14 +438,16 @@ void Texture::reduce() {
 	height /= 2;
 }
 
-void Texture::destroy() {
+void Texture::destroy()
+{
 	width = 0;
 	height = 0;
 	data.clear();
 	m_palette.clear();
 }
 
-bool Texture::operator<(const Texture& rhs) const {
+bool Texture::operator<(const Texture& rhs) const
+{
 	if(width != rhs.width) return width < rhs.width;
 	if(height != rhs.height) return height < rhs.height;
 	if(format != rhs.format) return format < rhs.format;
@@ -432,7 +455,8 @@ bool Texture::operator<(const Texture& rhs) const {
 	return m_palette < rhs.m_palette;
 }
 
-bool Texture::operator==(const Texture& rhs) const {
+bool Texture::operator==(const Texture& rhs) const
+{
 	return width == rhs.width
 		&& height == rhs.height
 		&& format == rhs.format
@@ -440,7 +464,8 @@ bool Texture::operator==(const Texture& rhs) const {
 		&& m_palette == rhs.m_palette;
 }
 
-static s32 map_pixel_index_rac4(s32 i, s32 width) {
+static s32 map_pixel_index_rac4(s32 i, s32 width)
+{
 	s32 s = i / (width * 2);
 	s32 r = 0;
 	if (s % 2 == 0)
@@ -469,7 +494,8 @@ static s32 map_pixel_index_rac4(s32 i, s32 width) {
 	return (x % width) + (y * width);
 }
 
-static u8 map_palette_index(u8 index) {
+static u8 map_palette_index(u8 index)
+{
 	// Swap middle two bits
 	//  e.g. 00010000 becomes 00001000.
 	return (((index & 16) >> 1) != (index & 8)) ? (index ^ 0b00011000) : index;

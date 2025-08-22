@@ -41,7 +41,8 @@ packed_struct(UyaDlSubtitleHeader,
 	/* 0xc */ s16 text_offset_k;
 )
 
-void unpack_subtitles(CollectionAsset& dest, InputStream& src, BuildConfig config) {
+void unpack_subtitles(CollectionAsset& dest, InputStream& src, BuildConfig config)
+{
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
 	Buffer buffer(bytes);
 	if(config.game() == Game::GC) {
@@ -111,7 +112,8 @@ void unpack_subtitles(CollectionAsset& dest, InputStream& src, BuildConfig confi
 	}
 }
 
-void pack_subtitles(OutputStream& dest, const CollectionAsset& src, BuildConfig config) {
+void pack_subtitles(OutputStream& dest, const CollectionAsset& src, BuildConfig config)
+{
 	s32 subtitle_count = 0;
 	for(s32 i = 0; i < 1024; i++) {
 		if(src.has_child(i)) {

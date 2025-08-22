@@ -57,7 +57,11 @@ template <typename ThisEditor>
 class Editor : public BaseEditor {
 public:
 	template <typename UserData>
-	void push_command(UserData data, void (*apply)(ThisEditor& editor, UserData& data), void (*undo)(ThisEditor& editor, UserData& data)) {
+	void push_command(
+		UserData data,
+		void (*apply)(ThisEditor& editor, UserData& data),
+		void (*undo)(ThisEditor& editor, UserData& data))
+	{
 		verify(!m_pushing_command, "Recursively entered Editor::push_command.");
 		m_pushing_command = true;
 		defer([&]() { m_pushing_command = false; });

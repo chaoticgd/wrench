@@ -20,11 +20,13 @@
 
 #include <core/algorithm.h>
 
-bool OcclusionOctant::operator==(const OcclusionOctant& rhs) const {
+bool OcclusionOctant::operator==(const OcclusionOctant& rhs) const
+{
 	return x == rhs.x && y == rhs.y && z == rhs.z && memcmp(visibility, rhs.visibility, sizeof(visibility)) == 0;
 }
 
-std::vector<OcclusionOctant> read_occlusion_grid(Buffer src) {
+std::vector<OcclusionOctant> read_occlusion_grid(Buffer src)
+{
 	ERROR_CONTEXT("reading occlusion grid");
 	
 	std::vector<OcclusionOctant> octants;
@@ -74,7 +76,8 @@ std::vector<OcclusionOctant> read_occlusion_grid(Buffer src) {
 	return octants;
 }
 
-void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants) {
+void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
+{
 	ERROR_CONTEXT("writing occlusion grid");
 	
 	s64 begin_offset = dest.alloc<s32>();
@@ -191,7 +194,8 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 	dest.write(begin_offset, (s32) masks_offset);
 }
 
-s32 compute_occlusion_tree_size(std::vector<OcclusionVector> octants) {
+s32 compute_occlusion_tree_size(std::vector<OcclusionVector> octants)
+{
 	s32 tree_size = 0;
 	
 	std::stable_sort(BEGIN_END(octants), [&](auto& lhs, auto& rhs) { return lhs.x < rhs.x; });
@@ -248,7 +252,8 @@ s32 compute_occlusion_tree_size(std::vector<OcclusionVector> octants) {
 	return tree_size;
 }
 
-std::vector<OcclusionVector> read_occlusion_octants(const char* ptr) {
+std::vector<OcclusionVector> read_occlusion_octants(const char* ptr)
+{
 	std::vector<OcclusionVector> octants;
 	
 	while(*ptr != '\0') {
@@ -262,14 +267,16 @@ std::vector<OcclusionVector> read_occlusion_octants(const char* ptr) {
 	return octants;
 }
 
-void write_occlusion_octants(OutBuffer dest, const std::vector<OcclusionVector>& octants) {
+void write_occlusion_octants(OutBuffer dest, const std::vector<OcclusionVector>& octants)
+{
 	for(const OcclusionVector& octant : octants) {
 		dest.writelf("%d,%d,%d", octant.x, octant.y, octant.z);
 	}
 	dest.vec.push_back(0);
 }
 
-void swap_occlusion(std::vector<OcclusionOctant>& grid, std::vector<OcclusionVector>& vectors) {
+void swap_occlusion(std::vector<OcclusionOctant>& grid, std::vector<OcclusionVector>& vectors)
+{
 	verify_fatal(grid.size() == vectors.size());
 	for(size_t i = 0; i < grid.size(); i++) {
 		OcclusionOctant& octant = grid[i];

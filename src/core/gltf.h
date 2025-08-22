@@ -216,7 +216,8 @@ void filter_vertices(Mesh& mesh, const std::vector<Vertex>& input_vertices, bool
 
 // Check that various pairs of glTF objects are equal, used for testing.
 void verify_meshes_equal(Mesh& lhs, Mesh& rhs, bool check_vertices, bool check_indices, const char* context);
-void verify_mesh_primitives_equal(MeshPrimitive& lhs, MeshPrimitive& rhs, bool check_indices, const char* context);
+void verify_mesh_primitives_equal(
+	MeshPrimitive& lhs, MeshPrimitive& rhs, bool check_indices, const char* context);
 
 }
 

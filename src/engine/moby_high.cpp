@@ -27,7 +27,9 @@ static std::vector<TriStripConstraint> setup_moby_constraints();
 
 #define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, packet %d has bad " message ".", o_class, (s32) i);
 
-std::vector<GLTF::Mesh> recover_packets(const std::vector<MobyPacket>& packets, s32 o_class, f32 scale, bool animated) {
+std::vector<GLTF::Mesh> recover_packets(
+	const std::vector<MobyPacket>& packets, s32 o_class, f32 scale, bool animated)
+{
 	std::vector<GLTF::Mesh> output;
 	output.reserve(packets.size());
 	
@@ -151,7 +153,12 @@ static std::vector<RichIndex> fake_tristripper(const std::vector<Face>& faces) {
 //	std::vector<MobyTexCoord> sts;
 //};
 
-std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const std::vector<EffectiveMaterial>& effectives, const std::vector<Material>& materials, f32 scale) {
+std::vector<MobyPacket> build_packets(
+	const std::vector<GLTF::Mesh> input,
+	const std::vector<EffectiveMaterial>& effectives,
+	const std::vector<Material>& materials,
+	f32 scale)
+{
 	std::vector<MobyPacket> output;
 	VU0MatrixAllocator mat_alloc(max_num_joints_referenced_per_packet(input));
 	std::vector<std::vector<MatrixLivenessInfo>> liveness = compute_matrix_liveness(input);
@@ -224,7 +231,8 @@ std::vector<MobyPacket> build_packets(const std::vector<GLTF::Mesh> input, const
 	return output;
 }
 
-GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string> name) {
+GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string> name)
+{
 	GLTF::Mesh output;
 	output.name = name;
 	
@@ -244,7 +252,11 @@ GLTF::Mesh merge_packets(const std::vector<GLTF::Mesh>& packets, Opt<std::string
 	return output;
 }
 
-std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, const std::vector<s32>& material_to_effective, bool output_broken_indices) {
+std::vector<GLTF::Mesh> split_packets(
+	const GLTF::Mesh& mesh,
+	const std::vector<s32>& material_to_effective,
+	bool output_broken_indices)
+{
 	TriStripConfig config;
 	config.constraints = setup_moby_constraints();
 	config.support_index_buffer = true;
@@ -290,7 +302,8 @@ std::vector<GLTF::Mesh> split_packets(const GLTF::Mesh& mesh, const std::vector<
 	return output;
 }
 
-static std::vector<TriStripConstraint> setup_moby_constraints() {
+static std::vector<TriStripConstraint> setup_moby_constraints()
+{
 	std::vector<TriStripConstraint> constraints;
 	
 	TriStripConstraint& vu1_vertex_buffer_size = constraints.emplace_back();

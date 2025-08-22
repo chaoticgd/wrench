@@ -23,11 +23,14 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
 
-static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void unpack_instances_asset(
+	InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config);
-static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, BuildConfig config, const char* hint);
+static void pack_instances_asset(
+	OutputStream& dest, const InstancesAsset& src, BuildConfig config, const char* hint);
 static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config);
-static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
+static bool test_instances_asset(
+	std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint);
 
 on_load(Instances, []() {
@@ -47,12 +50,16 @@ on_load(Instances, []() {
 	InstancesAsset::funcs.test_dl = new AssetTestFunc(test_instances_asset);
 })
 
-static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+static void unpack_instances_asset(
+	InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint)
+{
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
 	unpack_instances(dest, nullptr, buffer, nullptr, config, hint);
 }
 
-s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint) {
+s32 unpack_instances(
+	InstancesAsset& dest, LevelWadAsset* help_occl_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint)
+{
 	std::vector<u8> main_decompressed;
 	verify(decompress_wad(main_decompressed, main), "Failed to decompress instances.");
 	
@@ -124,7 +131,8 @@ s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const 
 	return instances.moby_instances.size();
 }
 
-static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config) {
+static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, BuildConfig config)
+{
 	if(src.us_english.has_value()) {
 		MemoryInputStream us_english_stream(*src.us_english);
 		unpack_asset_impl(dest.help_messages_us_english(), us_english_stream, nullptr, config);
@@ -159,7 +167,13 @@ static void unpack_help_messages(LevelWadAsset& dest, const HelpMessages& src, B
 	}
 }
 
-Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, const std::map<std::string, CppType>& types_src, const BuildConfig& config, const char* hint) {
+Gameplay load_gameplay(
+	const Asset& src,
+	const LevelWadAsset* help_occl_src,
+	const std::map<std::string, CppType>& types_src,
+	const BuildConfig& config,
+	const char* hint)
+{
 	if(g_asset_packer_dry_run) {
 		return {};
 	}
@@ -185,7 +199,12 @@ Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, con
 	verify_not_reached("Instances asset is of an invalid type.");
 }
 
-static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, BuildConfig config, const char* hint) {
+static void pack_instances_asset(
+	OutputStream& dest,
+	const InstancesAsset& src,
+	BuildConfig config,
+	const char* hint)
+{
 	if(g_asset_packer_dry_run) {
 		return;
 	}
@@ -212,7 +231,8 @@ static void pack_instances_asset(OutputStream& dest, const InstancesAsset& src, 
 	dest.write_v(buffer);
 }
 
-static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config) {
+static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, BuildConfig config)
+{
 	if(src.has_help_messages_us_english()) {
 		MemoryOutputStream stream(dest.us_english.emplace());
 		pack_asset_impl(stream, nullptr, nullptr, src.get_help_messages_us_english(), config);
@@ -247,7 +267,9 @@ static void pack_help_messages(HelpMessages& dest, const LevelWadAsset& src, Bui
 	}
 }
 
-static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_instances_asset(
+	std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode)
+{
 	const std::vector<GameplayBlockDescription>* blocks = get_gameplay_block_descriptions(config.game(), hint);
 	
 	// Parse C++ types from the overlay asset bank.
@@ -294,7 +316,9 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	return headers_equal && data_equal;
 }
 
-static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint) {
+static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(
+	Game game, const char* hint)
+{
 	const std::vector<GameplayBlockDescription>* blocks = nullptr;
 	switch(game) {
 		case Game::RAC:

@@ -72,8 +72,20 @@ struct ParsedArgs {
 
 static int wrenchbuild(int argc, char** argv);
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
-static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory, const char* underlay_path);
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint, const char* underlay_path);
+static void unpack(
+	const fs::path& input_path,
+	const fs::path& output_path,
+	Game game,
+	Region region,
+	bool generate_output_subdirectory,
+	const char* underlay_path);
+static void pack(
+	const std::vector<fs::path>& input_paths,
+	const std::string& asset,
+	const fs::path& output_path,
+	BuildConfig config,
+	const std::string& hint,
+	const char* underlay_path);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_tfrags(const fs::path& input_path, const fs::path& output_path, Game game);
@@ -87,7 +99,8 @@ static void print_version();
 
 #define require_args(arg_count) verify(argc == arg_count, "Incorrect number of arguments.");
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	try {
 		int exit_code = wrenchbuild(argc, argv);
 		stop_stdout_flusher_thread();
@@ -102,7 +115,8 @@ int main(int argc, char** argv) {
 	}
 }
 
-static int wrenchbuild(int argc, char** argv) {
+static int wrenchbuild(int argc, char** argv)
+{
 	if(argc < 2) {
 		print_usage(false);
 		return 1;
@@ -239,7 +253,8 @@ static int wrenchbuild(int argc, char** argv) {
 	return 1;
 }
 
-static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
+static ParsedArgs parse_args(int argc, char** argv, u32 flags)
+{
 	ParsedArgs args;
 	
 	for(int i = 2; i < argc; i++) {
@@ -321,7 +336,13 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	return args;
 }
 
-static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory, const char* underlay_path) {
+static void unpack(
+	const fs::path& input_path,
+	const fs::path& output_path,
+	Game game, Region region,
+	bool generate_output_subdirectory,
+	const char* underlay_path)
+{
 	AssetForest forest;
 	
 	FileInputStream stream;
@@ -445,7 +466,14 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 	verify_not_reached("Unable to detect type of input file '%s'!", input_path.string().c_str());
 }
 
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint, const char* underlay_path) {
+static void pack(
+	const std::vector<fs::path>& input_paths,
+	const std::string& asset,
+	const fs::path& output_path,
+	BuildConfig config,
+	const std::string& hint,
+	const char* underlay_path)
+{
 	printf("[  0%%] Mounting asset banks\n");
 	
 	AssetForest forest;
@@ -507,7 +535,8 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	printf("[100%%] Done!\n");
 }
 
-static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset) {
+static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset)
+{
 	WrenchFileHandle* file = file_open(input_path.string().c_str(), WRENCH_FILE_MODE_READ);
 	verify(file, "Failed to open file '%s' for reading (%s).", input_path.string().c_str(), FILEIO_ERROR_CONTEXT_STRING);
 	
@@ -523,7 +552,8 @@ static void decompress(const fs::path& input_path, const fs::path& output_path, 
 	write_file(output_path, decompressed_bytes);
 }
 
-static void compress(const fs::path& input_path, const fs::path& output_path) {
+static void compress(const fs::path& input_path, const fs::path& output_path)
+{
 	std::vector<u8> bytes = read_file(input_path);
 	
 	std::vector<u8> compressed_bytes;
@@ -532,7 +562,8 @@ static void compress(const fs::path& input_path, const fs::path& output_path) {
 	write_file(output_path, compressed_bytes);
 }
 
-static void extract_tfrags(const fs::path& input_path, const fs::path& output_path, Game game) {
+static void extract_tfrags(const fs::path& input_path, const fs::path& output_path, Game game)
+{
 	auto bin = read_file(input_path.string().c_str());
 	Tfrags tfrags = read_tfrags(bin, game);
 	ColladaScene scene = recover_tfrags(tfrags, TFRAG_NO_FLAGS);
@@ -540,7 +571,8 @@ static void extract_tfrags(const fs::path& input_path, const fs::path& output_pa
 	write_file(output_path, xml, true);
 }
 
-static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game) {
+static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game)
+{
 	auto bin = read_file(input_path.string().c_str());
 	MOBY::MobyClassData moby = MOBY::read_class(bin, game);
 	
@@ -563,7 +595,8 @@ static void extract_moby(const fs::path& input_path, const fs::path& output_path
 	write_file(output_path, glb, false);
 }
 
-static void extract_mesh_only_moby(const fs::path& input_path, const fs::path& output_path, Game game) {
+static void extract_mesh_only_moby(const fs::path& input_path, const fs::path& output_path, Game game)
+{
 	auto bin = read_file(input_path.string().c_str());
 	MOBY::MobyMeshSection moby = MOBY::read_mesh_only_class(bin, game);
 	
@@ -586,7 +619,8 @@ static void extract_mesh_only_moby(const fs::path& input_path, const fs::path& o
 	write_file(output_path, glb, false);
 }
 
-static void extract_tie(const fs::path& input_path, const fs::path& output_path, Game game) {
+static void extract_tie(const fs::path& input_path, const fs::path& output_path, Game game)
+{
 	auto bin = read_file(input_path.string().c_str());
 	TieClass tie = read_tie_class(bin, game);
 	ColladaScene scene = recover_tie_class(tie);
@@ -594,7 +628,8 @@ static void extract_tie(const fs::path& input_path, const fs::path& output_path,
 	write_file(output_path, xml, true);
 }
 
-static void extract_shrub(const fs::path& input_path, const fs::path& output_path) {
+static void extract_shrub(const fs::path& input_path, const fs::path& output_path)
+{
 	auto bin = read_file(input_path.string().c_str());
 	ShrubClass shrub = read_shrub_class(bin);
 	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
@@ -606,7 +641,8 @@ static void extract_shrub(const fs::path& input_path, const fs::path& output_pat
 	write_file(output_path, glb, false);
 }
 
-static void unpack_collision(const fs::path& input_path, const fs::path& output_path) {
+static void unpack_collision(const fs::path& input_path, const fs::path& output_path)
+{
 	AssetForest forest;
 	AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
 	CollisionAsset& collision = bank.asset_file("collision.asset").root().child<CollisionAsset>("collision");
@@ -620,7 +656,8 @@ static void unpack_collision(const fs::path& input_path, const fs::path& output_
 	bank.write();
 }
 
-static void print_usage(bool developer_subcommands) {
+static void print_usage(bool developer_subcommands)
+{
 	puts("Wrench Build Tool -- https://github.com/chaoticgd/wrench");
 	puts("");
 	puts(" An asset packer/unpacker for the Ratchet & Clank PS2 games intended for modding.");
@@ -717,7 +754,8 @@ static void print_usage(bool developer_subcommands) {
 	}
 }
 
-static void print_version() {
+static void print_version()
+{
 	if(strlen(wadinfo.build.version_string) != 0) {
 		printf("Wrench Build Tool %s\n", wadinfo.build.version_string);
 	} else {

@@ -21,7 +21,8 @@
 #include <wrenchbuild/asset_packer.h>
 
 static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig config, const char* hint);
-static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildConfig config, const char* hint);
+static void pack_elf_asset(
+	OutputStream& dest, const ElfFileAsset& src, BuildConfig config, const char* hint);
 static bool extract_file(std::vector<u8>& ratchet, const std::vector<u8>& packed);
 
 on_load(ElfFile, []() {
@@ -100,7 +101,8 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 	}
 }
 
-static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildConfig config, const char* hint) {
+static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildConfig config, const char* hint)
+{
 	if(g_asset_packer_dry_run) {
 		return;
 	}
@@ -121,7 +123,8 @@ static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildCon
 	}
 }
 
-static bool extract_file(std::vector<u8>& ratchet, const std::vector<u8>& packed) {
+static bool extract_file(std::vector<u8>& ratchet, const std::vector<u8>& packed)
+{
 	s64 wad_ofs = -1;
 	for(s64 i = 0; i < packed.size() - 3; i++) {
 		if(memcmp(&packed.data()[i], "WAD", 3) == 0) {

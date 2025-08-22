@@ -19,8 +19,17 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint);
-static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const BinaryAsset& src);
+static void unpack_binary_asset(
+	Asset& dest,
+	InputStream& src,
+	const std::vector<u8>* header_src,
+	BuildConfig config,
+	const char* hint);
+static void pack_binary_asset(
+	OutputStream& dest,
+	std::vector<u8>* header_dest,
+	fs::file_time_type* time_dest,
+	const BinaryAsset& src);
 
 on_load(Binary, []() {
 	BinaryAsset::funcs.unpack_rac1 = new AssetUnpackerFunc(unpack_binary_asset);
@@ -34,7 +43,13 @@ on_load(Binary, []() {
 	BinaryAsset::funcs.pack_dl = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
 })
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
+static void unpack_binary_asset(
+	Asset& dest,
+	InputStream& src,
+	const std::vector<u8>* header_src,
+	BuildConfig config,
+	const char* hint)
+{
 	BinaryAsset& binary = dest.as<BinaryAsset>();
 	const char* type = next_hint(&hint);
 	const char* extension = "bin";
@@ -58,7 +73,12 @@ static void unpack_binary_asset(Asset& dest, InputStream& src, const std::vector
 	binary.set_src(ref);
 }
 
-static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const BinaryAsset& src) {
+static void pack_binary_asset(
+	OutputStream& dest,
+	std::vector<u8>* header_dest,
+	fs::file_time_type* time_dest,
+	const BinaryAsset& src)
+{
 	if(g_asset_packer_dry_run) {
 		return;
 	}

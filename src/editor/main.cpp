@@ -33,7 +33,8 @@ static void update(f32 delta_time);
 static void update_camera(app* a);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	if(argc != 3) {
 		fprintf(stderr, "usage: %s <game path> <mod path>\n", argv[0]);
 		return 1;
@@ -59,7 +60,12 @@ int main(int argc, char** argv) {
 }
 
 
-static void run_wrench(GLFWwindow* window, const WadPaths& wad_paths, const std::string& game_path, const std::string& mod_path) {
+static void run_wrench(
+	GLFWwindow* window,
+	const WadPaths& wad_paths,
+	const std::string& game_path,
+	const std::string& mod_path)
+{
 	app a;
 	g_app = &a;
 	
@@ -111,13 +117,15 @@ static void run_wrench(GLFWwindow* window, const WadPaths& wad_paths, const std:
 	shutdown_renderer();
 }
 
-static void update(f32 delta_time) {
+static void update(f32 delta_time)
+{
 	g_app->delta_time = delta_time;
 	update_camera(g_app);
 	editor_gui();
 }
 
-static void update_camera(app* a) {
+static void update_camera(app* a)
+{
 	// Rotation
 	double xpos, ypos;
 	glfwGetCursorPos(a->glfw_window, &xpos, &ypos);
@@ -184,7 +192,8 @@ static void update_camera(app* a) {
 	a->render_settings.camera_position += movement;
 }
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
 	app* a = static_cast<app*>(glfwGetWindowUserPointer(window));
 	
 	if(action == GLFW_PRESS && key == GLFW_KEY_Z) {

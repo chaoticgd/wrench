@@ -24,7 +24,8 @@
 
 static std::string read_string_attribute(WtfNode* node, const char* name);
 
-GameInfo read_game_info(char* input) {
+GameInfo read_game_info(char* input)
+{
 	char* error_dest = nullptr;
 	WtfNode* root = wtf_parse(input, &error_dest);
 	if(error_dest) {
@@ -103,7 +104,8 @@ GameInfo read_game_info(char* input) {
 	return info;
 }
 
-void write_game_info(std::string& dest, const GameInfo& info) {
+void write_game_info(std::string& dest, const GameInfo& info)
+{
 	WtfWriter* ctx = wtf_begin_file(dest);
 	
 	wtf_begin_attribute(ctx, "format_version");
@@ -165,7 +167,8 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	wtf_end_file(ctx);
 }
 
-static std::string read_string_attribute(WtfNode* node, const char* name) {
+static std::string read_string_attribute(WtfNode* node, const char* name)
+{
 	const WtfAttribute* attribute = wtf_attribute(node, name);
 	if(attribute && attribute->type == WTF_STRING) {
 		return attribute->string.begin;

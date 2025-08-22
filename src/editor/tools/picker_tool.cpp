@@ -35,15 +35,18 @@ ToolInfo g_picker_tool_info = {
 	}
 };
 
-static void activate() {
+static void activate()
+{
 	
 }
 
-static void deactivate() {
+static void deactivate()
+{
 	
 }
 
-static void update() {
+static void update()
+{
 	if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
 		ImVec2 rel_pos {
 			ImGui::GetMousePos().x - ImGui::GetWindowPos().x,
@@ -53,13 +56,15 @@ static void update() {
 	}
 }
 
-static void draw() {
+static void draw()
+{
 	
 }
 
 // Allows the user to select an object by clicking on it. See:
 // https://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/
-static void pick_object(const glm::mat4& view, const glm::mat4& projection, ImVec2 position) {
+static void pick_object(const glm::mat4& view, const glm::mat4& projection, ImVec2 position)
+{
 	Level& lvl = *g_app->get_level();
 	
 	GLint last_framebuffer;

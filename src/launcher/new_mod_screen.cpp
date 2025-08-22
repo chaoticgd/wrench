@@ -24,7 +24,8 @@
 #include <assetmgr/asset_types.h>
 #include <gui/config.h>
 
-bool new_mod_screen() {
+bool new_mod_screen()
+{
 	bool result = false;
 	
 	ImVec2 centre = ImGui::GetMainViewport()->GetCenter();

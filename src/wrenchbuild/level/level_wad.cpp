@@ -77,18 +77,42 @@ packed_struct(DlLevelWadHeader,
 	/* 0xc60 */ SectorRange art_instances;
 )
 
-static void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config);
-static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
-static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config);
-static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
-static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config);
-static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
-static void unpack_missions(LevelWadAsset& dest, InputStream& file, const MissionWadHeader& ranges, s32 core_moby_count, BuildConfig config);
-static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, BuildConfig config);
+static void unpack_rac_level_wad(
+	LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_rac_level_wad(
+	OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
+static void unpack_gc_uya_level_wad(
+	LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_gc_uya_level_wad(
+	OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
+static void unpack_dl_level_wad(
+	LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_dl_level_wad(
+	OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
+static void unpack_missions(
+	LevelWadAsset& dest,
+	InputStream& file,
+	const MissionWadHeader& ranges,
+	s32 core_moby_count,
+	BuildConfig config);
+static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(
+	OutputStream& dest, const CollectionAsset& missions, BuildConfig config);
 template <typename PackerFunc>
-static SectorRange pack_data_wad_outer(OutputStream& dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config, PackerFunc packer);
-static SectorRange pack_dl_data_wad_outer(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& art_instances, std::vector<u8>& gameplay, const LevelWadAsset& src, BuildConfig config);
-static SectorRange write_gameplay_section(OutputStream& dest, const Gameplay& gameplay, BuildConfig config);
+static SectorRange pack_data_wad_outer(
+	OutputStream& dest,
+	const std::vector<LevelChunk>& chunks,
+	const LevelWadAsset& src,
+	BuildConfig config,
+	PackerFunc packer);
+static SectorRange pack_dl_data_wad_outer(
+	OutputStream& dest,
+	const std::vector<LevelChunk>& chunks,
+	std::vector<u8>& art_instances,
+	std::vector<u8>& gameplay,
+	const LevelWadAsset& src,
+	BuildConfig config);
+static SectorRange write_gameplay_section(
+	OutputStream& dest, const Gameplay& gameplay, BuildConfig config);
 static SectorRange write_occlusion_copy(OutputStream& dest, const OcclusionAsset& occlusion, Game game);
 static SectorRange write_section(OutputStream& dest, const u8* src, s64 size);
 
@@ -104,7 +128,9 @@ on_load(Level, []() {
 	LevelWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelWadAsset, DlLevelWadHeader>(pack_dl_level_wad);
 })
 
-static void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_rac_level_wad(
+	LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config)
+{
 	dest.set_id(header.id);
 	g_asset_unpacker.current_level_id = header.id;
 	
@@ -115,7 +141,9 @@ static void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& h
 	unpack_instances(dest.gameplay<InstancesAsset>(), &dest, gameplay, nullptr, config, FMT_INSTANCES_GAMEPLAY);
 }
 
-static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
+static void pack_rac_level_wad(
+	OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config)
+{
 	header.id = src.id();
 	g_asset_packer_current_level_id = src.id();
 	
@@ -130,7 +158,9 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 	}
 }
 
-static void unpack_gc_68_level_wad(LevelWadAsset& dest, const GcLevelWadHeader68& header, InputStream& src, BuildConfig config) {
+static void unpack_gc_68_level_wad(
+	LevelWadAsset& dest, const GcLevelWadHeader68& header, InputStream& src, BuildConfig config)
+{
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	g_asset_unpacker.current_level_id = header.id;
@@ -149,7 +179,9 @@ static void unpack_gc_68_level_wad(LevelWadAsset& dest, const GcLevelWadHeader68
 	unpack_level_chunks(dest.chunks(), src, chunks, config);
 }
 
-static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_gc_uya_level_wad(
+	LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config)
+{
 	if(header.header_size == 0x68) {
 		unpack_gc_68_level_wad(dest, src.read<GcLevelWadHeader68>(0), src, config);
 		return;
@@ -171,7 +203,9 @@ static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHead
 	unpack_level_chunks(dest.chunks(), src, header.chunks, config);
 }
 
-static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
+static void pack_gc_uya_level_wad(
+	OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config)
+{
 	header.id = src.id();
 	header.reverb = src.reverb();
 	g_asset_packer_current_level_id = src.id();
@@ -188,7 +222,9 @@ static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& heade
 	header.chunks = write_level_chunks(dest, chunks);
 }
 
-static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_dl_level_wad(
+	LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config)
+{
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	g_asset_unpacker.current_level_id = header.id;
@@ -200,7 +236,9 @@ static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& hea
 	unpack_missions(dest, src, header.missions, core_moby_count, config);
 }
 
-static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
+static void pack_dl_level_wad(
+	OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config)
+{
 	header.id = src.id();
 	header.reverb = src.reverb();
 	g_asset_packer_current_level_id = src.id();
@@ -232,7 +270,13 @@ packed_struct(MissionHeader,
 	/* 0x8 */ ByteRange classes;
 )
 
-static void unpack_missions(LevelWadAsset& dest, InputStream& file, const MissionWadHeader& ranges, s32 core_moby_count, BuildConfig config) {
+static void unpack_missions(
+	LevelWadAsset& dest,
+	InputStream& file,
+	const MissionWadHeader& ranges,
+	s32 core_moby_count,
+	BuildConfig config)
+{
 	CollectionAsset& collection = dest.missions();
 	for(s32 i = 0; i < ARRAY_SIZE(ranges.data); i++) {
 		MissionHeader header = {};
@@ -269,7 +313,9 @@ static void unpack_missions(LevelWadAsset& dest, InputStream& file, const Missio
 	}
 }
 
-static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, BuildConfig config) {
+static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(
+	OutputStream& dest, const CollectionAsset& missions, BuildConfig config)
+{
 	MissionWadHeader header;
 	MaxMissionSizes max_sizes;
 	max_sizes.max_instances_size = 0;
@@ -345,7 +391,13 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 }
 
 template <typename PackerFunc>
-static SectorRange pack_data_wad_outer(OutputStream& dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config, PackerFunc packer) {
+static SectorRange pack_data_wad_outer(
+	OutputStream& dest,
+	const std::vector<LevelChunk>& chunks,
+	const LevelWadAsset& src,
+	BuildConfig config,
+	PackerFunc packer)
+{
 	SectorRange range;
 	dest.pad(SECTOR_SIZE, 0);
 	range.offset.sectors = dest.tell() / SECTOR_SIZE;
@@ -355,7 +407,14 @@ static SectorRange pack_data_wad_outer(OutputStream& dest, const std::vector<Lev
 	return range;
 }
 
-static SectorRange pack_dl_data_wad_outer(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& art_instances, std::vector<u8>& gameplay, const LevelWadAsset& src, BuildConfig config) {
+static SectorRange pack_dl_data_wad_outer(
+	OutputStream& dest,
+	const std::vector<LevelChunk>& chunks,
+	std::vector<u8>& art_instances,
+	std::vector<u8>& gameplay,
+	const LevelWadAsset& src,
+	BuildConfig config)
+{
 	SectorRange range;
 	dest.pad(SECTOR_SIZE, 0);
 	range.offset.sectors = dest.tell() / SECTOR_SIZE;
@@ -365,7 +424,9 @@ static SectorRange pack_dl_data_wad_outer(OutputStream& dest, const std::vector<
 	return range;
 }
 
-static SectorRange write_gameplay_section(OutputStream& dest, const Gameplay& gameplay, BuildConfig config) {
+static SectorRange write_gameplay_section(
+	OutputStream& dest, const Gameplay& gameplay, BuildConfig config)
+{
 	if(g_asset_packer_dry_run) {
 		return {0, 0};
 	}
@@ -376,7 +437,8 @@ static SectorRange write_gameplay_section(OutputStream& dest, const Gameplay& ga
 	return write_section(dest, compressed.data(), compressed.size());
 }
 
-static SectorRange write_occlusion_copy(OutputStream& dest, const OcclusionAsset& occlusion, Game game) {
+static SectorRange write_occlusion_copy(OutputStream& dest, const OcclusionAsset& occlusion, Game game)
+{
 	if(g_asset_packer_dry_run) {
 		return {0, 0};
 	}
@@ -385,7 +447,8 @@ static SectorRange write_occlusion_copy(OutputStream& dest, const OcclusionAsset
 	return write_section(dest, buffer.data(), buffer.size());
 }
 
-static SectorRange write_section(OutputStream& dest, const u8* src, s64 size) {
+static SectorRange write_section(OutputStream& dest, const u8* src, s64 size)
+{
 	SectorRange range;
 	dest.pad(SECTOR_SIZE, 0);
 	range.offset.sectors = dest.tell() / SECTOR_SIZE;

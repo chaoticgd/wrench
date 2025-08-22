@@ -28,7 +28,9 @@ packed_struct(ChunkHeader,
 	/* 0x4 */ s32 collision;
 )
 
-void unpack_level_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, BuildConfig config) {
+void unpack_level_chunks(
+	CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, BuildConfig config)
+{
 	for(s32 i = 0; i < ARRAY_SIZE(ranges.chunks); i++) {
 		ChunkHeader chunk_header = {};
 		if(!ranges.chunks[i].empty()) {
@@ -53,7 +55,9 @@ void unpack_level_chunks(CollectionAsset& dest, InputStream& file, const ChunkWa
 	}
 }
 
-std::vector<LevelChunk> load_level_chunks(const LevelWadAsset& level_wad, const Gameplay& gameplay, BuildConfig config) {
+std::vector<LevelChunk> load_level_chunks(
+	const LevelWadAsset& level_wad, const Gameplay& gameplay, BuildConfig config)
+{
 	const CollectionAsset& collection = level_wad.get_chunks();
 	std::vector<LevelChunk> chunks(3);
 	u16 next_occlusion_index = 0;
@@ -83,7 +87,8 @@ std::vector<LevelChunk> load_level_chunks(const LevelWadAsset& level_wad, const 
 	return chunks;
 }
 
-ChunkWadHeader write_level_chunks(OutputStream& dest, const std::vector<LevelChunk>& chunks) {
+ChunkWadHeader write_level_chunks(OutputStream& dest, const std::vector<LevelChunk>& chunks)
+{
 	ChunkWadHeader header = {};
 	for(s32 i = 0; i < ARRAY_SIZE(header.chunks); i++) {
 		if(i < chunks.size()) {

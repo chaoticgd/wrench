@@ -27,7 +27,8 @@ static bool stdout_flush_started = false;
 static bool stdout_flush_finished = false;
 static std::thread stdout_flush_thread;
 
-void start_stdout_flusher_thread() {
+void start_stdout_flusher_thread()
+{
 	if(!stdout_flush_started) {
 		stdout_flush_started = true;
 		stdout_flush_thread = std::thread([]() {
@@ -46,7 +47,8 @@ void start_stdout_flusher_thread() {
 	}
 }
 
-void stop_stdout_flusher_thread() {
+void stop_stdout_flusher_thread()
+{
 	if(stdout_flush_started) {
 		{
 			std::lock_guard<std::mutex> g(stdout_flush_mutex);

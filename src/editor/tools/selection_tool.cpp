@@ -37,15 +37,18 @@ ToolInfo g_selection_tool_info = {
 static bool selecting;
 static ImVec2 selection_begin;
 
-static void activate() {
+static void activate()
+{
 	
 }
 
-static void deactivate() {
+static void deactivate()
+{
 	
 }
 
-static void update() {
+static void update()
+{
 	if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
 		selecting = true;
 		selection_begin = ImGui::GetMousePos();

@@ -22,7 +22,8 @@ MemoryZone g_memory_zones[MAX_MEMORY_ZONE] = {
 	{"asset system"}
 };
 
-void* zone_new(std::size_t size, s32 zone) {
+void* zone_new(std::size_t size, s32 zone)
+{
 	MemoryUsageStatistics& stats = g_memory_zones[zone].stats;
 	stats.bytes_used += size;
 	stats.max_bytes_used = std::max(stats.bytes_used, stats.max_bytes_used);
@@ -30,14 +31,16 @@ void* zone_new(std::size_t size, s32 zone) {
 	return ::operator new(size);
 }
 
-void zone_delete(void* pointer, std::size_t size, s32 zone) {
+void zone_delete(void* pointer, std::size_t size, s32 zone)
+{
 	MemoryUsageStatistics& stats = g_memory_zones[zone].stats;
 	stats.bytes_used -= size;
 	stats.total_frees++;
 	return ::operator delete(pointer);
 }
 
-void report_memory_statistics() {
+void report_memory_statistics()
+{
 	printf("\033[34m");
 	for(const MemoryZone& zone : g_memory_zones) {
 		printf("%s: %ldk used, %ld allocations, %ld frees, %ld leaked\n",

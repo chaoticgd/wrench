@@ -18,7 +18,8 @@
 
 #include "material.h"
 
-EffectiveMaterialsOutput effective_materials(const std::vector<Material>& materials, u32 attributes) {
+EffectiveMaterialsOutput effective_materials(const std::vector<Material>& materials, u32 attributes)
+{
 	EffectiveMaterialsOutput output;
 	output.material_to_effective.resize(materials.size(), -1);
 	for(size_t i = 0; i < materials.size(); i++) {

@@ -23,7 +23,8 @@
 #include <core/vif.h>
 #include <core/filesystem.h>
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	if(argc != 3) {
 		fprintf(stderr, "usage: %s <input file> <offset>", (argc > 0) ? argv[0] : "vif");
 		return 1;

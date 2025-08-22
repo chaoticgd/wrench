@@ -18,7 +18,8 @@
 
 #include "render_mesh.h"
 
-RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
+RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals)
+{
 	RenderMesh render_mesh;
 	
 	for(const SubMesh& submesh : mesh.submeshes) {
@@ -77,7 +78,8 @@ RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
 	return render_mesh;
 }
 
-RenderMesh upload_gltf_mesh(const GLTF::Mesh& mesh, bool generate_normals) {
+RenderMesh upload_gltf_mesh(const GLTF::Mesh& mesh, bool generate_normals)
+{
 	RenderMesh render_mesh;
 	
 	for(const GLTF::MeshPrimitive& primitive : mesh.primitives) {
@@ -114,7 +116,9 @@ RenderMesh upload_gltf_mesh(const GLTF::Mesh& mesh, bool generate_normals) {
 	return render_mesh;
 }
 
-std::vector<RenderMaterial> upload_collada_materials(const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures) {
+std::vector<RenderMaterial> upload_collada_materials(
+	const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures)
+{
 	std::vector<RenderMaterial> rms;
 	for(const ColladaMaterial& material : materials) {
 		rms.emplace_back(upload_collada_material(material, textures));
@@ -122,7 +126,9 @@ std::vector<RenderMaterial> upload_collada_materials(const std::vector<ColladaMa
 	return rms;
 }
 
-std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materials, const std::vector<Texture>& textures) {
+std::vector<RenderMaterial> upload_materials(
+	const std::vector<Material>& materials, const std::vector<Texture>& textures)
+{
 	std::vector<RenderMaterial> render_materials;
 	for(const Material& material : materials) {
 		render_materials.emplace_back(upload_material(material, textures));
@@ -130,7 +136,9 @@ std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materi
 	return render_materials;
 }
 
-RenderMaterial upload_collada_material(const ColladaMaterial& material, const std::vector<Texture>& textures) {
+RenderMaterial upload_collada_material(
+	const ColladaMaterial& material, const std::vector<Texture>& textures)
+{
 	RenderMaterial rm;
 	s32 texture_index;
 	if(material.surface.type == MaterialSurfaceType::COLOUR) {
@@ -153,7 +161,8 @@ RenderMaterial upload_collada_material(const ColladaMaterial& material, const st
 	return rm;
 }
 
-RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures) {
+RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures)
+{
 	RenderMaterial render_material;
 	s32 texture_index;
 	if(material.surface.type == MaterialSurfaceType::COLOUR) {

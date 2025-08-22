@@ -41,7 +41,12 @@ struct GlfwCallbacks {
 	void (*key_callback)(GLFWwindow* window, int key, int scancode, int action, int mods);
 };
 
-GLFWwindow* startup(const char* window_title, s32 width, s32 height, bool maximized = false, GlfwCallbacks* callbacks = nullptr);
+GLFWwindow* startup(
+	const char* window_title,
+	s32 width,
+	s32 height,
+	bool maximized = false,
+	GlfwCallbacks* callbacks = nullptr);
 void run_frame(GLFWwindow* window, void (*update_func)(f32));
 void shutdown(GLFWwindow* window);
 ImFont* load_font(SectorRange range, f32 size, f32 multiply = 1.f);

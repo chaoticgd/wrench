@@ -42,10 +42,21 @@ struct AssetUnpackerGlobals {
 
 extern AssetUnpackerGlobals g_asset_unpacker;
 
-void unpack_asset_impl(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint = FMT_NO_HINT);
+void unpack_asset_impl(
+	Asset& dest,
+	InputStream& src,
+	const std::vector<u8>* header_src,
+	BuildConfig config,
+	const char* hint = FMT_NO_HINT);
 
 template <typename ThisAsset, typename Range>
-void unpack_asset(ThisAsset& dest, InputStream& src, Range range, BuildConfig config, const char* hint = FMT_NO_HINT) {
+void unpack_asset(
+	ThisAsset& dest,
+	InputStream& src,
+	Range range,
+	BuildConfig config,
+	const char* hint = FMT_NO_HINT)
+{
 	if(!range.empty()) {
 		SubInputStream stream(src, range.bytes());
 		unpack_asset_impl(dest, stream, nullptr, config, hint);
@@ -53,7 +64,13 @@ void unpack_asset(ThisAsset& dest, InputStream& src, Range range, BuildConfig co
 }
 
 template <typename ThisAsset, typename Range>
-void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, BuildConfig config, const char* hint = FMT_NO_HINT) {
+void unpack_compressed_asset(
+	ThisAsset& dest,
+	InputStream& src,
+	Range range,
+	BuildConfig config,
+	const char* hint = FMT_NO_HINT)
+{
 	if(!range.empty()) {
 		src.seek(range.bytes().offset);
 		std::vector<u8> compressed_bytes = src.read_multiple<u8>(range.bytes().size);
@@ -67,7 +84,15 @@ void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, Bui
 }
 
 template <typename ChildAsset, typename Range>
-void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, BuildConfig config, const char* hint = FMT_NO_HINT, bool switch_files = false) {
+void unpack_assets(
+	CollectionAsset& dest,
+	InputStream& src,
+	const Range* ranges,
+	s32 count,
+	BuildConfig config,
+	const char* hint = FMT_NO_HINT,
+	bool switch_files = false)
+{
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
 			ChildAsset* asset;
@@ -82,7 +107,15 @@ void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges,
 }
 
 template <typename ChildAsset, typename Range>
-void unpack_compressed_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, BuildConfig config, const char* hint = FMT_NO_HINT, bool switch_files = false) {
+void unpack_compressed_assets(
+	CollectionAsset& dest,
+	InputStream& src,
+	const Range* ranges,
+	s32 count,
+	BuildConfig config,
+	const char* hint = FMT_NO_HINT,
+	bool switch_files = false)
+{
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
 			ChildAsset* asset;

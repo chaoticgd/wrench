@@ -61,7 +61,9 @@ on_load(Mpeg, []() {
 	MpegWadAsset::funcs.pack_dl = wrap_wad_hint_packer_func<MpegWadAsset, UyaDlMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
 })
 
-static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_rac_mpeg_wad(
+	MpegWadAsset& dest, const RacMpegWadHeader& header, InputStream& src, BuildConfig config)
+{
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(!header.mpegs[i].empty()) {
 			MpegAsset& mpeg = dest.mpegs().foreign_child<MpegAsset>(i);
@@ -74,7 +76,13 @@ static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& head
 	}
 }
 
-static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, const MpegWadAsset& src, BuildConfig config, const char* hint) {
+static void pack_rac_mpeg_wad(
+	OutputStream& dest,
+	RacMpegWadHeader& header,
+	const MpegWadAsset& src,
+	BuildConfig config,
+	const char* hint)
+{
 	if(strcmp(next_hint(&hint), "nompegs") == 0) {
 		return;
 	}
@@ -97,7 +105,9 @@ static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, cons
 }
 
 template <typename Header>
-static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, InputStream& src, BuildConfig config) {
+static void unpack_gc_uya_dl_mpeg_wad(
+	MpegWadAsset& dest, const Header& header, InputStream& src, BuildConfig config)
+{
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(!header.mpegs[i].subtitles.empty() || !header.mpegs[i].video.empty()) {
 			MpegAsset& mpeg = dest.mpegs().foreign_child<MpegAsset>(i);
@@ -113,7 +123,9 @@ static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, 
 }
 
 template <typename Header>
-static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const MpegWadAsset& src, BuildConfig config, const char* hint) {
+static void pack_gc_uya_dl_mpeg_wad(
+	OutputStream& dest, Header& header, const MpegWadAsset& src, BuildConfig config, const char* hint)
+{
 	if(strcmp(next_hint(&hint), "nompegs") == 0) {
 		return;
 	}

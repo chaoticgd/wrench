@@ -60,11 +60,13 @@ static TransformState state;
 
 static void push_gizmo_transform_command(Level& lvl, GizmoTransformCommand& command);
 
-static void activate() {
+static void activate()
+{
 	
 }
 
-static void deactivate() {
+static void deactivate()
+{
 	command = {};
 	state = TS_INACTIVE;
 	
@@ -75,7 +77,8 @@ static void deactivate() {
 	});
 }
 
-static void update() {
+static void update()
+{
 	ImGuizmo::SetDrawlist();
 	ImVec2& view_pos = g_app->render_settings.view_pos;
 	ImVec2& view_size = g_app->render_settings.view_size;

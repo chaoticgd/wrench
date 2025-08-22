@@ -30,7 +30,8 @@
 
 static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config);
 static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config);
-static void unpack_sky_textures(GLTF::ModelFile& gltf, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky);
+static void unpack_sky_textures(
+	GLTF::ModelFile& gltf, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky);
 static std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src);
 static bool test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 
@@ -51,7 +52,8 @@ on_load(Sky, []() {
 	SkyAsset::funcs.test_dl  = wrap_diff_test_func(test_sky_asset);
 })
 
-static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config)
+{
 	std::vector<u8> buffer = src.read_multiple<u8>(src.size());
 	Sky sky = read_sky(buffer, config.game(), config.framerate());
 	
@@ -111,7 +113,8 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	}
 }
 
-static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config) {
+static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config)
+{
 	Sky sky;
 	
 	if(src.has_colour()) {
@@ -192,7 +195,9 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	dest.write_v(buffer);
 }
 
-static void unpack_sky_textures(GLTF::ModelFile& gltf, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky) {
+static void unpack_sky_textures(
+	GLTF::ModelFile& gltf, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky)
+{
 	std::vector<FileReference> texture_refs;
 	
 	// Write out the textures.
@@ -292,7 +297,13 @@ std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src) {
 	return material_to_texture;
 }
 
-static bool test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_sky_asset(
+	std::vector<u8>& original,
+	std::vector<u8>& repacked,
+	BuildConfig config,
+	const char* hint,
+	AssetTestMode mode)
+{
 	SkyHeader header = Buffer(original).read<SkyHeader>(0, "header");
 	bool headers_equal = diff_buffers(original, repacked, 0, header.texture_data, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 	

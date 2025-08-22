@@ -58,7 +58,8 @@ static std::map<s32, Mesh> load_tie_classes(const CollectionAsset& collection);
 static Instances load_instances(const Asset& src, Game game);
 static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel& level);
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	if(argc != 4) {
 		fprintf(stderr, "usage: %s <game path> <mod path> <asset link of LevelWad asset>\n", (argc > 0) ? argv[0] : "wrenchvis");
 		return 1;
@@ -99,7 +100,8 @@ int main(int argc, char** argv) {
 	}
 }
 
-static std::vector<OcclChunk> load_chunks(const CollectionAsset& collection, Game game) {
+static std::vector<OcclChunk> load_chunks(const CollectionAsset& collection, Game game)
+{
 	std::vector<OcclChunk> chunks(3);
 	for(s32 i = 0; i < 3; i++) {
 		if(collection.has_child(i)) {
@@ -122,7 +124,8 @@ static std::vector<OcclChunk> load_chunks(const CollectionAsset& collection, Gam
 	return chunks;
 }
 
-static std::map<s32, Mesh> load_moby_classes(const CollectionAsset& collection) {
+static std::map<s32, Mesh> load_moby_classes(const CollectionAsset& collection)
+{
 	std::map<s32, Mesh> classes;
 	collection.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
 		if(child.has_editor_mesh()) {
@@ -137,7 +140,8 @@ static std::map<s32, Mesh> load_moby_classes(const CollectionAsset& collection) 
 	return classes;
 }
 
-static std::map<s32, Mesh> load_tie_classes(const CollectionAsset& collection) {
+static std::map<s32, Mesh> load_tie_classes(const CollectionAsset& collection)
+{
 	std::map<s32, Mesh> classes;
 	collection.for_each_logical_child_of_type<TieClassAsset>([&](const TieClassAsset& child) {
 		const MeshAsset& editor_mesh = child.get_editor_mesh();
@@ -150,7 +154,8 @@ static std::map<s32, Mesh> load_tie_classes(const CollectionAsset& collection) {
 	return classes;
 }
 
-static Instances load_instances(const Asset& src, Game game) {
+static Instances load_instances(const Asset& src, Game game)
+{
 	std::vector<u8> gameplay_buffer;
 	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
 		std::string instances_wtf = asset->src().read_text_file();
@@ -167,7 +172,8 @@ static Instances load_instances(const Asset& src, Game game) {
 	verify_not_reached("Instances asset is of an invalid type.");
 }
 
-static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel& level) {
+static void generate_occlusion_data(const OcclusionAsset& asset, const OcclLevel& level)
+{
 	std::string octants_txt = asset.octants().read_text_file();
 	std::vector<OcclusionVector> octants = read_occlusion_octants(octants_txt.c_str());
 	

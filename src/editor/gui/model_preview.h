@@ -29,6 +29,11 @@ struct ModelPreviewParams {
 	glm::vec3 bounding_box_size = {0.f, 0.f, 0.f};
 };
 
-void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<RenderMaterial>* materials, bool wireframe, ModelPreviewParams& params);
+void model_preview(
+	GLuint* texture,
+	const RenderMesh* mesh,
+	const std::vector<RenderMaterial>* materials,
+	bool wireframe,
+	ModelPreviewParams& params);
 
 #endif

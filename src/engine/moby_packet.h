@@ -117,10 +117,19 @@ struct MobyBangle {
 using GifUsageTable = std::vector<MobyGifUsage>;
 
 std::vector<MobyPacket> read_packets(Buffer src, s64 table_ofs, s64 count, MobyFormat format);
-void write_packets(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobyPacket* packets_in, size_t packet_count, f32 scale, MobyFormat format, s64 class_header_ofs);
+void write_packets(
+	OutBuffer dest,
+	GifUsageTable& gif_usage,
+	s64 table_ofs,
+	const MobyPacket* packets_in,
+	size_t packet_count,
+	f32 scale,
+	MobyFormat format,
+	s64 class_header_ofs);
 
 std::vector<MobyMetalPacket> read_metal_packets(Buffer src, s64 table_ofs, s64 count);
-void write_metal_packets(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalPacket>& packets, s64 class_header_ofs);
+void write_metal_packets(
+	OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalPacket>& packets, s64 class_header_ofs);
 
 void map_indices(MobyPacket& packet, const std::vector<size_t>& index_mapping);
 

@@ -22,7 +22,8 @@ static GLuint frame_buffer_texture = 0;
 
 static void enumerate_instances_referenced_by_selected(Instances& instances);
 
-void view_3d() {
+void view_3d()
+{
 	app& a = *g_app;
 	
 	auto lvl = a.get_level();
@@ -65,7 +66,8 @@ void view_3d() {
 	g_tools[g_active_tool]->funcs.update();
 }
 
-static void enumerate_instances_referenced_by_selected(Instances& instances) {
+static void enumerate_instances_referenced_by_selected(Instances& instances)
+{
 	instances.for_each([&](Instance& instance) {
 		instance.referenced_by_selected = false;
 	});

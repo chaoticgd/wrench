@@ -23,9 +23,12 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
 
-static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
-static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint);
-static bool test_shrub_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
+static void unpack_shrub_class(
+	ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_shrub_class(
+	OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint);
+static bool test_shrub_class_core(
+	std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(ShrubClass, []() {
 	ShrubClassAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<ShrubClassAsset>(unpack_shrub_class);
@@ -44,7 +47,8 @@ on_load(ShrubClass, []() {
 	ShrubClassCoreAsset::funcs.test_dl  = new AssetTestFunc(test_shrub_class_core);
 })
 
-static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint)
+{
 	if(g_asset_unpacker.dump_binaries) {
 		if(!dest.has_core()) {
 			unpack_asset_impl(dest.core<ShrubClassCoreAsset>(), src, nullptr, config);
@@ -109,7 +113,8 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 	}
 }
 
-static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint) {
+static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint)
+{
 	if(g_asset_packer_dry_run) {
 		return;
 	}
@@ -149,7 +154,9 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 	dest.write_v(buffer);
 }
 
-static bool test_shrub_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_shrub_class_core(
+	std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode)
+{
 	ShrubClass shrub = read_shrub_class(src);
 	std::vector<u8> dest;
 	write_shrub_class(dest, shrub);

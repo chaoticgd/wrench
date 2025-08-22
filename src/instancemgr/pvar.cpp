@@ -109,11 +109,20 @@ struct SubVarsInfo {
 };
 
 static SubVarsInfo lookup_sub_vars(Game game);
-static void generate_moby_pvar_types(std::vector<CppType>& dest, const std::map<s32, PvarMobyWork>& src, const SubVarsInfo& sub_vars, Game game);
-static void generate_other_pvar_types(std::vector<CppType>& dest, const std::map<s32, PvarWork>& src, const char* type, Game game);
+static void generate_moby_pvar_types(
+	std::vector<CppType>& dest,
+	const std::map<s32, PvarMobyWork>& src,
+	const SubVarsInfo& sub_vars,
+	Game game);
+static void generate_other_pvar_types(
+	std::vector<CppType>& dest,
+	const std::map<s32, PvarWork>& src,
+	const char* type,
+	Game game);
 
 template <typename Callback>
-void for_each_pvar_instance(Instances& dest, Callback callback) {
+void for_each_pvar_instance(Instances& dest, Callback callback)
+{
 	for(MobyInstance& inst : dest.moby_instances) {
 		if(inst.pvars().temp_pvar_index > -1) {
 			callback(inst);
@@ -131,7 +140,9 @@ void for_each_pvar_instance(Instances& dest, Callback callback) {
 	}
 }
 
-void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const Gameplay& src, Game game) {
+void recover_pvars(
+	Instances& dest, std::vector<CppType>& pvar_types_dest, const Gameplay& src, Game game)
+{
 	if(!src.pvar_table.has_value() || !src.pvar_data.has_value()) {
 		return;
 	}
@@ -275,7 +286,8 @@ void recover_pvars(Instances& dest, std::vector<CppType>& pvar_types_dest, const
 	}
 }
 
-static SubVarsInfo lookup_sub_vars(Game game) {
+static SubVarsInfo lookup_sub_vars(Game game)
+{
 	SubVarsInfo sub_vars;
 	switch(game) {
 		case Game::RAC: {
@@ -307,7 +319,12 @@ static SubVarsInfo lookup_sub_vars(Game game) {
 	return sub_vars;
 }
 
-static void generate_moby_pvar_types(std::vector<CppType>& dest, const std::map<s32, PvarMobyWork>& src, const SubVarsInfo& sub_vars, Game game) {
+static void generate_moby_pvar_types(
+	std::vector<CppType>& dest,
+	const std::map<s32, PvarMobyWork>& src,
+	const SubVarsInfo& sub_vars,
+	Game game)
+{
 	for(auto& [id, work] : src) {
 		CppType& pvar_type = dest.emplace_back(CPP_STRUCT_OR_UNION);
 		pvar_type.name = stringf("update%d", id);
@@ -402,7 +419,9 @@ static void generate_moby_pvar_types(std::vector<CppType>& dest, const std::map<
 	}
 }
 
-static void generate_other_pvar_types(std::vector<CppType>& dest, const std::map<s32, PvarWork>& src, const char* type, Game game) {
+static void generate_other_pvar_types(
+	std::vector<CppType>& dest, const std::map<s32, PvarWork>& src, const char* type, Game game)
+{ 
 	for(auto& [id, work] : src) {
 		CppType& pvar_type = dest.emplace_back(CPP_STRUCT_OR_UNION);
 		pvar_type.name = stringf("%s%d", type, id);
@@ -473,7 +492,8 @@ static void generate_other_pvar_types(std::vector<CppType>& dest, const std::map
 static void rewrite_pvar_links(std::vector<u8>& data, const CppType& type, s32 offset, const std::map<std::string, CppType>& types, const Instances& instances, const char* context);
 static void enumerate_moby_links(std::vector<PvarFixupEntry>& dest, const CppType& type, s32 offset, s32 pvar_index, const std::map<std::string, CppType>& types);
 
-void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::string, CppType>& types_src) {
+void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::string, CppType>& types_src)
+{
 	dest.pvar_table.emplace();
 	dest.pvar_data.emplace();
 	dest.pvar_moby_links.emplace();
@@ -567,7 +587,14 @@ void build_pvars(Gameplay& dest, const Instances& src, const std::map<std::strin
 	}
 }
 
-static void rewrite_pvar_links(std::vector<u8>& data, const CppType& type, s32 offset, const std::map<std::string, CppType>& types, const Instances& instances, const char* context) {
+static void rewrite_pvar_links(
+	std::vector<u8>& data,
+	const CppType& type,
+	s32 offset,
+	const std::map<std::string, CppType>& types,
+	const Instances& instances,
+	const char* context)
+{
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
 			for(s32 i = 0; i < type.array.element_count; i++) {
@@ -599,7 +626,13 @@ static void rewrite_pvar_links(std::vector<u8>& data, const CppType& type, s32 o
 	}
 }
 
-static void enumerate_moby_links(std::vector<PvarFixupEntry>& dest, const CppType& type, s32 offset, s32 pvar_index, const std::map<std::string, CppType>& types) {
+static void enumerate_moby_links(
+	std::vector<PvarFixupEntry>& dest,
+	const CppType& type,
+	s32 offset,
+	s32 pvar_index,
+	const std::map<std::string, CppType>& types)
+{
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
 			for(s32 i = 0; i < type.array.element_count; i++) {
@@ -631,7 +664,8 @@ static void enumerate_moby_links(std::vector<PvarFixupEntry>& dest, const CppTyp
 	}
 }
 
-std::string pvar_type_name_from_instance(const Instance& inst) {
+std::string pvar_type_name_from_instance(const Instance& inst)
+{
 	std::string type_name;
 	if(inst.type() == INST_MOBY) {
 		type_name = stringf("update%d", inst.o_class());

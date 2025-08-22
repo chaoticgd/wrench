@@ -30,7 +30,9 @@ static std::chrono::steady_clock::time_point last_frame_time;
 static f32 delta_time;
 static std::vector<std::vector<u8>> font_buffers;
 
-GLFWwindow* startup(const char* window_title, s32 width, s32 height, bool maximized, GlfwCallbacks* callbacks) {
+GLFWwindow* startup(
+	const char* window_title, s32 width, s32 height, bool maximized, GlfwCallbacks* callbacks)
+{
 	verify(glfwInit(), "Failed to load GLFW.");
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -83,7 +85,8 @@ GLFWwindow* startup(const char* window_title, s32 width, s32 height, bool maximi
 	return window;
 }
 
-void run_frame(GLFWwindow* window, void (*update_func)(f32)) {
+void run_frame(GLFWwindow* window, void (*update_func)(f32))
+{
 	glfwPollEvents();
 	
 	ImGui_ImplOpenGL3_NewFrame();
@@ -121,7 +124,8 @@ void run_frame(GLFWwindow* window, void (*update_func)(f32)) {
 	last_frame_time = frame_time;
 }
 
-ImFont* load_font(SectorRange range, f32 size, f32 multiply) {
+ImFont* load_font(SectorRange range, f32 size, f32 multiply)
+{
 	std::vector<u8> compressed_font = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
 	std::vector<u8>& decompressed_font = font_buffers.emplace_back();
 	decompress_wad(decompressed_font, compressed_font);
@@ -146,7 +150,8 @@ void shutdown(GLFWwindow* window) {
 	font_buffers.clear();
 }
 
-bool input_folder_path(std::string* output_path, const char* id, const nfdchar_t* default_path) {
+bool input_folder_path(std::string* output_path, const char* id, const nfdchar_t* default_path)
+{
 	ImGuiStyle& s = ImGui::GetStyle();
 	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize("Browse").x - s.FramePadding.x * 2 - s.ItemSpacing.x);
 	if(ImGui::InputText(id, output_path)) {
@@ -167,7 +172,8 @@ bool input_folder_path(std::string* output_path, const char* id, const nfdchar_t
 
 }
 
-void GlTexture::upload(const u8* data, s32 width, s32 height) {
+void GlTexture::upload(const u8* data, s32 width, s32 height)
+{
 	if(id != 0) {
 		glDeleteTextures(1, &id);
 	}

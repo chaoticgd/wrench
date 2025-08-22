@@ -18,7 +18,8 @@
 
 #include "mesh_graph.h"
 
-MeshGraph::MeshGraph(const GLTF::Mesh& mesh) {
+MeshGraph::MeshGraph(const GLTF::Mesh& mesh)
+{
 	_vertices.resize(mesh.vertices.size());
 	
 	// Collect faces.

@@ -23,7 +23,9 @@
 
 const s32 NONE = -1;
 
-void read_gameplay(Gameplay& gameplay, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks) {
+void read_gameplay(
+	Gameplay& gameplay, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks)
+{
 	for(const GameplayBlockDescription& block : blocks) {
 		s32 block_offset = src.read<s32>(block.header_pointer_offset, "gameplay header");
 		if(block_offset != 0 && block.funcs.read != nullptr) {
@@ -32,7 +34,9 @@ void read_gameplay(Gameplay& gameplay, Buffer src, Game game, const std::vector<
 	}
 }
 
-std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks) {
+std::vector<u8> write_gameplay(
+	const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks)
+{
 	Gameplay gameplay = gameplay_arg;
 	
 	s32 header_size = 0;
@@ -65,7 +69,8 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const st
 	return dest_vec;
 }
 
-const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game) {
+const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game)
+{
 	const std::vector<GameplayBlockDescription>* gbd = nullptr;
 	switch(game) {
 		case Game::RAC: gbd = &RAC_GAMEPLAY_BLOCKS; break;
@@ -84,7 +89,8 @@ const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_ga
 #include "gameplay_impl_misc.inl"
 
 template <typename Block, typename Field>
-static GameplayBlockFuncs bf(Field field) {
+static GameplayBlockFuncs bf(Field field)
+{
 	// e.g. if field = &Gameplay::moby_instances then FieldType = std::vector<MobyInstance>.
 	using FieldType = typename std::remove_reference<decltype(Gameplay().*field)>::type::value_type;
 	

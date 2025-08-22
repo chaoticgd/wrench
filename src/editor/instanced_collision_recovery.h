@@ -61,8 +61,15 @@ struct ColParams {
 	glm::vec3 bounding_box_size;
 };
 
-std::vector<ColLevel> load_instance_collision_data(BuildAsset& build, std::function<bool()>&& check_is_still_running);
+std::vector<ColLevel> load_instance_collision_data(
+	BuildAsset& build, std::function<bool()>&& check_is_still_running);
 ColMappings generate_instance_collision_mappings(const std::vector<ColLevel>& levels);
-Opt<ColladaScene> build_instanced_collision(s32 type, s32 o_class, const ColParams& params, const ColMappings& mappings, const std::vector<ColLevel>& levels, std::function<bool()>&& check_is_still_running);
+Opt<ColladaScene> build_instanced_collision(
+	s32 type,
+	s32 o_class,
+	const ColParams& params,
+	const ColMappings& mappings,
+	const std::vector<ColLevel>& levels,
+	std::function<bool()>&& check_is_still_running);
 
 #endif

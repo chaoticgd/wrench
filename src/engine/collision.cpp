@@ -72,7 +72,8 @@ static void reduce_quads_to_tris(CollisionSector& sector);
 static void remove_killed_faces(CollisionSector& sector);
 static void remove_unreferenced_vertices(CollisionSector& sector);
 
-ColladaScene read_collision(Buffer src) {
+ColladaScene read_collision(Buffer src)
+{
 	ERROR_CONTEXT("collision");
 	
 	CollisionHeader header = src.read<CollisionHeader>(0, "collision header");
@@ -86,7 +87,8 @@ ColladaScene read_collision(Buffer src) {
 	return collision_sectors_to_scene(sectors);
 }
 
-void write_collision(OutBuffer dest, const ColladaScene& scene, const std::string& name) {
+void write_collision(OutBuffer dest, const ColladaScene& scene, const std::string& name)
+{
 	ERROR_CONTEXT("collision");
 	
 	CollisionSectors sectors = build_collision_sectors(scene, name);
@@ -100,7 +102,8 @@ void write_collision(OutBuffer dest, const ColladaScene& scene, const std::strin
 	write_collision_mesh(dest, sectors);
 }
 
-static CollisionSectors parse_collision_mesh(Buffer mesh) {
+static CollisionSectors parse_collision_mesh(Buffer mesh)
+{
 	CollisionSectors sectors;
 	s32 z_coord = mesh.read<s16>(0, "z coord");
 	u16 z_count = mesh.read<u16>(2, "z count");
@@ -196,7 +199,8 @@ static CollisionSectors parse_collision_mesh(Buffer mesh) {
 	return sectors;
 }
 
-static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
+static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors)
+{
 	s64 base_ofs = dest.tell();
 	
 	// Allocate all the internal nodes and fill in pointers to internal nodes.
@@ -314,7 +318,8 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 	}
 }
 
-static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors) {
+static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors)
+{
 	ColladaScene scene;
 
 	Mesh& mesh = scene.meshes.emplace_back();
@@ -355,7 +360,8 @@ static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors) 
 	return scene;
 }
 
-std::vector<ColladaMaterial> create_collision_materials() {
+std::vector<ColladaMaterial> create_collision_materials()
+{
 	std::vector<ColladaMaterial> materials;
 	materials.reserve(256);
 	for(s32 i = 0; i < 256; i++) {
@@ -373,7 +379,8 @@ std::vector<ColladaMaterial> create_collision_materials() {
 	return materials;
 }
 
-static CollisionSectors build_collision_sectors(const ColladaScene& scene, const std::string& name) {
+static CollisionSectors build_collision_sectors(const ColladaScene& scene, const std::string& name)
+{
 	start_timer("build collision");
 	
 	CollisionSectors sectors;
@@ -481,7 +488,8 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene, const
 }
 
 // https://gdbooks.gitbooks.io/3dcollisions/content/Chapter4/aabb-triangle.html
-static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2) {
+static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2)
+{
 	glm::vec3 f0 = v1 - v0;
 	glm::vec3 f1 = v2 - v1;
 	glm::vec3 f2 = v0 - v2;
@@ -514,7 +522,8 @@ static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v
 	return true;
 }
 
-static CollisionSector& lookup_sector(CollisionSectors& sectors, s32 x, s32 y, s32 z) {
+static CollisionSector& lookup_sector(CollisionSectors& sectors, s32 x, s32 y, s32 z)
+{
 	if(sectors.list.empty()) {
 		sectors.list.resize(1);
 		sectors.coord = z;
@@ -547,7 +556,8 @@ static CollisionSector& lookup_sector(CollisionSectors& sectors, s32 x, s32 y, s
 	return y_node.list[x - y_node.coord];
 }
 
-static void optimise_collision(CollisionSectors& sectors) {
+static void optimise_collision(CollisionSectors& sectors)
+{
 	start_timer("Optimising collision tree");
 	
 	for(auto& y_partitions : sectors.list) {
@@ -563,7 +573,8 @@ static void optimise_collision(CollisionSectors& sectors) {
 	stop_timer();
 }
 
-static void reduce_quads_to_tris(CollisionSector& sector) {
+static void reduce_quads_to_tris(CollisionSector& sector)
+{
 	size_t face_count = sector.faces.size();
 	for(size_t i = 0; i < face_count; i++) {
 		CollFace& face = sector.faces[i];
@@ -595,7 +606,8 @@ static void reduce_quads_to_tris(CollisionSector& sector) {
 	}
 }
 
-static void remove_killed_faces(CollisionSector& sector) {
+static void remove_killed_faces(CollisionSector& sector)
+{
 	std::vector<CollFace> new_faces;
 	for(CollFace& face : sector.faces) {
 		if(face.alive) {
@@ -605,7 +617,8 @@ static void remove_killed_faces(CollisionSector& sector) {
 	sector.faces = std::move(new_faces);
 }
 
-static void remove_unreferenced_vertices(CollisionSector& sector) {
+static void remove_unreferenced_vertices(CollisionSector& sector)
+{
 	std::vector<glm::vec3> new_vertices;
 	std::vector<size_t> new_indices(sector.vertices.size(), SIZE_MAX);
 	for(CollFace& face : sector.faces) {

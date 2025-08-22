@@ -25,7 +25,8 @@ using Json = nlohmann::ordered_json;
 static Json node_to_json(WtfNode* node);
 static Json attribute_to_json(WtfAttribute* attribute);
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	if(argc != 3) {
 		fprintf(stderr, "usage: %s <input .asset file> <output .json file>\n", argv[0]);
 		return 1;
@@ -49,7 +50,8 @@ int main(int argc, char** argv) {
 	wtf_free(root);
 }
 
-static Json node_to_json(WtfNode* node) {
+static Json node_to_json(WtfNode* node)
+{
 	Json json = Json::object();
 	json["type_name"] = node->type_name ? node->type_name : Json();
 	json["tag"] = node->tag ? node->tag : Json();
@@ -66,7 +68,8 @@ static Json node_to_json(WtfNode* node) {
 	return json;
 }
 
-static Json attribute_to_json(WtfAttribute* attribute) {
+static Json attribute_to_json(WtfAttribute* attribute)
+{
 	switch(attribute->type) {
 		case WTF_NUMBER: {
 			return attribute->number.f;

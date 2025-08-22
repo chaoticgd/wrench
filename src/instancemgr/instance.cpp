@@ -25,27 +25,33 @@
 #include <instancemgr/wtf_glue.h>
 #include <instancemgr/instances.h>
 
-const glm::mat4& TransformComponent::matrix() const {
+const glm::mat4& TransformComponent::matrix() const
+{
 	return m_matrix;
 }
 
-const glm::mat4& TransformComponent::inverse_matrix() const {
+const glm::mat4& TransformComponent::inverse_matrix() const
+{
 	return m_inverse_matrix;
 }
 
-const glm::vec3& TransformComponent::pos() const {
+const glm::vec3& TransformComponent::pos() const
+{
 	return *(glm::vec3*) &m_matrix[3][0];
 }
 
-const glm::vec3& TransformComponent::rot() const {
+const glm::vec3& TransformComponent::rot() const
+{
 	return m_rot;
 }
 
-const f32& TransformComponent::scale() const {
+const f32& TransformComponent::scale() const
+{
 	return m_scale;
 }
 
-static void decompose_matrix(glm::mat4& matrix, glm::vec3& pos, glm::vec3& rot, glm::vec3& scale) {
+static void decompose_matrix(glm::mat4& matrix, glm::vec3& pos, glm::vec3& rot, glm::vec3& scale)
+{
 	scale[0] = glm::length(matrix[0]);
 	scale[1] = glm::length(matrix[1]);
 	scale[2] = glm::length(matrix[2]);
@@ -63,7 +69,9 @@ static void decompose_matrix(glm::mat4& matrix, glm::vec3& pos, glm::vec3& rot, 
 	pos[2] = matrix[3].z;
 }
 
-void TransformComponent::set_from_matrix(const glm::mat4* new_matrix, const glm::mat4* new_inverse_matrix, const glm::vec3* new_rot) {
+void TransformComponent::set_from_matrix(
+	const glm::mat4* new_matrix, const glm::mat4* new_inverse_matrix, const glm::vec3* new_rot)
+{
 	glm::mat4 temp_matrix;
 	verify_fatal(new_matrix || new_inverse_matrix);
 	if(new_matrix) {
@@ -116,14 +124,16 @@ void TransformComponent::set_from_matrix(const glm::mat4* new_matrix, const glm:
 	}
 }
 
-static f32 constrain_angle(f32 angle) {
+static f32 constrain_angle(f32 angle)
+{
 	if(angle > -WRENCH_PI && angle < WRENCH_PI) {
 		return angle;
 	}
 	return std::remainder(angle, 2 * WRENCH_PI);
 }
 
-void TransformComponent::set_from_pos_rot_scale(const glm::vec3& pos, const glm::vec3& rot, f32 scale) {
+void TransformComponent::set_from_pos_rot_scale(const glm::vec3& pos, const glm::vec3& rot, f32 scale)
+{
 	glm::vec3 rot_wrapped;
 	for(s32 i = 0; i < 3; i++) {
 		rot_wrapped[i] = constrain_angle(rot[i]);
@@ -140,7 +150,8 @@ void TransformComponent::set_from_pos_rot_scale(const glm::vec3& pos, const glm:
 	m_scale = scale;
 }
 
-void TransformComponent::read(const WtfNode* src) {
+void TransformComponent::read(const WtfNode* src)
+{
 	switch(m_mode) {
 		case TransformMode::NONE: {
 			break;
@@ -205,7 +216,8 @@ void TransformComponent::read(const WtfNode* src) {
 	}
 }
 
-void TransformComponent::write(WtfWriter* dest) const {
+void TransformComponent::write(WtfWriter* dest) const
+{
 	switch(m_mode) {
 		case TransformMode::NONE: {
 			break;
@@ -247,7 +259,8 @@ void TransformComponent::write(WtfWriter* dest) const {
 	}
 }
 
-void PvarComponent::read(const WtfNode* src) {
+void PvarComponent::read(const WtfNode* src)
+{
 	read_inst_field(data, src, "pvars");
 	
 	const WtfAttribute* relative_pointers_attrib = wtf_attribute_of_type(src, "relative_pvar_pointers", WTF_ARRAY);
@@ -280,7 +293,8 @@ void PvarComponent::read(const WtfNode* src) {
 	validate();
 }
 
-void PvarComponent::validate() const {
+void PvarComponent::validate() const
+{
 	// Validate uniqueness (this is important for undo/redo integrity).
 	std::vector<PvarPointer> pointers_copy = pointers;
 	std::sort(BEGIN_END(pointers_copy));
@@ -292,7 +306,8 @@ void PvarComponent::validate() const {
 	}
 }
 
-void PvarComponent::write(WtfWriter* dest) const {
+void PvarComponent::write(WtfWriter* dest) const
+{
 	write_inst_field(dest, "pvars", data);
 	
 	if(!pointers.empty()) {
@@ -319,27 +334,32 @@ void PvarComponent::write(WtfWriter* dest) const {
 	}
 }
 
-const TransformComponent& Instance::transform() const {
+const TransformComponent& Instance::transform() const
+{
 	verify_fatal(m_components_mask & COM_TRANSFORM);
 	return m_transform;
 }
 
-TransformComponent& Instance::transform() {
+TransformComponent& Instance::transform()
+{
 	verify_fatal(m_components_mask & COM_TRANSFORM);
 	return m_transform;
 }
 
-s32 Instance::o_class() const {
+s32 Instance::o_class() const
+{
 	verify_fatal(m_components_mask & COM_CLASS);
 	return m_o_class;
 }
 
-s32& Instance::o_class() {
+s32& Instance::o_class()
+{
 	verify_fatal(m_components_mask & COM_CLASS);
 	return m_o_class;
 }
 
-const PvarComponent& Instance::pvars() const {
+const PvarComponent& Instance::pvars() const
+{
 	verify_fatal(m_components_mask & COM_PVARS);
 	return m_pvars;
 }
@@ -349,47 +369,56 @@ PvarComponent& Instance::pvars() {
 	return m_pvars;
 }
 
-const glm::vec3& Instance::colour() const {
+const glm::vec3& Instance::colour() const
+{
 	verify_fatal(m_components_mask & COM_COLOUR);
 	return m_colour;
 }
 
-glm::vec3& Instance::colour() {
+glm::vec3& Instance::colour()
+{
 	verify_fatal(m_components_mask & COM_COLOUR);
 	return m_colour;
 }
 
-f32 Instance::draw_distance() const {
+f32 Instance::draw_distance() const
+{
 	verify_fatal(m_components_mask & COM_DRAW_DISTANCE);
 	return m_draw_distance;
 }
 
-f32& Instance::draw_distance() {
+f32& Instance::draw_distance()
+{
 	verify_fatal(m_components_mask & COM_DRAW_DISTANCE);
 	return m_draw_distance;
 }
 
-const std::vector<glm::vec4>& Instance::spline() const {
+const std::vector<glm::vec4>& Instance::spline() const
+{
 	verify_fatal(m_components_mask & COM_SPLINE);
 	return m_spline;
 }
 
-std::vector<glm::vec4>& Instance::spline() {
+std::vector<glm::vec4>& Instance::spline()
+{
 	verify_fatal(m_components_mask & COM_SPLINE);
 	return m_spline;
 }
 
-const CameraCollisionParams& Instance::camera_collision() const {
+const CameraCollisionParams& Instance::camera_collision() const
+{
 	verify_fatal(m_components_mask & COM_CAMERA_COLLISION);
 	return m_camera_collision;
 }
 
-CameraCollisionParams& Instance::camera_collision() {
+CameraCollisionParams& Instance::camera_collision()
+{
 	verify_fatal(m_components_mask & COM_CAMERA_COLLISION);
 	return m_camera_collision;
 }
 
-void Instance::read_common(const WtfNode* src) {
+void Instance::read_common(const WtfNode* src)
+{
 	if(has_component(COM_TRANSFORM)) {
 		transform().read(src);
 	}
@@ -428,7 +457,8 @@ void Instance::read_common(const WtfNode* src) {
 	}
 }
 
-void Instance::begin_write(WtfWriter* dest) const {
+void Instance::begin_write(WtfWriter* dest) const
+{
 	wtf_begin_node(dest, instance_type_to_string(type()), std::to_string(id().value).c_str());
 	
 	if(has_component(COM_TRANSFORM)) {
@@ -462,7 +492,8 @@ void Instance::begin_write(WtfWriter* dest) const {
 	}
 }
 
-void Instance::end_write(WtfWriter* dest) const {
+void Instance::end_write(WtfWriter* dest) const
+{
 	wtf_end_node(dest);
 }
 

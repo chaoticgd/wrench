@@ -29,7 +29,8 @@ struct Timer {
 };
 static std::vector<Timer> timers;
 
-void start_timer(const char* task) {
+void start_timer(const char* task)
+{
 	for(size_t i = 0; i < timers.size(); i++) {
 		printf("  ");
 	}
@@ -38,7 +39,8 @@ void start_timer(const char* task) {
 	timers.back().start_time = std::chrono::high_resolution_clock::now();
 }
 
-void stop_timer() {
+void stop_timer()
+{
 	auto end_time = std::chrono::high_resolution_clock::now();
 	Timer timer = timers.back();
 	timers.pop_back();

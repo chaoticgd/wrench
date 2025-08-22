@@ -20,7 +20,9 @@
 
 #include <engine/collision.h>
 
-std::vector<ColLevel> load_instance_collision_data(BuildAsset& build, std::function<bool()>&& check_is_still_running) {
+std::vector<ColLevel> load_instance_collision_data(
+	BuildAsset& build, std::function<bool()>&& check_is_still_running)
+{
 	std::vector<ColLevel> levels;
 	
 	bool skip = false;
@@ -80,7 +82,8 @@ std::vector<ColLevel> load_instance_collision_data(BuildAsset& build, std::funct
 	return levels;
 }
 
-ColMappings generate_instance_collision_mappings(const std::vector<ColLevel>& levels) {
+ColMappings generate_instance_collision_mappings(const std::vector<ColLevel>& levels)
+{
 	ColMappings mappings;
 	
 	for(size_t i = 0; i < levels.size(); i++) {
@@ -125,7 +128,13 @@ struct ColVal {
 	s32 hits;
 };
 
-Opt<ColladaScene> build_instanced_collision(s32 type, s32 o_class, const ColParams& params, const ColMappings& mappings, const std::vector<ColLevel>& levels, std::function<bool()>&& check_is_still_running) {
+Opt<ColladaScene> build_instanced_collision(
+	s32 type,
+	s32 o_class,
+	const ColParams& params,
+	const ColMappings& mappings,
+	const std::vector<ColLevel>& levels,
+	std::function<bool()>&& check_is_still_running) {
 	auto iter = mappings.classes[type].find(o_class);
 	if(iter == mappings.classes[type].end()) {
 		return std::nullopt;

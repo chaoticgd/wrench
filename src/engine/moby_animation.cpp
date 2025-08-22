@@ -19,11 +19,15 @@
 #include "moby_animation.h"
 
 static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count, Game game);
-static s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game);
+static s64 write_moby_sequence(
+	OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game);
 static MobySequence read_dl_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count);
-static s64 write_dl_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count);
+static s64 write_dl_moby_sequence(
+	OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count);
 
-std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count, Game game) {
+std::vector<Opt<MobySequence>> read_moby_sequences(
+	Buffer src, s64 sequence_count, s32 joint_count, Game game)
+{
 	std::vector<Opt<MobySequence>> sequences;
 	auto sequence_offsets = src.read_multiple<s32>(0x48, sequence_count, "moby sequences");
 	for(s32 seq_offset : sequence_offsets) {
@@ -41,7 +45,14 @@ std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_coun
 	return sequences;
 }
 
-void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 class_header_ofs, s64 list_ofs, s32 joint_count, Game game) {
+void write_moby_sequences(
+	OutBuffer dest,
+	const std::vector<Opt<MobySequence>>& sequences,
+	s64 class_header_ofs,
+	s64 list_ofs,
+	s32 joint_count,
+	Game game)
+{
 	for(const Opt<MobySequence>& sequence_opt : sequences) {
 		if(!sequence_opt.has_value()) {
 			dest.write<s32>(list_ofs, 0);
@@ -61,7 +72,8 @@ void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& 
 	}
 }
 
-static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count, Game game) {
+static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count, Game game)
+{
 	auto seq_header = src.read<MobySequenceHeader>(seq_ofs, "moby sequence header");
 	MobySequence sequence;
 	sequence.bounding_sphere = seq_header.bounding_sphere.unpack();
@@ -180,7 +192,9 @@ static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count,
 	return sequence;
 }
 
-static s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game) {
+static s64 write_moby_sequence(
+	OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game)
+{
 	dest.pad(0x10);
 	s64 seq_header_ofs = dest.alloc<MobySequenceHeader>();
 	
@@ -279,7 +293,8 @@ static s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64
 	return seq_header_ofs;
 }
 
-static MobySequence read_dl_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count) {
+static MobySequence read_dl_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count)
+{
 	MobySequenceHeader header = src.read<MobySequenceHeader>(seq_ofs, "moby sequence header");
 	s32 data_ofs = src.read<s32>(seq_ofs + 0x1c, "moby sequence data offset");
 	auto data_header = src.read<DeadlockedMobySequenceDataHeader>(seq_ofs + data_ofs, "moby sequence data header");
@@ -288,7 +303,9 @@ static MobySequence read_dl_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_cou
 	return seq;
 }
 
-static s64 write_dl_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count) {
+static s64 write_dl_moby_sequence(
+	OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count)
+{
 	s64 seq_ofs = dest.tell();
 	dest.write_multiple(sequence.deadlocked_data);
 	return seq_ofs;

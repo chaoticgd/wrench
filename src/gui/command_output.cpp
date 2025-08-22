@@ -20,7 +20,9 @@
 
 #include <nfd.h>
 
-void gui::command_output_screen(const char* id, CommandThread& command, void (*close_callback)(), void (*run_callback)()) {
+void gui::command_output_screen(
+	const char* id, CommandThread& command, void (*close_callback)(), void (*run_callback)())
+{
 	ImVec2 centre = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(ImVec2(640, 480), ImGuiCond_Appearing);

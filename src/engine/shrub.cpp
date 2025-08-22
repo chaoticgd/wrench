@@ -25,10 +25,12 @@
 
 static std::vector<TriStripConstraint> setup_shrub_constraints();
 static f32 compute_optimal_scale(const GLTF::Mesh& mesh);
-static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(const std::vector<Vertex>& vertices);
+static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(
+	const std::vector<Vertex>& vertices);
 static s32 compute_lod_k(f32 distance);
 
-ShrubClass read_shrub_class(Buffer src) {
+ShrubClass read_shrub_class(Buffer src)
+{
 	ShrubClass shrub;
 	
 	ShrubClassHeader header = src.read<ShrubClassHeader>(0, "shrub header");
@@ -137,7 +139,8 @@ ShrubClass read_shrub_class(Buffer src) {
 	return shrub;
 }
 
-void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
+void write_shrub_class(OutBuffer dest, const ShrubClass& shrub)
+{
 	s64 header_ofs = dest.alloc<ShrubClassHeader>();
 	ShrubClassHeader header = {};
 	
@@ -312,7 +315,8 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 	dest.write(header_ofs, header);
 }
 
-GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
+GLTF::Mesh recover_shrub_class(const ShrubClass& shrub)
+{
 	GLTF::Mesh mesh;
 	mesh.name = "mesh";
 	
@@ -372,7 +376,14 @@ GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
 	return mesh;
 }
 
-ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard_info) {
+ShrubClass build_shrub_class(
+	const GLTF::Mesh& mesh,
+	const std::vector<Material>& materials,
+	f32 mip_distance,
+	u16 mode_bits,
+	s16 o_class,
+	Opt<ShrubBillboardInfo> billboard_info)
+{
 	ShrubClass shrub = {};
 	shrub.mip_distance = mip_distance;
 	shrub.mode_bits = mode_bits;
@@ -471,7 +482,8 @@ ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>
 	return shrub;
 }
 
-static std::vector<TriStripConstraint> setup_shrub_constraints() {
+static std::vector<TriStripConstraint> setup_shrub_constraints()
+{
 	std::vector<TriStripConstraint> constraints;
 	
 	TriStripConstraint& unpacked_data_size = constraints.emplace_back();
@@ -496,7 +508,8 @@ static std::vector<TriStripConstraint> setup_shrub_constraints() {
 	return constraints;
 }
 
-static f32 compute_optimal_scale(const GLTF::Mesh& mesh) {
+static f32 compute_optimal_scale(const GLTF::Mesh& mesh)
+{
 	// Compute the minimum axis-aligned bounding box.
 	f32 xmin = 0.f, xmax = 0.f;
 	f32 ymin = 0.f, ymax = 0.f;
@@ -520,7 +533,9 @@ static f32 compute_optimal_scale(const GLTF::Mesh& mesh) {
 	return required_range * (1024.f / (INT16_MAX - 1.f));
 }
 
-static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(const std::vector<Vertex>& vertices) {
+static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(
+	const std::vector<Vertex>& vertices)
+{
 	// https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere
 	std::vector<glm::vec3> clusters = {
 		{0.0, 1.0, 0.0},
@@ -585,7 +600,8 @@ static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clus
 	return {normals, indices};
 }
 
-static s32 compute_lod_k(f32 distance) {
+static s32 compute_lod_k(f32 distance)
+{
 	// This is similar to the equation in the GS User's Manual and seems to fit
 	// most of the points in the original files. It's kinda off for larger
 	// distances such as those of billbaords but I'm not really sure.

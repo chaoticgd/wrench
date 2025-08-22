@@ -44,7 +44,8 @@ const char* VIF_USN_STRINGS[2] = {
 	"SIGNED", "UNSIGNED"
 };
 
-u32 VifCode::encode_unpack() const {
+u32 VifCode::encode_unpack() const
+{
 	verify_fatal(is_unpack());
 	u32 value = 0;
 	value |= (interrupt & 0b1) << 31;
@@ -57,15 +58,18 @@ u32 VifCode::encode_unpack() const {
 	return value;
 }
 
-bool VifCode::is_unpack() const {
+bool VifCode::is_unpack() const
+{
 	return (static_cast<s32>(cmd) & 0b1100000) == 0b1100000;
 }
 
-bool VifCode::is_strow() const {
+bool VifCode::is_strow() const
+{
 	return (static_cast<s32>(cmd) & 0b0110000) == 0b0110000;
 }
 
-s64 VifCode::packet_size() const {
+s64 VifCode::packet_size() const
+{
 	s64 result = 0;
 	switch(cmd) {
 		case VifCmd::NOP:
@@ -113,7 +117,8 @@ s64 VifCode::packet_size() const {
 	return result * 4;
 }
 
-std::string VifCode::to_string() const {
+std::string VifCode::to_string() const
+{
 	std::stringstream ss;
 	ss << std::hex;
 	ss << std::setw(8) << std::setfill('0') << raw << " ";
@@ -153,20 +158,24 @@ std::string VifCode::to_string() const {
 	return ss.str();
 }
 
-s32 VifCode::element_size() const {
+s32 VifCode::element_size() const
+{
 	// This is what PCSX2 does when wl <= cl.
 	return ((32 >> vl()) * (vn() + 1)) / 8;
 }
 
-s32 VifCode::vn() const {
+s32 VifCode::vn() const
+{
 	return ((s32) unpack.vnvl & 0b1100) >> 2;
 }
 
-s32 VifCode::vl() const {
+s32 VifCode::vl() const
+{
 	return ((s32) unpack.vnvl) & 0b11;
 }
 
-Opt<VifCode> read_vif_code(u32 val) {
+Opt<VifCode> read_vif_code(u32 val)
+{
 	VifCode code;
 	code.raw = val;
 	code.interrupt = bit_range(val, 31, 31);
@@ -239,7 +248,8 @@ Opt<VifCode> read_vif_code(u32 val) {
 	return code;
 }
 
-std::vector<VifPacket> read_vif_command_list(Buffer src) {
+std::vector<VifPacket> read_vif_command_list(Buffer src)
+{
 	std::vector<VifPacket> command_list;
 	s64 ofs = 0;
 	while(ofs < src.size()) {
@@ -275,7 +285,8 @@ std::vector<VifPacket> read_vif_command_list(Buffer src) {
 	return command_list;
 }
 
-std::vector<VifPacket> filter_vif_unpacks(std::vector<VifPacket>& src) {
+std::vector<VifPacket> filter_vif_unpacks(std::vector<VifPacket>& src)
+{
 	std::vector<VifPacket> dest;
 	for(VifPacket& packet : src) {
 		if(packet.code.is_unpack()) {
@@ -285,7 +296,8 @@ std::vector<VifPacket> filter_vif_unpacks(std::vector<VifPacket>& src) {
 	return dest;
 }
 
-void write_vif_packet(OutBuffer dest, const VifPacket& packet) {
+void write_vif_packet(OutBuffer dest, const VifPacket& packet)
+{
 	if(packet.code.is_unpack()) {
 		dest.write<u32>(packet.code.encode_unpack());
 		dest.vec.insert(dest.vec.end(), packet.data.lo, packet.data.hi);

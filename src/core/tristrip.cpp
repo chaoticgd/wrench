@@ -60,18 +60,36 @@ struct FaceStripPackets {
 	std::vector<StripFace> faces;
 };
 
-static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective);
-static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex next_faces[3]);
-static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph, const EffectiveMaterial& effective);
-static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex v1, VertexIndex v2, MeshGraph& graph, const EffectiveMaterial& effective);
-static GeometryPrimitives facestrips_to_tristrips(const FaceStrips& input, const std::vector<EffectiveMaterial>& effectives);
-static void facestrip_to_tristrip(std::vector<s32>& output_indices, const FaceStrip& face_strip, const std::vector<StripFace>& faces);
+static FaceStrip weave_multiple_strips_and_pick_the_best(
+	FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective);
+static FaceIndex find_start_face(
+	const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex next_faces[4]);
+static void weave_strip(
+	FaceStrips& dest,
+	FaceIndex start_face,
+	EdgeIndex start_edge,
+	bool to_v1,
+	MeshGraph& graph,
+	const EffectiveMaterial& effective);
+static FaceStrip weave_strip_in_one_direction(
+	FaceStrips& dest,
+	FaceIndex start_face,
+	VertexIndex v1,
+	VertexIndex v2,
+	MeshGraph& graph,
+	const EffectiveMaterial& effective);
+static GeometryPrimitives facestrips_to_tristrips(
+	const FaceStrips& input, const std::vector<EffectiveMaterial>& effectives);
+static void facestrip_to_tristrip(
+	std::vector<s32>& output_indices, const FaceStrip& face_strip, const std::vector<StripFace>& faces);
 static void batch_single_triangles_together(GeometryPrimitives& primitives);
 static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace& rhs);
-static std::pair<VertexIndex, VertexIndex> get_shared_vertices(const StripFace& lhs, const StripFace& rhs);
+static std::pair<VertexIndex, VertexIndex> get_shared_vertices(
+	const StripFace& lhs, const StripFace& rhs);
 static void verify_face_strips(const std::vector<FaceStrip>& strips, const std::vector<StripFace>& faces, const char* context, const MeshGraph& graph);
 
-GeometryPrimitives weave_tristrips(const GLTF::Mesh& mesh, const std::vector<EffectiveMaterial>& effectives) {
+GeometryPrimitives weave_tristrips(const GLTF::Mesh& mesh, const std::vector<EffectiveMaterial>& effectives)
+{
 	// Firstly we build a graph structure to make finding adjacent faces fast.
 	MeshGraph graph(mesh);
 	if(graph.face_count() == 0) {
@@ -101,7 +119,8 @@ GeometryPrimitives weave_tristrips(const GLTF::Mesh& mesh, const std::vector<Eff
 	return tri_strips;
 }
 
-std::vector<s32> zero_area_tris_to_restart_bit_strip(const std::vector<s32>& indices) {
+std::vector<s32> zero_area_tris_to_restart_bit_strip(const std::vector<s32>& indices)
+{
 	std::vector<s32> output;
 	bool set_next_restart_bit = false;
 	for(size_t i = 0; i < indices.size(); i++) {
@@ -119,7 +138,8 @@ std::vector<s32> zero_area_tris_to_restart_bit_strip(const std::vector<s32>& ind
 	return output;
 }
 
-std::vector<s32> restart_bit_strip_to_zero_area_tris(const std::vector<s32>& indices) {
+std::vector<s32> restart_bit_strip_to_zero_area_tris(const std::vector<s32>& indices)
+{
 	std::vector<s32> output;
 	for(size_t i = 0; i < indices.size(); i++) {
 		if(i > 0 && indices[i] < 0) {
@@ -130,7 +150,9 @@ std::vector<s32> restart_bit_strip_to_zero_area_tris(const std::vector<s32>& ind
 	return output;
 }
 
-static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective) {
+static FaceStrip weave_multiple_strips_and_pick_the_best(
+	FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective)
+{
 	// Weave multiple candidate strips.
 	FaceStrips temp;
 	FaceIndex next_faces[4] = {0, 0, 0, 0};
@@ -193,7 +215,9 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshG
 	return strip;
 }
 
-static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex next_faces[4]) {
+static FaceIndex find_start_face(
+	const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex next_faces[4])
+{
 	// First try individual triangles connected to zero other valid triangles,
 	// the one, then two, then three other valid triangles.
 	for(s32 i = 0; i <= 3; i++) {
@@ -218,7 +242,14 @@ static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial
 	return NULL_FACE_INDEX;
 }
 
-static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph, const EffectiveMaterial& effective) {
+static void weave_strip(
+	FaceStrips& dest,
+	FaceIndex start_face,
+	EdgeIndex start_edge,
+	bool to_v1,
+	MeshGraph& graph,
+	const EffectiveMaterial& effective)
+{
 	FaceStrip& strip = dest.strips.emplace_back();
 	strip.face_count = 0;
 	strip.face_begin = (s32) dest.faces.size();
@@ -260,7 +291,13 @@ static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_
 	graph.discard_temp_strip();
 }
 
-static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex v1, VertexIndex v2, MeshGraph& graph, const EffectiveMaterial& effective) {
+static FaceStrip weave_strip_in_one_direction(
+	FaceStrips& dest,
+	FaceIndex start_face,
+	VertexIndex v1,
+	VertexIndex v2,
+	MeshGraph& graph,
+	const EffectiveMaterial& effective) {
 	FaceStrip strip;
 	strip.face_begin = (s32) dest.faces.size();
 	strip.face_count = 0;
@@ -325,7 +362,9 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 	return strip;
 }
 
-static GeometryPrimitives facestrips_to_tristrips(const FaceStrips& input, const std::vector<EffectiveMaterial>& effectives) {
+static GeometryPrimitives facestrips_to_tristrips(
+	const FaceStrips& input, const std::vector<EffectiveMaterial>& effectives)
+{
 	GeometryPrimitives output;
 	
 	for(const FaceStrip& src_primitive : input.strips) {
@@ -361,7 +400,9 @@ static GeometryPrimitives facestrips_to_tristrips(const FaceStrips& input, const
 	return output;
 }
 
-static void facestrip_to_tristrip(std::vector<s32>& output_indices, const FaceStrip& face_strip, const std::vector<StripFace>& faces) {
+static void facestrip_to_tristrip(
+	std::vector<s32>& output_indices, const FaceStrip& face_strip, const std::vector<StripFace>& faces)
+{
 	if(face_strip.face_count == 0) {
 		return;
 	}
@@ -425,7 +466,8 @@ static void facestrip_to_tristrip(std::vector<s32>& output_indices, const FaceSt
 	}
 }
 
-static void batch_single_triangles_together(GeometryPrimitives& primitives) {
+static void batch_single_triangles_together(GeometryPrimitives& primitives)
+{
 	// For each effective material.
 	size_t start_of_group = 0;
 	for(size_t i = 0; i < primitives.primitives.size(); i++) {
@@ -464,7 +506,8 @@ static void batch_single_triangles_together(GeometryPrimitives& primitives) {
 	}
 }
 
-static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace& rhs) {
+static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace& rhs)
+{
 	for(VertexIndex vertex : rhs.v) {
 		if(vertex != lhs.v[0] && vertex != lhs.v[1] && vertex != lhs.v[2]) {
 			return vertex;
@@ -473,7 +516,9 @@ static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace&
 	return NULL_VERTEX_INDEX;
 }
 
-static std::pair<VertexIndex, VertexIndex> get_shared_vertices(const StripFace& lhs, const StripFace& rhs) {
+static std::pair<VertexIndex, VertexIndex> get_shared_vertices(
+	const StripFace& lhs, const StripFace& rhs)
+{
 	VertexIndex first = NULL_VERTEX_INDEX;
 	for(VertexIndex vertex : rhs.v) {
 		if(vertex == lhs.v[0] || vertex == lhs.v[1] || vertex == lhs.v[2]) {
@@ -487,7 +532,12 @@ static std::pair<VertexIndex, VertexIndex> get_shared_vertices(const StripFace& 
 	return {first, NULL_VERTEX_INDEX};
 }
 
-static void verify_face_strips(const std::vector<FaceStrip>& strips, const std::vector<StripFace>& faces, const char* context, const MeshGraph& graph) {
+static void verify_face_strips(
+	const std::vector<FaceStrip>& strips,
+	const std::vector<StripFace>& faces,
+	const char* context,
+	const MeshGraph& graph)
+{
 	std::vector<bool> included(graph.face_count(), false);
 	for(const FaceStrip& strip : strips) {
 		for(s32 i = 0; i < strip.face_count; i++) {

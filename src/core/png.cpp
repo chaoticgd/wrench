@@ -23,7 +23,8 @@
 static void read_callback(png_structp png_ptr, png_bytep dest, size_t size);
 static void write_callback(png_structp png_ptr, png_bytep src, size_t size);
 
-Opt<Texture> read_png(InputStream& src) {
+Opt<Texture> read_png(InputStream& src)
+{
 	std::vector<u8> magic = src.read_multiple<u8>(8);
 	if(!png_check_sig(magic.data(), 8)) {
 		printf("warning: PNG file has invalid magic bytes.\n");
@@ -205,14 +206,16 @@ Opt<Texture> read_png(InputStream& src) {
 	return {};
 }
 
-static void read_callback(png_structp png_ptr, png_bytep dest, size_t size) {
+static void read_callback(png_structp png_ptr, png_bytep dest, size_t size)
+{
 	png_voidp io_ptr = png_get_io_ptr(png_ptr);
 	verify_fatal(io_ptr);
 	InputStream& src = *(InputStream*) io_ptr;
 	src.read_n(dest, size);
 }
 
-void write_png(OutputStream& dest, const Texture& texture) {
+void write_png(OutputStream& dest, const Texture& texture)
+{
 	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 	verify(png_ptr, "png_create_write_struct failed.");
 	
@@ -344,7 +347,8 @@ void write_png(OutputStream& dest, const Texture& texture) {
 	png_destroy_write_struct(&png_ptr, &info_ptr);
 }
 
-static void write_callback(png_structp png_ptr, png_bytep src, size_t size) {
+static void write_callback(png_structp png_ptr, png_bytep src, size_t size)
+{
 	png_voidp io_ptr = png_get_io_ptr(png_ptr);
 	verify_fatal(io_ptr);
 	OutputStream& dest = *(OutputStream*) io_ptr;

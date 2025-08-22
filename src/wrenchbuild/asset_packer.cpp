@@ -31,7 +31,14 @@ on_load(Packer, []() {
 	BuildAsset::funcs.pack_rac1 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
 })
 
-void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint) {
+void pack_asset_impl(
+	OutputStream& dest,
+	std::vector<u8>* header_dest,
+	fs::file_time_type* time_dest,
+	const Asset& src,
+	BuildConfig config,
+	const char* hint)
+{
 	// Placeholder assets come in place of that actual asset when its type isn't
 	// specified, and they're not packable so we need to skip them.
 	const Asset* asset = &src.highest_precedence();

@@ -71,7 +71,8 @@ static WtfAttribute* alloc_attribute(WtfReader* ctx);
 static char ERROR_STR[128];
 static char EMPTY_STR[1] = {0};
 
-WtfNode* wtf_parse(char* buffer, char** error_dest) {
+WtfNode* wtf_parse(char* buffer, char** error_dest)
+{
 	WtfReader ctx;
 	ctx.input = buffer;
 	ctx.line = 1;
@@ -133,11 +134,13 @@ WtfNode* wtf_parse(char* buffer, char** error_dest) {
 	return root;
 }
 
-void wtf_free(WtfNode* root) {
+void wtf_free(WtfNode* root)
+{
 	free(root);
 }
 
-static ErrorStr count_nodes_and_attributes(WtfReader* ctx) {
+static ErrorStr count_nodes_and_attributes(WtfReader* ctx)
+{
 	char next;
 	while(next = peek_char(ctx), (next != '}' && next != '\0')) {
 		char* name = parse_identifier(ctx);
@@ -196,7 +199,8 @@ static ErrorStr count_nodes_and_attributes(WtfReader* ctx) {
 	return NULL;
 }
 
-static ErrorStr count_additional_nodes_generated_by_tag(WtfReader* ctx, const char* src) {
+static ErrorStr count_additional_nodes_generated_by_tag(WtfReader* ctx, const char* src)
+{
 	if(src[0] == '.') {
 		snprintf(ERROR_STR, sizeof(ERROR_STR), "Tag begins with a dot on line %d.", ctx->line);
 		return ERROR_STR;
@@ -217,7 +221,8 @@ static ErrorStr count_additional_nodes_generated_by_tag(WtfReader* ctx, const ch
 	return NULL;
 }
 
-static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent) {
+static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent)
+{
 	WtfAttribute* prev_attribute = NULL;
 	WtfAttribute** prev_attribute_pointer = &parent->first_attribute;
 	
@@ -274,7 +279,8 @@ static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent) {
 	}
 }
 
-static WtfNode* add_nodes(WtfReader* ctx, char* type_name, char* tag) {
+static WtfNode* add_nodes(WtfReader* ctx, char* type_name, char* tag)
+{
 	WtfNode* first = NULL;
 	WtfNode* current = NULL;
 	
@@ -311,7 +317,8 @@ static WtfNode* add_nodes(WtfReader* ctx, char* type_name, char* tag) {
 	return first;
 }
 
-static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest) {
+static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest)
+{
 	WtfAttribute* attribute = NULL;
 	
 	if(ctx->attributes) {
@@ -406,7 +413,8 @@ static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest) {
 	return NULL;
 }
 
-static ErrorStr parse_number(WtfReader* ctx, int32_t* i, float* f) {
+static ErrorStr parse_number(WtfReader* ctx, int32_t* i, float* f)
+{
 	char* next;
 	
 	if(strncmp(ctx->input, "nan", 3) == 0) {
@@ -456,7 +464,8 @@ static ErrorStr parse_number(WtfReader* ctx, int32_t* i, float* f) {
 	return NULL;
 }
 
-static ErrorStr parse_string(WtfReader* ctx, char** dest) {
+static ErrorStr parse_string(WtfReader* ctx, char** dest)
+{
 	advance(ctx); // '"'
 	
 	char* begin = ctx->input;
@@ -485,7 +494,8 @@ static ErrorStr parse_string(WtfReader* ctx, char** dest) {
 	return NULL;
 }
 
-static char* parse_identifier(WtfReader* ctx) {
+static char* parse_identifier(WtfReader* ctx)
+{
 	skip_whitespace(ctx);
 	char* begin = ctx->input;
 	while(is_identifier_char(*ctx->input)) {
@@ -497,21 +507,25 @@ static char* parse_identifier(WtfReader* ctx) {
 	return begin;
 }
 
-static int is_identifier_char(char c) {
+static int is_identifier_char(char c)
+{
 	return isalnum(c) || c == '_' || c == '.';
 }
 
-static char peek_char(WtfReader* ctx) {
+static char peek_char(WtfReader* ctx)
+{
 	skip_whitespace(ctx);
 	return *ctx->input;
 }
 
-static void advance(WtfReader* ctx) {
+static void advance(WtfReader* ctx)
+{
 	skip_whitespace(ctx);
 	ctx->input++;
 }
 
-static void skip_whitespace(WtfReader* ctx) {
+static void skip_whitespace(WtfReader* ctx)
+{
 	while(*ctx->input == ' ' || *ctx->input == '\t' || *ctx->input == '\n'
 		|| (*ctx->input == '/' && (ctx->input[1] == '/' || ctx->input[1] == '*'))) {
 		if(*ctx->input == '/' && ctx->input[1] == '/') {
@@ -537,7 +551,8 @@ static void skip_whitespace(WtfReader* ctx) {
 	}
 }
 
-static void fixup_identifier(char* buffer) {
+static void fixup_identifier(char* buffer)
+{
 	if(buffer == NULL) {
 		return;
 	}
@@ -549,7 +564,8 @@ static void fixup_identifier(char* buffer) {
 	*buffer = '\0';
 }
 
-static char* fixup_string(char* buffer) {
+static char* fixup_string(char* buffer)
+{
 	if(buffer == NULL) {
 		return NULL;
 	}
@@ -597,7 +613,8 @@ static char* fixup_string(char* buffer) {
 	return dest;
 }
 
-static int16_t decode_hex_byte(char hi, char lo) {
+static int16_t decode_hex_byte(char hi, char lo)
+{
 	unsigned char decoded;
 	if(hi >= '0' && hi <= '9') {
 		decoded = (hi - '0') << 4;
@@ -620,7 +637,8 @@ static int16_t decode_hex_byte(char hi, char lo) {
 	return decoded;
 }
 
-const WtfNode* wtf_first_child(const WtfNode* parent, const char* type_name) {
+const WtfNode* wtf_first_child(const WtfNode* parent, const char* type_name)
+{
 	const WtfNode* child = parent->first_child;
 	if(type_name != NULL) {
 		while(child != NULL && strcmp(child->type_name, type_name) != 0) {
@@ -630,7 +648,8 @@ const WtfNode* wtf_first_child(const WtfNode* parent, const char* type_name) {
 	return child;
 }
 
-const WtfNode* wtf_next_sibling(const WtfNode* node, const char* type_name) {
+const WtfNode* wtf_next_sibling(const WtfNode* node, const char* type_name)
+{
 	const WtfNode* sibling = node->next_sibling;
 	if(type_name != NULL) {
 		while(sibling != NULL && strcmp(sibling->type_name, type_name) != 0) {
@@ -640,7 +659,8 @@ const WtfNode* wtf_next_sibling(const WtfNode* node, const char* type_name) {
 	return sibling;
 }
 
-const WtfNode* wtf_child(const WtfNode* parent, const char* type_name, const char* tag) {
+const WtfNode* wtf_child(const WtfNode* parent, const char* type_name, const char* tag)
+{
 	for(const WtfNode* child = parent->first_child; child != NULL; child = child->next_sibling) {
 		if((!type_name || strcmp(child->type_name, type_name) == 0)
 			&& (!tag || strcmp(child->tag, tag) == 0)) {
@@ -650,7 +670,8 @@ const WtfNode* wtf_child(const WtfNode* parent, const char* type_name, const cha
 	return NULL;
 }
 
-const WtfAttribute* wtf_attribute(const WtfNode* node, const char* key) {
+const WtfAttribute* wtf_attribute(const WtfNode* node, const char* key)
+{
 	for(const WtfAttribute* attribute = node->first_attribute; attribute != NULL; attribute = attribute->next) {
 		if(!key || strcmp(attribute->key, key) == 0) {
 			return attribute;
@@ -659,7 +680,8 @@ const WtfAttribute* wtf_attribute(const WtfNode* node, const char* key) {
 	return NULL;
 }
 
-const WtfAttribute* wtf_attribute_of_type(const WtfNode* node, const char* key, WtfAttributeType type) {
+const WtfAttribute* wtf_attribute_of_type(const WtfNode* node, const char* key, WtfAttributeType type)
+{
 	for(const WtfAttribute* attribute = node->first_attribute; attribute != NULL; attribute = attribute->next) {
 		if(attribute->type == type && (!key || strcmp(attribute->key, key) == 0)) {
 			return attribute;
@@ -668,12 +690,14 @@ const WtfAttribute* wtf_attribute_of_type(const WtfNode* node, const char* key, 
 	return NULL;
 }
 
-static WtfNode* alloc_node(WtfReader* ctx) {
+static WtfNode* alloc_node(WtfReader* ctx)
+{
 	assert(ctx->next_node < ctx->nodes + ctx->node_count);
 	return ctx->next_node++;
 }
 
-static WtfAttribute* alloc_attribute(WtfReader* ctx) {
+static WtfAttribute* alloc_attribute(WtfReader* ctx)
+{
 	assert(ctx->next_attribute < ctx->attributes + ctx->attribute_count);
 	return ctx->next_attribute++;
 }

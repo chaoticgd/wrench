@@ -21,11 +21,18 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-static void path(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], std::vector<glm::vec2> points);
-static void line(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], float x0, float y0, float x1, float y1);
+static void path(
+	uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], std::vector<glm::vec2> points);
+static void line(
+	uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE],
+	float x0,
+	float y0,
+	float x1,
+	float y1);
 static GlTexture upload_icon(uint32_t* pixels, int side);
 
-GlTexture create_dvd_icon() {
+GlTexture create_dvd_icon()
+{
 	const int outer_radius = 45;
 	const int inner_radius = 10;
 	const int shine_max_radius = 41;
@@ -53,7 +60,8 @@ GlTexture create_dvd_icon() {
 	return upload_icon((uint32_t*) icon, START_SCREEN_ICON_SIDE);
 }
 
-GlTexture create_folder_icon() {
+GlTexture create_folder_icon()
+{
 	int top = 10;
 	int uppermid = 20;
 	int lowermid = 30;
@@ -66,7 +74,8 @@ GlTexture create_folder_icon() {
 	return upload_icon((uint32_t*) icon, START_SCREEN_ICON_SIDE);
 }
 
-GlTexture create_floppy_icon() {
+GlTexture create_floppy_icon()
+{
 	int left = 5;
 	int right = 90;
 	int corner = 15;
@@ -80,13 +89,20 @@ GlTexture create_floppy_icon() {
 	return upload_icon((uint32_t*) icon, START_SCREEN_ICON_SIDE);
 }
 
-static void path(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], std::vector<glm::vec2> points) {
+static void path(
+	uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], std::vector<glm::vec2> points)
+{
 	for(size_t i = 0; i < points.size() - 1; i++) {
 		line(image, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);
 	}
 }
 
-static void line(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], float x0, float y0, float x1, float y1) {
+static void line(
+	uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE],
+	float x0,
+	float y0,
+	float x1,
+	float y1) {
 	auto inbounds = [&](int coord) {
 		int max = START_SCREEN_ICON_SIDE - 1;
 		if(coord > max) coord = max;
@@ -118,7 +134,8 @@ static void line(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE],
 	}
 }
 
-static GlTexture upload_icon(uint32_t* pixels, int side) {
+static GlTexture upload_icon(uint32_t* pixels, int side)
+{
 	GlTexture texture;
 	glGenTextures(1, &texture.id);
 	glBindTexture(GL_TEXTURE_2D, texture.id);

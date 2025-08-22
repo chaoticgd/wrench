@@ -22,22 +22,26 @@ struct CppParserState {
 	const std::vector<CppToken>& tokens;
 	size_t pos = 0;
 	
-	const CppToken& cur() const {
+	const CppToken& cur() const
+	{
 		verify(pos < tokens.size(), "Unexpected end of file.");
 		return tokens[pos];
 	}
 	
-	void advance() {
+	void advance()
+	{
 		verify(pos < tokens.size(), "Unexpected end of file.");
 		pos = tokens[pos].next;
 	}
 	
-	const CppToken& peek() const {
+	const CppToken& peek() const
+	{
 		verify(pos < tokens.size() && tokens[pos].next < tokens.size(), "Unexpected end of file.");
 		return tokens[tokens[pos].next];
 	}
 	
-	bool eof() const {
+	bool eof() const
+	{
 		return pos < tokens.size();
 	}
 };
@@ -48,7 +52,8 @@ static CppType parse_field(CppParserState& parser);
 static CppType parse_type_name(CppParserState& parser);
 static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppParserState& parser, size_t token);
 
-bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<CppToken>& tokens) {
+bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<CppToken>& tokens)
+{
 	CppParserState parser{tokens};
 	bool enabled = false;
 	bool ever_enabled_for_this_file = false;
@@ -148,7 +153,8 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 	return ever_enabled_for_this_file;
 }
 
-static void parse_enum(CppType& dest, CppParserState& parser) {
+static void parse_enum(CppType& dest, CppParserState& parser)
+{
 	while(true) {
 		const CppToken& first = parser.cur();
 		if(first.type == CPP_OPERATOR && first.op == CPP_OP_CLOSING_CURLY) {
@@ -176,7 +182,8 @@ static void parse_enum(CppType& dest, CppParserState& parser) {
 	}
 }
 
-static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
+static void parse_struct_or_union(CppType& dest, CppParserState& parser)
+{
 	while(true) {
 		const CppToken& terminator = parser.cur();
 		if(terminator.type == CPP_OPERATOR && terminator.op == CPP_OP_CLOSING_CURLY) {
@@ -195,7 +202,8 @@ static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
 	parser.advance();
 }
 
-static CppType parse_field(CppParserState& parser) {
+static CppType parse_field(CppParserState& parser)
+{
 	std::vector<CppPreprocessorDirective> directives = parse_preprocessor_directives(parser, parser.pos);
 	CppType field_type = parse_type_name(parser);
 	
@@ -270,7 +278,8 @@ static CppType parse_field(CppParserState& parser) {
 	return field_type;
 }
 
-static CppType parse_type_name(CppParserState& parser) {
+static CppType parse_type_name(CppParserState& parser)
+{
 	const CppToken& first = parser.cur();
 	
 	if(first.type == CPP_KEYWORD) {
@@ -386,7 +395,9 @@ static const CppPreprocessorDirective CPP_DIRECTIVES[] = {
 	{CPP_DIRECTIVE_ENUM, "enum"}
 };
 
-static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(CppParserState& parser, size_t token) {
+static std::vector<CppPreprocessorDirective> parse_preprocessor_directives(
+	CppParserState& parser, size_t token)
+{
 	std::vector<CppPreprocessorDirective> directives;
 	
 	while(token > 0 && parser.tokens[token - 1].type == CPP_PREPROCESSOR_DIRECTIVE) {

@@ -59,10 +59,15 @@ struct TfragVertexEx {
 };
 
 static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, const Tfrag& tfrag, const std::vector<TfragVertexInfo>& vertex_infos);
-static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strips, const std::vector<u8>& indices);
-static s32 map_face_to_tface(const TfragFace& face, const std::vector<TfragVertexEx>& vertices, const std::vector<TfragVertexInfo>& vertex_infos);
+static std::vector<TfragFace> recover_faces(
+	const std::vector<TfragStrip>& strips, const std::vector<u8>& indices);
+static s32 map_face_to_tface(
+	const TfragFace& face,
+	const std::vector<TfragVertexEx>& vertices,
+	const std::vector<TfragVertexInfo>& vertex_infos);
 
-ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
+ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags)
+{
 	if(tfrag_debug_output_enabled()) {
 		return recover_tfrags_debug(tfrags);
 	}
@@ -213,7 +218,11 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 	return scene;
 }
 
-static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, const Tfrag& tfrag, const std::vector<TfragVertexInfo>& vertex_infos) {
+static size_t propagate_tface_information(
+	std::vector<TfragVertexEx>& vertices,
+	const Tfrag& tfrag,
+	const std::vector<TfragVertexInfo>& vertex_infos)
+{
 	// Determine parent-child relationships.
 	for(size_t i = 0; i < tfrag.lod_01_vertex_info.size(); i++) {
 		const TfragVertexInfo& info = tfrag.lod_01_vertex_info[i];
@@ -262,7 +271,9 @@ static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, 
 	return lod_2_faces.size();
 }
 
-static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strips, const std::vector<u8>& indices) {
+static std::vector<TfragFace> recover_faces(
+	const std::vector<TfragStrip>& strips, const std::vector<u8>& indices)
+{
 	std::vector<TfragFace> tfaces;
 	s32 active_ad_gif = -1;
 	s32 next_strip = 0;
@@ -305,7 +316,11 @@ static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strip
 	return tfaces;
 }
 
-static s32 map_face_to_tface(const TfragFace& face, const std::vector<TfragVertexEx>& vertices, const std::vector<TfragVertexInfo>& vertex_infos) {
+static s32 map_face_to_tface(
+	const TfragFace& face,
+	const std::vector<TfragVertexEx>& vertices,
+	const std::vector<TfragVertexInfo>& vertex_infos)
+{
 	s32 tface_index = -1;
 	if(face.indices[3] > -1) {
 		s32 tface_indices[MAX_TFACES_TOUCHING_VERTEX] = INIT_TFACE_INDICES;

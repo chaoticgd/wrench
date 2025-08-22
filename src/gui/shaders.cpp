@@ -20,26 +20,35 @@
 
 #include <vector>
 
-Shader::Shader(const GLchar* vertex_src, const GLchar* fragment_src, ShaderCallback before, ShaderCallback after)
-	: m_id(0), m_vertex_src(vertex_src), m_fragment_src(fragment_src), m_before(before), m_after(after) {}
+Shader::Shader(
+	const GLchar* vertex_src, const GLchar* fragment_src, ShaderCallback before, ShaderCallback after)
+	: m_id(0)
+	, m_vertex_src(vertex_src)
+	, m_fragment_src(fragment_src)
+	, m_before(before)
+	, m_after(after) {}
 	
-Shader::~Shader() {
+Shader::~Shader()
+{
 	if(m_id) {
 		glDeleteProgram(m_id);
 	}
 }
 
-void Shader::init() {
+void Shader::init()
+{
 	m_id = link(
 		compile(m_vertex_src,   GL_VERTEX_SHADER),
 		compile(m_fragment_src, GL_FRAGMENT_SHADER));
 }
 
-GLuint Shader::id() const {
+GLuint Shader::id() const
+{
 	return m_id;
 }
 
-GLuint Shader::link(GLuint vertex, GLuint fragment) {
+GLuint Shader::link(GLuint vertex, GLuint fragment)
+{
 	GLuint id = glCreateProgram();
 	glAttachShader(id, vertex);
 	glAttachShader(id, fragment);
@@ -68,7 +77,8 @@ GLuint Shader::link(GLuint vertex, GLuint fragment) {
 	return id;
 }
 
-GLuint Shader::compile(const GLchar* src, GLuint type) {
+GLuint Shader::compile(const GLchar* src, GLuint type)
+{
 	GLuint id = glCreateShader(type);
 
 	GLint result;
@@ -323,7 +333,8 @@ Shaders::Shaders() :
 	)
 {}
 
-void Shaders::init() {
+void Shaders::init()
+{
 	textured.init();
 	selection.init();
 	icons.init();

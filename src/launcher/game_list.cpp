@@ -34,7 +34,8 @@ static GameData* get_game();
 static std::vector<GameData> games;
 static size_t selected_game = 0;
 
-void game_list() {
+void game_list()
+{
 	std::string name;
 	if(GameData* game = get_game()) {
 		g_game_path = game->directory;
@@ -57,7 +58,8 @@ void game_list() {
 	}
 }
 
-void load_game_list(const std::string& games_folder) {
+void load_game_list(const std::string& games_folder)
+{
 	free_game_list();
 	
 	if(!fs::is_directory(games_folder)) {
@@ -83,12 +85,14 @@ void load_game_list(const std::string& games_folder) {
 	update_game_builds();
 }
 
-void free_game_list() {
+void free_game_list()
+{
 	games.clear();
 	g_game_path.clear();
 }
 
-static void update_game_builds() {
+static void update_game_builds()
+{
 	if(GameData* game = get_game()) {
 		g_game_builds = &game->info.builds;
 	} else {
@@ -96,7 +100,8 @@ static void update_game_builds() {
 	}
 }
 
-static GameData* get_game() {
+static GameData* get_game()
+{
 	if(selected_game >= games.size()) {
 		return nullptr;
 	}

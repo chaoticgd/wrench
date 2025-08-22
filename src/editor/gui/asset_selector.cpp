@@ -27,7 +27,9 @@ static size_t compare_asset_links_numerically(const std::pair<std::string, Asset
 
 static std::vector<std::pair<std::string, Asset*>> assets;
 
-Asset* asset_selector(const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest) {
+Asset* asset_selector(
+	const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest)
+{
 	Asset* changed = nullptr;
 	static bool open_last_frame = false;
 	const char* preview = state.preview.empty() ? default_preview : state.preview.c_str();
@@ -65,7 +67,8 @@ Asset* asset_selector(const char* label, const char* default_preview, AssetSelec
 	return changed;
 }
 
-static void recurse(Asset& asset, AssetSelector& state) {
+static void recurse(Asset& asset, AssetSelector& state)
+{
 	if(state.omit_type.has_value() && asset.logical_type() == *state.omit_type) {
 		return;
 	}
@@ -83,7 +86,8 @@ static void recurse(Asset& asset, AssetSelector& state) {
 	});
 }
 
-static std::string get_display_name(Asset& asset) {
+static std::string get_display_name(Asset& asset)
+{
 	std::string link = asset.absolute_link().to_string();
 	if(asset.logical_type() == LevelAsset::ASSET_TYPE) {
 		LevelAsset& level = asset.as<LevelAsset>();
@@ -112,7 +116,9 @@ static std::string get_display_name(Asset& asset) {
 	return link;
 }
 
-static size_t compare_asset_links_numerically(const std::pair<std::string, Asset*>& lhs, const std::pair<std::string, Asset*>& rhs) {
+static size_t compare_asset_links_numerically(
+	const std::pair<std::string, Asset*>& lhs, const std::pair<std::string, Asset*>& rhs)
+{
 	const std::string& l = lhs.first;
 	const std::string& r = rhs.first;
 	size_t i = 0, j = 0;

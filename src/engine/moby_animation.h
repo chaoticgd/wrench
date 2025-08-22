@@ -102,7 +102,14 @@ packed_struct(DeadlockedMobySequenceDataHeader,
 	/* 0xc */ u32 unknown_c;
 )
 
-std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count, Game game);
-void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 class_header_ofs, s64 list_ofs, s32 joint_count, Game game);
+std::vector<Opt<MobySequence>> read_moby_sequences(
+	Buffer src, s64 sequence_count, s32 joint_count, Game game);
+void write_moby_sequences(
+	OutBuffer dest,
+	const std::vector<Opt<MobySequence>>& sequences,
+	s64 class_header_ofs,
+	s64 list_ofs,
+	s32 joint_count,
+	Game game);
 
 #endif

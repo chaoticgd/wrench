@@ -25,7 +25,8 @@ static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header);
 static void write_tie_packet(OutBuffer dest, const TiePacket& packet);
 static ColladaScene recover_tie(const TieClass& tie);
 
-TieClass read_tie_class(Buffer src, Game game) {
+TieClass read_tie_class(Buffer src, Game game)
+{
 	TieClass tie;
 	
 	GcUyaDlTieClassHeader header = read_tie_header(src, game);
@@ -48,11 +49,13 @@ TieClass read_tie_class(Buffer src, Game game) {
 	return tie;
 }
 
-void write_tie_class(OutBuffer dest, const TieClass& tie) {
+void write_tie_class(OutBuffer dest, const TieClass& tie)
+{
 	
 }
 
-static GcUyaDlTieClassHeader read_tie_header(Buffer src, Game game) {
+static GcUyaDlTieClassHeader read_tie_header(Buffer src, Game game)
+{
 	GcUyaDlTieClassHeader header = {};
 	
 	if(game == Game::RAC) {
@@ -73,7 +76,8 @@ static GcUyaDlTieClassHeader read_tie_header(Buffer src, Game game) {
 	return header;
 }
 
-static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header) {
+static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header)
+{
 	TiePacket packet;
 	
 	auto ad_gif_dest_offsets = src.read_multiple<s32>(0x0, 4, "ad gif destination offsets");
@@ -192,11 +196,13 @@ static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header) {
 	return packet;
 }
 
-static void write_tie_packet(OutBuffer dest, const TiePacket& packet) {
+static void write_tie_packet(OutBuffer dest, const TiePacket& packet)
+{
 	
 }
 
-ColladaScene recover_tie_class(const TieClass& tie) {
+ColladaScene recover_tie_class(const TieClass& tie)
+{
 	ColladaScene scene;
 	
 	for(s32 i = 0; i < (s32) tie.ad_gifs.size(); i++) {

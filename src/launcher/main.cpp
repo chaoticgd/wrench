@@ -45,7 +45,8 @@ static Texture load_image_from_launcher_wad(SectorRange range);
 
 static WadPaths wad_paths;
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	g_launcher.mode = LauncherMode::DRAWING_GUI;
 	
 	wad_paths = find_wads(argv[0]);
@@ -103,7 +104,8 @@ int main(int argc, char** argv) {
 	}
 }
 
-void update_gui(f32 delta_time) {
+void update_gui(f32 delta_time)
+{
 	f32 button_height = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.f;
 	f32 buttons_window_height = button_height + GImGui->Style.WindowPadding.y * 2.f;
 	
@@ -128,7 +130,8 @@ void update_gui(f32 delta_time) {
 	buttons_window(mod, buttons_window_height);
 }
 
-static Mod* mod_list_window() {
+static Mod* mod_list_window()
+{
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::BeginChild("Mod List");
 	
@@ -180,7 +183,8 @@ static Mod* mod_list_window() {
 	return mod;
 }
 
-static void details_window(Mod* mod) {
+static void details_window(Mod* mod)
+{
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::BeginChild("Details");
 	
@@ -243,13 +247,15 @@ static void details_window(Mod* mod) {
 	ImGui::PopStyleVar(); // ImGuiStyleVar_WindowPadding
 }
 
-static void not_specified() {
+static void not_specified()
+{
 	ImGui::PushFont(g_launcher.font_italic);
 	ImGui::TextWrapped("Not specified.");
 	ImGui::PopFont();
 }
 
-static void buttons_window(Mod* mod, f32 buttons_window_height) {
+static void buttons_window(Mod* mod, f32 buttons_window_height)
+{
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize;
 	
 	ImVec2 viewport_size = ImGui::GetMainViewport()->Size;
@@ -426,7 +432,8 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 	ImGui::End();
 }
 
-static void begin_main_window(f32 buttons_window_height) {
+static void begin_main_window(f32 buttons_window_height)
+{
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
 	
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -448,7 +455,8 @@ static void begin_main_window(f32 buttons_window_height) {
 	ImGui::PopStyleVar(2);
 }
 
-static Texture load_image_from_launcher_wad(SectorRange range) {
+static Texture load_image_from_launcher_wad(SectorRange range)
+{
 	std::vector<u8> compressed_image = g_launcher.wad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
 	
 	std::vector<u8> image;

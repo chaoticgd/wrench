@@ -18,7 +18,8 @@
 
 #include "filesystem.h"
 
-std::vector<u8> read_file(WrenchFileHandle* file, s64 offset, s64 size) {
+std::vector<u8> read_file(WrenchFileHandle* file, s64 offset, s64 size)
+{
 	s64 size_of_file = file_size(file);
 	verify(file_seek(file, offset, WRENCH_FILE_ORIGIN_START) == 0, "Failed to seek.");
 	if(offset + size > size_of_file && offset + size < size_of_file + SECTOR_SIZE) {
@@ -32,7 +33,8 @@ std::vector<u8> read_file(WrenchFileHandle* file, s64 offset, s64 size) {
 	return buffer;
 }
 
-std::vector<u8> read_file(fs::path path, bool text_mode) {
+std::vector<u8> read_file(fs::path path, bool text_mode)
+{
 	verify(!fs::is_directory(path), "Tried to open directory '%s' as regular file.", path.string().c_str());
 	WrenchFileHandle* file = file_open(path.string().c_str(), WRENCH_FILE_MODE_READ);
 	verify(file, "Failed to open file '%s' for reading (%s).", path.string().c_str(), FILEIO_ERROR_CONTEXT_STRING);
@@ -55,7 +57,8 @@ std::vector<u8> read_file(fs::path path, bool text_mode) {
 	return buffer;
 }
 
-void write_file(const fs::path& path, Buffer buffer, bool text_mode) {
+void write_file(const fs::path& path, Buffer buffer, bool text_mode)
+{
 	WrenchFileHandle* file = file_open(path.string().c_str(), WRENCH_FILE_MODE_WRITE);
 	verify(file, "Failed to open file '%s' for writing (%s).", path.string().c_str(), FILEIO_ERROR_CONTEXT_STRING);
 	defer([&]() { file_close(file); });
@@ -68,7 +71,8 @@ void write_file(const fs::path& path, Buffer buffer, bool text_mode) {
 	}
 }
 
-void strip_carriage_returns(std::vector<u8>& file) {
+void strip_carriage_returns(std::vector<u8>& file)
+{
 	size_t new_size = 0;
 	for(size_t i = 0; i < file.size(); i++) {
 		if(file[i] != '\r') {
@@ -78,7 +82,8 @@ void strip_carriage_returns(std::vector<u8>& file) {
 	file.resize(new_size);
 }
 
-void strip_carriage_returns_from_string(std::string& str) {
+void strip_carriage_returns_from_string(std::string& str)
+{
 	size_t new_size = 0;
 	for(size_t i = 0; i < str.size(); i++) {
 		if(str[i] != '\r') {

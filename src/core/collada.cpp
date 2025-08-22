@@ -75,7 +75,8 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene);
 static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s32 index, s32 indent);
 static void write_matrix4x4(OutBuffer dest, const glm::mat4& matrix);
 
-Mesh* ColladaScene::find_mesh(const std::string& name) {
+Mesh* ColladaScene::find_mesh(const std::string& name)
+{
 	for(Mesh& mesh : meshes) {
 		if(mesh.name == name) {
 			return &mesh;
@@ -84,7 +85,8 @@ Mesh* ColladaScene::find_mesh(const std::string& name) {
 	return nullptr;
 }
 
-ColladaScene read_collada(char* src) {
+ColladaScene read_collada(char* src)
+{
 	XmlDocument doc;
 	try {
 		doc.parse<0>(src);
@@ -165,7 +167,8 @@ ColladaScene read_collada(char* src) {
 	return scene;
 }
 
-static ColladaMaterial read_material(const XmlNode* material_node, const IdMap& ids, const NodeToIndexMap& images) {
+static ColladaMaterial read_material(const XmlNode* material_node, const IdMap& ids, const NodeToIndexMap& images)
+{
 	// Follow the white rabbit (it's white because its texture couldn't be loaded).
 	const XmlNode* instance_effect = xml_child(material_node, "instance_effect");
 	const XmlNode* effect = node_from_id(ids, xml_attrib(instance_effect, "url")->value());
@@ -226,7 +229,8 @@ static ColladaMaterial read_material(const XmlNode* material_node, const IdMap& 
 	verify_not_reached("<diffuse> node needs either a <texture> or <color> node as a child.");
 }
 
-static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
+static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids)
+{
 	const XmlNode* mesh_node = xml_child(geometry, "mesh");
 	const XmlNode* triangles = mesh_node->first_node("triangles");
 	const XmlNode* polylist = mesh_node->first_node("polylist");
@@ -290,7 +294,8 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 	return {positions, normals, colours, tex_coords};
 }
 
-static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& ids) {
+static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& ids)
+{
 	const XmlNode* technique_common = xml_child(source, "technique_common");
 	const XmlNode* accessor = xml_child(technique_common, "accessor");
 	const XmlNode* float_array = node_from_id(ids, xml_attrib(accessor, "source")->value());
@@ -298,7 +303,8 @@ static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& i
 	return read_float_array(float_array);
 }
 
-static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controller, const XmlNode* skeleton, const IdMap& ids, const JointSidsMap& joint_sids) {
+static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controller, const XmlNode* skeleton, const IdMap& ids, const JointSidsMap& joint_sids)
+{
 	const XmlNode* skin = xml_child(controller, "skin");
 	const XmlNode* vertex_weights = xml_child(skin, "vertex_weights");
 	
@@ -381,7 +387,16 @@ static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controll
 	return skin_data;
 }
 
-static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* geometry, const XmlNode* controller, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data, const std::vector<SkinAttributes>& skin_data) {
+static void read_submeshes(
+	Mesh& mesh,
+	const XmlNode* instance,
+	const XmlNode* geometry,
+	const XmlNode* controller,
+	const IdMap& ids,
+	const NodeToIndexMap& materials,
+	const VertexData& vertex_data,
+	const std::vector<SkinAttributes>& skin_data)
+{
 	const XmlNode* bind_material = xml_child(instance, "bind_material");
 	const XmlNode* technique_common = xml_child(bind_material, "technique_common");
 	const XmlNode* mesh_node = xml_child(geometry, "mesh");
@@ -502,7 +517,8 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* g
 	}
 }
 
-static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const CreateVertexInput& input) {
+static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const CreateVertexInput& input)
+{
 	Vertex vertex(glm::vec3(0.f, 0.f, 0.f));
 	if(input.position_offset > -1) {
 		s32 position_index = indices.at(base + input.position_offset);
@@ -534,7 +550,8 @@ static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const Cre
 	return vertex;
 }
 
-static std::vector<f32> read_float_array(const XmlNode* float_array) {
+static std::vector<f32> read_float_array(const XmlNode* float_array)
+{
 	std::vector<f32> data;
 	data.resize(atoi(xml_attrib(float_array, "count")->value()));
 	const char* ptr = float_array->value();
@@ -547,7 +564,8 @@ static std::vector<f32> read_float_array(const XmlNode* float_array) {
 	return data;
 }
 
-static s32 read_s32(const char*& input, const char* context) {
+static s32 read_s32(const char*& input, const char* context)
+{
 	char* next;
 	s32 value = strtol(input, &next, 10);
 	verify(next != input, "Failed to read integers from %s.", context);
@@ -555,7 +573,8 @@ static s32 read_s32(const char*& input, const char* context) {
 	return value;
 }
 
-static void enumerate_ids(std::map<std::string, const XmlNode*>& ids, const XmlNode* node) {
+static void enumerate_ids(std::map<std::string, const XmlNode*>& ids, const XmlNode* node)
+{
 	for(XmlNode* child = node->first_node(); child != nullptr; child = child->next_sibling()) {
 		XmlAttrib* id = child->first_attribute("id");
 		if(id != nullptr) {
@@ -565,7 +584,9 @@ static void enumerate_ids(std::map<std::string, const XmlNode*>& ids, const XmlN
 	}
 }
 
-static void enumerate_joint_sids(JointSidsMap& joint_sids, s32& next_joint, const XmlNode* skeleton, const XmlNode* node) {
+static void enumerate_joint_sids(
+	JointSidsMap& joint_sids, s32& next_joint, const XmlNode* skeleton, const XmlNode* node)
+{
 	const char* sid = xml_attrib(node, "sid")->value();
 	joint_sids[{skeleton, std::string(sid)}] = next_joint++;
 	
@@ -574,26 +595,30 @@ static void enumerate_joint_sids(JointSidsMap& joint_sids, s32& next_joint, cons
 	}
 }
 
-static const XmlNode* xml_child(const XmlNode* node, const char* name) {
+static const XmlNode* xml_child(const XmlNode* node, const char* name)
+{
 	XmlNode* child = node->first_node(name);
 	verify(child, "<%s> node missing <%s> child.", node->name(), name);
 	return child;
 }
 
-static const XmlAttrib* xml_attrib(const XmlNode* node, const char* name) {
+static const XmlAttrib* xml_attrib(const XmlNode* node, const char* name)
+{
 	XmlAttrib* attrib = node->first_attribute(name);
 	verify(attrib, "<%s> node missing %s attribute.", node->name(), name);
 	return attrib;
 }
 
-static const XmlNode* node_from_id(const IdMap& map, const char* id) {
+static const XmlNode* node_from_id(const IdMap& map, const char* id)
+{
 	verify(*id == '#', "Only ids starting with # are supported ('%s' passed).", id);
 	auto iter = map.find(id);
 	verify(iter != map.end(), "No element with id equal to '%s'.", id);
 	return iter->second;
 }
 
-void map_lhs_material_indices_to_rhs_list(ColladaScene& scene, const std::vector<Material>& materials) {
+void map_lhs_material_indices_to_rhs_list(ColladaScene& scene, const std::vector<Material>& materials)
+{
 	// Generate mapping.
 	std::vector<s32> mapping(scene.materials.size(), -1);
 	for(size_t i = 0; i < scene.materials.size(); i++) {
@@ -615,7 +640,8 @@ void map_lhs_material_indices_to_rhs_list(ColladaScene& scene, const std::vector
 	}
 }
 
-std::vector<u8> write_collada(const ColladaScene& scene) {
+std::vector<u8> write_collada(const ColladaScene& scene)
+{
 	std::vector<u8> vec;
 	OutBuffer dest(vec);
 	dest.writelf("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
@@ -639,7 +665,8 @@ std::vector<u8> write_collada(const ColladaScene& scene) {
 	return vec;
 }
 
-static void write_asset_metadata(OutBuffer dest) {
+static void write_asset_metadata(OutBuffer dest)
+{
 	dest.writelf("\t<asset>");
 	dest.writelf("\t\t<contributor>");
 	dest.writelf("\t\t\t<authoring_tool>Wrench Build Tool</authoring_tool>");
@@ -651,7 +678,8 @@ static void write_asset_metadata(OutBuffer dest) {
 	dest.writelf("\t</asset>");
 }
 
-static void write_images(OutBuffer dest, const std::vector<std::string>& texture_paths) {
+static void write_images(OutBuffer dest, const std::vector<std::string>& texture_paths)
+{
 	dest.writelf("\t<library_images>");
 	for(s32 i = 0; i < (s32) texture_paths.size(); i++) {
 		dest.writelf("\t\t<image id=\"texture_%d\" name=\"texture_%d\">", i, i);
@@ -664,7 +692,9 @@ static void write_images(OutBuffer dest, const std::vector<std::string>& texture
 	dest.writelf("\t</library_images>");
 }
 
-static void write_effects(OutBuffer dest, const std::vector<ColladaMaterial>& materials, size_t texture_count) {
+static void write_effects(
+	OutBuffer dest, const std::vector<ColladaMaterial>& materials, size_t texture_count)
+{
 	dest.writelf("\t<library_effects>");
 	for(const ColladaMaterial& material : materials) {
 		dest.writelf("\t\t<effect id=\"%s_effect\" name=\"%s_effect\">", material.name.c_str(), material.name.c_str());
@@ -707,7 +737,8 @@ static void write_effects(OutBuffer dest, const std::vector<ColladaMaterial>& ma
 	dest.writelf("\t</library_effects>");
 }
 
-static void write_materials(OutBuffer dest, const std::vector<ColladaMaterial>& materials) {
+static void write_materials(OutBuffer dest, const std::vector<ColladaMaterial>& materials)
+{
 	dest.writelf("\t<library_materials>");
 	for(const ColladaMaterial& material : materials) {
 		dest.writelf("\t\t<material id=\"%s\" name=\"%s\">", material.name.c_str(), material.name.c_str());
@@ -717,7 +748,8 @@ static void write_materials(OutBuffer dest, const std::vector<ColladaMaterial>& 
 	dest.writelf("\t</library_materials>");
 }
 
-static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
+static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes)
+{
 	dest.writelf("\t<library_geometries>");
 	for(size_t i = 0; i < meshes.size(); i++) {
 		const Mesh& mesh = meshes[i];
@@ -873,7 +905,9 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 	dest.writelf("\t</library_geometries>");
 }
 
-static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, const std::vector<Joint>& joints) {
+static void write_controllers(
+	OutBuffer dest, const std::vector<Mesh>& meshes, const std::vector<Joint>& joints)
+{
 	dest.writelf("\t<library_controllers>");
 	for(const Mesh& mesh : meshes) {
 		dest.writelf("\t\t<controller id=\"%s_skin\" name=\"%s_skin\">", mesh.name.c_str(), mesh.name.c_str());
@@ -954,7 +988,8 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 	dest.writelf("\t</library_controllers>");
 }
 
-static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
+static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene)
+{
 	dest.writelf("\t<library_visual_scenes>");
 	dest.writelf("\t\t<visual_scene id=\"scene\">");
 	if(scene.joints.size() > 0) {
@@ -992,7 +1027,8 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 	dest.writelf("\t</library_visual_scenes>");
 }
 
-static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s32 index, s32 indent) {
+static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s32 index, s32 indent)
+{
 	const Joint& joint = joints[index];
 	dest.writelf(indent, "<node id=\"joint_%d\" sid=\"joint_%d\" type=\"JOINT\">", index, index);
 	dest.writesf(indent, "\t<matrix sid=\"transform\">");
@@ -1015,14 +1051,16 @@ static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s
 	dest.writelf(indent, "</node>");
 }
 
-static void write_matrix4x4(OutBuffer dest, const glm::mat4& matrix) {
+static void write_matrix4x4(OutBuffer dest, const glm::mat4& matrix)
+{
 	dest.writesf("%.9g %.9g %.9g %.9g ", matrix[0][0], matrix[1][0], matrix[2][0], matrix[3][0]);
 	dest.writesf("%.9g %.9g %.9g %.9g ", matrix[0][1], matrix[1][1], matrix[2][1], matrix[3][1]);
 	dest.writesf("%.9g %.9g %.9g %.9g ", matrix[0][2], matrix[1][2], matrix[2][2], matrix[3][2]);
 	dest.writesf("%.9g %.9g %.9g %.9g ", matrix[0][3], matrix[1][3], matrix[2][3], matrix[3][3]);
 }
 
-s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent) {
+s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent)
+{
 	s32 index = (s32) joints.size();
 	joint.parent = parent;
 	if(parent != -1) {
@@ -1037,7 +1075,8 @@ s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent) {
 	return index;
 }
 
-void verify_fatal_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs) {
+void verify_fatal_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs)
+{
 	verify_fatal(lhs.texture_paths.size() == rhs.texture_paths.size());
 	verify_fatal(lhs.texture_paths == rhs.texture_paths);
 	verify_fatal(lhs.materials.size() == rhs.materials.size());

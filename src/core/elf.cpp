@@ -62,7 +62,8 @@ packed_struct(ElfFileHeader,
 	/* 0x32 */ u16 shstrndx;
 )
 
-ElfFile read_elf_file(Buffer src) {
+ElfFile read_elf_file(Buffer src)
+{
 	const ElfFileHeader& file_header = src.read<ElfFileHeader>(0, "ELF file header");
 	verify(memcmp(file_header.magic, "\x7f\x45\x4c\x46", 4) == 0, "Magic bytes don't match.");
 	
@@ -95,7 +96,8 @@ ElfFile read_elf_file(Buffer src) {
 	return elf;
 }
 
-void write_elf_file(OutBuffer dest, const ElfFile& elf) {
+void write_elf_file(OutBuffer dest, const ElfFile& elf)
+{
 	std::vector<ElfSectionHeader> section_headers;
 	std::vector<ElfProgramHeader> program_headers = elf.segments;
 	
@@ -232,7 +234,8 @@ packed_struct(RatchetSectionHeader,
 	s32 entry_point;
 )
 
-ElfFile read_ratchet_executable(Buffer src) {
+ElfFile read_ratchet_executable(Buffer src)
+{
 	ElfFile elf;
 	
 	// Add the null section to the beginning. This is a convention for ELF files
@@ -272,7 +275,8 @@ ElfFile read_ratchet_executable(Buffer src) {
 	return elf;
 }
 
-void write_ratchet_executable(OutBuffer dest, const ElfFile& elf) {
+void write_ratchet_executable(OutBuffer dest, const ElfFile& elf)
+{
 	for(const ElfSection& section : elf.sections) {
 		if(section.header.addr > 0 && !section.data.empty()) {
 			verify(section.header.addr % 4 == 0, "Loadable ELF section data must be aligned to 4 byte boundary in memory.");
@@ -289,7 +293,8 @@ void write_ratchet_executable(OutBuffer dest, const ElfFile& elf) {
 	}
 }
 
-bool fill_in_elf_headers(ElfFile& elf, const ElfFile& donor) {
+bool fill_in_elf_headers(ElfFile& elf, const ElfFile& donor)
+{
 	if(elf.sections.size() != donor.sections.size())
 		return false;
 	

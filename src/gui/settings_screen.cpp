@@ -42,7 +42,8 @@ static const gui::Chapter SETTINGS[] = {
 static bool open = false;
 static gui::Config scratch_config;
 
-void gui::settings_screen() {
+void gui::settings_screen()
+{
 	if(!open) {
 		scratch_config = g_config;
 		open = true;
@@ -70,7 +71,8 @@ void gui::settings_screen() {
 	}
 }
 
-static void paths_page() {
+static void paths_page()
+{
 	ImGui::InputText("Base Folder", &scratch_config.paths.base_folder);
 	static size_t selection = 0;
 	if(ImGui::BeginListBox("Mods Folders")) {
@@ -140,7 +142,8 @@ static void paths_page() {
 	ImGui::InputText("Emulator Path", &scratch_config.paths.emulator_path);
 }
 
-static void user_interface_page() {
+static void user_interface_page()
+{
 	if(ImGui::BeginListBox("Style")) {
 		bool sel = true;
 		ImGui::Selectable("Dark", &sel);
@@ -159,6 +162,7 @@ static void user_interface_page() {
 	ImGui::Checkbox("Enable Developer Features", &scratch_config.ui.developer);
 }
 
-static void level_editor_page() {
+static void level_editor_page()
+{
 	ImGui::Text("Level editor settings!");
 }

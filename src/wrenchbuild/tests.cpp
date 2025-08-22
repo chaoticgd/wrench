@@ -25,14 +25,26 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void run_round_trip_asset_packing_tests(const fs::path& input_path, const std::string& asset_ref, s32 min_percentage, s32 max_percentage, const std::string& filter);
+static void run_round_trip_asset_packing_tests(
+	const fs::path& input_path,
+	const std::string& asset_ref,
+	s32 min_percentage,
+	s32 max_percentage,
+	const std::string& filter);
 static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src);
-static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage, AssetTestMode mode, const std::string& filter);
+static void run_round_trip_asset_packing_test(
+	AssetForest& forest,
+	BinaryAsset& binary,
+	AssetType type,
+	s32 percentage,
+	AssetTestMode mode,
+	const std::string& filter);
 
 static s32 pass_count = 0;
 static s32 fail_count = 0;
 
-void run_tests(fs::path input_path, const std::string& asset_ref, const std::string& filter) {
+void run_tests(fs::path input_path, const std::string& asset_ref, const std::string& filter)
+{
 	run_round_trip_asset_packing_tests(input_path, asset_ref, 0, 100, filter);
 	
 	if(fail_count == 0) {
@@ -42,7 +54,13 @@ void run_tests(fs::path input_path, const std::string& asset_ref, const std::str
 	}
 }
 
-static void run_round_trip_asset_packing_tests(const fs::path& input_path, const std::string& asset_ref, s32 min_percentage, s32 max_percentage, const std::string& filter) {
+static void run_round_trip_asset_packing_tests(
+	const fs::path& input_path,
+	const std::string& asset_ref,
+	s32 min_percentage,
+	s32 max_percentage,
+	const std::string& filter)
+{
 	// Disable printing when an asset is packed/unpacked.
 	g_asset_unpacker.quiet = true;
 	g_asset_packer_quiet = true;
@@ -81,7 +99,8 @@ static void run_round_trip_asset_packing_tests(const fs::path& input_path, const
 	}
 }
 
-static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src) {
+static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src)
+{
 	if(src.logical_type() == BinaryAsset::ASSET_TYPE) {
 		dest.emplace_back(&src.as<BinaryAsset>());
 	}
@@ -91,7 +110,14 @@ static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src) {
 	});
 }
 
-static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage, AssetTestMode mode, const std::string& filter) {
+static void run_round_trip_asset_packing_test(
+	AssetForest& forest,
+	BinaryAsset& binary,
+	AssetType type,
+	s32 percentage,
+	AssetTestMode mode,
+	const std::string& filter)
+{
 	const char* type_name = asset_type_to_string(type);
 	std::string ref = binary.absolute_link().to_string();
 	
@@ -138,7 +164,8 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	}
 }
 
-void strip_trailing_padding_from_lhs(std::vector<u8>& lhs, std::vector<u8>& rhs, s32 max_padding_size) {
+void strip_trailing_padding_from_lhs(std::vector<u8>& lhs, std::vector<u8>& rhs, s32 max_padding_size)
+{
 	if(rhs.size() > 0 && lhs.size() > rhs.size() && (max_padding_size == -1 || lhs.size() <= rhs.size() + max_padding_size)) {
 		bool is_padding = true;
 		for(s64 i = rhs.size(); i < lhs.size(); i++) {

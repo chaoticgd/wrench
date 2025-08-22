@@ -22,12 +22,14 @@
 #include <instancemgr/gameplay_impl_common.inl>
 
 struct ClassBlock {
-	static void read(std::vector<s32>& dest, Buffer src, Game game) {
+	static void read(std::vector<s32>& dest, Buffer src, Game game)
+	{
 		s32 count = src.read<s32>(0, "class count");
 		dest = src.read_multiple<s32>(4, count, "class data").copy();
 	}
 	
-	static void write(OutBuffer dest, const std::vector<s32>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<s32>& src, Game game)
+	{
 		dest.write((s32) src.size());
 		dest.write_multiple(src);
 	}
@@ -39,7 +41,8 @@ packed_struct(MobyBlockHeader,
 	s32 pad[2];
 )
 
-static std::map<s32, s32> moby_index_to_group(const std::vector<MobyGroupInstance>& groups) {
+static std::map<s32, s32> moby_index_to_group(const std::vector<MobyGroupInstance>& groups)
+{
 	std::map<s32, s32> index_to_group;
 	for(s32 i = 0; i < (s32) groups.size(); i++) {
 		const MobyGroupInstance& group = groups[i];
@@ -80,7 +83,8 @@ packed_struct(RacMobyInstance,
 static_assert(sizeof(RacMobyInstance) == 0x78);
 
 struct RacMobyBlock {
-	static void read(Gameplay& gameplay, Buffer src, Game game) {
+	static void read(Gameplay& gameplay, Buffer src, Game game)
+	{
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		gameplay.spawnable_moby_count = header.spawnable_moby_count;
 		s32 index = 0;
@@ -95,7 +99,8 @@ struct RacMobyBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game)
+	{
 		verify(gameplay.spawnable_moby_count.has_value(), "Missing dynamic moby count field.");
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
 		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
@@ -121,7 +126,8 @@ struct RacMobyBlock {
 		return true;
 	}
 	
-	static void swap_moby(MobyInstance& l, RacMobyInstance& r) {
+	static void swap_moby(MobyInstance& l, RacMobyInstance& r)
+	{
 		r.size = sizeof(RacMobyInstance);
 		swap_position_rotation_scale(l, r);
 		SWAP_PACKED(l.pvars().temp_pvar_index, r.pvar_index);
@@ -179,7 +185,8 @@ packed_struct(GcUyaMobyInstance,
 static_assert(sizeof(GcUyaMobyInstance) == 0x88);
 
 struct GcUyaMobyBlock {
-	static void read(Gameplay& gameplay, Buffer src, Game game) {
+	static void read(Gameplay& gameplay, Buffer src, Game game)
+	{
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		gameplay.spawnable_moby_count = header.spawnable_moby_count;
 		s32 index = 0;
@@ -194,7 +201,8 @@ struct GcUyaMobyBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game)
+	{
 		verify(gameplay.spawnable_moby_count.has_value(), "Missing dynamic moby count field.");
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
 		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
@@ -220,7 +228,8 @@ struct GcUyaMobyBlock {
 		return true;
 	}
 	
-	static void swap_moby(MobyInstance& l, GcUyaMobyInstance& r) {
+	static void swap_moby(MobyInstance& l, GcUyaMobyInstance& r)
+	{
 		r.size = 0x88;
 		swap_position_rotation_scale(l, r);
 		SWAP_PACKED(l.pvars().temp_pvar_index, r.pvar_index);
@@ -276,7 +285,8 @@ packed_struct(DlMobyInstance,
 static_assert(sizeof(DlMobyInstance) == 0x70);
 
 struct DlMobyBlock {
-	static void read(Gameplay& gameplay, Buffer src, Game game) {
+	static void read(Gameplay& gameplay, Buffer src, Game game)
+	{
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		gameplay.spawnable_moby_count = header.spawnable_moby_count;
 		gameplay.moby_instances = std::vector<MobyInstance>();
@@ -296,7 +306,8 @@ struct DlMobyBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game)
+	{
 		verify(gameplay.spawnable_moby_count.has_value(), "Missing dynamic moby count field.");
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
 		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
@@ -322,7 +333,8 @@ struct DlMobyBlock {
 		return true;
 	}
 	
-	static void swap_moby(MobyInstance& l, DlMobyInstance& r) {
+	static void swap_moby(MobyInstance& l, DlMobyInstance& r)
+	{
 		r.size = 0x70;
 		swap_position_rotation_scale(l, r);
 		SWAP_PACKED(l.pvars().temp_pvar_index, r.pvar_index);
@@ -346,7 +358,8 @@ struct DlMobyBlock {
 };
 
 struct PvarTableBlock {
-	static void read(Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game)
+	{
 		s32 pvar_count = 0;
 		for(const MobyInstance& inst : opt_iterator(dest.moby_instances)) {
 			pvar_count = std::max(pvar_count, inst.pvars().temp_pvar_index + 1);
@@ -361,7 +374,8 @@ struct PvarTableBlock {
 		dest.pvar_table = src.read_multiple<PvarTableEntry>(0, pvar_count, "pvar table").copy();
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game)
+	{
 		verify_fatal(src.pvar_table.has_value());
 		dest.write_multiple(*src.pvar_table);
 		return true;
@@ -369,7 +383,8 @@ struct PvarTableBlock {
 };
 
 struct PvarDataBlock {
-	static void read(Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game)
+	{
 		verify_fatal(dest.pvar_table.has_value());
 		s32 size = 0;
 		for(PvarTableEntry& entry : *dest.pvar_table) {
@@ -378,7 +393,8 @@ struct PvarDataBlock {
 		dest.pvar_data = src.read_multiple<u8>(0, size, "pvar data").copy();
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game)
+	{
 		verify_fatal(src.pvar_data.has_value());
 		dest.write_multiple(*src.pvar_data);
 		return true;
@@ -386,7 +402,8 @@ struct PvarDataBlock {
 };
 
 struct PvarFixupBlock {
-	static void read(std::vector<PvarFixupEntry>& dest, Buffer src, Game game) {
+	static void read(std::vector<PvarFixupEntry>& dest, Buffer src, Game game)
+	{
 		for(s64 offset = 0;; offset += sizeof(PvarFixupEntry)) {
 			auto& entry = src.read<PvarFixupEntry>(offset, "pvar scratchpad block");
 			if(entry.pvar_index < 0) {
@@ -397,7 +414,8 @@ struct PvarFixupBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const std::vector<PvarFixupEntry>& src, Game game) {
+	static bool write(OutBuffer dest, const std::vector<PvarFixupEntry>& src, Game game)
+	{
 		dest.write_multiple(src);
 		dest.write<s32>(-1);
 		dest.write<s32>(-1);
@@ -413,7 +431,8 @@ packed_struct(GroupHeader,
 
 template <typename GroupInstance>
 struct GroupBlock {
-	static void read(std::vector<GroupInstance>& dest, Buffer src, Game game) {
+	static void read(std::vector<GroupInstance>& dest, Buffer src, Game game)
+	{
 		auto& header = src.read<GroupHeader>(0, "group block header");
 		auto pointers = src.read_multiple<s32>(0x10, header.group_count, "group pointers");
 		s64 data_ofs = 0x10 + header.group_count * 4;
@@ -436,7 +455,8 @@ struct GroupBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<GroupInstance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<GroupInstance>& src, Game game)
+	{
 		s64 header_ofs = dest.alloc<GroupHeader>();
 		s64 pointer_ofs = dest.alloc_multiple<s32>(src.size());
 		dest.pad(0x10, 0);
@@ -476,13 +496,15 @@ packed_struct(SharedDataBlockHeader,
 )
 
 struct SharedDataBlock {
-	static void read(Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game)
+	{
 		auto& header = src.read<SharedDataBlockHeader>(0, "global pvar block header");
 		dest.shared_data = src.read_multiple<u8>(0x10, header.data_size, "global pvar").copy();
 		dest.shared_data_table = src.read_multiple<SharedDataEntry>(0x10 + header.data_size, header.pointer_count, "global pvar pointers").copy();
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game)
+	{
 		if(!src.shared_data.has_value() || !src.shared_data_table.has_value()) {
 			SharedDataBlockHeader header = {};
 			dest.write(header);
@@ -503,7 +525,8 @@ struct SharedDataBlock {
 };
 
 struct TieAmbientRgbaBlock {
-	static void read(Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game)
+	{
 		if(!dest.tie_instances.has_value()) {
 			return;
 		}
@@ -522,7 +545,8 @@ struct TieAmbientRgbaBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game)
+	{
 		s16 index = 0;
 		for(const TieInstance& inst : opt_iterator(src.tie_instances)) {
 			if(inst.ambient_rgbas.size() > 0) {
@@ -541,7 +565,8 @@ struct TieAmbientRgbaBlock {
 struct TieClassBlock {
 	static void read(Gameplay& dest, Buffer src, Game game) {}
 	
-	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game)
+	{
 		std::vector<s32> classes;
 		for(const TieInstance& inst : opt_iterator(src.tie_instances)) {
 			if(std::find(BEGIN_END(classes), inst.o_class()) == classes.end()) {
@@ -557,7 +582,8 @@ struct TieClassBlock {
 struct ShrubClassBlock {
 	static void read(Gameplay& dest, Buffer src, Game game) {}
 	
-	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game)
+	{
 		std::vector<s32> classes;
 		for(const ShrubInstance& inst : opt_iterator(src.shrub_instances)) {
 			if(std::find(BEGIN_END(classes), inst.o_class()) == classes.end()) {
@@ -584,7 +610,8 @@ packed_struct(RacTieInstance,
 )
 static_assert(sizeof(RacTieInstance) == 0xe0);
 
-static void swap_instance(TieInstance& l, RacTieInstance& r) {
+static void swap_instance(TieInstance& l, RacTieInstance& r)
+{
 	swap_matrix(l, r);
 	SWAP_PACKED(l.draw_distance(), r.draw_distance);
 	SWAP_PACKED(l.o_class(), r.o_class);
@@ -618,7 +645,8 @@ packed_struct(GcUyaDlTieInstance,
 )
 static_assert(sizeof(GcUyaDlTieInstance) == 0x60);
 
-static void swap_instance(TieInstance& l, GcUyaDlTieInstance& r) {
+static void swap_instance(TieInstance& l, GcUyaDlTieInstance& r)
+{
 	swap_matrix(l, r);
 	SWAP_PACKED(l.draw_distance(), r.draw_distance);
 	SWAP_PACKED(l.o_class(), r.o_class);
@@ -644,7 +672,8 @@ packed_struct(ShrubInstancePacked,
 	/* 0x6c */ s32 unused_6c;
 )
 
-static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
+static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r)
+{
 	swap_matrix(l, r);
 	SWAP_PACKED(l.draw_distance(), r.draw_distance);
 	SWAP_COLOUR(l.colour(), r.colour);

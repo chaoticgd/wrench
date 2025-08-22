@@ -21,11 +21,18 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
 
-static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConfig config, const char* hint);
-static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint);
+static void unpack_texture_asset(
+	TextureAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_texture_asset(
+	OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint);
 static Texture unpack_pif(InputStream& src);
 static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_level);
-static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
+static bool test_texture_asset(
+	std::vector<u8>& original,
+	std::vector<u8>& repacked,
+	BuildConfig config,
+	const char* hint,
+	AssetTestMode mode);
 
 on_load(Texture, []() {
 	TextureAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<TextureAsset>(unpack_texture_asset);
@@ -50,7 +57,9 @@ packed_struct(RgbaTextureHeader,
 	u32 pad[2];
 )
 
-static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+static void unpack_texture_asset(
+	TextureAsset& dest, InputStream& src, BuildConfig config, const char* hint)
+{
 	Texture texture;
 	
 	const char* type = next_hint(&hint);
@@ -92,7 +101,9 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConf
 	dest.set_src(ref);
 }
 
-static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint) {
+static void pack_texture_asset(
+	OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint)
+{
 	auto stream = src.src().open_binary_file_for_reading();
 	verify(stream.get(), "Failed to open PNG file.");
 	Opt<Texture> texture = read_png(*stream);
@@ -150,7 +161,8 @@ packed_struct(PifHeader,
 	/* 0x1c */ s32 mip_levels;
 )
 
-static Texture unpack_pif(InputStream& src) {
+static Texture unpack_pif(InputStream& src)
+{
 	PifHeader header = src.read<PifHeader>(0);
 	verify(memcmp(header.magic, "2FIP", 4) == 0, "PIF has bad magic bytes.");
 	verify(header.width <= 2048 && header.height <= 2048, "PIF has bad width/height values.");
@@ -181,7 +193,8 @@ static Texture unpack_pif(InputStream& src) {
 	}
 }
 
-static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels) {
+static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels)
+{
 	texture.divide_alphas();
 	
 	s64 header_ofs = dest.tell();
@@ -230,7 +243,13 @@ static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels) {
 	dest.write(header_ofs, header);
 }
 
-static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_texture_asset(
+	std::vector<u8>& original,
+	std::vector<u8>& repacked,
+	BuildConfig config,
+	const char* hint,
+	AssetTestMode mode)
+{
 	const char* type = next_hint(&hint);
 	if(strcmp(type, "pif") == 0) {
 		// We don't know what this field in the PIF header is and it doesn't

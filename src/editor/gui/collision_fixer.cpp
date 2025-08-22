@@ -82,7 +82,8 @@ static std::string write_instanced_collision(Asset& asset, const ColladaScene& c
 template <typename ThisAsset>
 static std::string write_instanced_collision_for_class_of_type(ThisAsset& asset, const ColladaScene& collision_scene);
 
-static void row(const char* name) {
+static void row(const char* name)
+{
 	ImGui::TableNextRow();
 	ImGui::TableNextColumn();
 	ImGui::AlignTextToFramePadding();
@@ -91,7 +92,8 @@ static void row(const char* name) {
 	ImGui::SetNextItemWidth(-1.f);
 };
 
-void collision_fixer() {
+void collision_fixer()
+{
 	bool bb_modified = false;
 	bool params_modified = false;
 	
@@ -198,7 +200,9 @@ void shutdown_collision_fixer() {
 	g_app->collision_fixer_previews.collision_materials = nullptr;
 }
 
-void CollisionFixerThread::start(Game game, std::string game_bank_path, s32 type, s32 o_class, const ColParams& params) {
+void CollisionFixerThread::start(
+	Game game, std::string game_bank_path, s32 type, s32 o_class, const ColParams& params)
+{
 	m_state = STARTING;
 	CollisionFixerThread* command = this;
 	m_thread = std::thread([command, game, game_bank_path, type, o_class, params]() {
@@ -215,7 +219,8 @@ void CollisionFixerThread::start(Game game, std::string game_bank_path, s32 type
 	});
 }
 
-void CollisionFixerThread::run() {
+void CollisionFixerThread::run()
+{
 	success = false;
 	
 	auto check_is_still_running = [&]() {
@@ -270,7 +275,8 @@ void CollisionFixerThread::run() {
 	}
 }
 
-void CollisionFixerThread::reset() {
+void CollisionFixerThread::reset()
+{
 	if(m_thread.joinable()) {
 		m_thread.join();
 	}
@@ -283,7 +289,8 @@ void CollisionFixerThread::reset() {
 	m_mappings.classes[COL_SHRUB].clear();
 }
 
-Opt<ColladaScene> CollisionFixerThread::get_output() {
+Opt<ColladaScene> CollisionFixerThread::get_output()
+{
 	std::lock_guard<std::mutex> g(m_mutex);
 	if(success) {
 		success = false;
@@ -293,7 +300,8 @@ Opt<ColladaScene> CollisionFixerThread::get_output() {
 	}
 }
 
-bool CollisionFixerThread::interrupt() {
+bool CollisionFixerThread::interrupt()
+{
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		if(m_state == NOT_RUNNING) {
@@ -325,12 +333,14 @@ bool CollisionFixerThread::interrupt() {
 	return true;
 }
 
-bool CollisionFixerThread::is_running() {
+bool CollisionFixerThread::is_running()
+{
 	std::lock_guard<std::mutex> lock(m_mutex);
 	return m_state == STARTING || m_state == LOADING_DATA || m_state == RECOVERING;
 }
 
-const char* CollisionFixerThread::state_string() {
+const char* CollisionFixerThread::state_string()
+{
 	std::lock_guard<std::mutex> lock(m_mutex);
 	switch(m_state) {
 		case NOT_RUNNING: return "Not Running";
@@ -344,7 +354,8 @@ const char* CollisionFixerThread::state_string() {
 	return "Error";
 }
 
-static std::tuple<s32, s32, Asset*> class_selector() {
+static std::tuple<s32, s32, Asset*> class_selector()
+{
 	static AssetSelector tie_selector, shrub_selector;
 	tie_selector.required_type_count = 2;
 	tie_selector.required_types[0] = TieClassAsset::ASSET_TYPE;
@@ -390,7 +401,8 @@ static std::tuple<s32, s32, Asset*> class_selector() {
 	return {type, o_class, asset};
 }
 
-static void generate_bounding_box(const Mesh& mesh) {
+static void generate_bounding_box(const Mesh& mesh)
+{
 	glm::vec3 min;
 	glm::vec3 max;
 	if(!mesh.vertices.empty()) {
@@ -408,7 +420,8 @@ static void generate_bounding_box(const Mesh& mesh) {
 	params.bounding_box_size = (max - min) * 2.f;
 }
 
-static std::string write_instanced_collision(Asset& asset, const ColladaScene& collision_scene) {
+static std::string write_instanced_collision(Asset& asset, const ColladaScene& collision_scene)
+{
 	std::string message;
 	
 	AssetType type = asset.logical_type();
@@ -424,7 +437,9 @@ static std::string write_instanced_collision(Asset& asset, const ColladaScene& c
 }
 
 template <typename ThisAsset>
-static std::string write_instanced_collision_for_class_of_type(ThisAsset& asset, const ColladaScene& collision_scene) {
+static std::string write_instanced_collision_for_class_of_type(
+	ThisAsset& asset, const ColladaScene& collision_scene)
+{
 	std::string message;
 	
 	CollisionAsset* collision_asset;

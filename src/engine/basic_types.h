@@ -29,17 +29,20 @@ packed_struct(Vec3f,
 	f32 z;
 	
 	template <typename T>
-	void enumerate_fields(T& t) {
+	void enumerate_fields(T& t)
+	{
 		DEF_PACKED_FIELD(x);
 		DEF_PACKED_FIELD(y);
 		DEF_PACKED_FIELD(z);
 	}
 	
-	glm::vec3 unpack() const {
+	glm::vec3 unpack() const
+	{
 		return glm::vec3(x, y, z);
 	}
 	
-	static Vec3f pack(glm::vec3 vec) {
+	static Vec3f pack(glm::vec3 vec)
+	{
 		Vec3f result;
 		result.x = vec.x;
 		result.y = vec.y;
@@ -55,18 +58,21 @@ packed_struct(Vec4f,
 	f32 w;
 	
 	template <typename T>
-	void enumerate_fields(T& t) {
+	void enumerate_fields(T& t)
+	{
 		DEF_PACKED_FIELD(x);
 		DEF_PACKED_FIELD(y);
 		DEF_PACKED_FIELD(z);
 		DEF_PACKED_FIELD(w);
 	}
 	
-	glm::vec4 unpack() const {
+	glm::vec4 unpack() const
+	{
 		return glm::vec4(x, y, z, w);
 	}
 	
-	static Vec4f pack(glm::vec4 vec) {
+	static Vec4f pack(glm::vec4 vec)
+	{
 		Vec4f result;
 		result.x = vec.x;
 		result.y = vec.y;
@@ -75,7 +81,8 @@ packed_struct(Vec4f,
 		return result;
 	}
 	
-	void swap(glm::vec4& vec) {
+	void swap(glm::vec4& vec)
+	{
 		SWAP_PACKED(x, vec.x);
 		SWAP_PACKED(y, vec.y);
 		SWAP_PACKED(z, vec.z);
@@ -89,7 +96,8 @@ packed_struct(Mat3,
 	Vec4f m_2;
 	
 	template <typename T>
-	void enumerate_fields(T& t) {
+	void enumerate_fields(T& t)
+	{
 		Vec4f temp;
 		
 		temp = m_0;
@@ -105,7 +113,8 @@ packed_struct(Mat3,
 		m_2 = temp;
 	}
 	
-	glm::mat3x4 unpack() const {
+	glm::mat3x4 unpack() const
+	{
 		glm::mat3x4 result;
 		result[0] = m_0.unpack();
 		result[1] = m_1.unpack();
@@ -113,7 +122,8 @@ packed_struct(Mat3,
 		return result;
 	}
 	
-	static Mat3 pack(glm::mat3x4 mat) {
+	static Mat3 pack(glm::mat3x4 mat)
+	{
 		Mat3 result;
 		result.m_0 = Vec4f::pack(mat[0]);
 		result.m_1 = Vec4f::pack(mat[1]);
@@ -129,7 +139,8 @@ packed_struct(Mat4,
 	Vec4f m_3;
 	
 	template <typename T>
-	void enumerate_fields(T& t) {
+	void enumerate_fields(T& t)
+	{
 		Vec4f temp;
 		
 		temp = m_0;
@@ -149,7 +160,8 @@ packed_struct(Mat4,
 		m_3 = temp;
 	}
 	
-	glm::mat4 unpack() const {
+	glm::mat4 unpack() const
+	{
 		glm::mat4 result;
 		result[0] = m_0.unpack();
 		result[1] = m_1.unpack();
@@ -158,7 +170,8 @@ packed_struct(Mat4,
 		return result;
 	}
 	
-	static Mat4 pack(glm::mat4 mat) {
+	static Mat4 pack(glm::mat4 mat)
+	{
 		Mat4 result;
 		result.m_0 = Vec4f::pack(mat[0]);
 		result.m_1 = Vec4f::pack(mat[1]);

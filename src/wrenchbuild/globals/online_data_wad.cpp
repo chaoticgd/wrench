@@ -41,7 +41,8 @@ packed_struct(OnlineDataHeader,
 )
 static_assert(offsetof(OnlineDataHeader, moby_classes) == 0x250);
 
-static void unpack_online_data_wad(OnlineDataWadAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_online_data_wad(OnlineDataWadAsset& dest, InputStream& src, BuildConfig config)
+{
 	auto header = src.read<OnlineDataHeader>(0);
 
 	unpack_asset(dest.onlinew3d(), src, header.onlinew3d, config);
@@ -54,7 +55,8 @@ static void unpack_online_data_wad(OnlineDataWadAsset& dest, InputStream& src, B
 	}
 }
 
-static void pack_online_data_wad(OutputStream& dest, const OnlineDataWadAsset& src, BuildConfig config) {
+static void pack_online_data_wad(OutputStream& dest, const OnlineDataWadAsset& src, BuildConfig config)
+{
 	OnlineDataHeader header;
 	dest.alloc<OnlineDataHeader>();
 	

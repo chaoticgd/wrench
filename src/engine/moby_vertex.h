@@ -111,7 +111,14 @@ struct VertexTable {
 	std::vector<u8> unknown_e_data;
 };
 
-VertexTable read_vertex_table(Buffer src, s64 header_offset, s32 transfer_vertex_count, s32 vertex_data_size, s32 d, s32 e, MobyFormat format);
+VertexTable read_vertex_table(
+	Buffer src,
+	s64 header_offset,
+	s32 transfer_vertex_count,
+	s32 vertex_data_size,
+	s32 d,
+	s32 e,
+	MobyFormat format);
 u32 write_vertex_table(OutBuffer& dest, const VertexTable& src, MobyFormat format);
 
 packed_struct(MetalVertex,
@@ -145,12 +152,18 @@ struct MobyPacketLowLevel;
 struct VU0MatrixAllocator;
 struct MatrixLivenessInfo;
 
-std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes> blend_cache[64], f32 scale, bool animated);
+std::vector<Vertex> unpack_vertices(
+	const VertexTable& input, Opt<SkinAttributes> blend_cache[64], f32 scale, bool animated);
 struct PackVerticesOutput {
 	VertexTable vertex_table;
 	std::vector<s32> index_mapping;
 };
-PackVerticesOutput pack_vertices(s32 smi, const std::vector<Vertex>& input_vertices, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale);
+PackVerticesOutput pack_vertices(
+	s32 smi,
+	const std::vector<Vertex>& input_vertices,
+	VU0MatrixAllocator& mat_alloc,
+	const std::vector<MatrixLivenessInfo>& liveness,
+	f32 scale);
 
 }
 

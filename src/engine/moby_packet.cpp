@@ -22,9 +22,14 @@
 
 namespace MOBY {
 	
-static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const SharedVifData& src, s64 class_header_ofs);
+static s64 write_shared_moby_vif_packets(
+	OutBuffer dest,
+	GifUsageTable* gif_usage,
+	const SharedVifData& src,
+	s64 class_header_ofs);
 
-std::vector<MobyPacket> read_packets(Buffer src, s64 table_ofs, s64 count, MobyFormat format) {
+std::vector<MobyPacket> read_packets(Buffer src, s64 table_ofs, s64 count, MobyFormat format)
+{
 	std::vector<MobyPacket> packets;
 	
 	auto packet_table = src.read_multiple<MobyPacketEntry>(table_ofs, count, "moby packet table");
@@ -70,7 +75,16 @@ std::vector<MobyPacket> read_packets(Buffer src, s64 table_ofs, s64 count, MobyF
 	return packets;
 }
 
-void write_packets(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobyPacket* packets_in, size_t packet_count, f32 scale, MobyFormat format, s64 class_header_ofs) {
+void write_packets(
+	OutBuffer dest,
+	GifUsageTable& gif_usage,
+	s64 table_ofs,
+	const MobyPacket* packets_in,
+	size_t packet_count,
+	f32 scale,
+	MobyFormat format,
+	s64 class_header_ofs)
+{
 	//// TODO: Make it so we don't have to copy the packets here.
 	//std::vector<MobyPacket> packets;
 	//for(size_t i = 0; i < packet_count; i++) {
@@ -172,7 +186,8 @@ void write_packets(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, cons
 	}
 }
 
-std::vector<MobyMetalPacket> read_metal_packets(Buffer src, s64 table_ofs, s64 count) {
+std::vector<MobyMetalPacket> read_metal_packets(Buffer src, s64 table_ofs, s64 count)
+{
 	std::vector<MobyMetalPacket> packets;
 	for(auto& entry : src.read_multiple<MobyPacketEntry>(table_ofs, count, "moby metal packet table")) {
 		MobyMetalPacket packet;
@@ -207,7 +222,9 @@ std::vector<MobyMetalPacket> read_metal_packets(Buffer src, s64 table_ofs, s64 c
 	return packets;
 }
 
-void write_metal_packets(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalPacket>& packets, s64 class_header_ofs) {
+void write_metal_packets(
+	OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalPacket>& packets, s64 class_header_ofs)
+{
 	for(const MobyMetalPacket& packet : packets) {
 		MobyPacketEntry entry = {0};
 		
@@ -235,7 +252,9 @@ void write_metal_packets(OutBuffer dest, s64 table_ofs, const std::vector<MobyMe
 	}
 }
 
-static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const SharedVifData& src, s64 class_header_ofs) {
+static s64 write_shared_moby_vif_packets(
+	OutBuffer dest, GifUsageTable* gif_usage, const SharedVifData& src, s64 class_header_ofs)
+{
 	static const s32 INDEX_UNPACK_ADDR_QUADWORDS = 0x12d;
 	
 	std::vector<u8> indices;
@@ -313,7 +332,8 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	return rel_texture_unpack_ofs;
 }
 /*
-static void sort_moby_vertices_after_reading(MobyPacketLowLevel& low, MobyPacket& packet) {
+static void sort_moby_vertices_after_reading(MobyPacketLowLevel& low, MobyPacket& packet)
+{
 	verify_fatal(low.vertices.size() == packet.vertex_table.vertices.size());
 	
 	s32 two_way_end = low.two_way_blend_vertex_count;
@@ -361,7 +381,8 @@ static void sort_moby_vertices_after_reading(MobyPacketLowLevel& low, MobyPacket
 	map_indices(packet, mapping);
 }
 
-void map_indices(MobyPacket& packet, const std::vector<size_t>& mapping) {
+void map_indices(MobyPacket& packet, const std::vector<size_t>& mapping)
+{
 	verify_fatal(packet.vertices.size() == mapping.size());
 	
 	// Find the end of the index buffer.

@@ -24,14 +24,18 @@
 #include <engine/moby_high.h>
 #include <wrenchbuild/tests.h>
 
-static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
-static void pack_moby_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint);
+static void unpack_moby_class(
+	MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_moby_class(
+	OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint);
 static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfig config);
-static void unpack_mesh_only_class(MobyClassAsset& dest, InputStream& src, f32 scale, bool animated, BuildConfig config);
+static void unpack_mesh_only_class(
+	MobyClassAsset& dest, InputStream& src, f32 scale, bool animated, BuildConfig config);
 static void pack_mesh_only_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config);
 static s32 count_materials(const CollectionAsset& materials);
 static void unpack_materials(CollectionAsset& materials, GLTF::ModelFile& gltf);
-static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
+static bool test_moby_class_core(
+	std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(MobyClass, []() {
 	MobyClassAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<MobyClassAsset>(unpack_moby_class);
@@ -50,7 +54,9 @@ on_load(MobyClass, []() {
 	MobyClassCoreAsset::funcs.test_dl  = new AssetTestFunc(test_moby_class_core);
 })
 
-static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+static void unpack_moby_class(
+	MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint)
+{
 	if(g_asset_unpacker.dump_binaries) {
 		if(!dest.has_core()) {
 			unpack_asset_impl(dest.core<MobyClassCoreAsset>(), src, nullptr, config);
@@ -79,7 +85,9 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	unpack_phat_class(dest, src, config);
 }
 
-static void pack_moby_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint) {
+static void pack_moby_class(
+	OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint)
+{
 	if(g_asset_packer_dry_run) {
 		return;
 	}
@@ -99,7 +107,8 @@ static void pack_moby_class(OutputStream& dest, const MobyClassAsset& src, Build
 	verify_not_reached("MobyClassCore asset packing not yet implemented");
 }
 
-static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfig config)
+{
 	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 	
 	s32 texture_count = 0;
@@ -141,7 +150,9 @@ static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	editor_mesh.set_src(ref);
 }
 
-static void unpack_mesh_only_class(MobyClassAsset& dest, InputStream& src, f32 scale, bool animated, BuildConfig config) {
+static void unpack_mesh_only_class(
+	MobyClassAsset& dest, InputStream& src, f32 scale, bool animated, BuildConfig config)
+{
 	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
@@ -186,7 +197,8 @@ static void unpack_mesh_only_class(MobyClassAsset& dest, InputStream& src, f32 s
 	//core.set_scale(scale);
 }
 
-static void pack_mesh_only_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config) {
+static void pack_mesh_only_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config)
+{
 	const MobyClassCoreAsset& core = src.get_core().as<MobyClassCoreAsset>();
 	
 	const MeshAsset& mesh_asset = core.get_mesh();
@@ -215,7 +227,8 @@ static void pack_mesh_only_class(OutputStream& dest, const MobyClassAsset& src, 
 	dest.write_v(buffer);
 }
 
-static s32 count_materials(const CollectionAsset& materials) {
+static s32 count_materials(const CollectionAsset& materials)
+{
 	s32 texture_count = 0;
 	for(s32 i = 0; i < 16; i++) {
 		if(materials.has_child(i)) {
@@ -227,7 +240,8 @@ static s32 count_materials(const CollectionAsset& materials) {
 	return texture_count;
 }
 
-static void unpack_materials(CollectionAsset& materials, GLTF::ModelFile& gltf) {
+static void unpack_materials(CollectionAsset& materials, GLTF::ModelFile& gltf)
+{
 	for(s32 i = 0; i < 16; i++) {
 		if(!materials.has_child(i)) {
 			break;
@@ -253,7 +267,9 @@ static void unpack_materials(CollectionAsset& materials, GLTF::ModelFile& gltf) 
 	}
 }
 
-static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_moby_class_core(
+	std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode)
+{
 	// Test the binary reading/writing code.
 	MOBY::MobyClassData moby = MOBY::read_class(src, config.game());
 	

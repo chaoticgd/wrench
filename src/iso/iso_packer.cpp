@@ -21,21 +21,44 @@
 #include <core/png.h>
 #include <iso/wad_identifier.h>
 
-static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, BuildConfig config, AssetPackerFunc pack);
+static void pack_ps2_logo(
+	OutputStream& iso, const BuildAsset& build, BuildConfig config, AssetPackerFunc pack);
 static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game);
-static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game game, const LevelAsset* single_level);
+static std::vector<LevelInfo> enumerate_levels(
+	const BuildAsset& build, Game game, const LevelAsset* single_level);
 static LevelInfo enumerate_level(const LevelAsset& level, Game game);
 static IsoDirectory enumerate_files(const Asset& files);
 static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir);
 static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build, Game game);
-static IsoFileRecord pack_boot_elf(OutputStream& iso, const Asset& boot_elf, BuildConfig config, AssetPackerFunc pack);
+static IsoFileRecord pack_boot_elf(
+	OutputStream& iso, const Asset& boot_elf, BuildConfig config, AssetPackerFunc pack);
 static std::string get_boot_elf_path(const Asset& boot_elf);
-static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, BuildConfig config, AssetPackerFunc pack);
-static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, BuildConfig config, AssetPackerFunc pack, bool no_mpegs);
-static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, BuildConfig config, const LevelAsset* single_level, AssetPackerFunc pack);
-static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const char* name, BuildConfig config, s32 index, AssetPackerFunc pack);
+static void pack_files(
+	OutputStream& iso, std::vector<IsoFileRecord*>& files, BuildConfig config, AssetPackerFunc pack);
+static IsoDirectory pack_globals(
+	OutputStream& iso,
+	std::vector<GlobalWadInfo>& globals,
+	BuildConfig config,
+	AssetPackerFunc pack,
+	bool no_mpegs);
+static std::array<IsoDirectory, 3> pack_levels(
+	OutputStream& iso,
+	std::vector<LevelInfo>& levels,
+	BuildConfig config,
+	const LevelAsset* single_level,
+	AssetPackerFunc pack);
+static void pack_level_wad_outer(
+	OutputStream& iso,
+	IsoDirectory& directory,
+	LevelWadInfo& wad,
+	const char* name,
+	BuildConfig config,
+	s32 index,
+	AssetPackerFunc pack);
 
-void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char* hint, AssetPackerFunc pack) {
+void pack_iso(
+	OutputStream& iso, const BuildAsset& src, BuildConfig, const char* hint, AssetPackerFunc pack)
+{
 	BuildConfig config(src.game(), src.region());
 	
 	std::string single_level_tag;
@@ -156,7 +179,9 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	verify_fatal(toc_end <= files_begin);
 }
 
-static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, BuildConfig config, AssetPackerFunc pack) {
+static void pack_ps2_logo(
+	OutputStream& iso, const BuildAsset& build, BuildConfig config, AssetPackerFunc pack)
+{
 	const TextureAsset* asset;
 	if(config.is_ntsc()) {
 		if(!build.has_ps2_logo_ntsc()) {
@@ -185,7 +210,8 @@ static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, BuildConfi
 	iso.write_v(texture->data);
 }
 
-static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game) {
+static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game)
+{
 	std::vector<WadType> order;
 	switch(game) {
 		case Game::RAC: {
@@ -261,7 +287,9 @@ static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Gam
 	return globals;
 }
 
-static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game game, const LevelAsset* single_level) {
+static std::vector<LevelInfo> enumerate_levels(
+	const BuildAsset& build, Game game, const LevelAsset* single_level)
+{
 	std::vector<LevelInfo> levels;
 	
 	if(single_level) {
@@ -292,7 +320,8 @@ static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game gam
 	return levels;
 }
 
-static LevelInfo enumerate_level(const LevelAsset& level, Game game) {
+static LevelInfo enumerate_level(const LevelAsset& level, Game game)
+{
 	LevelInfo info;
 	info.level_table_index = level.index();
 	
@@ -315,7 +344,8 @@ static LevelInfo enumerate_level(const LevelAsset& level, Game game) {
 	return info;
 }
 
-static IsoDirectory enumerate_files(const Asset& files) {
+static IsoDirectory enumerate_files(const Asset& files)
+{
 	IsoDirectory root;
 	
 	files.for_each_logical_child_of_type<FileAsset>([&](const FileAsset& file) {
@@ -354,7 +384,8 @@ static IsoDirectory enumerate_files(const Asset& files) {
 	return root;
 }
 
-static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir) {
+static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir)
+{
 	for(IsoFileRecord& file : root_dir.files) {
 		dest.push_back(&file);
 	}
@@ -363,7 +394,8 @@ static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_
 	}
 }
 
-static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build, Game game) {
+static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build, Game game)
+{
 	std::string path = get_boot_elf_path(build.get_boot_elf());
 	for(char& c : path) c = toupper(c);
 	
@@ -406,7 +438,9 @@ static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build,
 	return record;
 }
 
-static IsoFileRecord pack_boot_elf(OutputStream& iso, const Asset& boot_elf, BuildConfig config, AssetPackerFunc pack) {
+static IsoFileRecord pack_boot_elf(
+	OutputStream& iso, const Asset& boot_elf, BuildConfig config, AssetPackerFunc pack)
+{
 	IsoFileRecord record;
 	record.name = get_boot_elf_path(boot_elf);
 	
@@ -432,7 +466,9 @@ static std::string get_boot_elf_path(const Asset& boot_elf) {
 	}
 }
 
-static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, BuildConfig config, AssetPackerFunc pack) {
+static void pack_files(
+	OutputStream& iso, std::vector<IsoFileRecord*>& files, BuildConfig config, AssetPackerFunc pack)
+{
 	for(IsoFileRecord* file : files) {
 		if(file->name.find(".hdr") != std::string::npos) {
 			// We're writing out a new table of contents, so if an old one
@@ -449,7 +485,13 @@ static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, Bu
 	}
 }
 
-static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, BuildConfig config, AssetPackerFunc pack, bool no_mpegs) {
+static IsoDirectory pack_globals(
+	OutputStream& iso,
+	std::vector<GlobalWadInfo>& globals,
+	BuildConfig config,
+	AssetPackerFunc pack,
+	bool no_mpegs)
+{
 	IsoDirectory globals_dir {"globals"};
 	for(GlobalWadInfo& global : globals) {
 		iso.pad(SECTOR_SIZE, 0);
@@ -487,7 +529,13 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 	return globals_dir;
 }
 
-static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, BuildConfig config, const LevelAsset* single_level, AssetPackerFunc pack) {
+static std::array<IsoDirectory, 3> pack_levels(
+	OutputStream& iso,
+	std::vector<LevelInfo>& levels,
+	BuildConfig config,
+	const LevelAsset* single_level,
+	AssetPackerFunc pack)
+{
 	// Create directories for the level files.
 	IsoDirectory levels_dir {"levels"};
 	IsoDirectory audio_dir {"audio"};
@@ -539,7 +587,15 @@ static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<Le
 	return {levels_dir, audio_dir, scenes_dir};
 }
 
-static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const char* name, BuildConfig config, s32 index, AssetPackerFunc pack) {
+static void pack_level_wad_outer(
+	OutputStream& iso,
+	IsoDirectory& directory,
+	LevelWadInfo& wad,
+	const char* name,
+	BuildConfig config,
+	s32 index,
+	AssetPackerFunc pack)
+{
 	std::string file_name = stringf("%s%02d.wad", name, index);
 	
 	iso.pad(SECTOR_SIZE, 0);

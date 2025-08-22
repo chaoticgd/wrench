@@ -42,7 +42,8 @@ on_load(Tfrags, []() {
 	TfragsCoreAsset::funcs.test_dl  = new AssetTestFunc(test_tfrags);
 })
 
-static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig config, const char* hint)
+{
 	if(g_asset_unpacker.dump_binaries) {
 		if(!dest.has_core()) {
 			unpack_asset_impl(dest.core<TfragsCoreAsset>(), src, nullptr, config);
@@ -64,11 +65,19 @@ static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig confi
 	editor_mesh.set_src(ref);
 }
 
-static void pack_tfrags_simple(OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint) {
+static void pack_tfrags_simple(
+	OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint)
+{
 	pack_tfrags(dest, nullptr, src, nullptr, config);
 }
 
-ByteRange pack_tfrags(OutputStream& bin_dest, std::vector<Mesh>* tfrags_dest, const TfragsAsset& src, u16* next_occlusion_index, BuildConfig config) {
+ByteRange pack_tfrags(
+	OutputStream& bin_dest,
+	std::vector<Mesh>* tfrags_dest,
+	const TfragsAsset& src,
+	u16* next_occlusion_index,
+	BuildConfig config)
+{
 	if(g_asset_packer_dry_run) {
 		return {0, 0};
 	}
@@ -108,7 +117,13 @@ ByteRange pack_tfrags(OutputStream& bin_dest, std::vector<Mesh>* tfrags_dest, co
 	return {(s32) ofs, (s32) (end_ofs - ofs)};
 }
 
-static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_tfrags(
+	std::vector<u8>& src,
+	AssetType type,
+	BuildConfig config,
+	const char* hint,
+	AssetTestMode mode)
+{
 	Tfrags tfrags_original = read_tfrags(src, config.game());
 	
 	Tfrags tfrags_reallocated = tfrags_original;

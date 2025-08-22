@@ -82,7 +82,12 @@ struct MatrixTransferSchedule {
 	std::vector<MobyMatrixTransfer> preloop_transfers;
 	std::vector<MobyMatrixTransfer> two_way_transfers;
 };
-MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const GLTF::Mesh& packet, MobyPacketLowLevel* last_packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness);
+MatrixTransferSchedule schedule_matrix_transfers(
+	s32 smi,
+	const GLTF::Mesh& packet,
+	MobyPacketLowLevel* last_packet,
+	VU0MatrixAllocator& mat_alloc,
+	const std::vector<MatrixLivenessInfo>& liveness);
 s32 max_num_joints_referenced_per_packet(const std::vector<GLTF::Mesh>& packets);
 std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<GLTF::Mesh>& packets);
 

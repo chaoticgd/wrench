@@ -18,7 +18,8 @@
 
 #include "material_asset.h"
 
-MaterialSet read_material_assets(const CollectionAsset& src) {
+MaterialSet read_material_assets(const CollectionAsset& src)
+{
 	std::vector<Material> materials;
 	std::vector<FileReference> textures;
 	std::map<std::pair<const AssetFile*, std::string>, s32> texture_indices;

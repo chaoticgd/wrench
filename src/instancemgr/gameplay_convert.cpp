@@ -23,7 +23,14 @@
 static void generate_psuedo_positions(Instances& instances);
 static void rewrite_links_to_indices(Instances& instances);
 
-void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, std::vector<u8>* occl_dest, std::vector<CppType>* types_dest, Gameplay& src, Game game) {
+void move_gameplay_to_instances(
+	Instances& dest,
+	HelpMessages* help_dest,
+	std::vector<u8>* occl_dest,
+	std::vector<CppType>* types_dest,
+	Gameplay& src,
+	Game game)
+{
 	if(src.level_settings.has_value()) {
 		dest.level_settings = std::move(*src.level_settings);
 	}
@@ -77,7 +84,8 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, std::v
 	generate_psuedo_positions(dest);
 }
 
-static void generate_psuedo_positions(Instances& instances) {
+static void generate_psuedo_positions(Instances& instances)
+{
 	f32 moby_group_z = 2.f;
 	f32 tie_group_z = 4.f;
 	f32 shrub_group_z = 6.f;
@@ -174,7 +182,13 @@ static void generate_psuedo_positions(Instances& instances) {
 	}
 }
 
-void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, std::vector<u8>* occlusion_src, const std::map<std::string, CppType>& types_src) {
+void move_instances_to_gameplay(
+	Gameplay& dest,
+	Instances& src,
+	HelpMessages* help_src,
+	std::vector<u8>* occlusion_src,
+	const std::map<std::string, CppType>& types_src)
+{
 	rewrite_links_to_indices(src);
 	build_pvars(dest, src, types_src);
 	
@@ -221,7 +235,8 @@ void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* he
 	}
 }
 
-static void rewrite_links_to_indices(Instances& instances) {
+static void rewrite_links_to_indices(Instances& instances)
+{
 	rewrite_level_settings_links(instances.level_settings, instances);
 	
 	for(MobyGroupInstance& inst : instances.moby_groups) {
@@ -255,7 +270,8 @@ static void rewrite_links_to_indices(Instances& instances) {
 	}
 }
 
-s32 rewrite_link(s32 id, const char* link_type_name, const Instances& instances, const char* context) {
+s32 rewrite_link(s32 id, const char* link_type_name, const Instances& instances, const char* context)
+{
 	if(strcmp(link_type_name, "missionlink") == 0) return id;
 	
 	#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
@@ -268,7 +284,8 @@ s32 rewrite_link(s32 id, const char* link_type_name, const Instances& instances,
 	verify_not_reached("Failed to rewrite link %d in %s. Unknown type name '%s'.", id, context, link_type_name);
 }
 
-s32 rewrite_link(s32 id, InstanceType type, const Instances& instances, const char* context) {
+s32 rewrite_link(s32 id, InstanceType type, const Instances& instances, const char* context)
+{
 	if(id == -1) {
 		return -1;
 	}

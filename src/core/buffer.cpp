@@ -20,23 +20,27 @@
 
 #include <stdarg.h>
 
-Buffer Buffer::subbuf(s64 offset) const {
+Buffer Buffer::subbuf(s64 offset) const
+{
 	verify(offset >= 0, "Failed to create buffer: Offset cannot be negative.");
 	verify(lo + offset <= hi, "Failed to create buffer: Out of bounds.");
 	return Buffer(lo + offset, hi);
 }
 
-Buffer Buffer::subbuf(s64 offset, s64 new_size) const {
+Buffer Buffer::subbuf(s64 offset, s64 new_size) const
+{
 	verify(offset >= 0, "Failed to create buffer: Offset cannot be negative.");
 	verify(lo + offset + new_size <= hi, "Failed to create buffer: Out of bounds.");
 	return Buffer(lo + offset, lo + offset + new_size);
 }
 
-std::vector<u8> Buffer::read_bytes(s64 offset, s64 size, const char* subject) const {
+std::vector<u8> Buffer::read_bytes(s64 offset, s64 size, const char* subject) const
+{
 	return read_multiple<u8>(offset, size, subject).copy();
 }
 
-std::string Buffer::read_string(s64 offset, bool is_korean) const {
+std::string Buffer::read_string(s64 offset, bool is_korean) const
+{
 	verify(offset >= 0, "Failed to read string: Offset cannot be negative.");
 	verify(lo + offset <= hi, "Failed to read string: Attempted to read past end of buffer.");
 	std::string result;
@@ -60,7 +64,8 @@ std::string Buffer::read_string(s64 offset, bool is_korean) const {
 	return result;
 }
 
-std::string Buffer::read_fixed_string(s64 offset, s64 size) const {
+std::string Buffer::read_fixed_string(s64 offset, s64 size) const
+{
 	verify(offset >= 0, "Failed to read string: Offset cannot be negative.");
 	verify(lo + offset + size <= hi, "Failed to read string: Attempted to read past end of buffer.");
 	std::string string;
@@ -69,7 +74,8 @@ std::string Buffer::read_fixed_string(s64 offset, s64 size) const {
 	return string;
 }
 
-void Buffer::hexdump(FILE* file, s64 column, const char* ansi_colour_code) const {
+void Buffer::hexdump(FILE* file, s64 column, const char* ansi_colour_code) const
+{
 	fprintf(file, "\033[%sm", ansi_colour_code);
 	for(s64 i = 0; i < size(); i++) {
 		fprintf(file, "%02hhx", lo[i]);
@@ -80,7 +86,8 @@ void Buffer::hexdump(FILE* file, s64 column, const char* ansi_colour_code) const
 	fprintf(file, "\033[0m");
 }
 
-bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff, const std::vector<ByteRange64>* ignore_list) {
+bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff, const std::vector<ByteRange64>* ignore_list)
+{
 	if(size == DIFF_REST_OF_BUFFER) {
 		lhs = lhs.subbuf(offset);
 		rhs = rhs.subbuf(offset);
@@ -167,14 +174,16 @@ bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff,
 	return false;
 }
 
-void OutBuffer::pad(s64 align, u8 padding) {
+void OutBuffer::pad(s64 align, u8 padding)
+{
 	if(vec.size() % align != 0) {
 		s64 pad_size = align - (vec.size() % align);
 		vec.resize(vec.size() + pad_size, padding);
 	}
 }
 
-void OutBuffer::writesf(s32 indent_level, const char* format, va_list args) {
+void OutBuffer::writesf(s32 indent_level, const char* format, va_list args)
+{
 	static char temp[16 * 1024];
 	
 	for(s32 i = 0; i < indent_level; i++) {
@@ -190,7 +199,8 @@ void OutBuffer::writesf(s32 indent_level, const char* format, va_list args) {
 	memcpy(vec.data() + write_ofs, temp, count);
 }
 
-void OutBuffer::writelf(s32 indent_level, const char* format, va_list args) {
+void OutBuffer::writelf(s32 indent_level, const char* format, va_list args)
+{
 	static char temp[16 * 1024];
 	
 	for(s32 i = 0; i < indent_level; i++) {
@@ -207,28 +217,32 @@ void OutBuffer::writelf(s32 indent_level, const char* format, va_list args) {
 	vec[write_ofs + count] = '\n';
 }
 
-void OutBuffer::writesf(s32 indent_level, const char* format, ...) {
+void OutBuffer::writesf(s32 indent_level, const char* format, ...)
+{
 	va_list args;
 	va_start(args, format);
 	writesf(indent_level, format, args);
 	va_end(args);
 }
 
-void OutBuffer::writelf(s32 indent_level, const char* format, ...) {
+void OutBuffer::writelf(s32 indent_level, const char* format, ...)
+{
 	va_list args;
 	va_start(args, format);
 	writelf(indent_level, format, args);
 	va_end(args);
 }
 
-void OutBuffer::writesf(const char* format, ...) {
+void OutBuffer::writesf(const char* format, ...)
+{
 	va_list args;
 	va_start(args, format);
 	writesf(0, format, args);
 	va_end(args);
 }
 
-void OutBuffer::writelf(const char* format, ...) {
+void OutBuffer::writelf(const char* format, ...)
+{
 	va_list args;
 	va_start(args, format);
 	writelf(0, format, args);

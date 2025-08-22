@@ -91,7 +91,8 @@ template <typename T>
 using Opt = std::optional<T>;
 
 template <typename T>
-const T& opt_iterator(const Opt<T>& opt) {
+const T& opt_iterator(const Opt<T>& opt)
+{
 	if(opt.has_value()) {
 		return *opt;
 	} else {
@@ -101,7 +102,8 @@ const T& opt_iterator(const Opt<T>& opt) {
 }
 
 template <typename T>
-const size_t opt_size(const Opt<std::vector<T>>& opt_vec) {
+const size_t opt_size(const Opt<std::vector<T>>& opt_vec)
+{
 	if(opt_vec.has_value()) {
 		return opt_vec->size();
 	} else {
@@ -110,7 +112,8 @@ const size_t opt_size(const Opt<std::vector<T>>& opt_vec) {
 }
 
 template <typename T>
-T& opt_iterator(Opt<T>& opt) {
+T& opt_iterator(Opt<T>& opt)
+{
 	if(opt.has_value()) {
 		return *opt;
 	} else {
@@ -120,7 +123,8 @@ T& opt_iterator(Opt<T>& opt) {
 }
 
 template <typename T>
-T opt_or_zero(Opt<T>& opt) {
+T opt_or_zero(Opt<T>& opt)
+{
 	if(opt.has_value()) {
 		return *opt;
 	} else {
@@ -163,7 +167,8 @@ s32 align32(s32 value, s32 alignment);
 s64 align64(s64 value, s64 alignment);
 
 template <typename T>
-bool contains(const T& container, const typename T::value_type& value) {
+bool contains(const T& container, const typename T::value_type& value)
+{
 	for(const auto& element : container) {
 		if(element == value) {
 			return true;

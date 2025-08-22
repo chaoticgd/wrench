@@ -29,7 +29,8 @@ static std::vector<u8> wad;
 static OobeWadHeader* header;
 static GlTexture welcome;
 
-bool run_oobe() {
+bool run_oobe()
+{
 	ByteRange64 oobe_range = wadinfo.launcher.oobe.bytes();
 	std::vector<u8> compressed = g_launcher.wad.read_multiple<u8>(oobe_range.offset, oobe_range.size);
 	decompress_wad(wad, compressed);
@@ -57,7 +58,8 @@ bool run_oobe() {
 	return done;
 }
 
-static void oobe(f32 delta_time) {
+static void oobe(f32 delta_time)
+{
 	ImDrawList& background = *ImGui::GetBackgroundDrawList();
 	background.AddRectFilledMultiColor(ImVec2(0, 0), ImGui::GetMainViewport()->Size,
 		0xffff0000, 0xffff0000, 0xff000000, 0xff000000);

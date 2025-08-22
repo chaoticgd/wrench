@@ -35,7 +35,8 @@ static SectorByteRange add_sector_byte_range(SectorByteRange range, Sector32 lsn
 static SectorRange sub_sector_range(SectorRange range, Sector32 lsn);
 static SectorByteRange sub_sector_byte_range(SectorByteRange range, Sector32 lsn);
 
-table_of_contents read_table_of_contents(InputStream& src, Game game) {
+table_of_contents read_table_of_contents(InputStream& src, Game game)
+{
 	table_of_contents toc;
 	if(game == Game::RAC) {
 		toc = read_table_of_contents_rac(src);
@@ -49,7 +50,8 @@ table_of_contents read_table_of_contents(InputStream& src, Game game) {
 	return toc;
 }
 
-s64 write_table_of_contents(OutputStream& iso, const table_of_contents& toc, Game game) {
+s64 write_table_of_contents(OutputStream& iso, const table_of_contents& toc, Game game)
+{
 	if(game == Game::RAC) {
 		return write_table_of_contents_rac(iso, toc, game);
 	} else {
@@ -57,7 +59,8 @@ s64 write_table_of_contents(OutputStream& iso, const table_of_contents& toc, Gam
 	}
 }
 
-Sector32 calculate_table_of_contents_size(const table_of_contents& toc, Game game) {
+Sector32 calculate_table_of_contents_size(const table_of_contents& toc, Game game)
+{
 	if(game == Game::RAC) {
 		return calculate_table_of_contents_size_rac(toc);
 	} else {
@@ -65,7 +68,8 @@ Sector32 calculate_table_of_contents_size(const table_of_contents& toc, Game gam
 	}
 }
 
-table_of_contents read_table_of_contents_rac(InputStream& src) {
+table_of_contents read_table_of_contents_rac(InputStream& src)
+{
 	s32 magic, toc_size;
 	src.seek(RAC_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	verify(src.read_n((u8*) &magic, 4) == 1, "Failed to read R&C1 table of contents.");
@@ -105,7 +109,8 @@ table_of_contents read_table_of_contents_rac(InputStream& src) {
 	return toc;
 }
 
-s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc, Game game) {
+s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc, Game game)
+{
 	verify_fatal(toc.globals.size() == 1);
 	const GlobalWadInfo& global = toc.globals[0];
 	DumbRacWadInfo info = Buffer(global.header).read<DumbRacWadInfo>(0, "wad info");
@@ -195,13 +200,15 @@ s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc,
 	return toc_end;
 }
 
-Sector32 calculate_table_of_contents_size_rac(const table_of_contents& toc) {
+Sector32 calculate_table_of_contents_size_rac(const table_of_contents& toc)
+{
 	Sector32 wad_info_size = Sector32::size_from_bytes(sizeof(RacWadInfo));
 	Sector32 level_header_size = Sector32::size_from_bytes(sizeof(Rac1AmalgamatedWadHeader));
 	return {wad_info_size.sectors + level_header_size.sectors * (s32) toc.levels.size()};
 }
 
-static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header) {
+static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header)
+{
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
 	low = {std::min(low.sectors, header.data.offset.sectors)};
@@ -346,7 +353,8 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1Amalg
 	return scene_part;
 }
 
-static Sector32 get_lz_size(InputStream& src, Sector32 sector) {
+static Sector32 get_lz_size(InputStream& src, Sector32 sector)
+{
 	LzHeader header = src.read<LzHeader>(sector.bytes());
 	if(memcmp(header.magic, "WAD", 3) != 0) {
 		return {1};
@@ -354,7 +362,8 @@ static Sector32 get_lz_size(InputStream& src, Sector32 sector) {
 	return Sector32::size_from_bytes(header.compressed_size);
 }
 
-table_of_contents read_table_of_contents_rac234(InputStream& src) {
+table_of_contents read_table_of_contents_rac234(InputStream& src)
+{
 	src.seek(GC_UYA_DL_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	std::vector<u8> bytes = src.read_multiple<u8>(TOC_MAX_SIZE);
 	Buffer buffer(bytes);
@@ -426,7 +435,8 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 	return toc;
 }
 
-static s64 guess_rac234_level_table_offset(Buffer src) {
+static s64 guess_rac234_level_table_offset(Buffer src)
+{
 	// Check that the two next entries are valid. This is necessary to
 	// get past a false positive in Deadlocked.
 	for(s64 i = 0; i < src.size() / 4 - 12; i++) {
@@ -455,7 +465,8 @@ static s64 guess_rac234_level_table_offset(Buffer src) {
 	return 0;
 }
 
-s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& toc, Game game) {
+s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& toc, Game game)
+{
 	iso.seek(GC_UYA_DL_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	
 	for(const GlobalWadInfo& global : toc.globals) {
@@ -519,7 +530,8 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 	return toc_end;
 }
 
-Sector32 calculate_table_of_contents_size_rac234(const table_of_contents& toc) {
+Sector32 calculate_table_of_contents_size_rac234(const table_of_contents& toc)
+{
 	s64 resident_toc_size_bytes = 0;
 	for(const GlobalWadInfo& global : toc.globals) {
 		verify_fatal(global.header.size() > 0);
@@ -538,18 +550,22 @@ Sector32 calculate_table_of_contents_size_rac234(const table_of_contents& toc) {
 	return toc_size;
 }
 
-static SectorRange add_sector_range(SectorRange range, Sector32 lsn) {
+static SectorRange add_sector_range(SectorRange range, Sector32 lsn)
+{
 	return {{range.offset.sectors + lsn.sectors}, range.size};
 }
 
-static SectorByteRange add_sector_byte_range(SectorByteRange range, Sector32 lsn) {
+static SectorByteRange add_sector_byte_range(SectorByteRange range, Sector32 lsn)
+{
 	return {{range.offset.sectors + lsn.sectors}, range.size_bytes};
 }
 
-static SectorRange sub_sector_range(SectorRange range, Sector32 lsn) {
+static SectorRange sub_sector_range(SectorRange range, Sector32 lsn)
+{
 	return {{range.offset.sectors - lsn.sectors}, range.size};
 }
 
-static SectorByteRange sub_sector_byte_range(SectorByteRange range, Sector32 lsn) {
+static SectorByteRange sub_sector_byte_range(SectorByteRange range, Sector32 lsn)
+{
 	return {{range.offset.sectors - lsn.sectors}, range.size_bytes};
 }

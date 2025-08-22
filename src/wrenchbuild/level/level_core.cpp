@@ -31,7 +31,14 @@
 static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, const LevelCoreHeader& header, Game game);
 static void print_level_core_header(const LevelCoreHeader& header);
 
-void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, BuildConfig config) {
+void unpack_level_core(
+	LevelWadAsset& dest,
+	InputStream& src,
+	ByteRange index_range,
+	ByteRange data_range,
+	ByteRange gs_ram_range,
+	BuildConfig config)
+{
 	SubInputStream index(src, index_range.bytes());
 	std::vector<u8> decompressed_data;
 	std::vector<u8> compressed_data = src.read_multiple<u8>(data_range.offset, data_range.size);
@@ -171,7 +178,14 @@ void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_ra
 	}
 }
 
-void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const std::vector<LevelChunk>& chunks, const LevelWadAsset& src, BuildConfig config) {
+void pack_level_core(
+	std::vector<u8>& index_dest,
+	std::vector<u8>& data_dest,
+	std::vector<u8>& gs_ram_dest,
+	const std::vector<LevelChunk>& chunks,
+	const LevelWadAsset& src,
+	BuildConfig config)
+{
 	MemoryOutputStream index(index_dest);
 	MemoryOutputStream gs_ram(gs_ram_dest);
 	
@@ -374,7 +388,8 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 }
 
 // Only designed to work on assets that have just been unpacked.
-BuildAsset& build_from_level_wad_asset(LevelWadAsset& core) {
+BuildAsset& build_from_level_wad_asset(LevelWadAsset& core)
+{
 	verify_fatal(core.parent()); // Level
 	verify_fatal(core.parent()->parent()); // Collection
 	verify_fatal(core.parent()->parent()->parent()); // Build
@@ -387,7 +402,8 @@ BuildAsset& build_from_level_wad_asset(LevelWadAsset& core) {
 	verify_fatal(0);
 }
 
-ByteRange level_core_block_range(s32 ofs, const std::vector<s64>& block_bounds) {
+ByteRange level_core_block_range(s32 ofs, const std::vector<s64>& block_bounds)
+{
 	if(ofs == 0) {
 		// e.g. if there is no sky.
 		return {0, 0};
@@ -405,7 +421,8 @@ ByteRange level_core_block_range(s32 ofs, const std::vector<s64>& block_bounds) 
 	}
 }
 
-static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, const LevelCoreHeader& header, Game game) {
+static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, const LevelCoreHeader& header, Game game)
+{
 	std::vector<s64> blocks {
 		header.tfrags,
 		header.occlusion,
@@ -453,7 +470,8 @@ static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, 
 	return blocks;
 }
 
-static void print_level_core_header(const LevelCoreHeader& header) {
+static void print_level_core_header(const LevelCoreHeader& header)
+{
 	printf("%32s %8x", "gs_ram_count", header.gs_ram.count);
 	printf("%32s %8x", "gs_ram_offset", header.gs_ram.offset);
 	printf("%32s %8x", "tfrags", header.tfrags);

@@ -22,7 +22,8 @@
 
 static std::vector<u8> extract_file(std::vector<u8>& file);
 
-int main(int argc, const char** argv) {
+int main(int argc, const char** argv)
+{
 	if(argc != 3) {
 		fprintf(stderr, "usage: %s <input file> <output file>\n", (argc > 0) ? argv[0] : "unpackbin");
 		return 1;
@@ -58,7 +59,8 @@ int main(int argc, const char** argv) {
 	return 0;
 }
 
-static std::vector<u8> extract_file(std::vector<u8>& file) {
+static std::vector<u8> extract_file(std::vector<u8>& file)
+{
 	s64 wad_ofs = -1;
 	for(s64 i = 0; i < file.size() - 3; i++) {
 		if(memcmp(&file.data()[i], "WAD", 3) == 0) {

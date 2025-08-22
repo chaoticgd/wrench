@@ -20,7 +20,8 @@
 
 static s32 rounded_index_cost(s32 count, s32 multiple);
 
-GeometryPackets generate_tristrip_packets(const GeometryPrimitives& input, const TriStripConfig& config) {
+GeometryPackets generate_tristrip_packets(const GeometryPrimitives& input, const TriStripConfig& config)
+{
 	TriStripPacketGenerator generator(config);
 	for(const GeometryPrimitive& primitive : input.primitives) {
 		generator.add_primitive(&input.indices[primitive.index_begin], primitive.index_count, primitive.type, primitive.effective_material);
@@ -32,11 +33,14 @@ TriStripPacketGenerator::TriStripPacketGenerator(
 	const TriStripConfig& config)
 	: m_config(config) {}
 
-static bool tri_has_zero_area(s32 v0, s32 v1, s32 v2) {
+static bool tri_has_zero_area(s32 v0, s32 v1, s32 v2)
+{
 	return v0 == v1 || v0 == v2 || v1 == v2;
 }
 
-void TriStripPacketGenerator::add_primitive(const s32* indices, s32 index_count, GeometryType type, s32 effective_material) {
+void TriStripPacketGenerator::add_primitive(
+	const s32* indices, s32 index_count, GeometryType type, s32 effective_material)
+{
 	if(index_count < 3) {
 		return;
 	}
@@ -116,11 +120,13 @@ void TriStripPacketGenerator::add_primitive(const s32* indices, s32 index_count,
 	}
 }
 
-GeometryPackets TriStripPacketGenerator::get_output() {
+GeometryPackets TriStripPacketGenerator::get_output()
+{
 	return std::move(m_output);
 }
 
-void TriStripPacketGenerator::new_packet() {
+void TriStripPacketGenerator::new_packet()
+{
 	m_totals = {}; // Reset the constraint calculations.
 	m_packet = &m_output.packets.emplace_back();
 	m_packet->primitive_begin = m_output.primitives.size();
@@ -131,7 +137,8 @@ void TriStripPacketGenerator::new_packet() {
 	m_current_packet++;
 }
 
-bool TriStripPacketGenerator::try_add_strip() {
+bool TriStripPacketGenerator::try_add_strip()
+{
 	if(m_packet == nullptr) {
 		return false;
 	}
@@ -150,7 +157,8 @@ bool TriStripPacketGenerator::try_add_strip() {
 	return true;
 }
 
-bool TriStripPacketGenerator::try_add_vertex(s32 index) {
+bool TriStripPacketGenerator::try_add_vertex(s32 index)
+{
 	bool added;
 	if(m_config.support_index_buffer) {
 		index &= ~(1 << 31); // Clear the sign bit, which could be being used to store the primitive restart bit.
@@ -169,7 +177,8 @@ bool TriStripPacketGenerator::try_add_vertex(s32 index) {
 	return added;
 }
 
-bool TriStripPacketGenerator::try_add_unique_vertex() {
+bool TriStripPacketGenerator::try_add_unique_vertex()
+{
 	if(m_packet == nullptr) {
 		return false;
 	}
@@ -189,7 +198,8 @@ bool TriStripPacketGenerator::try_add_unique_vertex() {
 	return true;
 }
 
-bool TriStripPacketGenerator::try_add_repeated_vertex() {
+bool TriStripPacketGenerator::try_add_repeated_vertex()
+{
 	if(m_packet == nullptr) {
 		return false;
 	}
@@ -208,7 +218,8 @@ bool TriStripPacketGenerator::try_add_repeated_vertex() {
 	return true;
 }
 
-bool TriStripPacketGenerator::try_add_material() {
+bool TriStripPacketGenerator::try_add_material()
+{
 	if(m_packet == nullptr) {
 		return false;
 	}
@@ -227,7 +238,8 @@ bool TriStripPacketGenerator::try_add_material() {
 	return true;
 }
 
-static s32 rounded_index_cost(s32 count, s32 multiple) {
+static s32 rounded_index_cost(s32 count, s32 multiple)
+{
 	if((count % multiple) != 0) {
 		count += multiple - (count % multiple);
 	}

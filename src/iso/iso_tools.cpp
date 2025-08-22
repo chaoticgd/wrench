@@ -30,7 +30,8 @@
 
 // Fun fact: This used to be its own command line tool called "toc". Now, it's
 // been reduced to a humble subcommand within a greater tool. Pity it.
-void inspect_iso(const std::string& iso_path) {
+void inspect_iso(const std::string& iso_path)
+{
 	FileInputStream iso;
 	verify(iso.open(iso_path), "Failed to open ISO file (%s).", iso.last_error.c_str());
 	
@@ -79,7 +80,8 @@ void inspect_iso(const std::string& iso_path) {
 	printf("+-----------------+------------------------+------------------------+------------------------+\n");
 }
 
-void parse_pcsx2_cdvd_log(std::string iso_path) {
+void parse_pcsx2_cdvd_log(std::string iso_path)
+{
 	FileInputStream iso;
 	verify(iso.open(iso_path), "Failed to open ISO file.");
 	

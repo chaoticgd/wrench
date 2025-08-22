@@ -53,7 +53,8 @@ packed_struct(MobyMetalVertexTableHeader,
 	
 static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inverse_scale);
 
-VertexTable read_vertex_table(Buffer src, s64 header_offset, s32 transfer_vertex_count, s32 vertex_data_size, s32 d, s32 e, MobyFormat format) {
+VertexTable read_vertex_table(Buffer src, s64 header_offset, s32 transfer_vertex_count, s32 vertex_data_size, s32 d, s32 e, MobyFormat format)
+{
 	VertexTable output;
 	
 	// Read vertex table.
@@ -141,7 +142,8 @@ VertexTable read_vertex_table(Buffer src, s64 header_offset, s32 transfer_vertex
 	return output;
 }
 
-u32 write_vertex_table(OutBuffer& dest, const VertexTable& src, MobyFormat format) {
+u32 write_vertex_table(OutBuffer& dest, const VertexTable& src, MobyFormat format)
+{
 	s64 vertex_header_ofs;
 	if(format == MobyFormat::RAC1) {
 		vertex_header_ofs = dest.alloc<RacVertexTableHeader>();
@@ -234,7 +236,8 @@ u32 write_vertex_table(OutBuffer& dest, const VertexTable& src, MobyFormat forma
 	return vertex_header.transfer_vertex_count;
 }
 
-MetalVertexTable read_metal_vertex_table(Buffer src, s64 header_offset) {
+MetalVertexTable read_metal_vertex_table(Buffer src, s64 header_offset)
+{
 	auto vertex_header = src.read<MobyMetalVertexTableHeader>(header_offset, "metal vertex table header");
 	
 	MetalVertexTable output;
@@ -245,7 +248,8 @@ MetalVertexTable read_metal_vertex_table(Buffer src, s64 header_offset) {
 	return output;
 }
 
-u32 write_metal_vertex_table(OutBuffer& dest, const MetalVertexTable& src) {
+u32 write_metal_vertex_table(OutBuffer& dest, const MetalVertexTable& src)
+{
 	MobyMetalVertexTableHeader vertex_header;
 	vertex_header.vertex_count = src.vertices.size();
 	vertex_header.unknown_4 = src.unknown_4;
@@ -256,7 +260,9 @@ u32 write_metal_vertex_table(OutBuffer& dest, const MetalVertexTable& src) {
 	return (u32) vertex_header.vertex_count;
 }
 
-std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes> blend_cache[64], f32 scale, bool animated) {
+std::vector<Vertex> unpack_vertices(
+	const VertexTable& input, Opt<SkinAttributes> blend_cache[64], f32 scale, bool animated)
+{
 	std::vector<Vertex> output;
 	output.resize(input.vertices.size());
 	
@@ -294,7 +300,13 @@ std::vector<Vertex> unpack_vertices(const VertexTable& input, Opt<SkinAttributes
 	return output;
 }
 
-PackVerticesOutput pack_vertices(s32 smi, const std::vector<Vertex>& input_vertices, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale) {
+PackVerticesOutput pack_vertices(
+	s32 smi,
+	const std::vector<Vertex>& input_vertices,
+	VU0MatrixAllocator& mat_alloc,
+	const std::vector<MatrixLivenessInfo>& liveness,
+	f32 scale)
+{
 	PackVerticesOutput output;
 	output.index_mapping.resize(input_vertices.size(), 0xff);
 	
@@ -427,7 +439,8 @@ PackVerticesOutput pack_vertices(s32 smi, const std::vector<Vertex>& input_verti
 	return output;
 }
 
-static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inverse_scale) {
+static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inverse_scale)
+{
 	dest.v.x = roundf(src.pos.x * inverse_scale);
 	dest.v.y = roundf(src.pos.y * inverse_scale);
 	dest.v.z = roundf(src.pos.z * inverse_scale);

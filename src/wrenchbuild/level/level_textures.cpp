@@ -24,13 +24,22 @@
 #include <core/png.h>
 #include <assetmgr/material_asset.h>
 
-static void write_nonshared_texture_data(OutputStream& data, std::vector<LevelTexture>& textures, Game game);
+static void write_nonshared_texture_data(
+	OutputStream& data, std::vector<LevelTexture>& textures, Game game);
 
 extern const char* GC_FX_TEXTURE_NAMES[63];
 extern const char* UYA_FX_TEXTURE_NAMES[100];
 extern const char* DL_FX_TEXTURE_NAMES[98];
 
-void unpack_level_materials(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr) {
+void unpack_level_materials(
+	CollectionAsset& dest,
+	const u8 indices[16],
+	const std::vector<TextureEntry>& textures,
+	InputStream& data,
+	InputStream& gs_ram,
+	Game game,
+	s32 moby_stash_addr)
+{
 	for(s32 i = 0; i < 16; i++) {
 		if(indices[i] != 0xff) {
 			const TextureEntry& texture = textures.at(indices[i]);
@@ -41,7 +50,15 @@ void unpack_level_materials(CollectionAsset& dest, const u8 indices[16], const s
 	}
 }
 
-void unpack_level_material(MaterialAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i, s32 moby_stash_addr) {
+void unpack_level_material(
+	MaterialAsset& dest,
+	const TextureEntry& entry,
+	InputStream& data,
+	InputStream& gs_ram,
+	Game game,
+	s32 i,
+	s32 moby_stash_addr)
+{
 	std::vector<u8> pixels;
 	if(moby_stash_addr > -1) {
 		pixels = gs_ram.read_multiple<u8>(moby_stash_addr + entry.data_offset, entry.width * entry.height);
@@ -67,7 +84,12 @@ void unpack_level_material(MaterialAsset& dest, const TextureEntry& entry, Input
 	diffuse.set_src(ref);
 }
 
-void unpack_shrub_billboard_texture(TextureAsset& dest, const ShrubBillboardInfo& billboard, InputStream& gs_ram, Game game) {
+void unpack_shrub_billboard_texture(
+	TextureAsset& dest,
+	const ShrubBillboardInfo& billboard,
+	InputStream& gs_ram,
+	Game game)
+{
 	std::vector<u8> pixels = gs_ram.read_multiple<u8>(billboard.texture_offset * 0x100, billboard.texture_width * billboard.texture_height);
 	std::vector<u32> palette = gs_ram.read_multiple<u32>(billboard.palette_offset * 0x100, 256);
 	
@@ -84,7 +106,12 @@ void unpack_shrub_billboard_texture(TextureAsset& dest, const ShrubBillboardInfo
 	dest.set_src(ref);
 }
 
-SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_materials, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs) {
+SharedLevelTextures read_level_textures(
+	const CollectionAsset& tfrag_materials,
+	const CollectionAsset& mobies,
+	const CollectionAsset& ties,
+	const CollectionAsset& shrubs)
+{
 	SharedLevelTextures shared;
 	
 	shared.tfrag_range.table = TFRAG_TEXTURE_TABLE;
@@ -163,7 +190,12 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_materials, 
 	return shared;
 }
 
-std::tuple<s32, s32> write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vector<GsRamEntry>& gs_table, std::vector<LevelTexture>& textures) {
+std::tuple<s32, s32> write_shared_level_textures(
+	OutputStream& data,
+	OutputStream& gs,
+	std::vector<GsRamEntry>& gs_table,
+	std::vector<LevelTexture>& textures)
+{
 	data.pad(0x100, 0);
 	s64 base_ofs = data.tell();
 	std::vector<u8> mipmap_data;
@@ -234,7 +266,9 @@ std::tuple<s32, s32> write_shared_level_textures(OutputStream& data, OutputStrea
 	return {(s32) base_ofs, stash_count};
 }
 
-ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTexture>& textures, LevelTextureRange range) {
+ArrayRange write_level_texture_table(
+	OutputStream& dest, std::vector<LevelTexture>& textures, LevelTextureRange range)
+{
 	dest.pad(0x10, 0);
 	s32 table_offset = dest.tell();
 	s32 table_count = 0;
@@ -276,7 +310,9 @@ ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTextur
 	return ArrayRange {table_count, table_offset};
 }
 
-void write_level_texture_indices(u8 dest[16], const std::vector<LevelTexture>& textures, s32 begin, s32 table) {
+void write_level_texture_indices(
+	u8 dest[16], const std::vector<LevelTexture>& textures, s32 begin, s32 table)
+{
 	for(s32 i = 0; i < 16; i++) {
 		const LevelTexture* record = &textures.at(begin + i);
 		if(record->texture.has_value()) {
@@ -304,7 +340,13 @@ packed_struct(PartDefsHeader,
 	/* 0xc */ s32 indices_size;
 )
 
-void unpack_particle_textures(CollectionAsset& dest, InputStream& defs, std::vector<ParticleTextureEntry>& entries, InputStream& bank, Game game) {
+void unpack_particle_textures(
+	CollectionAsset& dest,
+	InputStream& defs,
+	std::vector<ParticleTextureEntry>& entries,
+	InputStream& bank,
+	Game game)
+{
 	auto header = defs.read<PartDefsHeader>(0);
 	auto offsets = defs.read_multiple<s32>(0x10, header.particle_count);
 	auto indices = defs.read_multiple<u8>(header.indices_offset, header.indices_size);
@@ -345,7 +387,9 @@ void unpack_particle_textures(CollectionAsset& dest, InputStream& defs, std::vec
 	}
 }
 
-std::tuple<ArrayRange, std::vector<u8>, s32> pack_particle_textures(OutputStream& index, OutputStream& data, const CollectionAsset& particles, Game game) {
+std::tuple<ArrayRange, std::vector<u8>, s32> pack_particle_textures(
+	OutputStream& index, OutputStream& data, const CollectionAsset& particles, Game game)
+{
 	data.pad(0x100, 0);
 	s64 particles_base = data.tell();
 	
@@ -453,7 +497,9 @@ std::tuple<ArrayRange, std::vector<u8>, s32> pack_particle_textures(OutputStream
 	return {range, defs, particles_base};
 }
 
-void unpack_fx_textures(LevelWadAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game) {
+void unpack_fx_textures(
+	LevelWadAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game)
+{
 	CollectionAsset& fx_textures = core.fx_textures("fx_textures/fx_textures.asset");
 	
 	std::vector<Texture> textures;
@@ -503,7 +549,9 @@ void unpack_fx_textures(LevelWadAsset& core, const std::vector<FxTextureEntry>& 
 	}
 }
 
-std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& data, const CollectionAsset& collection, Game game) {
+std::tuple<ArrayRange, s32> pack_fx_textures(
+	OutputStream& index, OutputStream& data, const CollectionAsset& collection, Game game)
+{
 	data.pad(0x100, 0);
 	s64 fx_base = data.tell();
 	
@@ -558,7 +606,9 @@ std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& 
 	return {range, fx_base};
 }
 
-static void write_nonshared_texture_data(OutputStream& data, std::vector<LevelTexture>& textures, Game game) {
+static void write_nonshared_texture_data(
+	OutputStream& data, std::vector<LevelTexture>& textures, Game game)
+{
 	deduplicate_level_textures(textures);
 	deduplicate_level_palettes(textures);
 	
@@ -578,7 +628,8 @@ static void write_nonshared_texture_data(OutputStream& data, std::vector<LevelTe
 
 // *****************************************************************************
 
-void deduplicate_level_textures(std::vector<LevelTexture>& textures) {
+void deduplicate_level_textures(std::vector<LevelTexture>& textures)
+{
 	std::vector<size_t> mapping;
 	for(size_t i = 0; i < textures.size(); i++) {
 		if(textures[i].texture.has_value()) {
@@ -627,7 +678,8 @@ void deduplicate_level_textures(std::vector<LevelTexture>& textures) {
 	}
 }
 
-void deduplicate_level_palettes(std::vector<LevelTexture>& textures) {
+void deduplicate_level_palettes(std::vector<LevelTexture>& textures)
+{
 	std::vector<size_t> mapping;
 	for(size_t i = 0; i < textures.size(); i++) {
 		if(textures[i].texture.has_value() && textures[i].out_edge == -1) {

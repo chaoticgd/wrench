@@ -19,7 +19,8 @@
 #include "asset_path_gen.h"
 
 template <typename ClassAsset>
-static std::string generate_asset_path(const char* directory, const char* type, s32 tag, const Asset& parent) {
+static std::string generate_asset_path(const char* directory, const char* type, s32 tag, const Asset& parent)
+{
 	if(parent.has_child(tag)) {
 		const ClassAsset* child = parent.get_child(tag).maybe_as<ClassAsset>();
 		if(child && child->has_name() && !child->name().empty()) {
@@ -36,18 +37,22 @@ static std::string generate_asset_path(const char* directory, const char* type, 
 	return stringf("%s/unsorted/%d/%s_%d.asset", directory, tag, type, tag);
 }
 
-std::string generate_level_asset_path(s32 tag, const Asset& parent) {
+std::string generate_level_asset_path(s32 tag, const Asset& parent)
+{
 	return generate_asset_path<LevelAsset>("levels", "level", tag, parent);
 }
 
-std::string generate_moby_class_asset_path(s32 tag, const Asset& parent) {
+std::string generate_moby_class_asset_path(s32 tag, const Asset& parent)
+{
 	return generate_asset_path<MobyClassAsset>("moby_classes", "moby", tag, parent);
 }
 
-std::string generate_tie_class_asset_path(s32 tag, const Asset& parent) {
+std::string generate_tie_class_asset_path(s32 tag, const Asset& parent)
+{
 	return generate_asset_path<TieClassAsset>("tie_classes", "tie", tag, parent);
 }
 
-std::string generate_shrub_class_asset_path(s32 tag, const Asset& parent) {
+std::string generate_shrub_class_asset_path(s32 tag, const Asset& parent)
+{
 	return generate_asset_path<ShrubClassAsset>("shrub_classes", "shrub", tag, parent);
 }

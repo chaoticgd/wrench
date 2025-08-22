@@ -55,11 +55,26 @@ packed_struct(DlAudioWadHeader,
 )
 
 template <typename Header>
-static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
+static void unpack_audio_wad(
+	AudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
 template <typename Header>
-static void pack_audio_wad(OutputStream& dest, Header& header, const AudioWadAsset& src, BuildConfig config);
-static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, BuildConfig config, const std::set<s64>& end_sectors, s32 language);
-static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, const CollectionAsset& src, BuildConfig config, s32 language);
+static void pack_audio_wad(
+	OutputStream& dest, Header& header, const AudioWadAsset& src, BuildConfig config);
+static void unpack_help_audio(
+	CollectionAsset& dest,
+	InputStream& src,
+	const Sector32* ranges,
+	s32 count,
+	BuildConfig config,
+	const std::set<s64>& end_sectors,
+	s32 language);
+static void pack_help_audio(
+	OutputStream& dest,
+	Sector32* sectors_dest,
+	s32 count,
+	const CollectionAsset& src,
+	BuildConfig config,
+	s32 language);
 
 on_load(Audio, []() {
 	AudioWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<AudioWadAsset, GcAudioWadHeader>(unpack_audio_wad<GcAudioWadHeader>);
@@ -72,7 +87,9 @@ on_load(Audio, []() {
 })
 
 template <typename Header>
-static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config) {
+static void unpack_audio_wad(
+	AudioWadAsset& dest, const Header& header, InputStream& src, BuildConfig config)
+{
 	std::set<s64> end_sectors;
 	for(Sector32 sector : header.vendor) end_sectors.insert(sector.sectors);
 	if constexpr(std::is_same_v<Header, DlAudioWadHeader>) {
@@ -109,7 +126,9 @@ static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStr
 }
 
 template <typename Header>
-static void pack_audio_wad(OutputStream& dest, Header& header, const AudioWadAsset& src, BuildConfig config) {
+static void pack_audio_wad(
+	OutputStream& dest, Header& header, const AudioWadAsset& src, BuildConfig config)
+{
 	pack_assets_sa(dest, ARRAY_PAIR(header.vendor), src.get_vendor(), config, FMT_BINARY_VAG);
 	
 	if constexpr(std::is_same_v<Header, DlAudioWadHeader>) {
@@ -123,7 +142,15 @@ static void pack_audio_wad(OutputStream& dest, Header& header, const AudioWadAss
 	pack_help_audio(dest, ARRAY_PAIR(header.help_italian), src.get_help(), config, 4);
 }
 
-static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, BuildConfig config, const std::set<s64>& end_sectors, s32 language) {
+static void unpack_help_audio(
+	CollectionAsset& dest,
+	InputStream& src,
+	const Sector32* ranges,
+	s32 count,
+	BuildConfig config,
+	const std::set<s64>& end_sectors,
+	s32 language)
+{
 	for(s32 i = 0; i < count; i++) {
 		if(ranges[i].sectors > 0) {
 			HelpAudioAsset& child = dest.foreign_child<HelpAudioAsset>(stringf("%d/audio.asset", i), false, i);

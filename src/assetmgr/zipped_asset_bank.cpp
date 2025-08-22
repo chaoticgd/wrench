@@ -20,7 +20,8 @@
 
 ZippedAssetBank::ZippedAssetBank(AssetForest& forest, const char* zip_path, fs::path prefix)
 	: AssetBank(forest, false)
-	, m_prefix(std::move(prefix)) {
+	, m_prefix(std::move(prefix))
+{
 	int error;
 	m_zip = zip_open(zip_path, ZIP_RDONLY, &error);
 	verify(m_zip, "Failed to open zip file.");
@@ -40,11 +41,13 @@ ZippedAssetBank::ZippedAssetBank(AssetForest& forest, const char* zip_path, fs::
 	}
 }
 
-ZippedAssetBank::~ZippedAssetBank() {
+ZippedAssetBank::~ZippedAssetBank()
+{
 	zip_close(m_zip);
 }
 
-std::unique_ptr<InputStream> ZippedAssetBank::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {
+std::unique_ptr<InputStream> ZippedAssetBank::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const
+{
 	fs::path absolute_path = m_prefix/path;
 	zip_stat_t stat;
 	verify(zip_stat(m_zip, absolute_path.string().c_str(), 0, &stat) == 0, "Failed to open zipped file '%s'.", absolute_path.string().c_str());
@@ -57,11 +60,13 @@ std::unique_ptr<InputStream> ZippedAssetBank::open_binary_file_for_reading(const
 	}
 }
 
-std::unique_ptr<OutputStream> ZippedAssetBank::open_binary_file_for_writing(const fs::path& path) {
+std::unique_ptr<OutputStream> ZippedAssetBank::open_binary_file_for_writing(const fs::path& path)
+{
 	verify_not_reached("Tried to write to a zipped asset bank!");
 }
 
-std::string ZippedAssetBank::read_text_file(const fs::path& path) const {
+std::string ZippedAssetBank::read_text_file(const fs::path& path) const
+{
 	auto stream = open_binary_file_for_reading(path, nullptr);
 	s64 size = stream->size();
 	std::string data;
@@ -71,16 +76,19 @@ std::string ZippedAssetBank::read_text_file(const fs::path& path) const {
 	return data;
 }
 
-void ZippedAssetBank::write_text_file(const fs::path& path, const char* contents) {
+void ZippedAssetBank::write_text_file(const fs::path& path, const char* contents)
+{
 	verify_not_reached("Tried to write to a zipped asset bank!");
 }
 
-bool ZippedAssetBank::file_exists(const fs::path& path) const {
+bool ZippedAssetBank::file_exists(const fs::path& path) const
+{
 	zip_stat_t dummy;
 	return zip_stat(m_zip, (m_prefix/path).string().c_str(), 0, &dummy) == 0;
 }
 
-std::vector<fs::path> ZippedAssetBank::enumerate_asset_files() const {
+std::vector<fs::path> ZippedAssetBank::enumerate_asset_files() const
+{
 	std::vector<fs::path> asset_files;
 	s64 count = zip_get_num_entries(m_zip, 0);
 	for(s64 i = 0; i < count; i++) {
@@ -94,7 +102,8 @@ std::vector<fs::path> ZippedAssetBank::enumerate_asset_files() const {
 	return asset_files;
 }
 
-void ZippedAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const {
+void ZippedAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*>& dest, Game game) const
+{
 	std::string common_source_path = get_common_source_path();
 	std::string game_source_path = get_game_source_path(game);
 	
@@ -110,7 +119,8 @@ void ZippedAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*
 	}
 }
 
-s32 ZippedAssetBank::check_lock() const {
+s32 ZippedAssetBank::check_lock() const
+{
 	return 0;
 }
 
@@ -118,30 +128,36 @@ void ZippedAssetBank::lock() {}
 
 // *****************************************************************************
 
-ZipInputStream::~ZipInputStream() {
+ZipInputStream::~ZipInputStream()
+{
 	if(m_file) {
 		zip_fclose(m_file);
 	}
 }
 	
-bool ZipInputStream::open(zip_t* zip, const char* path, s64 size) {
+bool ZipInputStream::open(zip_t* zip, const char* path, s64 size)
+{
 	m_file = zip_fopen(zip, path, 0);
 	m_size = size;
 	return m_file != nullptr;
 }
 
-bool ZipInputStream::seek(s64 offset) {
+bool ZipInputStream::seek(s64 offset)
+{
 	return zip_fseek(m_file, offset, SEEK_SET) == 0;
 }
 
-s64 ZipInputStream::tell() const {
+s64 ZipInputStream::tell() const
+{
 	return zip_ftell(m_file);
 }
 
-s64 ZipInputStream::size() const {
+s64 ZipInputStream::size() const
+{
 	return m_size;
 }
 
-bool ZipInputStream::read_n(u8* dest, s64 size) {
+bool ZipInputStream::read_n(u8* dest, s64 size)
+{
 	return zip_fread(m_file, dest, size) == size;
 }

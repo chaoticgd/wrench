@@ -21,7 +21,8 @@
 #include <core/stream.h>
 #include <core/filesystem.h>
 
-void gui::PathConfig::read(const WtfNode* node) {
+void gui::PathConfig::read(const WtfNode* node)
+{
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "base_folder", WTF_STRING)) {
 		base_folder = attrib->string.begin;
 	} else {
@@ -72,7 +73,8 @@ void gui::PathConfig::read(const WtfNode* node) {
 	}
 }
 
-void gui::PathConfig::write(WtfWriter* ctx) const {
+void gui::PathConfig::write(WtfWriter* ctx) const
+{
 	wtf_begin_node(ctx, nullptr, "paths");
 	
 	wtf_write_string_attribute(ctx, "base_folder", base_folder.c_str());
@@ -91,7 +93,8 @@ void gui::PathConfig::write(WtfWriter* ctx) const {
 	wtf_end_node(ctx);
 }
 
-void gui::UiConfig::read(const WtfNode* node) {
+void gui::UiConfig::read(const WtfNode* node)
+{
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "custom_scale", WTF_BOOLEAN)) {
 		custom_scale = attrib->boolean;
 	}
@@ -103,7 +106,8 @@ void gui::UiConfig::read(const WtfNode* node) {
 	}
 }
 
-void gui::UiConfig::write(WtfWriter* ctx) const {
+void gui::UiConfig::write(WtfWriter* ctx) const
+{
 	wtf_begin_node(ctx, nullptr, "ui");
 	
 	wtf_write_boolean_attribute(ctx, "custom_scale", custom_scale);
@@ -113,7 +117,8 @@ void gui::UiConfig::write(WtfWriter* ctx) const {
 	wtf_end_node(ctx);
 }
 
-void gui::Config::read() {
+void gui::Config::read()
+{
 	FileInputStream stream;
 	if(stream.open(get_config_file_path())) {
 		std::vector<u8> text = stream.read_multiple<u8>(stream.size());
@@ -133,7 +138,8 @@ void gui::Config::read() {
 	}
 }
 
-void gui::Config::write() const {
+void gui::Config::write() const
+{
 	FileOutputStream stream;
 	if(stream.open(get_config_file_path())) {
 		std::string text;
@@ -145,7 +151,8 @@ void gui::Config::write() const {
 	}
 }
 
-void gui::Config::set_to_defaults() {
+void gui::Config::set_to_defaults()
+{
 	*this = {};
 	WtfNode dummy = {};
 	paths.read(&dummy);
@@ -157,7 +164,8 @@ void gui::Config::set_to_defaults() {
 	ui.read(&dummy);
 }
 
-std::string gui::get_config_file_path() {
+std::string gui::get_config_file_path()
+{
 #ifdef _WIN32
 	return "wrench.cfg";
 #else

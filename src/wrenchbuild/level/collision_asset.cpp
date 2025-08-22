@@ -34,7 +34,8 @@ on_load(Collision, []() {
 	CollisionAsset::funcs.pack_dl = wrap_packer_func<CollisionAsset>(pack_collision_asset);
 })
 
-static void unpack_collision_asset(CollisionAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_collision_asset(CollisionAsset& dest, InputStream& src, BuildConfig config)
+{
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
 	ColladaScene scene = read_collision(bytes);
 	std::vector<u8> collada = write_collada(scene);
@@ -53,7 +54,8 @@ static void unpack_collision_asset(CollisionAsset& dest, InputStream& src, Build
 	}
 }
 
-static void pack_collision_asset(OutputStream& dest, const CollisionAsset& src, BuildConfig config) {
+static void pack_collision_asset(OutputStream& dest, const CollisionAsset& src, BuildConfig config)
+{
 	if(g_asset_packer_dry_run) {
 		return;
 	}
@@ -66,7 +68,13 @@ struct ColInstance {
 	glm::mat4 matrix;
 };
 
-void pack_level_collision(OutputStream& dest, const CollisionAsset& src, const LevelWadAsset* level_wad, const Gameplay* gameplay, s32 chunk) {
+void pack_level_collision(
+	OutputStream& dest,
+	const CollisionAsset& src,
+	const LevelWadAsset* level_wad,
+	const Gameplay* gameplay,
+	s32 chunk)
+{
 	ColladaScene scene;
 	
 	for(s32 i = 0; i < 256; i++) {
@@ -110,7 +118,8 @@ void pack_level_collision(OutputStream& dest, const CollisionAsset& src, const L
 	dest.write_v(bytes);
 }
 
-static void append_collision(Mesh& dest, const CollisionAsset& src, const glm::mat4& matrix) {
+static void append_collision(Mesh& dest, const CollisionAsset& src, const glm::mat4& matrix)
+{
 	const MeshAsset& mesh_asset = src.get_mesh();
 	std::string xml = mesh_asset.src().read_text_file();
 	ColladaScene scene = read_collada((char*) xml.data());

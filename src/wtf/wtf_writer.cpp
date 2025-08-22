@@ -31,7 +31,8 @@ struct WtfWriter {
 	char array_empty;
 };
 
-WtfWriter* wtf_begin_file(std::string& dest) {
+WtfWriter* wtf_begin_file(std::string& dest)
+{
 	WtfWriter* ctx = (WtfWriter*) malloc(sizeof(WtfWriter));
 	ctx->dest = &dest;
 	ctx->indent = 0;
@@ -41,17 +42,20 @@ WtfWriter* wtf_begin_file(std::string& dest) {
 	return ctx;
 }
 
-void wtf_end_file(WtfWriter* ctx) {
+void wtf_end_file(WtfWriter* ctx)
+{
 	free(ctx);
 }
 
-static void indent(WtfWriter* ctx) {
+static void indent(WtfWriter* ctx)
+{
 	for(int32_t i = 0; i < ctx->indent; i++) {
 		*ctx->dest += '\t';
 	}
 }
 
-void wtf_begin_node(WtfWriter* ctx, const char* type_name, const char* tag) {
+void wtf_begin_node(WtfWriter* ctx, const char* type_name, const char* tag)
+{
 	if(ctx->add_blank_line) {
 		indent(ctx);
 		*ctx->dest += '\n';
@@ -67,24 +71,28 @@ void wtf_begin_node(WtfWriter* ctx, const char* type_name, const char* tag) {
 	ctx->add_blank_line = 0;
 }
 
-void wtf_end_node(WtfWriter* ctx) {
+void wtf_end_node(WtfWriter* ctx)
+{
 	ctx->indent--;
 	indent(ctx);
 	*ctx->dest += "}\n";
 	ctx->add_blank_line = 1;
 }
 
-void wtf_begin_attribute(WtfWriter* ctx, const char* key) {
+void wtf_begin_attribute(WtfWriter* ctx, const char* key)
+{
 	indent(ctx);
 	*ctx->dest += key;
 	*ctx->dest += ": ";
 }
 
-void wtf_end_attribute(WtfWriter* ctx) {
+void wtf_end_attribute(WtfWriter* ctx)
+{
 	ctx->add_blank_line = 1;
 }
 
-void wtf_write_integer(WtfWriter* ctx, int32_t i) {
+void wtf_write_integer(WtfWriter* ctx, int32_t i)
+{
 	if(ctx->array_empty) {
 		*ctx->dest += "\n";
 		ctx->array_empty = 0;
@@ -96,7 +104,8 @@ void wtf_write_integer(WtfWriter* ctx, int32_t i) {
 	*ctx->dest += "\n";
 }
 
-void wtf_write_float(WtfWriter* ctx, float f) {
+void wtf_write_float(WtfWriter* ctx, float f)
+{
 	if(ctx->array_empty) {
 		*ctx->dest += "\n";
 		ctx->array_empty = 0;
@@ -110,7 +119,8 @@ void wtf_write_float(WtfWriter* ctx, float f) {
 	*ctx->dest += '\n';
 }
 
-void wtf_write_boolean(WtfWriter* ctx, bool b) {
+void wtf_write_boolean(WtfWriter* ctx, bool b)
+{
 	if(ctx->array_empty) {
 		*ctx->dest += "\n";
 		ctx->array_empty = 0;
@@ -127,7 +137,8 @@ void wtf_write_boolean(WtfWriter* ctx, bool b) {
 
 static const char* HEX_DIGITS = "0123456789abcdef";
 
-void wtf_write_string(WtfWriter* ctx, const char* string, const char* string_end) {	
+void wtf_write_string(WtfWriter* ctx, const char* string, const char* string_end)
+{
 	if(ctx->array_empty) {
 		*ctx->dest += "\n";
 		ctx->array_empty = 0;
@@ -165,7 +176,8 @@ void wtf_write_string(WtfWriter* ctx, const char* string, const char* string_end
 	*ctx->dest += "\"\n";
 }
 
-void wtf_begin_array(WtfWriter* ctx) {
+void wtf_begin_array(WtfWriter* ctx)
+{
 	if(ctx->array_empty) {
 		*ctx->dest += '\n';
 	}
@@ -178,7 +190,8 @@ void wtf_begin_array(WtfWriter* ctx) {
 	ctx->array_depth++;
 }
 
-void wtf_end_array(WtfWriter* ctx) {
+void wtf_end_array(WtfWriter* ctx)
+{
 	ctx->indent--;
 	if(!ctx->array_empty) {
 		indent(ctx);
@@ -188,31 +201,37 @@ void wtf_end_array(WtfWriter* ctx) {
 	ctx->array_empty = 0;
 }
 
-void wtf_write_integer_attribute(WtfWriter* ctx, const char* key, int32_t i) {
+void wtf_write_integer_attribute(WtfWriter* ctx, const char* key, int32_t i)
+{
 	wtf_begin_attribute(ctx, key);
 	wtf_write_integer(ctx, i);
 	wtf_end_attribute(ctx);
 }
 
-void wtf_write_boolean_attribute(WtfWriter* ctx, const char* key, bool b) {
+void wtf_write_boolean_attribute(WtfWriter* ctx, const char* key, bool b)
+{
 	wtf_begin_attribute(ctx, key);
 	wtf_write_boolean(ctx, b);
 	wtf_end_attribute(ctx);
 }
 
-void wtf_write_float_attribute(WtfWriter* ctx, const char* key, float f) {
+void wtf_write_float_attribute(WtfWriter* ctx, const char* key, float f)
+{
 	wtf_begin_attribute(ctx, key);
 	wtf_write_float(ctx, f);
 	wtf_end_attribute(ctx);
 }
 
-void wtf_write_string_attribute(WtfWriter* ctx, const char* key, const char* string, const char* string_end) {
+void wtf_write_string_attribute(
+	WtfWriter* ctx, const char* key, const char* string, const char* string_end)
+{
 	wtf_begin_attribute(ctx, key);
 	wtf_write_string(ctx, string, string_end);
 	wtf_end_attribute(ctx);
 }
 
-void wtf_write_bytes(WtfWriter* ctx, const uint8_t* bytes, int count) {
+void wtf_write_bytes(WtfWriter* ctx, const uint8_t* bytes, int count)
+{
 	if(ctx->array_empty) {
 		*ctx->dest += "\n";
 		ctx->array_empty = 0;
@@ -229,7 +248,8 @@ void wtf_write_bytes(WtfWriter* ctx, const uint8_t* bytes, int count) {
 	*ctx->dest += "]\n";
 }
 
-void wtf_write_floats(WtfWriter* ctx, const float* floats, int count) {
+void wtf_write_floats(WtfWriter* ctx, const float* floats, int count)
+{
 	if(ctx->array_empty) {
 		*ctx->dest += "\n";
 		ctx->array_empty = 0;
@@ -249,7 +269,8 @@ void wtf_write_floats(WtfWriter* ctx, const float* floats, int count) {
 	*ctx->dest += "]\n";
 }
 
-static void write_float(char dest[64], float f) {
+static void write_float(char dest[64], float f)
+{
 	int classification = fpclassify(f);
 	if(classification == FP_NAN) {
 		snprintf(dest, 64, "nan");

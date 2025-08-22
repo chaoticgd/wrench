@@ -58,7 +58,8 @@ static std::pair<Game, const char*> GAME_SEARCH_PATTERNS[] = {
 	{Game::RAC, "Ratchet & Clank"}
 };
 
-Release identify_release(const IsoDirectory& root, InputStream& iso) {
+Release identify_release(const IsoDirectory& root, InputStream& iso)
+{
 	Release result;
 	// First check all of the known releases.
 	for(const IsoFileRecord& file : root.files) {

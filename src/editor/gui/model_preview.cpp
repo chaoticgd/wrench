@@ -21,7 +21,13 @@
 #include <editor/app.h>
 #include <editor/renderer.h>
 
-void model_preview(GLuint* texture, const RenderMesh* mesh, const std::vector<RenderMaterial>* materials, bool wireframe, ModelPreviewParams& params) {
+void model_preview(
+	GLuint* texture,
+	const RenderMesh* mesh,
+	const std::vector<RenderMaterial>* materials,
+	bool wireframe,
+	ModelPreviewParams& params)
+{
 	ImVec2 view_pos = ImGui::GetWindowPos();
 	view_pos.x += ImGui::GetWindowContentRegionMin().x;
 	view_pos.y += ImGui::GetWindowContentRegionMin().y;

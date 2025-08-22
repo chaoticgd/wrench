@@ -62,7 +62,8 @@ static Layout layouts[] = {
 static size_t selected_layout = 0;
 static ImRect available_rect;
 
-void editor_gui() {
+void editor_gui()
+{
 	available_rect = ImRect(ImVec2(0, 0), ImGui::GetMainViewport()->Size);
 	
 	menu_bar();
@@ -86,7 +87,8 @@ void editor_gui() {
 	}
 }
 
-static void menu_bar() {
+static void menu_bar()
+{
 	if(ImGui::BeginMainMenuBar()) {
 		bool open_error_popup = false;
 		static std::string error_message;
@@ -255,7 +257,8 @@ static void menu_bar() {
 	}
 }
 
-static void level_editor_menu_bar() {
+static void level_editor_menu_bar()
+{
 	const char* preview_value = "(select level)";
 	Level* level = g_app->get_level();
 	if(level) {
@@ -273,7 +276,8 @@ static void level_editor_menu_bar() {
 	occlusion_things(level);
 }
 
-static void occlusion_things(Level* level) {
+static void occlusion_things(Level* level)
+{
 	static CommandThread occl_command;
 	static gui::RebuildOcclusionParams occl_params;
 	
@@ -342,7 +346,8 @@ static void occlusion_things(Level* level) {
 	gui::command_output_screen("Rebuild Occlusion##the_popup", occl_command, []() {});
 }
 
-static void tool_bar() {
+static void tool_bar()
+{
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
 	ImGuiViewport* view = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(available_rect.Min - ImVec2(1, 0));
@@ -398,7 +403,8 @@ static void tool_bar() {
 	ImGui::End();
 }
 
-static void begin_dock_space() {
+static void begin_dock_space()
+{
 	ImGuiWindowFlags window_flags =  ImGuiWindowFlags_NoDocking;
 	ImGui::SetNextWindowPos(available_rect.Min);
 	ImGui::SetNextWindowSize(available_rect.Max - available_rect.Min);
@@ -422,7 +428,8 @@ static void begin_dock_space() {
 static GLuint model_preview_texture;
 static GLuint collision_preview_texture;
 
-static void dockable_windows() {
+static void dockable_windows()
+{
 	dockable_window("Inspector", inspector);
 	dockable_window("Collision Fixer", collision_fixer);
 	
@@ -439,7 +446,8 @@ static void dockable_windows() {
 	ImGui::PopStyleVar();
 }
 
-static void dockable_window(const char* window, void (*func)()) {
+static void dockable_window(const char* window, void (*func)())
+{
 	Layout& layout = layouts[selected_layout];
 	bool visible = false;
 	for(const char* other_window : layout.visible_windows) {
@@ -455,11 +463,13 @@ static void dockable_window(const char* window, void (*func)()) {
 	}
 }
 
-static void end_dock_space() {
+static void end_dock_space()
+{
 	ImGui::End();
 }
 
-static void create_dock_layout() {
+static void create_dock_layout()
+{
 	ImGuiID dockspace_id = ImGui::GetID("dock_space");
 	
 	ImGui::DockBuilderRemoveNode(dockspace_id);
@@ -483,7 +493,8 @@ static void create_dock_layout() {
 	ImGui::DockBuilderFinish(dockspace_id);
 }
 
-static bool layout_button(Layout& layout, size_t i) {
+static bool layout_button(Layout& layout, size_t i)
+{
 	bool selected = i == selected_layout;
 	ImGuiID id = ImGui::GetID(layout.name);
 	ImGuiCol colour =

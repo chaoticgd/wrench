@@ -23,7 +23,8 @@
 #include <instancemgr/wtf_glue.h>
 #include <instancemgr/gameplay_convert.h>
 
-LevelSettings read_level_settings(const WtfNode* node) {
+LevelSettings read_level_settings(const WtfNode* node)
+{
 	LevelSettings settings;
 	
 	const WtfAttribute* background_col_attrib = wtf_attribute(node, "background_col");
@@ -107,7 +108,8 @@ LevelSettings read_level_settings(const WtfNode* node) {
 	return settings;
 }
 
-void rewrite_level_settings_links(LevelSettings& settings, const Instances& instances) {
+void rewrite_level_settings_links(LevelSettings& settings, const Instances& instances)
+{
 	settings.ship_path = rewrite_link(settings.ship_path.id, INST_PATH, instances, "gameplay level settings");
 	if(settings.ship_path.id > -1) {
 		settings.ship_camera_cuboid_start = rewrite_link(settings.ship_camera_cuboid_start.id, INST_CUBOID, instances, "gameplay level settings");
@@ -118,7 +120,8 @@ void rewrite_level_settings_links(LevelSettings& settings, const Instances& inst
 	}
 }
 
-void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
+void write_level_settings(WtfWriter* ctx, const LevelSettings& settings)
+{
 	if(settings.background_colour.has_value()) {
 		write_inst_field(ctx, "background_col", *settings.background_colour);
 	}
@@ -193,7 +196,8 @@ void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
 	}
 }
 
-s32 chunk_index_from_position(const glm::vec3& point, const LevelSettings& level_settings) {
+s32 chunk_index_from_position(const glm::vec3& point, const LevelSettings& level_settings)
+{
 	if(!level_settings.chunk_planes.empty()) {
 		glm::vec3 plane_1_point = level_settings.chunk_planes[0].point;
 		glm::vec3 plane_1_normal = level_settings.chunk_planes[0].normal;

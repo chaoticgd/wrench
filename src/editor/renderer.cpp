@@ -28,19 +28,25 @@ template <typename ThisInstance>
 static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstance>& insts);
 static glm::vec4 inst_colour(const Instance& inst);
 static glm::vec4 encode_inst_id(InstanceId id);
-static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings);
-static void draw_moby_instances(Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
-static void draw_tie_instances(Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
-static void draw_shrub_instances(Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
+static void draw_instances(
+	Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings);
+static void draw_moby_instances(
+	Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
+static void draw_tie_instances(
+	Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
+static void draw_shrub_instances(
+	Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_selected_shrub_normals(Level& lvl);
 static void draw_selected_moby_normals(Level& lvl);
 template <typename ThisPath>
 static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial& material);
 static void draw_icons(Level& lvl, const RenderSettings& settings);
 static void draw_moby_icons(Level& lvl, InstanceList<MobyInstance>& instances);
-static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
+static void draw_cube_instanced(
+	GLenum cube_mode, const RenderMaterial& material, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
 static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
-static void draw_mesh(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, const glm::mat4& local_to_world);
+static void draw_mesh(
+	const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, const glm::mat4& local_to_world);
 static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
 static Mesh create_fill_cube();
 static Mesh create_line_cube();
@@ -77,7 +83,8 @@ static GLuint area_inst_buffer = 0;
 static GlBuffer ghost_inst_buffer;
 static GLuint program = 0;
 
-void init_renderer() {
+void init_renderer()
+{
 	shaders.init();
 	
 	fill_cube = upload_mesh(create_fill_cube(), false);
@@ -105,7 +112,8 @@ void init_renderer() {
 	}
 }
 
-void shutdown_renderer() {
+void shutdown_renderer()
+{
 	shaders = Shaders();
 	
 	fill_cube = RenderMesh();
@@ -125,7 +133,8 @@ void shutdown_renderer() {
 	ghost_inst_buffer.destroy();
 }
 
-void prepare_frame(Level& lvl) {
+void prepare_frame(Level& lvl)
+{
 	upload_instance_buffer(moby_inst_buffer, lvl.instances().moby_instances);
 	upload_instance_buffer(moby_group_inst_buffer, lvl.instances().moby_groups);
 	upload_instance_buffer(tie_inst_buffer, lvl.instances().tie_instances);
@@ -152,7 +161,8 @@ struct InstanceData {
 };
 
 template <typename ThisInstance>
-static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstance>& insts) {
+static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstance>& insts)
+{
 	static std::vector<InstanceData> inst_data;
 	inst_data.clear();
 	inst_data.reserve(insts.size());
@@ -173,7 +183,8 @@ static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstan
 	glBufferData(GL_ARRAY_BUFFER, inst_buffer_size, inst_data.data(), GL_STATIC_DRAW);
 }
 
-static glm::vec4 inst_colour(const Instance& inst) {
+static glm::vec4 inst_colour(const Instance& inst)
+{
 	if(inst.selected) {
 		return glm::vec4(1.f, 0.f, 0.f, 1.f);
 	} else if(inst.referenced_by_selected) {
@@ -182,7 +193,8 @@ static glm::vec4 inst_colour(const Instance& inst) {
 	return glm::vec4(0.f, 0.f, 0.f, 0.f);
 }
 
-static glm::vec4 encode_inst_id(InstanceId id) {
+static glm::vec4 encode_inst_id(InstanceId id)
+{
 	glm::vec4 colour;
 	colour.r = ((id.type  & 0x00ff) >> 0) / 255.f;
 	colour.g = ((id.value & 0x00ff) >> 0) / 255.f;
@@ -191,7 +203,9 @@ static glm::vec4 encode_inst_id(InstanceId id) {
 	return colour;
 }
 
-void draw_level(Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings) {
+void draw_level(
+	Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings)
+{
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
@@ -237,7 +251,9 @@ void draw_level(Level& lvl, const glm::mat4& view, const glm::mat4& projection, 
 	draw_icons(lvl, settings);
 }
 
-void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings) {
+void draw_pickframe(
+	Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings)
+{
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
@@ -254,7 +270,14 @@ void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projecti
 	draw_icons(lvl, settings);
 }
 
-void draw_model_preview(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4* bb, const glm::mat4& view, const glm::mat4& projection, bool wireframe) {
+void draw_model_preview(
+	const RenderMesh& mesh,
+	const std::vector<RenderMaterial>& materials,
+	const glm::mat4* bb,
+	const glm::mat4& view,
+	const glm::mat4& projection,
+	bool wireframe) 
+{
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
@@ -283,7 +306,8 @@ void draw_model_preview(const RenderMesh& mesh, const std::vector<RenderMaterial
 	}
 }
 
-void draw_drag_ghosts(Level& lvl, const std::vector<InstanceId>& ids, const RenderSettings& settings) {
+void draw_drag_ghosts(Level& lvl, const std::vector<InstanceId>& ids, const RenderSettings& settings)
+{
 	// Prepare matrices to upload.
 	static std::vector<InstanceData> inst_data;
 	inst_data.clear();
@@ -358,7 +382,9 @@ void draw_drag_ghosts(Level& lvl, const std::vector<InstanceId>& ids, const Rend
 	}
 }
 
-static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings) {
+static void draw_instances(
+	Level& lvl, GLenum mesh_mode, bool draw_wireframes, const RenderSettings& settings)
+{
 	if(settings.draw_moby_instances) {
 		draw_moby_instances(lvl, lvl.instances().moby_instances, mesh_mode, GL_LINE);
 	}
@@ -432,7 +458,9 @@ static void draw_instances(Level& lvl, GLenum mesh_mode, bool draw_wireframes, c
 	}
 }
 
-static void draw_moby_instances(Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+static void draw_moby_instances(
+	Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode)
+{
 	if(instances.size() < 1) {
 		return;
 	}
@@ -456,7 +484,9 @@ static void draw_moby_instances(Level& lvl, InstanceList<MobyInstance>& instance
 	}
 }
 
-static void draw_tie_instances(Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+static void draw_tie_instances(
+	Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode)
+{
 	if(instances.size() < 1) {
 		return;
 	}
@@ -480,7 +510,9 @@ static void draw_tie_instances(Level& lvl, const InstanceList<TieInstance>& inst
 	}
 }
 
-static void draw_shrub_instances(Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+static void draw_shrub_instances(
+	Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode)
+{
 	if(instances.size() < 1) {
 		return;
 	}
@@ -504,7 +536,8 @@ static void draw_shrub_instances(Level& lvl, const InstanceList<ShrubInstance>& 
 	}
 }
 
-static void draw_selected_shrub_normals(Level& lvl) {
+static void draw_selected_shrub_normals(Level& lvl)
+{
 	for(ShrubInstance& inst : lvl.instances().shrub_instances) {
 		if(inst.selected && lvl.shrub_classes.find(inst.o_class()) != lvl.shrub_classes.end()) {
 			const EditorClass& cls = lvl.shrub_classes.at(inst.o_class());
@@ -541,7 +574,8 @@ static void draw_selected_shrub_normals(Level& lvl) {
 	}
 }
 
-static void draw_selected_moby_normals(Level& lvl) {
+static void draw_selected_moby_normals(Level& lvl)
+{
 	for(MobyInstance& inst : lvl.instances().moby_instances) {
 		if(inst.selected && lvl.moby_classes.find(inst.o_class()) != lvl.moby_classes.end()) {
 			const EditorClass& cls = lvl.moby_classes.at(inst.o_class());
@@ -577,7 +611,8 @@ static void draw_selected_moby_normals(Level& lvl) {
 }
 
 template <typename ThisPath>
-static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial& material) {
+static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial& material)
+{
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	
 	for(const ThisPath& path : paths) {
@@ -611,7 +646,8 @@ static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial
 	}
 }
 
-static void draw_icons(Level& lvl, const RenderSettings& settings) {
+static void draw_icons(Level& lvl, const RenderSettings& settings)
+{
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	
 	if(settings.draw_moby_instances) {
@@ -671,7 +707,8 @@ static void draw_icons(Level& lvl, const RenderSettings& settings) {
 	}
 }
 
-static void draw_moby_icons(Level& lvl, InstanceList<MobyInstance>& instances) {
+static void draw_moby_icons(Level& lvl, InstanceList<MobyInstance>& instances)
+{
 	if(instances.size() < 1) {
 		return;
 	}
@@ -695,7 +732,13 @@ static void draw_moby_icons(Level& lvl, InstanceList<MobyInstance>& instances) {
 	}
 }
 
-static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material, GLuint inst_buffer, size_t inst_begin, size_t inst_count) {
+static void draw_cube_instanced(
+	GLenum cube_mode,
+	const RenderMaterial& material,
+	GLuint inst_buffer,
+	size_t inst_begin,
+	size_t inst_count)
+{
 	glPolygonMode(GL_FRONT_AND_BACK, cube_mode);
 	if(cube_mode == GL_FILL) {
 		draw_mesh_instanced(fill_cube, &material, 1, inst_buffer, inst_begin, inst_count);
@@ -708,7 +751,12 @@ static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_begin,
 	draw_mesh_instanced(quad, &instance_icons[type], 1, inst_buffer, inst_begin, inst_count);
 }
 
-static void draw_mesh(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, const glm::mat4& local_to_world) {
+static void draw_mesh(
+	const RenderMesh& mesh,
+	const RenderMaterial* mats,
+	size_t mat_count,
+	const glm::mat4& local_to_world)
+{
 	auto inst = InstanceData(local_to_world, {}, {});
 	inst.colour = glm::vec4(1.f, 1.f, 1.f, 1.f);
 	
@@ -720,7 +768,14 @@ static void draw_mesh(const RenderMesh& mesh, const RenderMaterial* mats, size_t
 	draw_mesh_instanced(mesh, mats, mat_count, inst_buffer.id, 0, 1);
 }
 
-static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, GLuint inst_buffer, size_t inst_begin, size_t inst_count) {
+static void draw_mesh_instanced(
+	const RenderMesh& mesh,
+	const RenderMaterial* mats,
+	size_t mat_count,
+	GLuint inst_buffer,
+	size_t inst_begin,
+	size_t inst_count)
+{
 	size_t inst_offset = inst_begin * sizeof(InstanceData);
 	size_t matrix_offset = inst_offset + offsetof(InstanceData, matrix);
 	
@@ -812,18 +867,21 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 	glDeleteVertexArrays(1, &vao);
 }
 
-glm::mat4 compose_view_matrix(const glm::vec3& cam_pos, const glm::vec2& cam_rot) {
+glm::mat4 compose_view_matrix(const glm::vec3& cam_pos, const glm::vec2& cam_rot)
+{
 	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), cam_rot.x, glm::vec3(0.0f, -1.0f, 0.0f));
 	glm::mat4 yaw = glm::rotate(glm::mat4(1.0f), cam_rot.y, glm::vec3(0.0f, 0.0f, 1.0f));
 	glm::mat4 translate = glm::translate(glm::mat4(1.0f), -cam_pos);
 	return pitch * yaw * translate;
 }
 
-glm::mat4 compose_projection_matrix(const ImVec2& view_size) {
+glm::mat4 compose_projection_matrix(const ImVec2& view_size)
+{
 	return glm::perspective(glm::radians(45.0f), view_size.x / view_size.y, 0.1f, 10000.0f);
 }
 
-glm::vec3 apply_local_to_screen(const glm::mat4& world_to_clip, const glm::mat4& local_to_world, const ImVec2& view_size) {
+glm::vec3 apply_local_to_screen(const glm::mat4& world_to_clip, const glm::mat4& local_to_world, const ImVec2& view_size)
+{
 	glm::mat4 local_to_clip = world_to_clip * glm::translate(glm::mat4(1.f), glm::vec3(1.f));
 	glm::vec4 homogeneous_pos = local_to_clip * glm::vec4(glm::vec3(local_to_world[3]), 1);
 	glm::vec3 gl_pos {
@@ -840,7 +898,12 @@ glm::vec3 apply_local_to_screen(const glm::mat4& world_to_clip, const glm::mat4&
 	return screen_pos;
 }
 
-glm::vec3 create_ray(const glm::mat4& world_to_clip, const ImVec2& screen_pos, const ImVec2& view_pos, const ImVec2& view_size) {
+glm::vec3 create_ray(
+	const glm::mat4& world_to_clip,
+	const ImVec2& screen_pos,
+	const ImVec2& view_pos,
+	const ImVec2& view_size)
+{
 	auto imgui_to_glm = [](ImVec2 v) { return glm::vec2(v.x, v.y); };
 	glm::vec2 relative_pos = imgui_to_glm(screen_pos) - imgui_to_glm(view_pos);
 	glm::vec2 device_space_pos = 2.f * relative_pos / imgui_to_glm(view_size) - 1.f;
@@ -851,7 +914,8 @@ glm::vec3 create_ray(const glm::mat4& world_to_clip, const ImVec2& screen_pos, c
 	return direction;
 }
 
-void reset_camera(app* a) {
+void reset_camera(app* a)
+{
 	a->render_settings.camera_rotation = glm::vec3(0, 0, 0);
 	if(Level* lvl = a->get_level()) {
 		if(!lvl->instances().moby_instances.empty()) {
@@ -864,7 +928,8 @@ void reset_camera(app* a) {
 	}
 }
 
-static Mesh create_fill_cube() {
+static Mesh create_fill_cube()
+{
 	Mesh mesh;
 	
 	mesh.vertices.emplace_back(glm::vec3(-1.f, -1.f, -1.f));
@@ -889,7 +954,8 @@ static Mesh create_fill_cube() {
 	return mesh;
 }
 
-static Mesh create_line_cube() {
+static Mesh create_line_cube()
+{
 	Mesh mesh;
 	
 	mesh.vertices.emplace_back(glm::vec3(-1.f, -1.f, -1.f));
@@ -921,7 +987,8 @@ static Mesh create_line_cube() {
 	return mesh;
 }
 
-static Mesh create_quad() {
+static Mesh create_quad()
+{
 	Mesh mesh;
 	
 	ColourAttribute dummy{};
@@ -939,11 +1006,13 @@ static Mesh create_quad() {
 	return mesh;
 }
 
-static Texture create_white_texture() {
+static Texture create_white_texture()
+{
 	return Texture::create_rgba(1, 1, {0xff, 0xff, 0xff, 0xff});
 }
 
-static void set_shader(const Shader& shader) {
+static void set_shader(const Shader& shader)
+{
 	glUseProgram(shader.id());
 	program = shader.id();
 }

@@ -26,8 +26,10 @@ packed_struct(OnlineWadHeader,
 	/* 0x10 */ SectorRange transition_backgrounds[11];
 )
 
-static void unpack_online_wad(OnlineWadAsset& dest, const OnlineWadHeader& header, InputStream& src, BuildConfig config);
-static void pack_online_wad(OutputStream& dest, OnlineWadHeader& header, const OnlineWadAsset& src, BuildConfig config);
+static void unpack_online_wad(
+	OnlineWadAsset& dest, const OnlineWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_online_wad(
+	OutputStream& dest, OnlineWadHeader& header, const OnlineWadAsset& src, BuildConfig config);
 
 on_load(Online, []() {
 	OnlineWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<OnlineWadAsset, OnlineWadHeader>(unpack_online_wad);
@@ -35,12 +37,16 @@ on_load(Online, []() {
 	OnlineWadAsset::funcs.pack_dl = wrap_wad_packer_func<OnlineWadAsset, OnlineWadHeader>(pack_online_wad);
 })
 
-static void unpack_online_wad(OnlineWadAsset& dest, const OnlineWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_online_wad(
+	OnlineWadAsset& dest, const OnlineWadHeader& header, InputStream& src, BuildConfig config)
+{
 	unpack_asset(dest.data<OnlineDataWadAsset>(), src, header.data, config);
 	unpack_assets<TextureAsset>(dest.transition_backgrounds(SWITCH_FILES), src, ARRAY_PAIR(header.transition_backgrounds), config, FMT_TEXTURE_RGBA);
 }
 
-static void pack_online_wad(OutputStream& dest, OnlineWadHeader& header, const OnlineWadAsset& src, BuildConfig config) {
+static void pack_online_wad(
+	OutputStream& dest, OnlineWadHeader& header, const OnlineWadAsset& src, BuildConfig config)
+{
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);
 	pack_assets_sa(dest, ARRAY_PAIR(header.transition_backgrounds), src.get_transition_backgrounds(), config, FMT_TEXTURE_RGBA);
 }

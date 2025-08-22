@@ -22,17 +22,32 @@
 #include <core/mesh.h>
 #include <core/algorithm.h>
 
-static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game);
-static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game);
+static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(
+	Buffer src, const SkyHeader& header, Game game);
+static std::tuple<s64, s64> write_sky_textures(
+	OutBuffer dest,
+	const std::vector<Texture>& textures,
+	const std::vector<s32>& texture_mappings,
+	Game game);
 static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, Game game, f32 framerate);
 static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32 framerate);
 static f32 rotation_to_radians_per_second(s16 angle, f32 framerate);
 static s16 rotation_from_radians_per_second(f32 angle, f32 framerate);
 static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 texture_count, bool textured);
-static void write_sky_clusters(std::vector<SkyClusterHeader>& headers, OutBuffer data, const GLTF::Mesh& shell, f32 min_azimuth, f32 max_azimuth, f32 azimuth_bias, f32 min_elev, f32 max_elev);
-static SkyClusterHeader write_sky_cluster(OutBuffer data, const std::vector<Vertex>& vertices, const std::vector<SkyFace>& faces);
+static void write_sky_clusters(
+	std::vector<SkyClusterHeader>& headers,
+	OutBuffer data,
+	const GLTF::Mesh& shell,
+	f32 min_azimuth,
+	f32 max_azimuth,
+	f32 azimuth_bias,
+	f32 min_elev,
+	f32 max_elev);
+static SkyClusterHeader write_sky_cluster(
+	OutBuffer data, const std::vector<Vertex>& vertices, const std::vector<SkyFace>& faces);
 
-Sky read_sky(Buffer src, Game game, f32 framerate) {
+Sky read_sky(Buffer src, Game game, f32 framerate)
+{
 	Sky sky;
 	
 	SkyHeader header = src.read<SkyHeader>(0, "header");
@@ -52,7 +67,8 @@ Sky read_sky(Buffer src, Game game, f32 framerate) {
 	return sky;
 }
 
-void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
+void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate)
+{
 	verify(sky.shells.size() <= 8, "Too many sky shells!");
 	
 	dest.pad(0x40);
@@ -86,7 +102,9 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	dest.write(header_ofs, header);
 }
 
-static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game) {
+static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(
+	Buffer src, const SkyHeader& header, Game game)
+{
 	std::vector<Texture> textures;
 	std::vector<s32> texture_mappings;
 	std::vector<SkyTexture> defs;
@@ -123,7 +141,12 @@ static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buff
 	return {textures, texture_mappings};
 }
 
-static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game) {
+static std::tuple<s64, s64> write_sky_textures(
+	OutBuffer dest,
+	const std::vector<Texture>& textures,
+	const std::vector<s32>& texture_mappings,
+	Game game)
+{
 	dest.pad(0x10);
 	s64 defs_ofs = dest.alloc_multiple<SkyTexture>(texture_mappings.size());
 	dest.pad(0x40);
@@ -164,7 +187,8 @@ static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector
 	return {defs_ofs, data_ofs};
 }
 
-static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, Game game, f32 framerate) {
+static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, Game game, f32 framerate)
+{
 	SkyShell shell;
 	
 	s32 cluster_count = 0;
@@ -194,7 +218,8 @@ static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, Game g
 	return shell;
 }
 
-static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32 framerate) {
+static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32 framerate)
+{
 	std::vector<SkyClusterHeader> cluster_headers;
 	std::vector<u8> cluster_data;
 	
@@ -248,11 +273,13 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, Game game, f32
 	return header_ofs;
 }
 
-static f32 rotation_to_radians_per_second(s16 angle, f32 framerate) {
+static f32 rotation_to_radians_per_second(s16 angle, f32 framerate)
+{
 	return angle * (framerate * ((2.f * WRENCH_PI) / 32768.f));
 }
 
-static s16 rotation_from_radians_per_second(f32 angle, f32 framerate) {
+static s16 rotation_from_radians_per_second(f32 angle, f32 framerate)
+{
 	return (u16) roundf(angle * ((32768.f / (2.f * WRENCH_PI)) / framerate));
 }
 
@@ -303,7 +330,16 @@ static void read_sky_cluster(GLTF::Mesh& dest, Buffer src, s64 offset, s32 textu
 	}
 }
 
-static void write_sky_clusters(std::vector<SkyClusterHeader>& headers, OutBuffer data, const GLTF::Mesh& shell, f32 min_azimuth, f32 max_azimuth, f32 azimuth_bias, f32 min_elev, f32 max_elev) {
+static void write_sky_clusters(
+	std::vector<SkyClusterHeader>& headers,
+	OutBuffer data,
+	const GLTF::Mesh& shell,
+	f32 min_azimuth,
+	f32 max_azimuth,
+	f32 azimuth_bias,
+	f32 min_elev,
+	f32 max_elev)
+{
 	std::vector<Vertex> vertices;
 	std::vector<SkyFace> faces;
 	std::vector<s32> mapping(shell.vertices.size(), -1);
@@ -384,7 +420,9 @@ static void write_sky_clusters(std::vector<SkyClusterHeader>& headers, OutBuffer
 	}
 }
 
-static SkyClusterHeader write_sky_cluster(OutBuffer data, const std::vector<Vertex>& vertices, const std::vector<SkyFace>& faces) {
+static SkyClusterHeader write_sky_cluster(
+	OutBuffer data, const std::vector<Vertex>& vertices, const std::vector<SkyFace>& faces)
+{
 	SkyClusterHeader header;
 	header.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(vertices));
 	header.vertex_count = (s16) vertices.size();

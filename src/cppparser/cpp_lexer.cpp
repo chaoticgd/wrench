@@ -59,7 +59,8 @@ struct CppLexer {
 
 static bool is_literal_char(char c);
 
-std::vector<CppToken> eat_cpp_file(char* input) {
+std::vector<CppToken> eat_cpp_file(char* input)
+{
 	CppLexer lexer;
 	lexer.begin = input;
 	lexer.ptr = input;
@@ -144,7 +145,8 @@ std::vector<CppToken> eat_cpp_file(char* input) {
 	return lexer.tokens;
 }
 
-static void splice_physical_lines(char* string, std::map<s32, s32>& line_lookup_dest) {
+static void splice_physical_lines(char* string, std::map<s32, s32>& line_lookup_dest)
+{
 	size_t size = strlen(string);
 	size_t out = 0;
 	s32 current_line = 1;
@@ -161,7 +163,8 @@ static void splice_physical_lines(char* string, std::map<s32, s32>& line_lookup_
 	string[out] = '\0';
 }
 
-bool CppLexer::eat_raw_string() {
+bool CppLexer::eat_raw_string()
+{
 	if(ptr[0] != 'R' || ptr[1] != '"') {
 		return false;
 	}
@@ -203,7 +206,8 @@ bool CppLexer::eat_raw_string() {
 	return true;
 }
 
-bool CppLexer::eat_comment() {
+bool CppLexer::eat_comment()
+{
 	// [lex.comment]
 	if(ptr[0] == '/' && ptr[1] == '*') {
 		ptr += 2;
@@ -229,7 +233,8 @@ bool CppLexer::eat_comment() {
 	return false;
 }
 
-bool CppLexer::eat_keyword_or_operator() {
+bool CppLexer::eat_keyword_or_operator()
+{
 	// [lex.key]
 	for(s32 i = 0; i < CPP_KEYWORD_COUNT; i++) {
 		size_t chars = strlen(CPP_KEYWORDS[i].string);
@@ -259,7 +264,8 @@ bool CppLexer::eat_keyword_or_operator() {
 	return false;
 }
 
-bool CppLexer::eat_literal() {
+bool CppLexer::eat_literal()
+{
 	bool hungry = true;
 	
 	if(hungry && eat_number_literal()) hungry = false;
@@ -271,7 +277,8 @@ bool CppLexer::eat_literal() {
 	return !hungry;
 }
 
-bool CppLexer::eat_number_literal() {
+bool CppLexer::eat_number_literal()
+{
 	const char* str_begin = ptr;
 	
 	if(ptr[0] == '0' && (ptr[1] == 'b' || ptr[1] == 'B')) {
@@ -355,7 +362,8 @@ bool CppLexer::eat_number_literal() {
 	return false;
 }
 
-bool CppLexer::eat_character_literal() {
+bool CppLexer::eat_character_literal()
+{
 	const char* str_begin = ptr;
 	
 	bool hungry = true;
@@ -383,7 +391,8 @@ bool CppLexer::eat_character_literal() {
 	return false;
 }
 
-bool CppLexer::eat_string_literal() {
+bool CppLexer::eat_string_literal()
+{
 	bool hungry = true;
 	if(hungry && strncmp(ptr, "u8\"", 3) == 0) { ptr += 3; hungry = false; }
 	if(hungry && strncmp(ptr, "u\"", 2) == 0) { ptr += 2; hungry = false; }
@@ -412,7 +421,8 @@ bool CppLexer::eat_string_literal() {
 	return false;
 }
 
-void CppLexer::eat_literal_char() {
+void CppLexer::eat_literal_char()
+{
 	if(*ptr == '\\') {
 		ptr++;
 		if(*ptr == '\''
@@ -441,7 +451,8 @@ void CppLexer::eat_literal_char() {
 	}
 }
 
-bool CppLexer::eat_boolean_literal() {
+bool CppLexer::eat_boolean_literal()
+{
 	const char* str_begin = ptr;
 	
 	if(strncmp(ptr, "false", 5) == 0 && !is_literal_char(ptr[5])) {
@@ -471,7 +482,8 @@ bool CppLexer::eat_boolean_literal() {
 	return false;
 }
 
-bool CppLexer::eat_pointer_literal() {
+bool CppLexer::eat_pointer_literal()
+{
 	const char* str_begin = ptr;
 	
 	if(strncmp(ptr, "nullptr", 7) == 0 && !is_literal_char(ptr[7])) {
@@ -489,7 +501,8 @@ bool CppLexer::eat_pointer_literal() {
 	return false;
 }
 
-bool CppLexer::eat_identifier() {
+bool CppLexer::eat_identifier()
+{
 	if((*ptr >= 'A' && *ptr <= 'Z') || (*ptr >= 'a' && *ptr <= 'z') || *ptr == '_') {
 		const char* str_begin = ptr;
 		ptr++;
@@ -506,7 +519,8 @@ bool CppLexer::eat_identifier() {
 	return false;
 }
 
-s32 CppLexer::get_line() {
+s32 CppLexer::get_line()
+{
 	auto iter = line_lookup.lower_bound(-((s32) (ptr - begin)));
 	if(iter != line_lookup.end()) {
 		return iter->second;
@@ -515,11 +529,13 @@ s32 CppLexer::get_line() {
 	}
 }
 
-static bool is_literal_char(char c) {
+static bool is_literal_char(char c)
+{
 	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
 }
 
-const char* cpp_token_type(CppTokenType type) {
+const char* cpp_token_type(CppTokenType type)
+{
 	switch(type) {
 		case CPP_IDENTIFIER: return "identifier";
 		case CPP_KEYWORD: return "keyword";

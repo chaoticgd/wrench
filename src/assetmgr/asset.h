@@ -87,7 +87,8 @@ public:
 	AssetType logical_type() const;
 	
 	template <typename Callback>
-	void for_each_physical_child(Callback callback) {
+	void for_each_physical_child(Callback callback)
+	{
 		for(std::unique_ptr<Asset>& child : m_children) {
 			callback(*child.get());
 		}
@@ -95,14 +96,16 @@ public:
 	
 	
 	template <typename Callback>
-	void for_each_physical_child(Callback callback) const {
+	void for_each_physical_child(Callback callback) const
+	{
 		for(const std::unique_ptr<Asset>& child : m_children) {
 			callback(*child.get());
 		}
 	}
 	
 	template <typename Callback>
-	void for_each_logical_child(Callback callback) {
+	void for_each_logical_child(Callback callback)
+	{
 		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
 			for(const std::unique_ptr<Asset>& child : asset->m_children) {
 				if(child->higher_precedence() == nullptr && !child->is_deleted()) {
@@ -113,14 +116,16 @@ public:
 	}
 	
 	template <typename Callback>
-	void for_each_logical_child(Callback callback) const {
+	void for_each_logical_child(Callback callback) const
+	{
 		const_cast<Asset&>(*this).for_each_logical_child([&](const Asset& child) {
 			callback(child);
 		});
 	}
 	
 	template <typename ChildType, typename Callback>
-	void for_each_logical_child_of_type(Callback callback) {
+	void for_each_logical_child_of_type(Callback callback)
+	{
 		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
 			for(const std::unique_ptr<Asset>& child : asset->m_children) {
 				if(child->higher_precedence() == nullptr && !child->is_deleted()) {
@@ -134,14 +139,16 @@ public:
 	}
 	
 	template <typename ChildType, typename Callback>
-	void for_each_logical_child_of_type(Callback callback) const {
+	void for_each_logical_child_of_type(Callback callback) const
+	{
 		const_cast<Asset&>(*this).for_each_logical_child_of_type<ChildType>([&](const ChildType& child) {
 			callback(child);
 		});
 	}
 	
 	template <typename Callback>
-	void for_each_logical_descendant(Callback callback) {
+	void for_each_logical_descendant(Callback callback)
+	{
 		for_each_logical_child([&](Asset& child) {
 			callback(child);
 			child.for_each_logical_descendant(callback);
@@ -149,7 +156,8 @@ public:
 	}
 	
 	template <typename ChildType>
-	ChildType& child(const char* tag) {
+	ChildType& child(const char* tag)
+	{
 		Asset& asset = physical_child(ChildType::ASSET_TYPE, tag);
 		ChildType& resolved_asset = asset.as<ChildType>();
 		verify(&resolved_asset.file() == &file(),
@@ -159,7 +167,8 @@ public:
 	}
 	
 	template <typename ChildType>
-	ChildType& child(s32 tag) {
+	ChildType& child(s32 tag)
+	{
 		std::string str = std::to_string(tag);
 		Asset& asset = physical_child(ChildType::ASSET_TYPE, str.c_str());
 		ChildType& resolved_asset = asset.as<ChildType>();
@@ -173,27 +182,32 @@ public:
 	Asset* maybe_as(AssetType type);
 	
 	template <typename AssetType>
-	AssetType& as() {
+	AssetType& as()
+	{
 		return static_cast<AssetType&>(as(AssetType::ASSET_TYPE));
 	}
 	
 	template <typename AssetType>
-	const AssetType& as() const {
+	const AssetType& as() const
+	{
 		return const_cast<Asset*>(this)->as<AssetType>();
 	}
 	
 	template <typename AssetType>
-	AssetType* maybe_as() {
+	AssetType* maybe_as()
+	{
 		return static_cast<AssetType*>(maybe_as(AssetType::ASSET_TYPE));
 	}
 	
 	template <typename AssetType>
-	const AssetType* maybe_as() const {
+	const AssetType* maybe_as() const
+	{
 		return const_cast<Asset*>(this)->maybe_as<AssetType>();
 	}
 	
 	template <typename ChildTargetType>
-	ChildTargetType& transmute_child(const char* tag) {
+	ChildTargetType& transmute_child(const char* tag)
+	{
 		for(auto iter = m_children.begin(); iter != m_children.end(); iter++) {
 			if(iter->get()->tag() == tag) {
 				m_children.erase(iter);
@@ -218,18 +232,21 @@ public:
 	// Switch to another .asset file, and create a child of the node in the same
 	// place in the tree as the current node.
 	template <typename ChildType>
-	ChildType& foreign_child(std::string path, bool is_absolute, std::string tag) {
+	ChildType& foreign_child(std::string path, bool is_absolute, std::string tag)
+	{
 		return foreign_child_impl(path, is_absolute, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
 	}
 	
 	template <typename ChildType>
-	ChildType& foreign_child(std::string path, bool is_absolute, s32 index) {
+	ChildType& foreign_child(std::string path, bool is_absolute, s32 index)
+	{
 		std::string tag = std::to_string(index);
 		return foreign_child_impl(path, is_absolute, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
 	}
 	
 	template <typename ChildType>
-	ChildType& foreign_child(s32 index) {
+	ChildType& foreign_child(s32 index)
+	{
 		std::string tag = std::to_string(index);
 		fs::path path = fs::path(tag)/tag;
 		return foreign_child_impl(path, false, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
@@ -396,7 +413,8 @@ public:
 	Asset& lookup_asset(const AssetLink& link, Asset* context);
 	
 	template <typename Bank, typename... ConstructorArgs>
-	AssetBank& mount(ConstructorArgs... args) {
+	AssetBank& mount(ConstructorArgs... args)
+	{
 		AssetBank* bank = m_banks.emplace_back(std::make_unique<Bank>(*this, args...)).get();
 		bank->index = (s32) (m_banks.size() - 1);
 		if(bank->is_writeable()) {

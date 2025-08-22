@@ -24,23 +24,28 @@ BuildConfig::BuildConfig(Game game, Region region, bool is_testing)
 BuildConfig::BuildConfig(const std::string& game, const std::string& region, bool is_testing)
 	: BuildConfig(game_from_string(game), region_from_string(region), is_testing) {}
 
-Game BuildConfig::game() const {
+Game BuildConfig::game() const
+{
 	return m_game;
 }
 
-Region BuildConfig::region() const {
+Region BuildConfig::region() const
+{
 	return m_region;
 }
 
-bool BuildConfig::is_testing() const {
+bool BuildConfig::is_testing() const
+{
 	return m_is_testing;
 }
 
-bool BuildConfig::is_ntsc() const {
+bool BuildConfig::is_ntsc() const
+{
 	return region() != Region::EU;
 }
 
-float BuildConfig::framerate() {
+float BuildConfig::framerate()
+{
 	if(is_ntsc()) {
 		return NTSC_FRAMERATE;
 	} else {
@@ -48,7 +53,8 @@ float BuildConfig::framerate() {
 	}
 }
 
-float BuildConfig::half_framerate() {
+float BuildConfig::half_framerate()
+{
 	if(is_ntsc()) {
 		return HALF_NTSC_FRAMERATE;
 	} else {
@@ -56,7 +62,8 @@ float BuildConfig::half_framerate() {
 	}
 }
 
-Game game_from_string(const std::string& game) {
+Game game_from_string(const std::string& game)
+{
 	if(game == "rac") return Game::RAC;
 	if(game == "gc") return Game::GC;
 	if(game == "uya") return Game::UYA;
@@ -64,7 +71,8 @@ Game game_from_string(const std::string& game) {
 	return Game::UNKNOWN;
 }
 
-std::string game_to_string(Game game) {
+std::string game_to_string(Game game)
+{
 	switch(game) {
 		case Game::RAC: return "rac";
 		case Game::GC: return "gc";
@@ -74,14 +82,16 @@ std::string game_to_string(Game game) {
 	}
 }
 
-Region region_from_string(const std::string& region) {
+Region region_from_string(const std::string& region)
+{
 	if(region == "us") return Region::US;
 	if(region == "eu") return Region::EU;
 	if(region == "japan") return Region::JAPAN;
 	return Region::UNKNOWN;
 }
 
-std::string region_to_string(Region region) {
+std::string region_to_string(Region region)
+{
 	switch(region) {
 		case Region::US: return "us";
 		case Region::EU: return "eu";

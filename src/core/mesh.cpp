@@ -22,7 +22,8 @@
 #include <algorithm>
 #include <core/timer.h>
 
-Mesh sort_vertices(Mesh src, bool (*compare)(const Vertex& lhs, const Vertex& rhs)) {
+Mesh sort_vertices(Mesh src, bool (*compare)(const Vertex& lhs, const Vertex& rhs))
+{
 	std::vector<s32> vertex_mapping(src.vertices.size());
 	for(size_t i = 0; i < src.vertices.size(); i++) {
 		vertex_mapping[i] = i;
@@ -64,7 +65,8 @@ Mesh sort_vertices(Mesh src, bool (*compare)(const Vertex& lhs, const Vertex& rh
 	return dest;
 }
 
-Mesh deduplicate_vertices(Mesh src) {
+Mesh deduplicate_vertices(Mesh src)
+{
 	Mesh dest;
 	dest.name = std::move(src.name);
 	dest.flags = src.flags;
@@ -149,7 +151,8 @@ Mesh deduplicate_vertices(Mesh src) {
 	return dest;
 }
 
-Mesh deduplicate_faces(Mesh mesh) {
+Mesh deduplicate_faces(Mesh mesh)
+{
 	start_timer("Deduplicating faces (remember to make this not N^2)");
 	for(SubMesh& submesh : mesh.submeshes) {
 		auto faces = std::move(submesh.faces);
@@ -192,7 +195,8 @@ Mesh deduplicate_faces(Mesh mesh) {
 	return mesh;
 }
 
-void remove_zero_area_triangles(Mesh& mesh) {
+void remove_zero_area_triangles(Mesh& mesh)
+{
 	for(SubMesh& submesh : mesh.submeshes) {
 		std::vector<Face> old_faces = std::move(submesh.faces);
 		submesh.faces = {};
@@ -204,7 +208,8 @@ void remove_zero_area_triangles(Mesh& mesh) {
 	}
 }
 
-void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh) {
+void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh)
+{
 	for(SubMesh& submesh : mesh.submeshes) {
 		for(Face& face : submesh.faces) {
 			Vertex& v0 = mesh.vertices[face.v0];
@@ -219,15 +224,18 @@ void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh) {
 	}
 }
 
-bool vec2_equal_eps(const glm::vec2& lhs, const glm::vec2& rhs, f32 eps) {
+bool vec2_equal_eps(const glm::vec2& lhs, const glm::vec2& rhs, f32 eps)
+{
 	return fabs(lhs.x - rhs.x) < eps && fabs(lhs.y - rhs.y) < eps;
 }
 
-bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps) {
+bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps)
+{
 	return fabs(lhs.x - rhs.x) < eps && fabs(lhs.y - rhs.y) < eps && fabs(lhs.z - rhs.z) < eps;
 }
 
-Mesh merge_meshes(const std::vector<Mesh>& meshes, std::string name, u32 flags) {
+Mesh merge_meshes(const std::vector<Mesh>& meshes, std::string name, u32 flags)
+{
 	Mesh merged;
 	merged.name = std::move(name);
 	merged.flags = flags;
@@ -251,7 +259,12 @@ Mesh merge_meshes(const std::vector<Mesh>& meshes, std::string name, u32 flags) 
 	return merged;
 }
 
-glm::vec4 approximate_bounding_sphere(const glm::mat4** cuboids, size_t cuboid_count, const std::pair<const glm::vec4*, size_t>* splines, size_t spline_count) {
+glm::vec4 approximate_bounding_sphere(
+	const glm::mat4** cuboids,
+	size_t cuboid_count,
+	const std::pair<const glm::vec4*, size_t>* splines,
+	size_t spline_count)
+{
 	std::vector<Vertex> vertices;
 	for(size_t i = 0; i < cuboid_count; i++) {
 		vertices.emplace_back(glm::vec3(*cuboids[i] * glm::vec4(-1.f, -1.f, -1.f, 1.f)));
@@ -271,14 +284,16 @@ glm::vec4 approximate_bounding_sphere(const glm::mat4** cuboids, size_t cuboid_c
 	return approximate_bounding_sphere(vertices); 
 }
 
-glm::vec4 approximate_bounding_sphere(const std::vector<Vertex>& vertices) {
+glm::vec4 approximate_bounding_sphere(const std::vector<Vertex>& vertices)
+{
 	BSphereVertexList list;
 	list.vertices = vertices.data();
 	list.vertex_count = vertices.size();
 	return approximate_bounding_sphere(&list, 1);
 }
 
-glm::vec4 approximate_bounding_sphere(const BSphereVertexList* vertex_lists, size_t vertex_list_count) {
+glm::vec4 approximate_bounding_sphere(const BSphereVertexList* vertex_lists, size_t vertex_list_count)
+{
 	size_t total_vertex_count = 0;
 	for(size_t i = 0; i < vertex_list_count; i++) {
 		total_vertex_count += vertex_lists[i].vertex_count;

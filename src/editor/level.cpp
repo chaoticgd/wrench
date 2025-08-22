@@ -28,7 +28,8 @@
 
 Level::Level() {}
 
-void Level::read(LevelAsset& asset, Game g) {
+void Level::read(LevelAsset& asset, Game g)
+{
 	game = g;
 	m_asset = &asset;
 	m_instances_asset = &level_wad().get_gameplay().as<InstancesAsset>();
@@ -138,7 +139,8 @@ void Level::read(LevelAsset& asset, Game g) {
 	}
 }
 
-std::string Level::save() {
+std::string Level::save()
+{
 	verify_fatal(m_instances_asset);
 	
 	std::string message;
@@ -183,24 +185,29 @@ std::string Level::save() {
 	return message;
 }
 
-LevelAsset& Level::level() {
+LevelAsset& Level::level()
+{
 	return *m_asset;
 }
 
-LevelWadAsset& Level::level_wad() {
+LevelWadAsset& Level::level_wad()
+{
 	return level().get_level().as<LevelWadAsset>();
 }
 
-Instances& Level::instances() {
+Instances& Level::instances()
+{
 	return m_instances;
 }
 
 
-const Instances& Level::instances() const {
+const Instances& Level::instances() const
+{
 	return m_instances;
 }
 
-Opt<EditorClass> load_moby_editor_class(const MobyClassAsset& moby) {
+Opt<EditorClass> load_moby_editor_class(const MobyClassAsset& moby)
+{
 	if(!moby.has_editor_mesh()) {
 		return std::nullopt;
 	}
@@ -233,7 +240,8 @@ Opt<EditorClass> load_moby_editor_class(const MobyClassAsset& moby) {
 	return editor_moby;
 }
 
-Opt<EditorClass> load_tie_editor_class(const TieClassAsset& tie) {
+Opt<EditorClass> load_tie_editor_class(const TieClassAsset& tie)
+{
 	if(!tie.has_editor_mesh()) {
 		return std::nullopt;
 	}
@@ -264,7 +272,8 @@ Opt<EditorClass> load_tie_editor_class(const TieClassAsset& tie) {
 	return editor_tie;
 }
 
-Opt<EditorClass> load_shrub_editor_class(const ShrubClassAsset& shrub) {
+Opt<EditorClass> load_shrub_editor_class(const ShrubClassAsset& shrub)
+{
 	if(!shrub.has_core()) {
 		return std::nullopt;
 	}

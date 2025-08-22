@@ -31,7 +31,8 @@ static void out(const char* format, ...);
 
 static WrenchFileHandle* out_handle = NULL;
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	assert(argc == 3);
 	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
 	if(!file) {
@@ -88,7 +89,8 @@ int main(int argc, char** argv) {
 	}
 }
 
-static void out(const char* format, ...) {
+static void out(const char* format, ...)
+{
 	va_list list;
 	va_start(list, format);
 	file_vprintf(out_handle, format, list);

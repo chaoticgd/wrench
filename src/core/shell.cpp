@@ -34,11 +34,13 @@
 
 static std::string prepare_arguments(s32 argc, const char** argv);
 
-CommandThread::~CommandThread() {
+CommandThread::~CommandThread()
+{
 	stop();
 }
 
-void CommandThread::start(const std::vector<std::string>& args) {
+void CommandThread::start(const std::vector<std::string>& args)
+{
 	clear();
 	CommandThread* command = this;
 	m_thread = std::thread([args, command]() {
@@ -54,7 +56,8 @@ void CommandThread::start(const std::vector<std::string>& args) {
 	});
 }
 
-void CommandThread::stop() {
+void CommandThread::stop()
+{
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		if(m_shared.state == NOT_RUNNING) {
@@ -80,7 +83,8 @@ void CommandThread::stop() {
 	m_thread.join();
 }
 
-void CommandThread::clear() {
+void CommandThread::clear()
+{
 	stop();
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
@@ -88,27 +92,32 @@ void CommandThread::clear() {
 	}
 }
 
-std::string& CommandThread::get_last_output_lines() {
+std::string& CommandThread::get_last_output_lines()
+{
 	update_last_output_lines();
 	return m_buffer;
 }
 
-std::string CommandThread::copy_entire_output() {
+std::string CommandThread::copy_entire_output()
+{
 	std::lock_guard<std::mutex> lock(m_mutex);
 	return m_shared.output;
 }
 
-bool CommandThread::is_running() {
+bool CommandThread::is_running()
+{
 	std::lock_guard<std::mutex> lock(m_mutex);
 	return m_shared.state == RUNNING;
 }
 
-bool CommandThread::succeeded() {
+bool CommandThread::succeeded()
+{
 	std::lock_guard<std::mutex> lock(m_mutex);
 	return m_shared.success;
 }
 
-void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& command) {
+void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& command)
+{
 	verify_fatal(argc >= 1);
 
 	// Pass arguments to the shell as enviroment variables.
@@ -214,7 +223,8 @@ void CommandThread::update_last_output_lines() {
 	}
 }
 
-s32 execute_command(s32 argc, const char** argv, bool blocking) {
+s32 execute_command(s32 argc, const char** argv, bool blocking)
+{
 	verify_fatal(argc >= 1);
 	
 	std::string command_string = prepare_arguments(argc, argv);
@@ -246,7 +256,8 @@ s32 execute_command(s32 argc, const char** argv, bool blocking) {
 	return system(command_string.c_str());
 }
 
-void open_in_file_manager(const char* path) {
+void open_in_file_manager(const char* path)
+{
 #ifdef _WIN32
 	ShellExecuteA(nullptr, "open", path, nullptr, nullptr, SW_SHOWDEFAULT);
 #else
@@ -287,7 +298,8 @@ static std::string argv_quote(const std::string& argument) {
 	return command;
 }
 
-static std::string prepare_arguments(s32 argc, const char** argv) {
+static std::string prepare_arguments(s32 argc, const char** argv)
+{
 	std::string command;
 	
 #ifdef _WIN32

@@ -63,24 +63,29 @@ static InspectorFieldFuncs camera_collision_funcs();
 static InspectorFieldFuncs moby_rooted_funcs();
 
 static bool should_draw_field(Level& lvl, const InspectorField& field);
-static void should_draw_current_values(bool values_equal[MAX_LANES], Level& lvl, const InspectorField& field);
+static void should_draw_current_values(
+	bool values_equal[MAX_LANES], Level& lvl, const InspectorField& field);
 
 template <s32 lane_count, typename Value>
 static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs);
 template <typename Value>
-static InspectorGetterSetter<Value> adapt_getter_setter(Value (Instance::*getter)() const, void (Instance::*setter)(Value));
+static InspectorGetterSetter<Value> adapt_getter_setter(
+	Value (Instance::*getter)() const, void (Instance::*setter)(Value));
 template <typename Value>
-static InspectorGetterSetter<Value> adapt_reference_member_function(Value& (Instance::*member_function)());
+static InspectorGetterSetter<Value> adapt_reference_member_function(
+	Value& (Instance::*member_function)());
 template <typename Value, typename ThisInstance>
 static InspectorGetterSetter<Value> adapt_member_pointer(Value ThisInstance::*member_pointer);
 
 static float calc_remaining_item_width();
 static std::array<std::string, MAX_LANES> vec4_to_strings(glm::vec4 vec, bool values_equal[MAX_LANES]);
-static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed);
+static Opt<glm::vec4> strings_to_vec4(
+	std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed);
 template <typename Scalar>
 static Opt<Scalar> string_to_scalar(std::string& string);
 
-void inspector() {
+void inspector()
+{
 	app& a = *g_app;
 	if(!a.get_level()) {
 		ImGui::Text("<no level>");
@@ -253,7 +258,8 @@ void inspector() {
 // This is needed so that when you switch objects imgui doesn't get confused
 // and use state related to one object for a different object. This probably
 // isn't perfect but should work in most cases.
-static u32 get_invaliation_id(const Instances& instances) {
+static u32 get_invaliation_id(const Instances& instances)
+{
 	static u32 id = 0;
 	static std::vector<bool> selected_back, selected_front;
 	// Determine which instances are selected.
@@ -271,7 +277,8 @@ static u32 get_invaliation_id(const Instances& instances) {
 	return id;
 }
 
-static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields) {
+static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields)
+{
 	for(const InspectorField& field : fields) {
 		verify_fatal(field.funcs.lane_count <= MAX_LANES);
 		if(should_draw_field(lvl, field)) {
@@ -303,7 +310,8 @@ static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields) {
 	}
 }
 
-static InspectorFieldFuncs type_funcs() {
+static InspectorFieldFuncs type_funcs()
+{
 	InspectorFieldFuncs funcs;
 	funcs.lane_count = 1;
 	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
@@ -320,7 +328,8 @@ static InspectorFieldFuncs type_funcs() {
 	return funcs;
 }
 
-static InspectorFieldFuncs id_funcs() {
+static InspectorFieldFuncs id_funcs()
+{
 	InspectorFieldFuncs funcs;
 	funcs.lane_count = 1;
 	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
@@ -337,7 +346,8 @@ static InspectorFieldFuncs id_funcs() {
 }
 
 template <typename Value>
-static InspectorFieldFuncs scalar_funcs(InspectorGetterSetter<Value> getset) {
+static InspectorFieldFuncs scalar_funcs(InspectorGetterSetter<Value> getset)
+{
 	InspectorFieldFuncs funcs;
 	funcs.lane_count = 1;
 	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32) {
@@ -363,7 +373,8 @@ static InspectorFieldFuncs scalar_funcs(InspectorGetterSetter<Value> getset) {
 	return funcs;
 }
 
-static InspectorFieldFuncs bool_funcs(InspectorGetterSetter<bool> getset) {
+static InspectorFieldFuncs bool_funcs(InspectorGetterSetter<bool> getset)
+{
 	InspectorFieldFuncs funcs;
 	funcs.lane_count = 1;
 	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32) {
@@ -379,7 +390,8 @@ static InspectorFieldFuncs bool_funcs(InspectorGetterSetter<bool> getset) {
 	return funcs;
 }
 
-static InspectorFieldFuncs vec3_funcs(InspectorGetterSetter<glm::vec3> getset) {
+static InspectorFieldFuncs vec3_funcs(InspectorGetterSetter<glm::vec3> getset)
+{
 	InspectorFieldFuncs funcs;
 	funcs.lane_count = 3;
 	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32 lane) {
@@ -400,7 +412,8 @@ static InspectorFieldFuncs vec3_funcs(InspectorGetterSetter<glm::vec3> getset) {
 	return funcs;
 }
 
-static InspectorFieldFuncs vec4_funcs(InspectorGetterSetter<glm::vec4> getset) {
+static InspectorFieldFuncs vec4_funcs(InspectorGetterSetter<glm::vec4> getset)
+{
 	InspectorFieldFuncs funcs;
 	funcs.lane_count = 4;
 	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32 lane) {
@@ -421,7 +434,8 @@ static InspectorFieldFuncs vec4_funcs(InspectorGetterSetter<glm::vec4> getset) {
 }
 
 template <typename ThisInstance>
-static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisInstance::*field) {
+static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisInstance::*field)
+{
 	InspectorFieldFuncs funcs;
 	funcs.lane_count = 1;
 	funcs.compare = [field](Instance& lhs, Instance& rhs, s32) {
@@ -460,7 +474,8 @@ static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisI
 	return funcs;
 }
 
-static InspectorFieldFuncs camera_collision_funcs() {
+static InspectorFieldFuncs camera_collision_funcs()
+{
 	InspectorFieldFuncs funcs;
 	funcs.lane_count = 1;
 	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
@@ -502,7 +517,8 @@ static InspectorFieldFuncs camera_collision_funcs() {
 	return funcs;
 }
 
-static InspectorFieldFuncs moby_rooted_funcs() {
+static InspectorFieldFuncs moby_rooted_funcs()
+{
 	InspectorFieldFuncs funcs;
 	funcs.lane_count = 1;
 	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
@@ -546,7 +562,8 @@ static InspectorFieldFuncs moby_rooted_funcs() {
 	return funcs;
 }
 
-static bool should_draw_field(Level& lvl, const InspectorField& field) {
+static bool should_draw_field(Level& lvl, const InspectorField& field)
+{
 	bool one_instance_has_field = false;
 	bool all_instances_have_field = true;
 	lvl.instances().for_each([&](Instance& inst) {
@@ -562,7 +579,9 @@ static bool should_draw_field(Level& lvl, const InspectorField& field) {
 	return one_instance_has_field && all_instances_have_field;
 }
 
-static void should_draw_current_values(bool values_equal[MAX_LANES], Level& lvl, const InspectorField& field) {
+static void should_draw_current_values(
+	bool values_equal[MAX_LANES], Level& lvl, const InspectorField& field)
+{
 	for(s32 lane = 0; lane < MAX_LANES; lane++) {
 		values_equal[lane] = true;
 	}
@@ -582,7 +601,9 @@ static void should_draw_current_values(bool values_equal[MAX_LANES], Level& lvl,
 }
 
 template <s32 lane_count, typename Value>
-static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs) {
+static void apply_to_all_selected(
+	Level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs)
+{
 	struct InspectorCommand {
 		InspectorGetterSetter<Value> funcs;
 		std::array<bool, MAX_LANES> lanes;
@@ -633,7 +654,9 @@ static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_
 }
 
 template <typename Value>
-static InspectorGetterSetter<Value> adapt_getter_setter(Value (Instance::*getter)() const, void (Instance::*setter)(Value)) {
+static InspectorGetterSetter<Value> adapt_getter_setter(
+	Value (Instance::*getter)() const, void (Instance::*setter)(Value))
+{
 	InspectorGetterSetter<Value> funcs;
 	funcs.get = [getter](Instance& inst) {
 		return (inst.*getter)();
@@ -645,7 +668,8 @@ static InspectorGetterSetter<Value> adapt_getter_setter(Value (Instance::*getter
 }
 
 template <typename Value>
-static InspectorGetterSetter<Value> adapt_reference_member_function(Value& (Instance::*member_function)()) {
+static InspectorGetterSetter<Value> adapt_reference_member_function(Value& (Instance::*member_function)())
+{
 	InspectorGetterSetter<Value> funcs;
 	funcs.get = [member_function](Instance& inst) {
 		Value value = (inst.*member_function)();
@@ -658,7 +682,8 @@ static InspectorGetterSetter<Value> adapt_reference_member_function(Value& (Inst
 }
 
 template <typename Value, typename ThisInstance>
-static InspectorGetterSetter<Value> adapt_member_pointer(Value ThisInstance::*member_pointer) {
+static InspectorGetterSetter<Value> adapt_member_pointer(Value ThisInstance::*member_pointer)
+{
 	InspectorGetterSetter<Value> funcs;
 	funcs.get = [member_pointer](Instance& inst) {
 		return dynamic_cast<ThisInstance&>(inst).*member_pointer;
@@ -669,11 +694,14 @@ static InspectorGetterSetter<Value> adapt_member_pointer(Value ThisInstance::*me
 	return funcs;
 }
 
-static float calc_remaining_item_width() {
+static float calc_remaining_item_width()
+{
 	return ImGui::GetWindowSize().x - ImGui::GetCursorPos().x - 16.f;
 }
 
-bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count) {
+bool inspector_input_text_n(
+	std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count)
+{
 	for(s32 lane = 0; lane < MAX_LANES; lane++) {
 		changed[lane] = false;
 	}
@@ -692,7 +720,8 @@ bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::ar
 	return any_lane_changed;
 }
 
-static std::array<std::string, MAX_LANES> vec4_to_strings(glm::vec4 vec, bool values_equal[MAX_LANES]) {
+static std::array<std::string, MAX_LANES> vec4_to_strings(glm::vec4 vec, bool values_equal[MAX_LANES])
+{
 	std::array<std::string, MAX_LANES> strings;
 	for(s32 lane = 0; lane < 4; lane++) {
 		if(values_equal[lane]) {
@@ -702,7 +731,9 @@ static std::array<std::string, MAX_LANES> vec4_to_strings(glm::vec4 vec, bool va
 	return strings;
 }
 
-static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed) {
+static Opt<glm::vec4> strings_to_vec4(
+	std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed)
+{
 	glm::vec4 vec;
 	try {
 		for(s32 lane = 0; lane < 4; lane++) {
@@ -719,7 +750,8 @@ static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& string
 }
 
 template <typename Scalar>
-static Opt<Scalar> string_to_scalar(std::string& string) {
+static Opt<Scalar> string_to_scalar(std::string& string)
+{
 	try {
 		if constexpr(std::is_floating_point_v<Scalar>) {
 			return std::stof(string);

@@ -24,7 +24,8 @@
 
 #include <platform/fileio.h>
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	size_t retval;
 
 	if(argc <= 3) {

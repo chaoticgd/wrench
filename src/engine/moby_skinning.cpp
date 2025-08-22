@@ -23,7 +23,11 @@
 
 namespace MOBY {
 
-void prepare_skin_matrices(const std::vector<MobyMatrixTransfer>& preloop_matrix_transfers, Opt<SkinAttributes> blend_cache[64], bool animated) {
+void prepare_skin_matrices(
+	const std::vector<MobyMatrixTransfer>& preloop_matrix_transfers,
+	Opt<SkinAttributes> blend_cache[64],
+	bool animated)
+{
 	for(const MobyMatrixTransfer& transfer : preloop_matrix_transfers) {
 		verify(transfer.vu0_dest_addr % 4 == 0, "Unaligned pre-loop joint address 0x%llx.", transfer.vu0_dest_addr);
 		if(!animated && transfer.spr_joint_index == 0) {
@@ -36,7 +40,13 @@ void prepare_skin_matrices(const std::vector<MobyMatrixTransfer>& preloop_matrix
 	}
 }
 
-SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64], const MobyVertex& mv, s32 ind, s32 two_way_count, s32 three_way_count) {
+SkinAttributes read_skin_attributes(
+	Opt<SkinAttributes> blend_buffer[64],
+	const MobyVertex& mv,
+	s32 ind,
+	s32 two_way_count,
+	s32 three_way_count)
+{
 	SkinAttributes attribs;
 	
 	auto load_skin_attribs = [&](u8 addr) {
@@ -163,11 +173,13 @@ SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64], const 
 	return attribs;
 }
 
-const Vertex& VertexLocation::find_vertex_in(const std::vector<GLTF::Mesh>& packets) const {
+const Vertex& VertexLocation::find_vertex_in(const std::vector<GLTF::Mesh>& packets) const
+{
 	return packets[packet].vertices[vertex];
 }
 
-s32 max_num_joints_referenced_per_packet(const std::vector<GLTF::Mesh>& packets) {
+s32 max_num_joints_referenced_per_packet(const std::vector<GLTF::Mesh>& packets)
+{
 	// This seems suboptimal but it's what Insomniac did.
 	s32 max_joints_per_packet = 0;
 	for(size_t i = 0; i < packets.size(); i++) {
@@ -186,7 +198,9 @@ s32 max_num_joints_referenced_per_packet(const std::vector<GLTF::Mesh>& packets)
 	return max_joints_per_packet;
 }
 
-std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<GLTF::Mesh>& packets) {
+std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(
+	const std::vector<GLTF::Mesh>& packets)
+{
 	std::vector<VertexLocation> mapping;
 	for(size_t i = 0; i < packets.size(); i++) {
 		for(size_t j = 0; j < packets[i].vertices.size(); j++) {
@@ -244,7 +258,13 @@ std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::
 }
 
 
-MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const GLTF::Mesh& packet, VertexTable* last_packet, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness) {
+MatrixTransferSchedule schedule_matrix_transfers(
+	s32 smi,
+	const GLTF::Mesh& packet,
+	VertexTable* last_packet,
+	VU0MatrixAllocator& mat_alloc,
+	const std::vector<MatrixLivenessInfo>& liveness)
+{
 	// Determine which slots in VU0 memory are in use by the previous packet
 	// while we are trying to do transfers for the current packet.
 	std::vector<bool> slots_in_use(0x40, false);
@@ -399,13 +419,15 @@ MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const GLTF::Mesh& pack
 	return schedule;
 }
 
-VU0MatrixAllocator::VU0MatrixAllocator(s32 max_joints_per_packet) {
+VU0MatrixAllocator::VU0MatrixAllocator(s32 max_joints_per_packet)
+{
 	first_blend_store_addr = max_joints_per_packet * 0x4;
 	next_blend_store_addr = first_blend_store_addr;
 	verify(first_blend_store_addr < 0xf4, "Failed to allocate transfer matrices in VU0 memory. Try simplifying your joint weights.");
 }
 
-void VU0MatrixAllocator::new_packet() {
+void VU0MatrixAllocator::new_packet()
+{
 	next_blend_store_addr = first_blend_store_addr;
 	transfer_allocations_this_packet = 0;
 	blend_allocations_this_packet = 0;
@@ -414,7 +436,8 @@ void VU0MatrixAllocator::new_packet() {
 	}
 }
 
-Opt<u8> VU0MatrixAllocator::allocate_transferred(u8 joint, const char* context) {
+Opt<u8> VU0MatrixAllocator::allocate_transferred(u8 joint, const char* context)
+{
 	SkinAttributes attribs{1, {(s8) joint, 0, 0}, {255, 0, 0}};
 	MatrixAllocation& allocation = allocations[attribs];
 	if(allocation.generation != slots[allocation.address / 0x4].generation) {
@@ -435,7 +458,9 @@ Opt<u8> VU0MatrixAllocator::allocate_transferred(u8 joint, const char* context) 
 	return std::nullopt;
 }
 
-void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_packet, s32 last_packet, const std::vector<Vertex>& vertices) {
+void VU0MatrixAllocator::allocate_blended(
+	SkinAttributes attribs, s32 current_packet, s32 last_packet, const std::vector<Vertex>& vertices)
+{
 	MatrixAllocation& allocation = allocations[attribs];
 	if(allocation.generation != slots[allocation.address / 0x4].generation) {
 		// Try to find a slot that isn't live.
@@ -490,7 +515,8 @@ void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_pa
 	}
 }
 
-Opt<MatrixAllocation> VU0MatrixAllocator::get_allocation(SkinAttributes attribs, s32 current_packet) {
+Opt<MatrixAllocation> VU0MatrixAllocator::get_allocation(SkinAttributes attribs, s32 current_packet)
+{
 	auto iter = allocations.find(attribs);
 	if(iter == allocations.end()) {
 		return std::nullopt;
@@ -510,7 +536,8 @@ Opt<MatrixAllocation> VU0MatrixAllocator::get_allocation(SkinAttributes attribs,
 	return copy;
 }
 
-Opt<MatrixAllocation> VU0MatrixAllocator::get_allocation_pre(SkinAttributes attribs) {
+Opt<MatrixAllocation> VU0MatrixAllocator::get_allocation_pre(SkinAttributes attribs)
+{
 	auto iter = allocations.find(attribs);
 	if(iter == allocations.end()) {
 		return std::nullopt;

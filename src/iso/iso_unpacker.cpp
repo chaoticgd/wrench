@@ -41,7 +41,8 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 static void enumerate_extra_files(std::vector<UnpackInfo>& dest, CollectionAsset& files, fs::path out, const IsoDirectory& dir, InputStream& src, const std::string& boot_elf);
 static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc);
 
-void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnpackerFunc unpack) {
+void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnpackerFunc unpack)
+{
 	dest.set_game(game_to_string(config.game()));
 	dest.set_region(region_to_string(config.region()));
 	
@@ -104,7 +105,9 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 	}
 }
 
-static void add_missing_levels_from_filesystem(table_of_contents& toc, const IsoDirectory& dir, InputStream& iso) {
+static void add_missing_levels_from_filesystem(
+	table_of_contents& toc, const IsoDirectory& dir, InputStream& iso)
+{
 	// Some builds have levels not referenced by the toc. Try to find these.
 	
 	for(const IsoFileRecord& record : dir.files) {
@@ -132,7 +135,8 @@ static void add_missing_levels_from_filesystem(table_of_contents& toc, const Iso
 	}
 }
 
-static void unpack_ps2_logo(BuildAsset& build, InputStream& src, BuildConfig config) {
+static void unpack_ps2_logo(BuildAsset& build, InputStream& src, BuildConfig config)
+{
 	src.seek(0);
 	std::vector<u8> logo = src.read_multiple<u8>(12 * SECTOR_SIZE);
 	
@@ -166,7 +170,8 @@ static void unpack_ps2_logo(BuildAsset& build, InputStream& src, BuildConfig con
 	}
 }
 
-static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd) {
+static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd)
+{
 	PrimaryVolumeDescriptorAsset& asset = build.primary_volume_descriptor();
 	asset.set_system_identifier(std::string(pvd.system_identifier, sizeof(pvd.system_identifier)));
 	asset.set_volume_identifier(std::string(pvd.volume_identifier, sizeof(pvd.volume_identifier)));
@@ -218,7 +223,13 @@ static std::string parse_system_cnf(BuildAsset& build, const std::string& src, c
 	return boot_elf;
 }
 
-static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game) {
+static void enumerate_global_wads(
+	std::vector<UnpackInfo>& dest,
+	BuildAsset& build,
+	const table_of_contents& toc,
+	InputStream& src,
+	Game game)
+{
 	for(const GlobalWadInfo& global : toc.globals) {
 		auto [wad_game, wad_type, name] = identify_wad(global.header);
 		std::string file_name = std::string(name) + ".wad";
@@ -248,7 +259,12 @@ static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& bui
 	}
 }
 
-static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset& levels, const table_of_contents& toc, InputStream& src) {
+static void enumerate_level_wads(
+	std::vector<UnpackInfo>& dest,
+	CollectionAsset& levels,
+	const table_of_contents& toc,
+	InputStream& src)
+{
 	for(s32 i = 0; i < (s32) toc.levels.size(); i++) {
 		const LevelInfo& level = toc.levels[i];
 		
@@ -285,7 +301,14 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 	}
 }
 
-static void enumerate_extra_files(std::vector<UnpackInfo>& dest, CollectionAsset& files, fs::path out, const IsoDirectory& dir, InputStream& src, const std::string& boot_elf) {
+static void enumerate_extra_files(
+	std::vector<UnpackInfo>& dest,
+	CollectionAsset& files,
+	fs::path out,
+	const IsoDirectory& dir,
+	InputStream& src,
+	const std::string& boot_elf)
+{
 	for(const IsoFileRecord& file : dir.files) {
 		bool include = true;
 		include &= boot_elf.empty() || file.name != "system.cnf";
@@ -315,7 +338,8 @@ static void enumerate_extra_files(std::vector<UnpackInfo>& dest, CollectionAsset
 	}
 }
 
-static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc) {
+static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc)
+{
 	// Assume the beginning of the next file after this one is also the end
 	// of this file.
 	size_t start_of_file = global.sector.bytes();

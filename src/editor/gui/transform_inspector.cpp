@@ -24,7 +24,8 @@ static void pos_rot_scale_inspector(Level& lvl);
 static void matrix_inspector(Level& lvl);
 static bool string_to_float(f32* dest, const char* src);
 
-void transform_inspector(Level& lvl) {
+void transform_inspector(Level& lvl)
+{
 	bool selected = false;
 	lvl.instances().for_each_with(COM_TRANSFORM, [&](Instance& inst) {
 		if(inst.selected) {
@@ -51,7 +52,8 @@ void transform_inspector(Level& lvl) {
 	}
 }
 
-static void pos_rot_scale_inspector(Level& lvl) {
+static void pos_rot_scale_inspector(Level& lvl)
+{
 	bool pos_equal[3] = {true, true, true};
 	bool rot_equal[3] = {true, true, true};
 	bool scale_equal = true;
@@ -222,7 +224,8 @@ static void pos_rot_scale_inspector(Level& lvl) {
 	);
 }
 
-static void matrix_inspector(Level& lvl) {
+static void matrix_inspector(Level& lvl)
+{
 	bool matrix_equal[4][4];
 	for(s32 i = 0; i < 4; i++) {
 		for(s32 j = 0; j < 4; j++) {
@@ -346,7 +349,8 @@ static void matrix_inspector(Level& lvl) {
 	);
 }
 
-static bool string_to_float(f32* dest, const char* src) {
+static bool string_to_float(f32* dest, const char* src)
+{
 	char* end = nullptr;
 	f32 f = strtof(src, &end);
 	if(end == src) {

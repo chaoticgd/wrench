@@ -22,11 +22,14 @@ static void create_pvar_type(CppType& type);
 static void move_assign_pvar_type(CppType& lhs, CppType& rhs);
 static void destroy_pvar_type(CppType& type);
 
-CppType::CppType(CppTypeDescriptor d) : descriptor(d) {
+CppType::CppType(CppTypeDescriptor d)
+	: descriptor(d)
+{
 	create_pvar_type(*this);
 }
 
-CppType::CppType(CppType&& rhs) {
+CppType::CppType(CppType&& rhs)
+{
 	name = std::move(rhs.name);
 	offset = rhs.offset;
 	size = rhs.size;
@@ -38,11 +41,13 @@ CppType::CppType(CppType&& rhs) {
 	move_assign_pvar_type(*this, rhs);
 }
 
-CppType::~CppType() {
+CppType::~CppType()
+{
 	destroy_pvar_type(*this);
 }
 
-CppType& CppType::operator=(CppType&& rhs) {
+CppType& CppType::operator=(CppType&& rhs)
+{
 	if(this == &rhs) {
 		return *this;
 	}
@@ -62,7 +67,8 @@ CppType& CppType::operator=(CppType&& rhs) {
 	return *this;
 }
 
-static void create_pvar_type(CppType& type) {
+static void create_pvar_type(CppType& type)
+{
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
 			new (&type.array) CppArray;
@@ -95,7 +101,8 @@ static void create_pvar_type(CppType& type) {
 	}
 }
 
-static void move_assign_pvar_type(CppType& lhs, CppType& rhs) {
+static void move_assign_pvar_type(CppType& lhs, CppType& rhs)
+{
 	switch(lhs.descriptor) {
 		case CPP_ARRAY: {
 			lhs.array = std::move(rhs.array);
@@ -128,7 +135,8 @@ static void move_assign_pvar_type(CppType& lhs, CppType& rhs) {
 	}
 }
 
-static void destroy_pvar_type(CppType& type) {
+static void destroy_pvar_type(CppType& type)
+{
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
 			type.array.~CppArray();
@@ -163,7 +171,8 @@ static void destroy_pvar_type(CppType& type) {
 
 // *****************************************************************************
 
-void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const CppABI& abi) {
+void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const CppABI& abi)
+{
 	switch(type.descriptor) {
 		case CPP_ARRAY: {
 			verify_fatal(type.array.element_type.get());
@@ -273,11 +282,13 @@ struct CppDumpContext {
 	s32 digits_for_offset = 3;
 };
 
-static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDumpContext& parent_context);
+static void dump_cpp_type_impl(
+	OutBuffer& dest, const CppType& type, const CppDumpContext& parent_context);
 static void dump_pointers_name_and_subscripts(OutBuffer& dest, CppDumpContext& context);
 static void indent_cpp(OutBuffer& dest, const CppDumpContext& context);
 
-void dump_cpp_type(OutBuffer& dest, const CppType& type) {
+void dump_cpp_type(OutBuffer& dest, const CppType& type)
+{
 	CppDumpContext context;
 	if(type.size > -1) {
 		context.digits_for_offset = (s32) ceilf(log2(type.size) / 4.f);
@@ -285,7 +296,9 @@ void dump_cpp_type(OutBuffer& dest, const CppType& type) {
 	dump_cpp_type_impl(dest, type, context);
 }
 
-static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDumpContext& parent_context) {
+static void dump_cpp_type_impl(
+	OutBuffer& dest, const CppType& type, const CppDumpContext& parent_context)
+{
 	CppDumpContext context = parent_context;
 	if(!type.name.empty()) {
 		context.name = type.name.c_str();
@@ -376,7 +389,8 @@ static void dump_cpp_type_impl(OutBuffer& dest, const CppType& type, const CppDu
 	}
 }
 
-static void dump_pointers_name_and_subscripts(OutBuffer& dest, CppDumpContext& context) {
+static void dump_pointers_name_and_subscripts(OutBuffer& dest, CppDumpContext& context)
+{
 	dest.writesf(" ");
 	for(size_t i = context.pointers.size(); i > 0; i--) {
 		dest.writesf("%c", context.pointers[i - 1]);
@@ -392,14 +406,16 @@ static void dump_pointers_name_and_subscripts(OutBuffer& dest, CppDumpContext& c
 	context.array_subscripts.clear();
 }
 
-static void indent_cpp(OutBuffer& dest, const CppDumpContext& context) {
+static void indent_cpp(OutBuffer& dest, const CppDumpContext& context)
+{
 	for(s32 i = 0; i < context.indentation; i++) {
 		dest.writesf("\t");
 	}
 }
 
 
-void destructively_merge_cpp_structs(CppType& dest, CppType& src) {
+void destructively_merge_cpp_structs(CppType& dest, CppType& src)
+{
 	verify_fatal(dest.name == src.name);
 	verify_fatal(dest.descriptor == CPP_STRUCT_OR_UNION && !dest.struct_or_union.is_union);
 	verify_fatal(src.descriptor == CPP_STRUCT_OR_UNION && !src.struct_or_union.is_union);
@@ -414,7 +430,8 @@ void destructively_merge_cpp_structs(CppType& dest, CppType& src) {
 	}
 }
 
-const char* cpp_built_in(CppBuiltIn built_in) {
+const char* cpp_built_in(CppBuiltIn built_in)
+{
 	switch(built_in) {
 		case CPP_VOID: return "void";
 		case CPP_CHAR: return "char";
@@ -446,7 +463,9 @@ const char* cpp_built_in(CppBuiltIn built_in) {
 	return "error";
 }
 
-const CppPreprocessorDirective* cpp_directive(const CppType& type, CppPreprocessorDirectiveType directive_type) {
+const CppPreprocessorDirective* cpp_directive(
+	const CppType& type, CppPreprocessorDirectiveType directive_type)
+{
 	for(const CppPreprocessorDirective& directive : type.preprocessor_directives) {
 		if(directive.type == directive_type) {
 			return &directive;

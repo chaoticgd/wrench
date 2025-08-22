@@ -94,17 +94,36 @@ packed_struct(DlBonusWadHeader,
 )
 
 template <typename Header>
-static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
+static void unpack_rac_gc_bonus_wad(
+	BonusWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
 template <typename Header>
-static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, const BonusWadAsset& src, BuildConfig config);
-static void unpack_rac_gc_credits_text(CollectionAsset& dest, InputStream& src, SectorRange range, BuildConfig config);
-static SectorRange pack_rac_gc_credits_text(OutputStream& dest, const CollectionAsset& src, BuildConfig config);
+static void pack_rac_gc_bonus_wad(
+	OutputStream& dest, Header& header, const BonusWadAsset& src, BuildConfig config);
+static void unpack_rac_gc_credits_text(
+	CollectionAsset& dest, InputStream& src, SectorRange range, BuildConfig config);
+static SectorRange pack_rac_gc_credits_text(
+	OutputStream& dest, const CollectionAsset& src, BuildConfig config);
 template <typename Header>
-static void unpack_uya_dl_bonus_wad(BonusWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
+static void unpack_uya_dl_bonus_wad(
+	BonusWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
 template <typename Header>
-static void pack_uya_dl_bonus_wad(OutputStream& dest, Header& header, const BonusWadAsset& src, BuildConfig config);
-static void unpack_demo_images(CollectionAsset& dest, InputStream& src, const SectorRange* ranges, s32 outer_count, s32 inner_count, BuildConfig config);
-static void pack_demo_images(OutputStream& dest, SectorRange* ranges, s32 outer_count, s32 inner_count, const CollectionAsset& src, BuildConfig config, const char* muffin);
+static void pack_uya_dl_bonus_wad(
+	OutputStream& dest, Header& header, const BonusWadAsset& src, BuildConfig config);
+static void unpack_demo_images(
+	CollectionAsset& dest,
+	InputStream& src,
+	const SectorRange* ranges,
+	s32 outer_count,
+	s32 inner_count,
+	BuildConfig config);
+static void pack_demo_images(
+	OutputStream& dest,
+	SectorRange* ranges,
+	s32 outer_count,
+	s32 inner_count,
+	const CollectionAsset& src,
+	BuildConfig config,
+	const char* muffin);
 
 on_load(Bonus, []() {
 	BonusWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<BonusWadAsset, RacBonusWadHeader>(unpack_rac_gc_bonus_wad<RacBonusWadHeader>);
@@ -119,7 +138,9 @@ on_load(Bonus, []() {
 })
 
 template <typename Header>
-static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, const Header& header, InputStream& src, BuildConfig config) {
+static void unpack_rac_gc_bonus_wad(
+	BonusWadAsset& dest, const Header& header, InputStream& src, BuildConfig config)
+{
 	unpack_compressed_assets<TextureAsset>(dest.goodies_images(SWITCH_FILES), src, ARRAY_PAIR(header.goodies_images), config, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.character_sketches(SWITCH_FILES), src, ARRAY_PAIR(header.character_sketches), config, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.character_renders(SWITCH_FILES), src, ARRAY_PAIR(header.character_renders), config, FMT_TEXTURE_PIF8);
@@ -154,7 +175,9 @@ static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, const Header& header, I
 }
 
 template <typename Header>
-static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, const BonusWadAsset& src, BuildConfig config) {
+static void pack_rac_gc_bonus_wad(
+	OutputStream& dest, Header& header, const BonusWadAsset& src, BuildConfig config)
+{
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.goodies_images), src.get_goodies_images(), config, "goodies_images", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.character_sketches), src.get_character_sketches(), config, "character_sketches", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.character_renders), src.get_character_renders(), config, "character_renders", FMT_TEXTURE_PIF8);
@@ -188,7 +211,9 @@ static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, const Bonu
 	}
 }
 
-static void unpack_rac_gc_credits_text(CollectionAsset& dest, InputStream& src, SectorRange range, BuildConfig config) {
+static void unpack_rac_gc_credits_text(
+	CollectionAsset& dest, InputStream& src, SectorRange range, BuildConfig config)
+{
 	std::vector<s32> offsets = src.read_multiple<s32>(range.bytes().offset, 8);
 	for(s32 i = 0; i < 8; i++) {
 		ByteRange inner;
@@ -202,7 +227,9 @@ static void unpack_rac_gc_credits_text(CollectionAsset& dest, InputStream& src, 
 	}
 }
 
-static SectorRange pack_rac_gc_credits_text(OutputStream& dest, const CollectionAsset& src, BuildConfig config) {
+static SectorRange pack_rac_gc_credits_text(
+	OutputStream& dest, const CollectionAsset& src, BuildConfig config)
+{
 	dest.pad(SECTOR_SIZE, 0);
 	s64 begin_ofs = dest.tell();
 	dest.alloc_multiple<s32>(8);
@@ -220,7 +247,9 @@ static SectorRange pack_rac_gc_credits_text(OutputStream& dest, const Collection
 }
 
 template <typename Header>
-static void unpack_uya_dl_bonus_wad(BonusWadAsset& dest, const Header& header, InputStream& src, BuildConfig config) {
+static void unpack_uya_dl_bonus_wad(
+	BonusWadAsset& dest, const Header& header, InputStream& src, BuildConfig config)
+{
 	unpack_assets<BinaryAsset>(dest.credits_text(SWITCH_FILES), src, ARRAY_PAIR(header.credits_text), config);
 	unpack_assets<TextureAsset>(dest.credits_images(SWITCH_FILES), src, ARRAY_PAIR(header.credits_images), config, FMT_TEXTURE_RGBA);
 	unpack_demo_images(dest.demo_menu(SWITCH_FILES), src, ARRAY_PAIR(header.demo_menu), 30, config);
@@ -234,7 +263,9 @@ static void unpack_uya_dl_bonus_wad(BonusWadAsset& dest, const Header& header, I
 }
 
 template <typename Header>
-void pack_uya_dl_bonus_wad(OutputStream& dest, Header& header, const BonusWadAsset& src, BuildConfig config) {
+void pack_uya_dl_bonus_wad(
+	OutputStream& dest, Header& header, const BonusWadAsset& src, BuildConfig config)
+{
 	pack_assets_sa(dest, ARRAY_PAIR(header.credits_text), src.get_credits_text(), config);
 	pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), config, FMT_TEXTURE_RGBA);
 	pack_demo_images(dest, ARRAY_PAIR(header.demo_menu), 30, src.get_demo_menu(), config, "demo_menu");
@@ -247,7 +278,14 @@ void pack_uya_dl_bonus_wad(OutputStream& dest, Header& header, const BonusWadAss
 	}
 }
 
-static void unpack_demo_images(CollectionAsset& dest, InputStream& src, const SectorRange* ranges, s32 outer_count, s32 inner_count, BuildConfig config) {
+static void unpack_demo_images(
+	CollectionAsset& dest,
+	InputStream& src,
+	const SectorRange* ranges,
+	s32 outer_count,
+	s32 inner_count,
+	BuildConfig config)
+{
 	for(s32 i = 0; i < outer_count; i++) {
 		CollectionAsset& inner = dest.foreign_child<CollectionAsset>(i);
 		SubInputStream stream(src, ranges[i].bytes());
@@ -267,7 +305,15 @@ static void unpack_demo_images(CollectionAsset& dest, InputStream& src, const Se
 	}
 }
 
-static void pack_demo_images(OutputStream& dest, SectorRange* ranges, s32 outer_count, s32 inner_count, const CollectionAsset& src, BuildConfig config, const char* muffin) {
+static void pack_demo_images(
+	OutputStream& dest,
+	SectorRange* ranges,
+	s32 outer_count,
+	s32 inner_count,
+	const CollectionAsset& src,
+	BuildConfig config,
+	const char* muffin)
+{
 	for(s32 i = 0; i < outer_count; i++) {
 		if(src.has_child(i)) {
 			const CollectionAsset& inner = src.get_child(i).as<CollectionAsset>();

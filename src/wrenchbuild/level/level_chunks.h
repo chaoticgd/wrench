@@ -36,8 +36,10 @@ struct LevelChunk {
 	std::vector<u8> sound_bank;
 };
 
-void unpack_level_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, BuildConfig config);
-std::vector<LevelChunk> load_level_chunks(const LevelWadAsset& level_wad, const Gameplay& gameplay, BuildConfig config);
+void unpack_level_chunks(
+	CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, BuildConfig config);
+std::vector<LevelChunk> load_level_chunks(
+	const LevelWadAsset& level_wad, const Gameplay& gameplay, BuildConfig config);
 ChunkWadHeader write_level_chunks(OutputStream& dest, const std::vector<LevelChunk>& chunks);
 
 #endif

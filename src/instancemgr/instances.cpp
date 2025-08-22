@@ -21,7 +21,8 @@
 #include <wtf/wtf.h>
 #include <wtf/wtf_writer.h>
 
-Instance* Instances::from_id(InstanceId id) {
+Instance* Instances::from_id(InstanceId id)
+{
 	switch(id.type) {
 		#define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
 			case INST_##inst_type_uppercase: return inst_variable.from_id(id.value);
@@ -34,13 +35,15 @@ Instance* Instances::from_id(InstanceId id) {
 	return nullptr;
 }
 
-void Instances::clear_selection() {
+void Instances::clear_selection()
+{
 	this->for_each([&](Instance& inst) {
 		inst.selected = false;
 	});
 }
 
-std::vector<InstanceId> Instances::selected_instances() const {
+std::vector<InstanceId> Instances::selected_instances() const
+{
 	std::vector<InstanceId> ids;
 	this->for_each([&](const Instance& inst) {
 		if(inst.selected) {
@@ -60,7 +63,8 @@ struct InstanceReadWriteFuncs {
 #include "_generated_instance_types.inl"
 #undef GENERATED_INSTANCE_READ_WRITE_TABLE
 
-Instances read_instances(std::string& src) {
+Instances read_instances(std::string& src)
+{
 	char* error = nullptr;
 	WtfNode* root = wtf_parse(src.data(), &error);
 	verify(!error && root, "Failed to parse instances file. %s", error);
@@ -94,7 +98,8 @@ Instances read_instances(std::string& src) {
 	return dest;
 }
 
-std::string write_instances(const Instances& src, const char* application_name, const char* application_version) {
+std::string write_instances(const Instances& src, const char* application_name, const char* application_version)
+{
 	std::string dest;
 	WtfWriter* ctx = wtf_begin_file(dest);
 	defer([&]() { wtf_end_file(ctx); });

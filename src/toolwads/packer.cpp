@@ -36,7 +36,8 @@ static s32 parse_positive_embedded_int(const char* str);
 
 std::string build_dir;
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	if(argc != 2) {
 		if(argc != 0) {
 			fprintf(stderr, "usage: %s <build dir>\n", argv[0]);
@@ -71,7 +72,8 @@ int main(int argc, char** argv) {
 extern const char* git_commit;
 extern const char* git_tag;
 
-static void pack_build_wad() {
+static void pack_build_wad()
+{
 	FileOutputStream wad;
 	verify_fatal(wad.open(build_dir + "/build.wad"));
 	
@@ -121,7 +123,8 @@ static void pack_build_wad() {
 	wad.write<BuildWadHeader>(0, header);
 }
 
-static void pack_gui_wad() {
+static void pack_gui_wad()
+{
 	FileOutputStream wad;
 	verify_fatal(wad.open(build_dir + "/gui.wad"));
 	
@@ -153,7 +156,8 @@ static void pack_gui_wad() {
 	wad.write<GuiWadHeader>(0, header);
 }
 
-static void pack_launcher_wad() {
+static void pack_launcher_wad()
+{
 	FileOutputStream wad;
 	verify_fatal(wad.open(build_dir + "/launcher.wad"));
 	
@@ -168,7 +172,8 @@ static void pack_launcher_wad() {
 	wad.write<LauncherWadHeader>(0, header);
 }
 
-static SectorRange pack_oobe_wad(OutputStream& dest) {
+static SectorRange pack_oobe_wad(OutputStream& dest)
+{
 	dest.pad(SECTOR_SIZE, 0);
 	s64 offset = dest.tell();
 	
@@ -194,7 +199,8 @@ static SectorRange pack_oobe_wad(OutputStream& dest) {
 	return range;
 }
 
-static void pack_editor_wad() {
+static void pack_editor_wad()
+{
 	FileOutputStream wad;
 	verify_fatal(wad.open(build_dir + "/editor.wad"));
 	
@@ -228,7 +234,8 @@ static void pack_editor_wad() {
 	wad.write<EditorWadHeader>(0, header);
 }
 
-static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path) {
+static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path)
+{
 	dest.pad(SECTOR_SIZE, 0);
 	s64 offset = dest.tell();
 	
@@ -265,7 +272,8 @@ static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path) {
 	return range;
 }
 
-static void pack_memcard_wad() {
+static void pack_memcard_wad()
+{
 	FileOutputStream wad;
 	verify_fatal(wad.open(build_dir + "/memcard.wad"));
 	
@@ -285,7 +293,8 @@ static void pack_memcard_wad() {
 
 // *****************************************************************************
 
-static SectorRange pack_file(OutputStream& dest, const char* src_path) {
+static SectorRange pack_file(OutputStream& dest, const char* src_path)
+{
 	dest.pad(SECTOR_SIZE, 0);
 	s64 offset = dest.tell();
 	
@@ -305,7 +314,8 @@ static SectorRange pack_file(OutputStream& dest, const char* src_path) {
 	return range;
 }
 
-static SectorRange pack_compressed_image(OutputStream& dest, const char* src_path) {
+static SectorRange pack_compressed_image(OutputStream& dest, const char* src_path)
+{
 	dest.pad(SECTOR_SIZE, 0);
 	s32 offset = dest.tell();
 	
@@ -325,7 +335,8 @@ static SectorRange pack_compressed_image(OutputStream& dest, const char* src_pat
 	return range;
 }
 
-static ByteRange pack_image(OutputStream& dest, const char* src_path) {
+static ByteRange pack_image(OutputStream& dest, const char* src_path)
+{
 	s32 offset = (s32) dest.tell();
 	
 	FileInputStream src;
@@ -345,7 +356,8 @@ static ByteRange pack_image(OutputStream& dest, const char* src_path) {
 }
 
 
-static s32 parse_positive_embedded_int(const char* str) {
+static s32 parse_positive_embedded_int(const char* str)
+{
 	char copy[16] = {};
 	s32 size = strlen(str);
 	for(s32 i = 0; i < std::min(16, size); i++) {

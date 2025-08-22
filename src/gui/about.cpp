@@ -39,7 +39,8 @@ static License loaded_license = MAX_LICENSE;
 static std::vector<u8> license_text;
 
 template <License license>
-static constexpr VoidFuncPtr gen_license_page() {
+static constexpr VoidFuncPtr gen_license_page()
+{
 	return []() {
 		if(license != loaded_license) {
 			license_text.clear();
@@ -82,12 +83,14 @@ static const gui::Chapter ABOUT_SCREEN[] = {
 
 static std::vector<u8> credits_text;
 
-void gui::about_screen() {
+void gui::about_screen()
+{
 	static const Page* page = nullptr;
 	gui::book(&page, "About##the_popup", ARRAY_PAIR(ABOUT_SCREEN), BookButtons::CLOSE);
 }
 
-static void about_wrench() {
+static void about_wrench()
+{
 	ImGui::TextWrapped("Wrench is a set of modding tools for the Ratchet & Clank PS2 games.");
 	ImGui::NewLine();
 	// These numbers are extracted from the git tag at build time. See 'src/toolwads/'.
@@ -107,7 +110,8 @@ static void about_wrench() {
 	}
 }
 
-static void about_credits() {
+static void about_credits()
+{
 	if(credits_text.empty()) {
 		SectorRange range = wadinfo.gui.credits;
 		std::vector<u8> compressed_bytes = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
@@ -120,7 +124,8 @@ static void about_credits() {
 	ImGui::TextWrapped("%s", (const char*) credits_text.data());
 }
 
-static void about_libraries() {
+static void about_libraries()
+{
 	const char* libraries =
 		"Catch2: https://github.com/catchorg/Catch2\n"
 		"dear imgui: https://github.com/ocornut/imgui\n"

@@ -21,7 +21,12 @@
 #include <nfd.h>
 #include <gui/gui.h>
 
-void gui::build_settings(PackerParams& params, const std::vector<std::string>* game_builds, const std::vector<std::string>& mod_builds, bool launcher) {
+void gui::build_settings(
+	PackerParams& params,
+	const std::vector<std::string>* game_builds,
+	const std::vector<std::string>& mod_builds,
+	bool launcher)
+{
 	static size_t selected_build = 0;
 	
 	// Merge the list of builds from original game and the ones from any

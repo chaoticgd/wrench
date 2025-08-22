@@ -31,9 +31,11 @@ bool validate_wad(const uint8_t* magic) {
 	return memcmp(magic, "WAD", 3) == 0;
 }
 
-static void decompress_packet(std::vector<uint8_t>& dest, const uint8_t*& ptr, const uint8_t* begin, const uint8_t* end);
+static void decompress_packet(
+	std::vector<uint8_t>& dest, const uint8_t*& ptr, const uint8_t* begin, const uint8_t* end);
 
-bool decompress_wad(std::vector<uint8_t>& dest, WadBuffer src) {
+bool decompress_wad(std::vector<uint8_t>& dest, WadBuffer src)
+{
 	if(src.ptr + 0x10 > src.end) {
 		return false;
 	}
@@ -60,7 +62,8 @@ bool decompress_wad(std::vector<uint8_t>& dest, WadBuffer src) {
 	return true;
 }
 
-static void decompress_packet(std::vector<uint8_t>& dest, const uint8_t*& ptr, const uint8_t* begin, const uint8_t* end) {
+static void decompress_packet(std::vector<uint8_t>& dest, const uint8_t*& ptr, const uint8_t* begin, const uint8_t* end)
+{
 	auto read8 = [&]() {
 		if(ptr >= end || ptr < begin) {
 			throw std::domain_error("Unexpected end of buffer.");
@@ -153,7 +156,8 @@ static void decompress_packet(std::vector<uint8_t>& dest, const uint8_t*& ptr, c
 }
 
 // Used for calculating the bounds of the sliding window.
-std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
+std::size_t sub_clamped(std::size_t lhs, std::size_t rhs)
+{
 	if(rhs > lhs) {
 		return 0;
 	}
@@ -238,7 +242,9 @@ const int32_t WINDOW_MASK = WINDOW_SIZE - 1;
 
 const std::vector<char> EMPTY_LITTLE_LITERAL = { 0x11, 0, 0 };
 
-void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, const char* muffin, int thread_count) {
+void compress_wad(
+	std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, const char* muffin, int thread_count)
+{
 	WAD_COMPRESS_DEBUG(
 		#ifdef WAD_COMPRESS_DEBUG_EXPECTED_PATH
 			file_stream expected(WAD_COMPRESS_DEBUG_EXPECTED_PATH);
@@ -287,10 +293,11 @@ void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, c
 }
 
 static void compress_wad_intermediate(
-		std::vector<uint8_t>* intermediate,
-		const uint8_t* src,
-		size_t src_pos,
-		size_t src_end) {
+	std::vector<uint8_t>* intermediate,
+	const uint8_t* src,
+	size_t src_pos,
+	size_t src_end)
+{
 	uint32_t last_flag = DO_NOT_INJECT_FLAG;
 	std::vector<uint8_t> thread_dest;
 	std::vector<int32_t> ht(WINDOW_SIZE, -WINDOW_SIZE);
@@ -313,7 +320,8 @@ static void compress_wad_intermediate(
 	*intermediate = std::move(thread_dest);
 }
 
-int32_t hash32(int32_t n) {
+static int32_t hash32(int32_t n)
+{
 	return ((n * 12) + n) >> 3;
 }
 
@@ -323,7 +331,8 @@ static match_result find_match(
 	size_t src_pos,
 	size_t src_end,
 	std::vector<int32_t>& ht,
-	std::vector<int32_t>& chain) {
+	std::vector<int32_t>& chain)
+{
 	size_t max_literal_size = end_of_buffer ?
 		std::min(MAX_LITERAL_SIZE, src_end - src_pos) : MAX_LITERAL_SIZE;
 	
@@ -385,13 +394,14 @@ static match_result find_match(
 }
 
 static void encode_match_packet(
-		std::vector<uint8_t>& dest,
-		const uint8_t* src,
-		size_t& src_pos,
-		size_t src_end,
-		uint32_t& last_flag,
-		size_t match_offset,
-		size_t match_size) {
+	std::vector<uint8_t>& dest,
+	const uint8_t* src,
+	size_t& src_pos,
+	size_t src_end,
+	uint32_t& last_flag,
+	size_t match_offset,
+	size_t match_size)
+{
 	size_t start_of_packet = dest.size();
 	size_t lookback = src_pos - match_offset;
 	
@@ -441,12 +451,13 @@ static void encode_match_packet(
 }
 
 static void encode_literal_packet(
-		std::vector<uint8_t>& dest,
-		const uint8_t* src,
-		size_t& src_pos,
-		size_t src_end,
-		uint32_t& last_flag,
-		size_t literal_size) {
+	std::vector<uint8_t>& dest,
+	const uint8_t* src,
+	size_t& src_pos,
+	size_t src_end,
+	uint32_t& last_flag,
+	size_t literal_size)
+{
 	size_t start_of_packet = dest.size();
 	
 	if(last_flag < 0x10) { // Two literals in a row? Implausible!
@@ -493,7 +504,9 @@ static void encode_literal_packet(
 	last_flag = dest[start_of_packet];
 }
 
-static void append_buffer(std::vector<uint8_t>& dest, const std::vector<uint8_t>& intermediate, size_t header_pos) {
+static void append_buffer(
+	std::vector<uint8_t>& dest, const std::vector<uint8_t>& intermediate, size_t header_pos)
+{
 	for(size_t pos = 0; pos < intermediate.size();) {
 		size_t packet_size = get_wad_packet_size(
 			intermediate.data() + pos,
@@ -538,7 +551,8 @@ static void append_buffer(std::vector<uint8_t>& dest, const std::vector<uint8_t>
 	}
 }
 
-static size_t get_wad_packet_size(const uint8_t* src, size_t bytes_left) {
+static size_t get_wad_packet_size(const uint8_t* src, size_t bytes_left)
+{
 	size_t size_of_packet = 1; // flag
 	uint8_t flag_byte = src[0];
 	if(flag_byte < 0x10) { // Literal packet (0x0-0xf).

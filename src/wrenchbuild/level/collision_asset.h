@@ -25,6 +25,11 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-void pack_level_collision(OutputStream& dest, const CollisionAsset& src, const LevelWadAsset* level_wad, const Gameplay* gameplay, s32 chunk);
+void pack_level_collision(
+	OutputStream& dest,
+	const CollisionAsset& src,
+	const LevelWadAsset* level_wad,
+	const Gameplay* gameplay,
+	s32 chunk);
 
 #endif

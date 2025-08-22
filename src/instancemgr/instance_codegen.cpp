@@ -36,7 +36,8 @@ static void out(const char* format, ...);
 
 static WrenchFileHandle* out_handle = NULL;
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	assert(argc == 3);
 	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
 	if(!file) {
@@ -98,7 +99,8 @@ int main(int argc, char** argv) {
 	out("#endif");
 }
 
-static void generate_instance_macro_calls(WtfNode* root) {
+static void generate_instance_macro_calls(WtfNode* root)
+{
 	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		const WtfAttribute* variable = wtf_attribute_of_type(type, "variable", WTF_STRING);
 		assert(variable);
@@ -113,7 +115,8 @@ static void generate_instance_macro_calls(WtfNode* root) {
 	}
 }
 
-static void generate_instance_type_enum(WtfNode* root) {
+static void generate_instance_type_enum(WtfNode* root)
+{
 	out("enum InstanceType : u32 {");
 	out("\tINST_NONE = 0,");
 	int number = 1;
@@ -134,7 +137,8 @@ static const struct { const char* wtf_type; const char* cpp_type; const char* se
 	{"Rgb96", "Rgb96", "{}"}
 };
 
-static void generate_instance_types(WtfNode* root) {
+static void generate_instance_types(WtfNode* root)
+{
 	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		const WtfAttribute* components = wtf_attribute_of_type(type, "components", WTF_STRING);
 		assert(components);
@@ -180,12 +184,14 @@ static void generate_instance_types(WtfNode* root) {
 	}
 }
 
-static void generate_instance_read_write_funcs(WtfNode* root) {
+static void generate_instance_read_write_funcs(WtfNode* root)
+{
 	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		const WtfAttribute* variable = wtf_attribute_of_type(type, "variable", WTF_STRING);
 		assert(variable);
 		
-		out("void %sInstance::read(Instances& dest, const WtfNode* src) {", type->tag);
+		out("void %sInstance::read(Instances& dest, const WtfNode* src)", type->tag);
+		out("{");
 		out("\t%sInstance& inst = dest.%s.create(atoi(src->tag));", type->tag, variable->string.begin);
 		out("\tinst.read_common(src);");
 		for(const WtfNode* field = type->first_child; field != nullptr; field = field->next_sibling) {
@@ -193,7 +199,8 @@ static void generate_instance_read_write_funcs(WtfNode* root) {
 		}
 		out("}");
 		out("");
-		out("void %sInstance::write(WtfWriter* dest, const Instances& src) {", type->tag);
+		out("void %sInstance::write(WtfWriter* dest, const Instances& src)", type->tag);
+		out("{");
 		out("\tfor(const %sInstance& inst : src.%s) {", type->tag, variable->string.begin);
 		out("\t\tinst.begin_write(dest);");
 		for(const WtfNode* field = type->first_child; field != nullptr; field = field->next_sibling) {
@@ -206,7 +213,8 @@ static void generate_instance_read_write_funcs(WtfNode* root) {
 	}
 }
 
-static void generate_instance_read_write_table(WtfNode* root) {
+static void generate_instance_read_write_table(WtfNode* root)
+{
 	out("static const InstanceReadWriteFuncs read_write_funcs[] = {");
 	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		std::string enum_name = type->tag;
@@ -216,8 +224,10 @@ static void generate_instance_read_write_table(WtfNode* root) {
 	out("};");
 }
 
-static void generate_instance_type_to_string_func(WtfNode* root) {
-	out("const char* instance_type_to_string(InstanceType type) {");
+static void generate_instance_type_to_string_func(WtfNode* root)
+{
+	out("const char* instance_type_to_string(InstanceType type)");
+	out("{");
 	out("\tswitch(type) {");
 	out("\t\tcase INST_NONE: return \"None\";");
 	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
@@ -230,7 +240,8 @@ static void generate_instance_type_to_string_func(WtfNode* root) {
 	out("};");
 }
 
-static void out(const char* format, ...) {
+static void out(const char* format, ...)
+{
 	va_list list;
 	va_start(list, format);
 	file_vprintf(out_handle, format, list);

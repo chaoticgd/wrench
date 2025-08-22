@@ -28,4 +28,5 @@ struct AssetSelector {
 	Asset* selected = nullptr;
 };
 
-Asset* asset_selector(const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest);
+Asset* asset_selector(
+	const char* label, const char* default_preview, AssetSelector& state, AssetForest& forest);

@@ -102,11 +102,19 @@ struct VisSamples {
 static void startup_opengl(GPUHandles& gpu);
 static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input);
 static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& cpu_meshes);
-static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSamplePoint& sample_point, s32 chunk);
+static void compute_vis_sample(
+	VisSamples& samples, GPUHandles& gpu, const VisSamplePoint& sample_point, s32 chunk);
 static bool test_aabb_against_frustum(const VisAABB& aabb, const glm::mat4& matrix);
 static void sync_vis_samples(VisSamples& samples, GPUHandles& gpu);
-static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& octant_masks_of_object_bits, s32 octant_count, s32 instance_count, s32 stride);
-static void compress_octants(std::vector<u8>& compressed_vis_masks, s32 mask_count, s32 memory_budget_for_masks);
+static void compress_objects(
+	std::vector<u8>& masks_dest,
+	std::vector<s32>& mapping_dest,
+	const std::vector<u8>& octant_masks_of_object_bits,
+	s32 octant_count,
+	s32 instance_count,
+	s32 stride);
+static void compress_octants(
+	std::vector<u8>& compressed_vis_masks, s32 mask_count, s32 memory_budget_for_masks);
 static void shutdown_opengl(GPUHandles& gpu);
 
 #define GET_BIT(val_dest, mask_src, index, size) \
@@ -157,7 +165,8 @@ static const glm::mat4 RATCHET_TO_OPENGL_MATRIX = {
 	0,  0, 0, 1
 };
 
-VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_masks) {
+VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_masks)
+{
 	ERROR_CONTEXT("building visibility");
 	
 	puts("**** Entered visibility routine! ****");
@@ -296,7 +305,8 @@ VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_
 	return output;
 }
 
-static void startup_opengl(GPUHandles& gpu) {
+static void startup_opengl(GPUHandles& gpu)
+{
 #ifdef VIS_DEBUG_RENDERDOC
 	if(void* mod = dlopen("librenderdoc.so", RTLD_NOW | RTLD_NOLOAD)) {
 		pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI) dlsym(mod, "RENDERDOC_GetAPI");
@@ -397,7 +407,8 @@ static void startup_opengl(GPUHandles& gpu) {
 	GL_CALL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 }
 
-static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
+static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input)
+{
 	s32 max_vertices, max_indices;
 	GL_CALL(glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &max_vertices));
 	GL_CALL(glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &max_indices));
@@ -495,7 +506,8 @@ static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
 	return vis_meshes;
 }
 
-static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& cpu_meshes) {
+static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& cpu_meshes)
+{
 	std::vector<GPUVisMesh> gpu_meshes;
 	gpu_meshes.reserve(cpu_meshes.size());
 	for(const CPUVisMesh& src : cpu_meshes) {
@@ -527,7 +539,9 @@ static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& 
 	return gpu_meshes;
 }
 
-static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSamplePoint& sample_point, s32 chunk) {
+static void compute_vis_sample(
+	VisSamples& samples, GPUHandles& gpu, const VisSamplePoint& sample_point, s32 chunk)
+{
 	static const glm::mat4 directions[6] = {
 		glm::mat4(1.f),
 		glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)),
@@ -591,7 +605,8 @@ static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSa
 }
 
 // https://bruop.github.io/frustum_culling/
-static bool test_aabb_against_frustum(const VisAABB& aabb, const glm::mat4& matrix) {
+static bool test_aabb_against_frustum(const VisAABB& aabb, const glm::mat4& matrix)
+{
 	glm::vec4 corners[8] = {
 		{aabb.min.x, aabb.min.y, aabb.min.z, 1.0f},
 		{aabb.max.x, aabb.min.y, aabb.min.z, 1.0f},
@@ -617,7 +632,8 @@ static bool test_aabb_against_frustum(const VisAABB& aabb, const glm::mat4& matr
 	return false;
 }
 
-static void sync_vis_samples(VisSamples& samples, GPUHandles& gpu) {
+static void sync_vis_samples(VisSamples& samples, GPUHandles& gpu)
+{
 	// Read the contents of the framebuffer.
 	GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, gpu.frame_buffer));
 	GL_CALL(glReadPixels(0, 0, VIS_RENDER_SIZE, VIS_RENDER_SIZE, GL_RED_INTEGER, GL_UNSIGNED_SHORT, gpu.temp_frame.data()));
@@ -641,7 +657,14 @@ static void sync_vis_samples(VisSamples& samples, GPUHandles& gpu) {
 	}
 }
 
-static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& octant_masks_of_object_bits, s32 octant_count, s32 instance_count, s32 stride) {
+static void compress_objects(
+	std::vector<u8>& masks_dest,
+	std::vector<s32>& mapping_dest,
+	const std::vector<u8>& octant_masks_of_object_bits,
+	s32 octant_count,
+	s32 instance_count,
+	s32 stride)
+{
 	verify_fatal(octant_masks_of_object_bits.size() % stride == 0);
 	
 	s32 object_mask_size = align32(octant_count, 64) / 8;
@@ -747,7 +770,9 @@ static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapp
 	verify_fatal(dest_bit <= 1024);
 }
 
-static void compress_octants(std::vector<u8>& compressed_vis_masks, s32 mask_count, s32 memory_budget_for_masks) {
+static void compress_octants(
+	std::vector<u8>& compressed_vis_masks, s32 mask_count, s32 memory_budget_for_masks)
+{
 	s32 max_masks = memory_budget_for_masks / 128;
 	s32 masks_required = mask_count;
 	
@@ -820,7 +845,8 @@ static void compress_octants(std::vector<u8>& compressed_vis_masks, s32 mask_cou
 	}
 }
 
-static void shutdown_opengl(GPUHandles& gpu) {
+static void shutdown_opengl(GPUHandles& gpu)
+{
 	GL_CALL(glDeleteFramebuffers(1, &gpu.frame_buffer));
 	GL_CALL(glDeleteTextures(1, &gpu.id_buffer));
 	GL_CALL(glDeleteTextures(1, &gpu.depth_buffer));

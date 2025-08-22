@@ -117,10 +117,13 @@ static Json write_node(const Node& src);
 // Meshes
 static Mesh read_mesh(const Json& src, const std::vector<Accessor>& accessors);
 static Json write_mesh(const Mesh& src, std::vector<Accessor>& accessors);
-static MeshPrimitive read_mesh_primitive(const Json& src, std::vector<Vertex>& vertices_dest, const std::vector<Accessor>& accessors);
-static Json write_mesh_primitive(const MeshPrimitive& src, const std::vector<Vertex>& vertices_src, std::vector<Accessor>& accessors);
+static MeshPrimitive read_mesh_primitive(
+	const Json& src, std::vector<Vertex>& vertices_dest, const std::vector<Accessor>& accessors);
+static Json write_mesh_primitive(
+	const MeshPrimitive& src, const std::vector<Vertex>& vertices_src, std::vector<Accessor>& accessors);
 static bool read_attribute(Vertex* dest, MeshPrimitiveAttribute semantic, const Accessor& accessor);
-static Json write_attributes(const MeshPrimitive& src, const std::vector<Vertex>& vertices, std::vector<Accessor>& accessors);
+static Json write_attributes(
+	const MeshPrimitive& src, const std::vector<Vertex>& vertices, std::vector<Accessor>& accessors);
 static std::vector<glm::vec2> convert_tex_coords(const Accessor& accessor);
 static std::vector<ColourAttribute> convert_colours(const Accessor& accessor);
 static std::vector<std::array<s8, 3>> convert_joints(const Accessor& accessor);
@@ -147,7 +150,8 @@ static Skin read_skin(const Json& src, const std::vector<Accessor>& accessors);
 static Json write_skin(const Skin& src, std::vector<Accessor>& accessors);
 static Animation read_animation(const Json& src, const std::vector<Accessor>& accessors);
 static Json write_animation(const Animation& src, std::vector<Accessor>& accessors);
-static void convert_animation_sampler_output(std::vector<AnimationAttributes>& dest, const char* path, const Accessor& accessor);
+static void convert_animation_sampler_output(
+	std::vector<AnimationAttributes>& dest, const char* path, const Accessor& accessor);
 template <typename AttributeType>
 static void build_animation_channel(
 		std::vector<AnimationChannel>& channels,
@@ -166,8 +170,10 @@ static AnimationSampler read_animation_sampler(const Json& src);
 static Json write_animation_sampler(const AnimationSampler& src);
 
 // Accessors & Buffers
-static Accessor read_accessor(const Json& src, const std::vector<GLTFBufferView>& buffer_views, Buffer bin_chunk);
-static Json write_accessor(const Accessor& src, std::vector<GLTFBufferView>& buffer_views, OutBuffer bin_chunk);
+static Accessor read_accessor(
+	const Json& src, const std::vector<GLTFBufferView>& buffer_views, Buffer bin_chunk);
+static Json write_accessor(
+	const Accessor& src, std::vector<GLTFBufferView>& buffer_views, OutBuffer bin_chunk);
 static GLTFBufferView read_buffer_view(const Json& src);
 static Json write_buffer_view(const GLTFBufferView& src);
 static GLTFBuffer read_buffer(const Json& src);
@@ -203,7 +209,8 @@ static s32 accessor_component_count(AccessorType type);
 
 #define FOURCC(string) ((string)[0] | (string)[1] << 8 | (string)[2] << 16 | (string)[3] << 24)
 
-ModelFile read_glb(Buffer src) {
+ModelFile read_glb(Buffer src)
+{
 	const GLBHeader& header = src.read<GLBHeader>(0);
 	
 	// The format is made up of a stream of chunks. Find them.
@@ -237,7 +244,8 @@ ModelFile read_glb(Buffer src) {
 	return gltf;
 }
 
-std::vector<u8> write_glb(const ModelFile& gltf) {
+std::vector<u8> write_glb(const ModelFile& gltf)
+{
 	std::vector<u8> result;
 	OutBuffer dest(result);
 	
@@ -273,7 +281,8 @@ std::vector<u8> write_glb(const ModelFile& gltf) {
 	return result;
 }
 
-DefaultScene create_default_scene(const char* generator) {
+DefaultScene create_default_scene(const char* generator)
+{
 	DefaultScene result;
 	result.gltf.asset.generator = generator;
 	result.gltf.asset.version = "2.0";
@@ -282,7 +291,8 @@ DefaultScene create_default_scene(const char* generator) {
 	return result;
 }
 
-Node* lookup_node(ModelFile& gltf, const char* name) {
+Node* lookup_node(ModelFile& gltf, const char* name)
+{
 	for(Node& node : gltf.nodes) {
 		if(node.name.has_value() && strcmp(node.name->c_str(), name) == 0) {
 			return &node;
@@ -291,7 +301,8 @@ Node* lookup_node(ModelFile& gltf, const char* name) {
 	return nullptr;
 }
 
-Mesh* lookup_mesh(ModelFile& gltf, const char* name) {
+Mesh* lookup_mesh(ModelFile& gltf, const char* name)
+{
 	for(Mesh& mesh : gltf.meshes) {
 		if(mesh.name.has_value() && strcmp(mesh.name->c_str(), name) == 0) {
 			return &mesh;
@@ -300,7 +311,8 @@ Mesh* lookup_mesh(ModelFile& gltf, const char* name) {
 	return nullptr;
 }
 
-Material* lookup_material(ModelFile& gltf, const char* name) {
+Material* lookup_material(ModelFile& gltf, const char* name)
+{
 	for(Material& material : gltf.materials) {
 		if(material.name.has_value() && strcmp(material.name->c_str(), name) == 0) {
 			return &material;
@@ -309,7 +321,8 @@ Material* lookup_material(ModelFile& gltf, const char* name) {
 	return nullptr;
 }
 
-void deduplicate_vertices(Mesh& mesh) {
+void deduplicate_vertices(Mesh& mesh)
+{
 	size_t old_vertex_count = mesh.vertices.size();
 	
 	// Map duplicate vertices onto their "canonical" equivalents.
@@ -351,7 +364,8 @@ void deduplicate_vertices(Mesh& mesh) {
 	}
 }
 
-void remove_zero_area_triangles(Mesh& mesh) {
+void remove_zero_area_triangles(Mesh& mesh)
+{
 	for(MeshPrimitive& primitive : mesh.primitives) {
 		std::vector<s32> old_indices = std::move(primitive.indices);
 		primitive.indices = {};
@@ -368,7 +382,8 @@ void remove_zero_area_triangles(Mesh& mesh) {
 	}
 }
 
-void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh) {
+void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh)
+{
 	for(MeshPrimitive& primitive : mesh.primitives) {
 		for(size_t i = 0; i < primitive.indices.size() / 3; i++) {
 			Vertex& v0 = mesh.vertices[primitive.indices[i * 3 + 0]];
@@ -383,7 +398,8 @@ void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh) {
 	}
 }
 
-void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<::Material>& materials) {
+void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<::Material>& materials)
+{
 	// Generate mapping.
 	std::vector<s32> mapping(gltf.materials.size(), -1);
 	for(size_t i = 0; i < gltf.materials.size(); i++) {
@@ -414,7 +430,8 @@ void map_gltf_materials_to_wrench_materials(ModelFile& gltf, const std::vector<:
 // When splitting a mesh up into submeshes, this is used to generate a new
 // vertex buffer for each output mesh, and rewrite the index buffers of the
 // mesh primitives appropriately.
-void filter_vertices(Mesh& mesh, const std::vector<Vertex>& input_vertices, bool rewrite_indices) {
+void filter_vertices(Mesh& mesh, const std::vector<Vertex>& input_vertices, bool rewrite_indices)
+{
 	std::vector<Vertex> output_vertices;
 	std::vector<s32> mapping(input_vertices.size(), -1);
 	for(MeshPrimitive& primitive : mesh.primitives) {
@@ -432,7 +449,8 @@ void filter_vertices(Mesh& mesh, const std::vector<Vertex>& input_vertices, bool
 	mesh.vertices = std::move(output_vertices);
 }
 
-void verify_meshes_equal(Mesh& lhs, Mesh& rhs, bool check_vertices, bool check_indices, const char* context) {
+void verify_meshes_equal(Mesh& lhs, Mesh& rhs, bool check_vertices, bool check_indices, const char* context)
+{
 	verify(lhs.name.has_value() == rhs.name.has_value()
 		&& (!lhs.name.has_value() || *lhs.name == *rhs.name),
 		"%s GLTF::Mesh::name %s %s", context,
@@ -464,7 +482,8 @@ void verify_meshes_equal(Mesh& lhs, Mesh& rhs, bool check_vertices, bool check_i
 	}
 }
 
-void verify_mesh_primitives_equal(MeshPrimitive& lhs, MeshPrimitive& rhs, bool check_indices, const char* context) {
+void verify_mesh_primitives_equal(MeshPrimitive& lhs, MeshPrimitive& rhs, bool check_indices, const char* context)
+{
 	verify(lhs.attributes_bitfield == rhs.attributes_bitfield,
 		"%s GLTF::MeshPrimitive::attributes_bitfield", context);
 	if(check_indices ? (lhs.indices != rhs.indices) : lhs.indices.size() != rhs.indices.size()) {
@@ -496,7 +515,8 @@ void verify_mesh_primitives_equal(MeshPrimitive& lhs, MeshPrimitive& rhs, bool c
 // GLTF, Scenes & Nodes
 // *****************************************************************************
 
-static ModelFile read_gltf(const Json& src, Buffer bin_chunk) {
+static ModelFile read_gltf(const Json& src, Buffer bin_chunk)
+{
 	std::vector<GLTFBufferView> buffer_views;
 	read_array(buffer_views, src, "bufferViews", read_buffer_view);
 	
@@ -524,7 +544,8 @@ static ModelFile read_gltf(const Json& src, Buffer bin_chunk) {
 	return dest;
 }
 
-static Json write_gltf(const ModelFile& src, OutBuffer bin_chunk) {
+static Json write_gltf(const ModelFile& src, OutBuffer bin_chunk)
+{
 	std::vector<Accessor> accessors;
 	std::vector<GLTFBufferView> buffer_views;
 	
@@ -550,7 +571,8 @@ static Json write_gltf(const ModelFile& src, OutBuffer bin_chunk) {
 	return dest;
 }
 
-static Asset read_asset(const Json& src) {
+static Asset read_asset(const Json& src)
+{
 	Asset dest;
 	get_opt(dest.copyright, src, "copyright");
 	get_opt(dest.generator, src, "generator");
@@ -559,7 +581,8 @@ static Asset read_asset(const Json& src) {
 	return dest;
 }
 
-static Json write_asset(const Asset& src) {
+static Json write_asset(const Asset& src)
+{
 	Json dest = Json::object();
 	set_opt(dest, "copyright", src.copyright);
 	set_opt(dest, "generator", src.generator);
@@ -568,21 +591,24 @@ static Json write_asset(const Asset& src) {
 	return dest;
 }
 
-static Scene read_scene(const Json& src) {
+static Scene read_scene(const Json& src)
+{
 	Scene dest;
 	get_opt(dest.name, src, "name");
 	get_array(dest.nodes, src, "nodes");
 	return dest;
 }
 
-static Json write_scene(const Scene& src) {
+static Json write_scene(const Scene& src)
+{
 	Json dest = Json::object();
 	set_opt(dest, "name", src.name);
 	set_array(dest, "nodes", src.nodes);
 	return dest;
 }
 
-static Node read_node(const Json& src) {
+static Node read_node(const Json& src)
+{
 	Node dest;
 	get_array(dest.children, src, "children");
 	get_mat(dest.matrix, src, "matrix");
@@ -595,7 +621,8 @@ static Node read_node(const Json& src) {
 	return dest;
 }
 
-static Json write_node(const Node& src) {
+static Json write_node(const Node& src)
+{
 	Json dest = Json::object();
 	set_array(dest, "children", src.children);
 	set_mat(dest, "matrix", src.matrix);
@@ -624,7 +651,8 @@ static const glm::mat3 RATCHET_TO_GLTF_MATRIX = {
 	0, 1, 0
 };
 
-static Mesh read_mesh(const Json& src, const std::vector<Accessor>& accessors) {
+static Mesh read_mesh(const Json& src, const std::vector<Accessor>& accessors)
+{
 	Mesh dest;
 	get_opt(dest.name, src, "name");
 	read_array(dest.primitives, src, "primitives", read_mesh_primitive, dest.vertices, accessors);
@@ -632,14 +660,17 @@ static Mesh read_mesh(const Json& src, const std::vector<Accessor>& accessors) {
 	return dest;
 }
 
-static Json write_mesh(const Mesh& src, std::vector<Accessor>& accessors) {
+static Json write_mesh(const Mesh& src, std::vector<Accessor>& accessors)
+{
 	Json dest = Json::object();
 	set_opt(dest, "name", src.name);
 	write_array(dest, "primitives", src.primitives, write_mesh_primitive, src.vertices, accessors);
 	return dest;
 }
 
-static MeshPrimitive read_mesh_primitive(const Json& src, std::vector<Vertex>& vertices_dest, const std::vector<Accessor>& accessors) {
+static MeshPrimitive read_mesh_primitive(
+	const Json& src, std::vector<Vertex>& vertices_dest, const std::vector<Accessor>& accessors)
+{
 	MeshPrimitive dest;
 	
 	auto attributes = src.find("attributes");
@@ -679,7 +710,9 @@ static MeshPrimitive read_mesh_primitive(const Json& src, std::vector<Vertex>& v
 	return dest;
 }
 
-static Json write_mesh_primitive(const MeshPrimitive& src, const std::vector<Vertex>& vertices_src, std::vector<Accessor>& accessors) {
+static Json write_mesh_primitive(
+	const MeshPrimitive& src, const std::vector<Vertex>& vertices_src, std::vector<Accessor>& accessors)
+{
 	// Filter out vertices that are not included in this primitive.
 	std::vector<Vertex> vertices;
 	std::vector<s32> indices;
@@ -704,7 +737,8 @@ static Json write_mesh_primitive(const MeshPrimitive& src, const std::vector<Ver
 	return dest;
 }
 
-static bool read_attribute(Vertex* dest, MeshPrimitiveAttribute semantic, const Accessor& accessor) {
+static bool read_attribute(Vertex* dest, MeshPrimitiveAttribute semantic, const Accessor& accessor)
+{
 	switch(semantic) {
 		case POSITION: {
 			verify(accessor.type == VEC3 && accessor.component_type == FLOAT,
@@ -765,7 +799,9 @@ static bool read_attribute(Vertex* dest, MeshPrimitiveAttribute semantic, const 
 	return true;
 }
 
-static Json write_attributes(const MeshPrimitive& src, const std::vector<Vertex>& vertices, std::vector<Accessor>& accessors) {
+static Json write_attributes(
+	const MeshPrimitive& src, const std::vector<Vertex>& vertices, std::vector<Accessor>& accessors)
+{
 	Json dest = Json::object();
 	if(src.attributes_bitfield & POSITION) {
 		dest["POSITION"] = accessors.size();
@@ -867,7 +903,8 @@ static Json write_attributes(const MeshPrimitive& src, const std::vector<Vertex>
 	return dest;
 }
 
-static std::vector<glm::vec2> convert_tex_coords(const Accessor& accessor) {
+static std::vector<glm::vec2> convert_tex_coords(const Accessor& accessor)
+{
 	verify(accessor.type == VEC2, "TEXCOORD attribute is not a VEC2.");
 	std::vector<glm::vec2> tex_coords(accessor.count);
 	switch(accessor.component_type) {
@@ -899,7 +936,8 @@ static std::vector<glm::vec2> convert_tex_coords(const Accessor& accessor) {
 	return tex_coords;
 }
 
-static std::vector<ColourAttribute> convert_colours(const Accessor& accessor) {
+static std::vector<ColourAttribute> convert_colours(const Accessor& accessor)
+{
 	verify(accessor.type == VEC3 || accessor.type == VEC4, "TEXCOORD attribute is not a VEC3 or a VEC4.");
 	std::vector<ColourAttribute> colours(accessor.count);
 	if(accessor.type == VEC3) {
@@ -972,7 +1010,8 @@ static std::vector<ColourAttribute> convert_colours(const Accessor& accessor) {
 	return colours;
 }
 
-static std::vector<std::array<s8, 3>> convert_joints(const Accessor& accessor) {
+static std::vector<std::array<s8, 3>> convert_joints(const Accessor& accessor)
+{
 	verify(accessor.type == VEC4, "JOINTS_0 attribute is not a VEC4.");
 	std::vector<std::array<s8, 3>> joints(accessor.count);
 	switch(accessor.component_type) {
@@ -999,7 +1038,8 @@ static std::vector<std::array<s8, 3>> convert_joints(const Accessor& accessor) {
 	return joints;
 }
 
-static std::vector<std::array<u8, 3>> convert_weights(const Accessor& accessor) {
+static std::vector<std::array<u8, 3>> convert_weights(const Accessor& accessor)
+{
 	verify(accessor.type == VEC4, "WEIGHTS_0 attribute is not a VEC4.");
 	std::vector<std::array<u8, 3>> weights(accessor.count);
 	switch(accessor.component_type) {
@@ -1031,7 +1071,8 @@ static std::vector<std::array<u8, 3>> convert_weights(const Accessor& accessor) 
 	return weights;
 }
 
-static std::vector<s32> read_indices(const Json& src, const std::vector<Accessor>& accessors) {
+static std::vector<s32> read_indices(const Json& src, const std::vector<Accessor>& accessors)
+{
 	std::vector<s32> indices;
 	
 	Opt<s32> indices_accessor_index;
@@ -1071,7 +1112,8 @@ static std::vector<s32> read_indices(const Json& src, const std::vector<Accessor
 	return indices;
 }
 
-static void write_indices(Json& dest, const std::vector<s32>& indices, std::vector<Accessor>& accessors) {
+static void write_indices(Json& dest, const std::vector<s32>& indices, std::vector<Accessor>& accessors)
+{
 	s32 max_index = 0;
 	for(s32 index : indices) {
 		max_index = std::max(index, max_index);
@@ -1107,7 +1149,8 @@ static void write_indices(Json& dest, const std::vector<s32>& indices, std::vect
 // Materials & Textures
 // *****************************************************************************
 
-static Material read_material(const Json& src) {
+static Material read_material(const Json& src)
+{
 	Material dest;
 	get_opt(dest.name, src, "name");
 	if(src.contains("pbrMetallicRoughness")) {
@@ -1125,7 +1168,8 @@ static Material read_material(const Json& src) {
 	return dest;
 }
 
-static Json write_material(const Material& src) {
+static Json write_material(const Material& src)
+{
 	Json dest = Json::object();
 	set_opt(dest, "name", src.name);
 	if(src.pbr_metallic_roughness.has_value()) {
@@ -1138,7 +1182,8 @@ static Json write_material(const Material& src) {
 	return dest;
 }
 
-static MaterialPbrMetallicRoughness read_material_pbr_metallic_roughness(const Json& src) {
+static MaterialPbrMetallicRoughness read_material_pbr_metallic_roughness(const Json& src)
+{
 	MaterialPbrMetallicRoughness dest;
 	get_vec(dest.base_color_factor, src, "baseColorFactor");
 	if(src.contains("baseColorTexture")) {
@@ -1148,7 +1193,8 @@ static MaterialPbrMetallicRoughness read_material_pbr_metallic_roughness(const J
 	return dest;
 }
 
-static Json write_material_pbr_metallic_roughness(const MaterialPbrMetallicRoughness& src) {
+static Json write_material_pbr_metallic_roughness(const MaterialPbrMetallicRoughness& src)
+{
 	Json dest = Json::object();
 	set_vec(dest, "baseColorFactor", src.base_color_factor);
 	if(src.base_color_texture.has_value()) {
@@ -1157,21 +1203,24 @@ static Json write_material_pbr_metallic_roughness(const MaterialPbrMetallicRough
 	return dest;
 }
 
-static TextureInfo read_texture_info(const Json& src) {
+static TextureInfo read_texture_info(const Json& src)
+{
 	TextureInfo dest;
 	get_req(dest.index, src, "index");
 	get_opt(dest.tex_coord, src, "texCoord");
 	return dest;
 }
 
-static Json write_texture_info(const TextureInfo& src) {
+static Json write_texture_info(const TextureInfo& src)
+{
 	Json dest = Json::object();
 	set_req(dest, "index", src.index);
 	set_opt(dest, "texCoord", src.tex_coord);
 	return dest;
 }
 
-static Texture read_texture(const Json& src) {
+static Texture read_texture(const Json& src)
+{
 	Texture dest;
 	get_opt(dest.name, src, "name");
 	get_opt(dest.sampler, src, "sampler");
@@ -1179,7 +1228,8 @@ static Texture read_texture(const Json& src) {
 	return dest;
 }
 
-static Json write_texture(const Texture& src) {
+static Json write_texture(const Texture& src)
+{
 	Json dest = Json::object();
 	set_opt(dest, "name", src.name);
 	set_opt(dest, "sampler", src.sampler);
@@ -1187,7 +1237,8 @@ static Json write_texture(const Texture& src) {
 	return dest;
 }
 
-static Image read_image(const Json& src) {
+static Image read_image(const Json& src)
+{
 	Image dest;
 	get_opt(dest.buffer_view, src, "bufferView");
 	get_opt(dest.mime_type, src, "mimeType");
@@ -1196,7 +1247,8 @@ static Image read_image(const Json& src) {
 	return dest;
 }
 
-static Json write_image(const Image& src) {
+static Json write_image(const Image& src)
+{
 	Json dest = Json::object();
 	set_opt(dest, "bufferView", src.buffer_view);
 	set_opt(dest, "mimeType", src.mime_type);
@@ -1205,7 +1257,8 @@ static Json write_image(const Image& src) {
 	return dest;
 }
 
-static Sampler read_sampler(const Json& src) {
+static Sampler read_sampler(const Json& src)
+{
 	Sampler dest;
 	get_opt(dest.mag_filter, src, "magFilter");
 	get_opt(dest.min_filter, src, "minFilter");
@@ -1215,7 +1268,8 @@ static Sampler read_sampler(const Json& src) {
 	return dest;
 }
 
-static Json write_sampler(const Sampler& src) {
+static Json write_sampler(const Sampler& src)
+{
 	Json dest = Json::object();
 	set_opt(dest, "magFilter", src.mag_filter);
 	set_opt(dest, "minFilter", src.min_filter);
@@ -1229,7 +1283,8 @@ static Json write_sampler(const Sampler& src) {
 // Animation
 // *****************************************************************************
 
-static Skin read_skin(const Json& src, const std::vector<Accessor>& accessors) {
+static Skin read_skin(const Json& src, const std::vector<Accessor>& accessors)
+{
 	Skin dest;
 	Opt<s32> inverse_bind_matrices_index;
 	get_opt(inverse_bind_matrices_index, src, "inverseBindMatrices");
@@ -1247,7 +1302,8 @@ static Skin read_skin(const Json& src, const std::vector<Accessor>& accessors) {
 	return dest;
 }
 
-static Json write_skin(const Skin& src, std::vector<Accessor>& accessors) {
+static Json write_skin(const Skin& src, std::vector<Accessor>& accessors)
+{
 	Json dest = Json::object();
 	if(!src.inverse_bind_matrices.empty()) {
 		set_opt(dest, "inverseBindMatrices", Opt<s32>((s32) accessors.size()));
@@ -1266,7 +1322,8 @@ static Json write_skin(const Skin& src, std::vector<Accessor>& accessors) {
 	return dest;
 }
 
-static Animation read_animation(const Json& src, const std::vector<Accessor>& accessors) {
+static Animation read_animation(const Json& src, const std::vector<Accessor>& accessors)
+{
 	std::vector<AnimationSampler> samplers;
 	read_array(samplers, src, "samplers", read_animation_sampler);
 	s32 input_accessor_index = samplers.at(0).input;
@@ -1316,7 +1373,8 @@ static Animation read_animation(const Json& src, const std::vector<Accessor>& ac
 	return dest;
 }
 
-static Json write_animation(const Animation& src, std::vector<Accessor>& accessors) {
+static Json write_animation(const Animation& src, std::vector<Accessor>& accessors)
+{
 	s32 input_accessor_index = (s32) accessors.size();
 	Accessor& input_accessor = accessors.emplace_back();
 	input_accessor.bytes.resize(src.sampler_input.size() * 4);
@@ -1353,7 +1411,9 @@ static Json write_animation(const Animation& src, std::vector<Accessor>& accesso
 	return dest;
 }
 
-static void convert_animation_sampler_output(std::vector<AnimationAttributes>& dest, const char* path, const Accessor& accessor) {
+static void convert_animation_sampler_output(
+	std::vector<AnimationAttributes>& dest, const char* path, const Accessor& accessor)
+{
 	if(strcmp(path, "translation") == 0) {
 		verify(accessor.type == VEC3 && accessor.component_type == FLOAT,
 			"Animation translation accessor is not of type VEC3 of FLOATs.");
@@ -1443,7 +1503,8 @@ static void build_animation_channel(
 		AttributeType AnimationAttributes::*attribute,
 		const char* path,
 		AccessorType type,
-		s32 input_accessor_index) {
+		s32 input_accessor_index)
+{
 	s32 sampler_index = (s32) samplers.size();
 	AnimationSampler& sampler = samplers.emplace_back();
 	sampler.input = input_accessor_index;
@@ -1465,35 +1526,40 @@ static void build_animation_channel(
 	channel.target.path = path;
 }
 
-static AnimationChannel read_animation_channel(const Json& src) {
+static AnimationChannel read_animation_channel(const Json& src)
+{
 	AnimationChannel dest;
 	get_req(dest.sampler, src, "sampler");
 	read_object(dest.target, src, "target", read_animation_channel_target);
 	return dest;
 }
 
-static Json write_animation_channel(const AnimationChannel& src) {
+static Json write_animation_channel(const AnimationChannel& src)
+{
 	Json dest = Json::object();
 	set_req(dest, "sampler", src.sampler);
 	write_object(dest, "target", src.target, write_animation_channel_target);
 	return dest;
 }
 
-static AnimationChannelTarget read_animation_channel_target(const Json& src) {
+static AnimationChannelTarget read_animation_channel_target(const Json& src)
+{
 	AnimationChannelTarget dest;
 	get_opt(dest.node, src, "node");
 	get_req(dest.path, src, "path");
 	return dest;
 
 }
-static Json write_animation_channel_target(const AnimationChannelTarget& src) {
+static Json write_animation_channel_target(const AnimationChannelTarget& src)
+{
 	Json dest = Json::object();
 	set_opt(dest, "node", src.node);
 	set_req(dest, "path", src.path);
 	return dest;
 }
 
-static AnimationSampler read_animation_sampler(const Json& src) {
+static AnimationSampler read_animation_sampler(const Json& src)
+{
 	AnimationSampler dest;
 	get_req(dest.input, src, "input");
 	get_opt(dest.interpolation, src, "interpolation");
@@ -1501,7 +1567,8 @@ static AnimationSampler read_animation_sampler(const Json& src) {
 	return dest;
 }
 
-static Json write_animation_sampler(const AnimationSampler& src) {
+static Json write_animation_sampler(const AnimationSampler& src)
+{
 	Json dest = Json::object();
 	set_req(dest, "input", src.input);
 	set_opt(dest, "interpolation", src.interpolation);
@@ -1513,7 +1580,8 @@ static Json write_animation_sampler(const AnimationSampler& src) {
 // Accessors & Buffers
 // *****************************************************************************
 
-static Accessor read_accessor(const Json& src, const std::vector<GLTFBufferView>& buffer_views, Buffer bin_chunk) {
+static Accessor read_accessor(const Json& src, const std::vector<GLTFBufferView>& buffer_views, Buffer bin_chunk)
+{
 	Opt<s32> buffer_view_index;
 	get_opt(buffer_view_index, src, "bufferView");
 	verify(buffer_view_index.has_value(), "Accessor without a buffer view (unimplemented).");
@@ -1557,7 +1625,8 @@ static Accessor read_accessor(const Json& src, const std::vector<GLTFBufferView>
 	return dest;
 }
 
-static Json write_accessor(const Accessor& src, std::vector<GLTFBufferView>& buffer_views, OutBuffer bin_chunk) {
+static Json write_accessor(const Accessor& src, std::vector<GLTFBufferView>& buffer_views, OutBuffer bin_chunk)
+{
 	Json dest = Json::object();
 	set_opt(dest, "bufferView", Opt<s32>((s32) buffer_views.size()));
 	// byteOffset
@@ -1600,7 +1669,8 @@ static Json write_accessor(const Accessor& src, std::vector<GLTFBufferView>& buf
 	return dest;
 }
 
-static GLTFBufferView read_buffer_view(const Json& src) {
+static GLTFBufferView read_buffer_view(const Json& src)
+{
 	GLTFBufferView dest;
 	get_req(dest.buffer, src, "buffer");
 	get_req(dest.byte_length, src, "byteLength");
@@ -1611,7 +1681,8 @@ static GLTFBufferView read_buffer_view(const Json& src) {
 	return dest;
 }
 
-static Json write_buffer_view(const GLTFBufferView& src) {
+static Json write_buffer_view(const GLTFBufferView& src)
+{
 	Json dest = Json::object();
 	set_req(dest, "buffer", src.buffer);
 	set_req(dest, "byteLength", src.byte_length);
@@ -1622,7 +1693,8 @@ static Json write_buffer_view(const GLTFBufferView& src) {
 	return dest;
 }
 
-static GLTFBuffer read_buffer(const Json& src) {
+static GLTFBuffer read_buffer(const Json& src)
+{
 	GLTFBuffer dest;
 	get_req(dest.byte_length, src, "byteLength");
 	get_opt(dest.name, src, "name");
@@ -1630,7 +1702,8 @@ static GLTFBuffer read_buffer(const Json& src) {
 	return dest;
 }
 
-static Json write_buffer(const GLTFBuffer& src) {
+static Json write_buffer(const GLTFBuffer& src)
+{
 	Json dest = Json::object();
 	set_req(dest, "byteLength", src.byte_length);
 	set_opt(dest, "name", src.name);
@@ -1643,7 +1716,8 @@ static Json write_buffer(const GLTFBuffer& src) {
 // *****************************************************************************
 
 template <typename T>
-static void get_req(T& dest, const Json& src, const char* property) {
+static void get_req(T& dest, const Json& src, const char* property)
+{
 	auto iter = src.find(property);
 	verify(iter != src.end(), "Missing property '%s'.", property);
 	try {
@@ -1654,12 +1728,14 @@ static void get_req(T& dest, const Json& src, const char* property) {
 }
 
 template <typename T>
-static void set_req(Json& dest, const char* property, const T& value) {
+static void set_req(Json& dest, const char* property, const T& value)
+{
 	dest.emplace(property, value);
 }
 
 template <typename T>
-static void get_opt(Opt<T>& dest, const Json& src, const char* property) {
+static void get_opt(Opt<T>& dest, const Json& src, const char* property)
+{
 	auto iter = src.find(property);
 	if(iter != src.end()) {
 		try {
@@ -1671,14 +1747,16 @@ static void get_opt(Opt<T>& dest, const Json& src, const char* property) {
 }
 
 template <typename T>
-static void set_opt(Json& dest, const char* property, const Opt<T>& value) {
+static void set_opt(Json& dest, const char* property, const Opt<T>& value)
+{
 	if(value.has_value()) {
 		dest.emplace(property, *value);
 	}
 }
 
 template <typename T>
-static void get_array(std::vector<T>& dest, const Json& src, const char* property) {
+static void get_array(std::vector<T>& dest, const Json& src, const char* property)
+{
 	auto iter = src.find(property);
 	if(iter != src.end()) {
 		dest = iter->get<std::vector<T>>();
@@ -1686,14 +1764,16 @@ static void get_array(std::vector<T>& dest, const Json& src, const char* propert
 }
 
 template <typename T>
-static void set_array(Json& dest, const char* property, const std::vector<T>& value) {
+static void set_array(Json& dest, const char* property, const std::vector<T>& value)
+{
 	if(!value.empty()) {
 		dest.emplace(property, value);
 	}
 }
 
 template <typename T>
-static void get_vec(Opt<T>& dest, const Json& src, const char* property) {
+static void get_vec(Opt<T>& dest, const Json& src, const char* property)
+{
 	auto iter = src.find(property);
 	if(iter != src.end()) {
 		dest.emplace();
@@ -1704,7 +1784,8 @@ static void get_vec(Opt<T>& dest, const Json& src, const char* property) {
 }
 
 template <typename T>
-static void set_vec(Json& dest, const char* property, const Opt<T>& value) {
+static void set_vec(Json& dest, const char* property, const Opt<T>& value)
+{
 	if(value.has_value()) {
 		Json& array = dest[property];
 		array = Json::array();
@@ -1715,7 +1796,8 @@ static void set_vec(Json& dest, const char* property, const Opt<T>& value) {
 }
 
 template <typename T>
-static void get_mat(Opt<T>& dest, const Json& src, const char* property) {
+static void get_mat(Opt<T>& dest, const Json& src, const char* property)
+{
 	auto iter = src.find(property);
 	if(iter != src.end()) {
 		dest.emplace();
@@ -1728,7 +1810,8 @@ static void get_mat(Opt<T>& dest, const Json& src, const char* property) {
 }
 
 template <typename T>
-static void set_mat(Json& dest, const char* property, const Opt<T>& value) {
+static void set_mat(Json& dest, const char* property, const Opt<T>& value)
+{
 	if(value.has_value()) {
 		Json& array = dest["property"];
 		array = Json::array();
@@ -1741,19 +1824,22 @@ static void set_mat(Json& dest, const char* property, const Opt<T>& value) {
 }
 
 template <typename Object, typename ReadFunc>
-static void read_object(Object& dest, const Json& src, const char* property, ReadFunc read_func) {
+static void read_object(Object& dest, const Json& src, const char* property, ReadFunc read_func)
+{
 	auto iter = src.find(property);
 	verify(iter != src.end(), "Missing property '%s'.", property);
 	dest = read_func(*iter);
 }
 
 template <typename Object, typename WriteFunc, typename... Args>
-static void write_object(Json& dest, const char* property, const Object& src, WriteFunc write_func) {
+static void write_object(Json& dest, const char* property, const Object& src, WriteFunc write_func)
+{
 	dest.emplace(property, write_func(src));
 }
 
 template <typename Element, typename ReadFunc, typename... Args>
-static void read_array(std::vector<Element>& dest, const Json& src, const char* property, ReadFunc read_func, Args&... args) {
+static void read_array(
+	std::vector<Element>& dest, const Json& src, const char* property, ReadFunc read_func, Args&... args) {
 	auto iter = src.find(property);
 	if(iter != src.end()) {
 		for(const Json& element : *iter) {
@@ -1763,7 +1849,13 @@ static void read_array(std::vector<Element>& dest, const Json& src, const char* 
 }
 
 template <typename Element, typename WriteFunc, typename... Args>
-static void write_array(Json& dest, const char* property, const std::vector<Element>& src, WriteFunc write_func, Args&... args) {
+static void write_array(
+	Json& dest,
+	const char* property,
+	const std::vector<Element>& src,
+	WriteFunc write_func,
+	Args&... args)
+{
 	if(!src.empty()) {
 		Json& array = dest[property];
 		array = Json::array();
@@ -1773,7 +1865,8 @@ static void write_array(Json& dest, const char* property, const std::vector<Elem
 	}
 }
 
-static Opt<MeshPrimitiveAttribute> mesh_primitive_attribute_from_string(const char* string) {
+static Opt<MeshPrimitiveAttribute> mesh_primitive_attribute_from_string(const char* string)
+{
 	if(strcmp(string, "POSITION") == 0) return POSITION;
 	if(strcmp(string, "NORMAL") == 0) return NORMAL;
 	if(strcmp(string, "TEXCOORD_0") == 0) return TEXCOORD_0;
@@ -1783,7 +1876,8 @@ static Opt<MeshPrimitiveAttribute> mesh_primitive_attribute_from_string(const ch
 	return std::nullopt;
 }
 
-static const char* accessor_type_to_string(AccessorType type) {
+static const char* accessor_type_to_string(AccessorType type)
+{
 	switch(type) {
 		case SCALAR: return "SCALAR";
 		case VEC2: return "VEC2";
@@ -1796,7 +1890,8 @@ static const char* accessor_type_to_string(AccessorType type) {
 	return "";
 }
 
-static Opt<AccessorType> accessor_type_from_string(const char* string) {
+static Opt<AccessorType> accessor_type_from_string(const char* string)
+{
 	if(strcmp(string, "SCALAR") == 0) return SCALAR;
 	if(strcmp(string, "VEC2") == 0) return VEC2;
 	if(strcmp(string, "VEC3") == 0) return VEC3;
@@ -1807,7 +1902,8 @@ static Opt<AccessorType> accessor_type_from_string(const char* string) {
 	return std::nullopt;
 }
 
-static const char* material_alpha_mode_to_string(MaterialAlphaMode alpha_mode) {
+static const char* material_alpha_mode_to_string(MaterialAlphaMode alpha_mode)
+{
 	switch(alpha_mode) {
 		case OPAQUE: return "OPAQUE";
 		case MASK: return "MASK";
@@ -1816,18 +1912,21 @@ static const char* material_alpha_mode_to_string(MaterialAlphaMode alpha_mode) {
 	return "";
 }
 
-static Opt<MaterialAlphaMode> material_alpha_mode_from_string(const char* string) {
+static Opt<MaterialAlphaMode> material_alpha_mode_from_string(const char* string)
+{
 	if(strcmp(string, "OPAQUE") == 0) return OPAQUE;
 	if(strcmp(string, "MASK") == 0) return MASK;
 	if(strcmp(string, "BLEND") == 0) return BLEND;
 	return std::nullopt;
 }
 
-static s32 accessor_attribute_size(const Accessor& accessor) {
+static s32 accessor_attribute_size(const Accessor& accessor)
+{
 	return accessor_component_size(accessor.component_type) * accessor_component_count(accessor.type);
 }
 
-static s32 accessor_component_size(AccessorComponentType component_type) {
+static s32 accessor_component_size(AccessorComponentType component_type)
+{
 	switch(component_type) {
 		case SIGNED_BYTE: return 1;
 		case UNSIGNED_BYTE: return 1;
@@ -1839,7 +1938,8 @@ static s32 accessor_component_size(AccessorComponentType component_type) {
 	return 0;
 }
 
-static s32 accessor_component_count(AccessorType type) {
+static s32 accessor_component_count(AccessorType type)
+{
 	switch(type) {
 		case SCALAR: return 1;
 		case VEC2: return 2;

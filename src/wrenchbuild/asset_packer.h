@@ -34,7 +34,14 @@ extern s32 g_asset_packer_current_level_id;
 void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint = FMT_NO_HINT);
 
 template <typename Range>
-Range pack_asset(OutputStream& dest, const Asset& src, BuildConfig config, s64 alignment, const char* hint = FMT_NO_HINT, Range* empty_range = nullptr) {
+Range pack_asset(
+	OutputStream& dest,
+	const Asset& src,
+	BuildConfig config,
+	s64 alignment,
+	const char* hint = FMT_NO_HINT,
+	Range* empty_range = nullptr)
+{
 	if(src.logical_type() == BinaryAsset::ASSET_TYPE && !(src.as<BinaryAsset>().has_src())) {
 		return empty_range ? *empty_range : Range::from_bytes(0, 0);
 	}
@@ -47,7 +54,16 @@ Range pack_asset(OutputStream& dest, const Asset& src, BuildConfig config, s64 a
 }
 
 template <typename Range>
-void pack_assets(OutputStream& dest, Range* ranges_dest, s32 count, const CollectionAsset& src, BuildConfig config, s32 alignment, const char* hint = FMT_NO_HINT, Range* empty_range = nullptr) {
+void pack_assets(
+	OutputStream& dest,
+	Range* ranges_dest,
+	s32 count,
+	const CollectionAsset& src,
+	BuildConfig config,
+	s32 alignment,
+	const char* hint = FMT_NO_HINT,
+	Range* empty_range = nullptr)
+{
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
 			ranges_dest[i] = pack_asset<Range>(dest, src.get_child(i), config, alignment, hint, empty_range);
@@ -59,12 +75,21 @@ void pack_assets(OutputStream& dest, Range* ranges_dest, s32 count, const Collec
 
 // Sector aligned version.
 template <typename Range>
-Range pack_asset_sa(OutputStream& dest, const Asset& asset, BuildConfig config, const char* hint = FMT_NO_HINT) {
+Range pack_asset_sa(
+	OutputStream& dest, const Asset& asset, BuildConfig config, const char* hint = FMT_NO_HINT)
+{
 	return pack_asset<Range>(dest, asset, config, SECTOR_SIZE, hint);
 }
 
 template <typename Range>
-void pack_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, const CollectionAsset& src, BuildConfig config, const char* hint = FMT_NO_HINT) {
+void pack_assets_sa(
+	OutputStream& dest,
+	Range* ranges_dest,
+	s32 count,
+	const CollectionAsset& src,
+	BuildConfig config,
+	const char* hint = FMT_NO_HINT)
+{
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
 			ranges_dest[i] = pack_asset_sa<Range>(dest, src.get_child(i), config, hint);
@@ -73,7 +98,14 @@ void pack_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, const Col
 }
 
 template <typename Range>
-Range pack_compressed_asset(OutputStream& dest, const Asset& src, BuildConfig config, s64 alignment, const char* muffin, const char* hint = FMT_NO_HINT) {
+Range pack_compressed_asset(
+	OutputStream& dest,
+	const Asset& src,
+	BuildConfig config,
+	s64 alignment,
+	const char* muffin,
+	const char* hint = FMT_NO_HINT)
+{
 	dest.seek(dest.size());
 	dest.pad(alignment, 0);
 	std::vector<u8> bytes;
@@ -88,7 +120,16 @@ Range pack_compressed_asset(OutputStream& dest, const Asset& src, BuildConfig co
 }
 
 template <typename Range>
-void pack_compressed_assets(OutputStream& dest, Range* ranges_dest, s32 count, const CollectionAsset& src, BuildConfig config, s64 alignment, const char* muffin, const char* hint = FMT_NO_HINT) {
+void pack_compressed_assets(
+	OutputStream& dest,
+	Range* ranges_dest,
+	s32 count,
+	const CollectionAsset& src,
+	BuildConfig config,
+	s64 alignment,
+	const char* muffin,
+	const char* hint = FMT_NO_HINT)
+{
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
 			ranges_dest[i] = pack_compressed_asset<Range>(dest, src.get_child(i), config, alignment, muffin, hint);
@@ -97,12 +138,26 @@ void pack_compressed_assets(OutputStream& dest, Range* ranges_dest, s32 count, c
 }
 
 template <typename Range>
-Range pack_compressed_asset_sa(OutputStream& dest, const Asset& src, BuildConfig config, const char* muffin, const char* hint = FMT_NO_HINT) {
+Range pack_compressed_asset_sa(
+	OutputStream& dest,
+	const Asset& src,
+	BuildConfig config,
+	const char* muffin,
+	const char* hint = FMT_NO_HINT)
+{
 	return pack_compressed_asset<Range>(dest, src, config, SECTOR_SIZE, muffin, hint);
 }
 
 template <typename Range>
-void pack_compressed_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, const CollectionAsset& src, BuildConfig config, const char* muffin, const char* hint = FMT_NO_HINT) {
+void pack_compressed_assets_sa(
+	OutputStream& dest,
+	Range* ranges_dest,
+	s32 count,
+	const CollectionAsset& src,
+	BuildConfig config,
+	const char* muffin,
+	const char* hint = FMT_NO_HINT)
+{
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
 			ranges_dest[i] = pack_compressed_asset_sa<Range>(dest, src.get_child(i), config, muffin, hint);

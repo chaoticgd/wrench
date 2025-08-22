@@ -18,7 +18,8 @@
 
 #include "image_viewer.h"
 
-void image_viewer(const std::vector<ModImage>& images) {
+void image_viewer(const std::vector<ModImage>& images)
+{
 	ImVec2 centre = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size, ImGuiCond_Always);

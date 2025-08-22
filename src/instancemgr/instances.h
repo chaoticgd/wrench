@@ -99,7 +99,9 @@ Instances read_instances(std::string& src);
 std::string write_instances(const Instances& src, const char* application_name, const char* application_version);
 
 template <typename Callback, typename InstanceVec>
-static void for_each_instance_of_type_with(u32 required_components_mask, const InstanceVec& instances, Callback callback) {
+static void for_each_instance_of_type_with(
+	u32 required_components_mask, const InstanceVec& instances, Callback callback)
+{
 	if(!instances.empty()) {
 		if((instances[0].components_mask() & required_components_mask) == required_components_mask) {
 			for(const Instance& instance : instances) {
@@ -110,7 +112,8 @@ static void for_each_instance_of_type_with(u32 required_components_mask, const I
 }
 
 template <typename Callback>
-void Instances::for_each_with(u32 required_components_mask, Callback callback) const {
+void Instances::for_each_with(u32 required_components_mask, Callback callback) const
+{
 #define DEF_INSTANCE(inst_type, inst_type_uppercase, inst_variable, link_type) \
 	for_each_instance_of_type_with(required_components_mask, inst_variable, callback);
 #define GENERATED_INSTANCE_MACRO_CALLS
@@ -120,19 +123,22 @@ void Instances::for_each_with(u32 required_components_mask, Callback callback) c
 }
 
 template <typename Callback>
-void Instances::for_each_with(u32 required_components_mask, Callback callback) {
+void Instances::for_each_with(u32 required_components_mask, Callback callback)
+{
 	static_cast<const Instances*>(this)->for_each_with(required_components_mask, [&](const Instance& inst) {
 		callback(const_cast<Instance&>(inst));
 	});
 }
 
 template <typename Callback>
-void Instances::for_each(Callback callback) const {
+void Instances::for_each(Callback callback) const
+{
 	this->for_each_with(COM_NONE, callback);
 }
 
 template <typename Callback>
-void Instances::for_each(Callback callback) {
+void Instances::for_each(Callback callback)
+{
 	this->for_each_with(COM_NONE, callback);
 }
 

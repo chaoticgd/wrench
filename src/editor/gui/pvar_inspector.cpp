@@ -34,15 +34,28 @@ struct PvarInspectorState {
 
 template <typename ThisInstance>
 const CppType* get_single_pvar_type(const InstanceList<ThisInstance>& instances, const std::map<s32, EditorClass>& classes);
-static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vector<InstanceId>& ids, const std::vector<std::vector<u8>*>& pvars);
-static void generate_rows(const CppType& type, const std::string& name, const PvarInspectorState& inspector, s32 index, s32 offset, s32 depth, s32 indent);
-static void generate_built_in_input(const CppType& type, const PvarInspectorState& inspector, s32 offset);
+static bool check_pvar_data_size(
+	Level& lvl,
+	const CppType& type,
+	const std::vector<InstanceId>& ids,
+	const std::vector<std::vector<u8>*>& pvars);
+static void generate_rows(
+	const CppType& type,
+	const std::string& name,
+	const PvarInspectorState& inspector,
+	s32 index,
+	s32 offset,
+	s32 depth,
+	s32 indent);
+static void generate_built_in_input(
+	const CppType& type, const PvarInspectorState& inspector, s32 offset);
 static void generate_enum_input(const CppType& type, const PvarInspectorState& inspector, s32 offset);
 static void generate_pointer_input(const CppType& type, const PvarInspectorState& inspector, s32 offset);
 static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 size, const std::vector<InstanceId>& ids, const PvarPointer* new_pointer);
 static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type);
 
-const CppType* get_pvar_type_for_selection(const Level& lvl) {
+const CppType* get_pvar_type_for_selection(const Level& lvl)
+{
 	s32 type = -1;
 	lvl.instances().for_each_with(COM_PVARS, [&](const Instance& inst) {
 		if(inst.selected && type != -2) {
@@ -70,7 +83,9 @@ const CppType* get_pvar_type_for_selection(const Level& lvl) {
 }
 
 template <typename ThisInstance>
-const CppType* get_single_pvar_type(const InstanceList<ThisInstance>& instances, const std::map<s32, EditorClass>& classes) {
+const CppType* get_single_pvar_type(
+	const InstanceList<ThisInstance>& instances, const std::map<s32, EditorClass>& classes)
+{
 	s32 o_class = -1;
 	for(const ThisInstance& inst : instances) {
 		if(inst.selected) {
@@ -101,7 +116,8 @@ const CppType* get_single_pvar_type(const InstanceList<ThisInstance>& instances,
 	return nullptr;
 }
 
-void pvar_inspector(Level& lvl, const CppType& pvar_type) {
+void pvar_inspector(Level& lvl, const CppType& pvar_type)
+{
 	ImGui::BeginChild("pvars");
 	
 	std::vector<InstanceId> ids;
@@ -178,7 +194,12 @@ struct ResizePvarCommand {
 	std::vector<ResizePvarInfo> instances;
 };
 
-static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vector<InstanceId>& ids, const std::vector<std::vector<u8>*>& pvars) {
+static bool check_pvar_data_size(
+	Level& lvl,
+	const CppType& type,
+	const std::vector<InstanceId>& ids,
+	const std::vector<std::vector<u8>*>& pvars)
+{
 	verify_fatal(type.size > -1);
 	
 	bool needs_resize = false;
@@ -242,7 +263,15 @@ static bool check_pvar_data_size(Level& lvl, const CppType& type, const std::vec
 	return !needs_resize;
 }
 
-static void generate_rows(const CppType& type, const std::string& name, const PvarInspectorState& inspector, s32 index, s32 offset, s32 depth, s32 indent) {
+static void generate_rows(
+	const CppType& type,
+	const std::string& name,
+	const PvarInspectorState& inspector,
+	s32 index,
+	s32 offset,
+	s32 depth,
+	s32 indent)
+{
 	ImGui::PushID(index);
 	defer([&]() { ImGui::PopID(); });
 	
@@ -340,7 +369,9 @@ static void generate_rows(const CppType& type, const std::string& name, const Pv
 	}
 }
 
-static void generate_built_in_input(const CppType& type, const PvarInspectorState& inspector, s32 offset) {
+static void generate_built_in_input(
+	const CppType& type, const PvarInspectorState& inspector, s32 offset)
+{
 	static u8 zero[16] = {};
 	
 	u8 data[16];
@@ -368,7 +399,9 @@ static void generate_built_in_input(const CppType& type, const PvarInspectorStat
 	}
 }
 
-static void generate_enum_input(const CppType& type, const PvarInspectorState& inspector, s32 offset) {
+static void generate_enum_input(
+	const CppType& type, const PvarInspectorState& inspector, s32 offset)
+{
 	static u8 zero[16] = {};
 	
 	Opt<s32> value;
@@ -490,7 +523,14 @@ struct PokePvarCommand {
 	std::vector<PokePvarInfo> instances;
 };
 
-static void push_poke_pvar_command(Level& lvl, s32 offset, const u8* data, s32 size, const std::vector<InstanceId>& ids, const PvarPointer* new_pointer) {
+static void push_poke_pvar_command(
+	Level& lvl,
+	s32 offset,
+	const u8* data,
+	s32 size,
+	const std::vector<InstanceId>& ids,
+	const PvarPointer* new_pointer)
+{
 PokePvarCommand command;
 	command.offset = offset;
 	command.size = size;
@@ -590,7 +630,8 @@ PokePvarCommand command;
 		});
 }
 
-static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type) {
+static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type)
+{
 	if(cpp_is_built_in_integer(type.built_in)) {
 		bool is_signed = cpp_is_built_in_signed(type.built_in);
 		switch(type.size) {

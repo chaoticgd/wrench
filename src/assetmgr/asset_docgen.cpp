@@ -45,7 +45,8 @@ static void out(const char* format, ...);
 static FILE* out_file = NULL;
 static WrenchFileHandle* out_handle = NULL;
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	assert(argc == 2 || argc == 3);
 	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
 	if(!file) {
@@ -92,7 +93,8 @@ int main(int argc, char** argv) {
 	}
 }
 
-static void write_index(const WtfNode* root) {
+static void write_index(const WtfNode* root)
+{
 	out("\n");
 	out("## Index\n");
 	out("\n");
@@ -115,7 +117,8 @@ static void write_index(const WtfNode* root) {
 	}
 }
 
-static void write_contents(const WtfNode* root) {
+static void write_contents(const WtfNode* root)
+{
 	for(const WtfNode* node = root->first_child; node != NULL; node = node->next_sibling) {
 		if(strcmp(node->type_name, "Category") == 0) {
 			const WtfAttribute* name = wtf_attribute(node, "name");
@@ -151,7 +154,8 @@ static void write_contents(const WtfNode* root) {
 	}
 }
 
-static void write_attribute_table(const WtfNode* asset_type) {
+static void write_attribute_table(const WtfNode* asset_type)
+{
 	out("\n");
 	out("*Attributes*\n\n");
 	
@@ -233,7 +237,8 @@ static void write_attribute_table(const WtfNode* asset_type) {
 	}
 }
 
-static void write_child_table(const WtfNode* asset_type) {
+static void write_child_table(const WtfNode* asset_type)
+{
 	out("\n");
 	out("*Children*\n");
 	out("\n");
@@ -294,7 +299,8 @@ static void write_child_table(const WtfNode* asset_type) {
 	out("\n");
 }
 
-static void write_type_list(std::string& dest, const WtfNode* child, int depth) {
+static void write_type_list(std::string& dest, const WtfNode* child, int depth)
+{
 	const WtfAttribute* types = wtf_attribute(child, "allowed_types");
 	if(types && types->type == WTF_ARRAY) {
 		for(const WtfAttribute* elem = types->first_array_element; elem != nullptr; elem = elem->next) {
@@ -316,7 +322,8 @@ static void write_type_list(std::string& dest, const WtfNode* child, int depth) 
 	}
 }
 
-static void write_examples(const WtfNode* examples) {
+static void write_examples(const WtfNode* examples)
+{
 	int example_count = 0;
 	for(const WtfNode* child = examples->first_child; child != nullptr; child = child->next_sibling) {
 		example_count++;
@@ -341,7 +348,8 @@ static void write_examples(const WtfNode* examples) {
 	}
 }
 
-static void write_hints(const WtfNode* asset_type) {
+static void write_hints(const WtfNode* asset_type)
+{
 	int hint_count = 0;
 	for(const WtfNode* child = asset_type->first_child; child != nullptr; child = child->next_sibling) {
 		if(strcmp(child->type_name, "Hint") == 0) {
@@ -384,7 +392,8 @@ static void write_hints(const WtfNode* asset_type) {
 	}
 }
 
-static std::string to_link(const char* str) {
+static std::string to_link(const char* str)
+{
 	std::string out;
 	for(size_t i = 0; i < strlen(str); i++) {
 		if(str[i] == ' ') {
@@ -396,7 +405,8 @@ static std::string to_link(const char* str) {
 	return out;
 }
 
-static void reify_node(WtfWriter* ctx, const WtfNode* node) {
+static void reify_node(WtfWriter* ctx, const WtfNode* node)
+{
 	wtf_begin_node(ctx, node->type_name, node->tag);
 	for(WtfAttribute* attrib = node->first_attribute; attrib != nullptr; attrib = attrib->next) {
 		wtf_begin_attribute(ctx, attrib->key);
@@ -409,7 +419,8 @@ static void reify_node(WtfWriter* ctx, const WtfNode* node) {
 	wtf_end_node(ctx);
 }
 
-static void reify_value(WtfWriter* ctx, const WtfAttribute* value) {
+static void reify_value(WtfWriter* ctx, const WtfAttribute* value)
+{
 	switch(value->type) {
 		case WTF_NUMBER: {
 			if(fabsf(floorf(value->number.f) - value->number.f) > 0.0001f) {
@@ -438,7 +449,8 @@ static void reify_value(WtfWriter* ctx, const WtfAttribute* value) {
 	}
 }
 
-static void out(const char* format, ...) {
+static void out(const char* format, ...)
+{
 	va_list list;
 	va_start(list, format);
 	if(out_file != NULL) {

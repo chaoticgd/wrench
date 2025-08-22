@@ -21,12 +21,18 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/common/subtitles.h>
 
-static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
-static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
-static void unpack_texture_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
-static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
-static void unpack_material_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
-static void pack_material_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
+static void unpack_collection_asset(
+	CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_collection_asset(
+	OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
+static void unpack_texture_list(
+	CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_texture_list(
+	OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
+static void unpack_material_list(
+	CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_material_list(
+	OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
 static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, BuildConfig config);
 static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src, BuildConfig config);
 
@@ -42,7 +48,8 @@ on_load(Collection, []() {
 	CollectionAsset::funcs.pack_dl = wrap_hint_packer_func<CollectionAsset>(pack_collection_asset);
 })
 
-static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint)
+{
 	const char* type = next_hint(&hint);
 	if(strcmp(type, "texlist") == 0) {
 		unpack_texture_list(dest, src, config, hint);
@@ -57,7 +64,8 @@ static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Bui
 	}
 }
 
-static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint) {
+static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint)
+{
 	const char* type = next_hint(&hint);
 	if(strcmp(type, "texlist") == 0) {
 		pack_texture_list(dest, src, config, hint);
@@ -72,7 +80,8 @@ static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src
 	}
 }
 
-static void unpack_texture_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+static void unpack_texture_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint)
+{
 	s32 count = src.read<s32>(0);
 	verify(count < 0x1000, "texlist has too many elements and is probably corrupted.");
 	src.seek(4);
@@ -89,7 +98,8 @@ static void unpack_texture_list(CollectionAsset& dest, InputStream& src, BuildCo
 	}
 }
 
-static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint) {
+static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint)
+{
 	s32 count;
 	for(count = 0; count < 256; count++) {
 		if(!src.has_child(count)) {
@@ -113,7 +123,8 @@ static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, Bu
 	dest.write_v(offsets);
 }
 
-static void unpack_material_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+static void unpack_material_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint)
+{
 	s32 count = src.read<s32>(0);
 	verify(count < 0x1000, "texlist has too many elements and is probably corrupted.");
 	src.seek(4);
@@ -130,7 +141,8 @@ static void unpack_material_list(CollectionAsset& dest, InputStream& src, BuildC
 	}
 }
 
-static void pack_material_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint) {
+static void pack_material_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint)
+{
 	s32 count;
 	for(count = 0; count < 256; count++) {
 		if(!src.has_child(count)) {
@@ -161,7 +173,8 @@ packed_struct(MissionClassEntry,
 	s32 pad;
 )
 
-static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, BuildConfig config)
+{
 	s32 class_count = src.read<s32>(0);
 	
 	// Find the end of each block.
@@ -209,7 +222,8 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 	}
 }
 
-static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src, BuildConfig config) {
+static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src, BuildConfig config)
+{
 	s32 class_count = 0;
 	src.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& moby) {
 		if(moby.has_moby_table_entry()) {

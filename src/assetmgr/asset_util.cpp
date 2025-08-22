@@ -22,11 +22,13 @@
 
 AssetLink::AssetLink() {}
 
-AssetLink::AssetLink(const char* src) {
+AssetLink::AssetLink(const char* src)
+{
 	set(src);
 }
 
-AssetLinkPointers AssetLink::get() const {
+AssetLinkPointers AssetLink::get() const
+{
 	AssetLinkPointers pointers;
 	const char* ptr = &m_data[0];
 	if(m_prefix) {
@@ -41,7 +43,8 @@ AssetLinkPointers AssetLink::get() const {
 	return pointers;
 }
 
-void AssetLink::set(const char* src) {
+void AssetLink::set(const char* src)
+{
 	m_prefix = false;
 	m_tags = 0;
 	size_t size = strlen(src);
@@ -63,7 +66,8 @@ void AssetLink::set(const char* src) {
 	m_data[size] = '\0';
 }
 
-void AssetLink::add_prefix(const char* str) {
+void AssetLink::add_prefix(const char* str)
+{
 	verify_fatal(!m_prefix && m_tags == 0);
 	size_t size = strlen(str);
 	m_data.resize(size + 1);
@@ -72,7 +76,8 @@ void AssetLink::add_prefix(const char* str) {
 	m_prefix = true;
 }
 
-void AssetLink::add_tag(const char* tag) {
+void AssetLink::add_tag(const char* tag)
+{
 	size_t old_size = m_data.size();
 	size_t tag_size = strlen(tag);
 	m_data.resize(old_size + tag_size + 1);
@@ -83,7 +88,8 @@ void AssetLink::add_tag(const char* tag) {
 	m_tags++;
 }
 
-std::string AssetLink::to_string() const {
+std::string AssetLink::to_string() const
+{
 	std::string str;
 	const char* ptr = &m_data[0];
 	if(m_prefix) {
@@ -101,7 +107,8 @@ std::string AssetLink::to_string() const {
 	return str;
 }
 
-std::unique_ptr<InputStream> FileReference::open_binary_file_for_reading(fs::file_time_type* modified_time_dest) const {
+std::unique_ptr<InputStream> FileReference::open_binary_file_for_reading(fs::file_time_type* modified_time_dest) const
+{
 	return owner->open_binary_file_for_reading(*this, modified_time_dest);
 }
 
@@ -109,7 +116,8 @@ std::string FileReference::read_text_file() const {
 	return owner->read_text_file(path);
 }
 
-std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs) {
+std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs)
+{
 	std::vector<ColladaScene*> scenes;
 	for(size_t i = 0; i < refs.size(); i++) {
 		bool unique = true;
@@ -131,7 +139,8 @@ std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<Collad
 	return scenes;
 }
 
-std::vector<GLTF::ModelFile*> read_glb_files(std::vector<std::unique_ptr<GLTF::ModelFile>>& owners, std::vector<FileReference> refs) {
+std::vector<GLTF::ModelFile*> read_glb_files(std::vector<std::unique_ptr<GLTF::ModelFile>>& owners, std::vector<FileReference> refs)
+{
 	std::vector<GLTF::ModelFile*> model_files;
 	for(size_t i = 0; i < refs.size(); i++) {
 			bool unique = true;
@@ -155,7 +164,8 @@ std::vector<GLTF::ModelFile*> read_glb_files(std::vector<std::unique_ptr<GLTF::M
 	return model_files;
 }
 
-const char* next_hint(const char** hint) {
+const char* next_hint(const char** hint)
+{
 	static char temp[256];
 	if(hint) {
 		for(s32 i = 0;; i++) {

@@ -22,7 +22,18 @@
 #include <instancemgr/gameplay_convert.h>
 #include <assetmgr/asset_types.h>
 
-s32 unpack_instances(InstancesAsset& dest, LevelWadAsset* help_occl_dest, const std::vector<u8>& main, const std::vector<u8>* art, BuildConfig config, const char* hint);
-Gameplay load_gameplay(const Asset& src, const LevelWadAsset* help_occl_src, const std::map<std::string, CppType>& types_src, const BuildConfig& config, const char* hint);
+s32 unpack_instances(
+	InstancesAsset& dest,
+	LevelWadAsset* help_occl_dest,
+	const std::vector<u8>& main,
+	const std::vector<u8>* art,
+	BuildConfig config,
+	const char* hint);
+Gameplay load_gameplay(
+	const Asset& src,
+	const LevelWadAsset* help_occl_src,
+	const std::map<std::string, CppType>& types_src,
+	const BuildConfig& config,
+	const char* hint);
 
 #endif

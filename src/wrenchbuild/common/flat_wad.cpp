@@ -37,7 +37,8 @@ on_load(FlatWad, []() {
 	FlatWadAsset::funcs.pack_dl = wrap_packer_func<FlatWadAsset>(pack_flat_wad_asset);
 })
 
-static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, BuildConfig config)
+{
 	s32 header_size = src.read<s32>(0);
 	std::vector<SectorRange> ranges = src.read_multiple<SectorRange>(0x8, header_size / 0x8);
 	for(size_t i = 0; i < ranges.size(); i++) {
@@ -49,7 +50,8 @@ static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, BuildCon
 	}
 }
 
-static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, BuildConfig config) {
+static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, BuildConfig config)
+{
 	if(src.size() < 8) {
 		return false;
 	}
@@ -84,7 +86,8 @@ static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Build
 	return false;
 }
 
-static bool is_common_texture_size(s32 number) {
+static bool is_common_texture_size(s32 number)
+{
 	for(s32 i = 32; i < 1024; i *= 2) {
 		if(i == number) {
 			return true;
@@ -93,7 +96,8 @@ static bool is_common_texture_size(s32 number) {
 	return false;
 }
 
-static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, BuildConfig config) {
+static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, BuildConfig config)
+{
 	s32 header_size = 0;
 	src.for_each_logical_child([&](const Asset& child) {
 		header_size = std::max(header_size, (s32) parse_number(child.tag()) + 0x8);

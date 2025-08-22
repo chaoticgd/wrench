@@ -49,7 +49,8 @@ static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_ind
 static void create_debug_pole_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index);
 static void create_debug_pole_faces(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 vertex_base);
 
-bool tfrag_debug_output_enabled() {
+bool tfrag_debug_output_enabled()
+{
 #ifdef TFRAG_DEBUG_ENABLED
 	return true;
 #else
@@ -57,7 +58,8 @@ bool tfrag_debug_output_enabled() {
 #endif
 }
 
-ColladaScene recover_tfrags_debug(const Tfrags& tfrags) {
+ColladaScene recover_tfrags_debug(const Tfrags& tfrags)
+{
 	s32 texture_count = 0;
 	for(const Tfrag& tfrag : tfrags.fragments) {
 		for(const TfragTexturePrimitive& primitive : tfrag.common_textures) {
@@ -125,7 +127,8 @@ ColladaScene recover_tfrags_debug(const Tfrags& tfrags) {
 	return scene;
 }
 
-static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag) {
+static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag)
+{
 	TfragLod lod;
 	lod.index = 0;
 	lod.bsphere = tfrag.bsphere;
@@ -146,7 +149,8 @@ static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag) {
 	return lod;
 }
 
-static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag) {
+static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag)
+{
 	TfragLod lod;
 	lod.index = 1;
 	lod.bsphere = tfrag.bsphere;
@@ -165,7 +169,8 @@ static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag) {
 	return lod;
 }
 
-static TfragLod extract_low_tfrag_lod(const Tfrag& tfrag) {
+static TfragLod extract_low_tfrag_lod(const Tfrag& tfrag)
+{
 	TfragLod lod;
 	lod.index = 2;
 	lod.bsphere = tfrag.bsphere;
@@ -182,7 +187,8 @@ static TfragLod extract_low_tfrag_lod(const Tfrag& tfrag) {
 	return lod;
 }
 
-static void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 texture_count) {
+static void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 texture_count)
+{
 	SubMesh* submesh = nullptr;
 	s32 next_texture = 0;
 	
@@ -231,7 +237,8 @@ static void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, const Tfrag& tfra
 #endif
 }
 
-static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index) {
+static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index)
+{
 #ifdef TFRAG_DEBUG_RAINBOW_STRIPS
 	static const u8 colours[12][4] = {
 		{255, 0,   0,   255},
@@ -280,7 +287,8 @@ static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_ind
 	return vertex_base;
 }
 
-static void create_debug_pole_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index) {
+static void create_debug_pole_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index)
+{
 	// Parent-child relationships.
 	for(s32 elevation = 0; elevation < 3; elevation++) {
 		for(s32 colour = 0; colour < 4; colour++) {
@@ -340,7 +348,8 @@ static void create_debug_pole_vertices(Mesh& mesh, const TfragLod& lod, s32 stri
 	12*lod.positions.size() + /* parent-child relationships */ \
 	lod.vertex_info.size() * (2*3*wideness + 2*colour + side) /* poles */
 
-static void create_debug_pole_faces(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 vertex_base) {
+static void create_debug_pole_faces(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 vertex_base)
+{
 	SubMesh& debug_submesh = mesh.submeshes.emplace_back();
 	debug_submesh.material = 0;
 	
