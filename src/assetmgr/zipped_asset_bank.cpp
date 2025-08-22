@@ -20,19 +20,19 @@
 
 ZippedAssetBank::ZippedAssetBank(AssetForest& forest, const char* zip_path, fs::path prefix)
 	: AssetBank(forest, false)
-	, _prefix(std::move(prefix)) {
+	, m_prefix(std::move(prefix)) {
 	int error;
-	_zip = zip_open(zip_path, ZIP_RDONLY, &error);
-	verify(_zip, "Failed to open zip file.");
+	m_zip = zip_open(zip_path, ZIP_RDONLY, &error);
+	verify(m_zip, "Failed to open zip file.");
 	// If no prefix was explicitly provided and there's no gameinfo.txt in the
 	// root directory, try and find the first gameinfo.txt file and use that.
-	if(_prefix.empty() && !file_exists(_prefix/"gameinfo.txt")) {
-		s64 count = zip_get_num_entries(_zip, 0);
+	if(m_prefix.empty() && !file_exists(m_prefix/"gameinfo.txt")) {
+		s64 count = zip_get_num_entries(m_zip, 0);
 		for(s32 i = 0; i < count; i++) {
-			if(const char* name = zip_get_name(_zip, i, 0)) {
+			if(const char* name = zip_get_name(m_zip, i, 0)) {
 				fs::path path(name);
 				if(path.filename() == "gameinfo.txt") {
-					_prefix = path.parent_path();
+					m_prefix = path.parent_path();
 					break;
 				}
 			}
@@ -41,16 +41,16 @@ ZippedAssetBank::ZippedAssetBank(AssetForest& forest, const char* zip_path, fs::
 }
 
 ZippedAssetBank::~ZippedAssetBank() {
-	zip_close(_zip);
+	zip_close(m_zip);
 }
 
 std::unique_ptr<InputStream> ZippedAssetBank::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {
-	fs::path absolute_path = _prefix/path;
+	fs::path absolute_path = m_prefix/path;
 	zip_stat_t stat;
-	verify(zip_stat(_zip, absolute_path.string().c_str(), 0, &stat) == 0, "Failed to open zipped file '%s'.", absolute_path.string().c_str());
+	verify(zip_stat(m_zip, absolute_path.string().c_str(), 0, &stat) == 0, "Failed to open zipped file '%s'.", absolute_path.string().c_str());
 	verify(stat.valid & ZIP_STAT_SIZE, "Failed to find size of zipped file '%s'.", absolute_path.string().c_str());
 	std::unique_ptr<ZipInputStream> stream = std::make_unique<ZipInputStream>();
-	if(stream->open(_zip, absolute_path.string().c_str(), (s64) stat.size)) {
+	if(stream->open(m_zip, absolute_path.string().c_str(), (s64) stat.size)) {
 		return stream;
 	} else {
 		return nullptr;
@@ -77,15 +77,15 @@ void ZippedAssetBank::write_text_file(const fs::path& path, const char* contents
 
 bool ZippedAssetBank::file_exists(const fs::path& path) const {
 	zip_stat_t dummy;
-	return zip_stat(_zip, (_prefix/path).string().c_str(), 0, &dummy) == 0;
+	return zip_stat(m_zip, (m_prefix/path).string().c_str(), 0, &dummy) == 0;
 }
 
 std::vector<fs::path> ZippedAssetBank::enumerate_asset_files() const {
 	std::vector<fs::path> asset_files;
-	s64 count = zip_get_num_entries(_zip, 0);
+	s64 count = zip_get_num_entries(m_zip, 0);
 	for(s64 i = 0; i < count; i++) {
-		if(const char* name = zip_get_name(_zip, i, 0)) {
-			fs::path path = fs::path(name).lexically_relative(_prefix);
+		if(const char* name = zip_get_name(m_zip, i, 0)) {
+			fs::path path = fs::path(name).lexically_relative(m_prefix);
 			if(!path.string().starts_with("..") && path.extension() == ".asset") {
 				asset_files.emplace_back(path);
 			}
@@ -98,10 +98,10 @@ void ZippedAssetBank::enumerate_source_files(std::map<fs::path, const AssetBank*
 	std::string common_source_path = get_common_source_path();
 	std::string game_source_path = get_game_source_path(game);
 	
-	s64 count = zip_get_num_entries(_zip, 0);
+	s64 count = zip_get_num_entries(m_zip, 0);
 	for(s64 i = 0; i < count; i++) {
-		if(const char* name = zip_get_name(_zip, i, 0)) {
-			std::string str = fs::path(name).lexically_relative(_prefix).string();
+		if(const char* name = zip_get_name(m_zip, i, 0)) {
+			std::string str = fs::path(name).lexically_relative(m_prefix).string();
 			std::replace(str.begin(), str.end(), '\\', '/');
 			if(str.starts_with(common_source_path) || str.starts_with(game_source_path)) {
 				dest[str] = this;
@@ -119,29 +119,29 @@ void ZippedAssetBank::lock() {}
 // *****************************************************************************
 
 ZipInputStream::~ZipInputStream() {
-	if(_file) {
-		zip_fclose(_file);
+	if(m_file) {
+		zip_fclose(m_file);
 	}
 }
 	
 bool ZipInputStream::open(zip_t* zip, const char* path, s64 size) {
-	_file = zip_fopen(zip, path, 0);
-	_size = size;
-	return _file != nullptr;
+	m_file = zip_fopen(zip, path, 0);
+	m_size = size;
+	return m_file != nullptr;
 }
 
 bool ZipInputStream::seek(s64 offset) {
-	return zip_fseek(_file, offset, SEEK_SET) == 0;
+	return zip_fseek(m_file, offset, SEEK_SET) == 0;
 }
 
 s64 ZipInputStream::tell() const {
-	return zip_ftell(_file);
+	return zip_ftell(m_file);
 }
 
 s64 ZipInputStream::size() const {
-	return _size;
+	return m_size;
 }
 
 bool ZipInputStream::read_n(u8* dest, s64 size) {
-	return zip_fread(_file, dest, size) == size;
+	return zip_fread(m_file, dest, size) == size;
 }

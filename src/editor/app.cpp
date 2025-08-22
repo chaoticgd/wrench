@@ -27,11 +27,11 @@
 #include "fs_includes.h"
 
 Level* app::get_level() {
-	return _lvl ? &(*_lvl) : nullptr;
+	return m_lvl ? &(*m_lvl) : nullptr;
 }
 
 const Level* app::get_level() const {
-	return _lvl ? &(*_lvl) : nullptr;
+	return m_lvl ? &(*m_lvl) : nullptr;
 }
 
 BaseEditor* app::get_editor() {
@@ -39,8 +39,8 @@ BaseEditor* app::get_editor() {
 }
 
 void app::load_level(LevelAsset& asset) {
-	_lvl.emplace();
-	_lvl->read(asset, game);
+	m_lvl.emplace();
+	m_lvl->read(asset, game);
 	reset_camera(this);
 }
 

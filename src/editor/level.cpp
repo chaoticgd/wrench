@@ -30,11 +30,11 @@ Level::Level() {}
 
 void Level::read(LevelAsset& asset, Game g) {
 	game = g;
-	_asset = &asset;
-	_instances_asset = &level_wad().get_gameplay().as<InstancesAsset>();
+	m_asset = &asset;
+	m_instances_asset = &level_wad().get_gameplay().as<InstancesAsset>();
 		
-	std::string text = _instances_asset->src().read_text_file();
-	_instances = read_instances(text);
+	std::string text = m_instances_asset->src().read_text_file();
+	m_instances = read_instances(text);
 	
 	const std::map<std::string, CppType>& types = asset.forest().types();
 	
@@ -139,30 +139,30 @@ void Level::read(LevelAsset& asset, Game g) {
 }
 
 std::string Level::save() {
-	verify_fatal(_instances_asset);
+	verify_fatal(m_instances_asset);
 	
 	std::string message;
 	
 	// Setup the file structure so that the new instances file can be written
 	// out in the new asset bank.
-	if(&_instances_asset->bank() != g_app->mod_bank && _instances_asset->parent()) {
+	if(&m_instances_asset->bank() != g_app->mod_bank && m_instances_asset->parent()) {
 		s32 level_id = level_wad().id();
 		std::string path = generate_level_asset_path(level_id, *level().parent());
 		
 		AssetFile& instances_file = g_app->mod_bank->asset_file(path);
 		AssetLink link = level_wad().get_gameplay().absolute_link();
-		_instances_asset = &instances_file.asset_from_link(InstancesAsset::ASSET_TYPE, link).as<InstancesAsset>();
+		m_instances_asset = &instances_file.asset_from_link(InstancesAsset::ASSET_TYPE, link).as<InstancesAsset>();
 	
 		message += stringf("Written file: %s\n", path.c_str());
 	}
 	
 	fs::path gameplay_path;
-	if(_instances_asset->src().path.empty()) {
+	if(m_instances_asset->src().path.empty()) {
 		// Make sure we're not overwriting another gameplay.instances file.
-		verify(!_instances_asset->file().file_exists("gameplay.instances"), "A gameplay.instances file already exists in that folder.");
+		verify(!m_instances_asset->file().file_exists("gameplay.instances"), "A gameplay.instances file already exists in that folder.");
 		gameplay_path = "gameplay.instances";
 	} else {
-		gameplay_path = _instances_asset->src().path;
+		gameplay_path = m_instances_asset->src().path;
 	}
 	
 	// Write out the gameplay.bin file.
@@ -172,11 +172,11 @@ std::string Level::save() {
 	} else {
 		application_version = wadinfo.build.commit_string;
 	}
-	std::string text = write_instances(_instances, "Wrench Editor", application_version);
-	FileReference ref = _instances_asset->file().write_text_file(gameplay_path, text.c_str());
-	_instances_asset->set_src(ref);
+	std::string text = write_instances(m_instances, "Wrench Editor", application_version);
+	FileReference ref = m_instances_asset->file().write_text_file(gameplay_path, text.c_str());
+	m_instances_asset->set_src(ref);
 	
-	_instances_asset->file().write();
+	m_instances_asset->file().write();
 	
 	message += stringf("Written file: %s\n", gameplay_path.string().c_str());
 	
@@ -184,7 +184,7 @@ std::string Level::save() {
 }
 
 LevelAsset& Level::level() {
-	return *_asset;
+	return *m_asset;
 }
 
 LevelWadAsset& Level::level_wad() {
@@ -192,12 +192,12 @@ LevelWadAsset& Level::level_wad() {
 }
 
 Instances& Level::instances() {
-	return _instances;
+	return m_instances;
 }
 
 
 const Instances& Level::instances() const {
-	return _instances;
+	return m_instances;
 }
 
 Opt<EditorClass> load_moby_editor_class(const MobyClassAsset& moby) {

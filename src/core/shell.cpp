@@ -41,10 +41,10 @@ CommandThread::~CommandThread() {
 void CommandThread::start(const std::vector<std::string>& args) {
 	clear();
 	CommandThread* command = this;
-	thread = std::thread([args, command]() {
+	m_thread = std::thread([args, command]() {
 		{
-			std::lock_guard<std::mutex> lock(command->mutex);
-			command->shared.state = RUNNING;
+			std::lock_guard<std::mutex> lock(command->m_mutex);
+			command->m_shared.state = RUNNING;
 		}
 		std::vector<const char*> pointers(args.size());
 		for(size_t i = 0; i < args.size(); i++) {
@@ -56,20 +56,20 @@ void CommandThread::start(const std::vector<std::string>& args) {
 
 void CommandThread::stop() {
 	{
-		std::lock_guard<std::mutex> lock(mutex);
-		if(shared.state == NOT_RUNNING) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if(m_shared.state == NOT_RUNNING) {
 			return;
-		} else if(shared.state != STOPPED) {
-			shared.state = STOPPING;
+		} else if(m_shared.state != STOPPED) {
+			m_shared.state = STOPPING;
 		}
 	}
 
 	// Wait for the thread to stop processing data.
 	for(;;) {
 		{
-			std::lock_guard<std::mutex> lock(mutex);
-			if(shared.state == STOPPED) {
-				shared.state = NOT_RUNNING;
+			std::lock_guard<std::mutex> lock(m_mutex);
+			if(m_shared.state == STOPPED) {
+				m_shared.state = NOT_RUNNING;
 				break;
 			}
 		}
@@ -77,35 +77,35 @@ void CommandThread::stop() {
 	}
 
 	// Wait for the thread to terminate.
-	thread.join();
+	m_thread.join();
 }
 
 void CommandThread::clear() {
 	stop();
 	{
-		std::lock_guard<std::mutex> lock(mutex);
-		shared = {NOT_RUNNING};
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_shared = {NOT_RUNNING};
 	}
 }
 
 std::string& CommandThread::get_last_output_lines() {
 	update_last_output_lines();
-	return buffer;
+	return m_buffer;
 }
 
 std::string CommandThread::copy_entire_output() {
-	std::lock_guard<std::mutex> lock(mutex);
-	return shared.output;
+	std::lock_guard<std::mutex> lock(m_mutex);
+	return m_shared.output;
 }
 
 bool CommandThread::is_running() {
-	std::lock_guard<std::mutex> lock(mutex);
-	return shared.state == RUNNING;
+	std::lock_guard<std::mutex> lock(m_mutex);
+	return m_shared.state == RUNNING;
 }
 
 bool CommandThread::succeeded() {
-	std::lock_guard<std::mutex> lock(mutex);
-	return shared.success;
+	std::lock_guard<std::mutex> lock(m_mutex);
+	return m_shared.success;
 }
 
 void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& command) {
@@ -115,10 +115,10 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	std::string command_string = prepare_arguments(argc, argv);
 
 	if(command_string.empty()) {
-		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.output = "Failed to pass arguments to shell.\n";
-		command.shared.state = STOPPED;
-		command.shared.success = false;
+		std::lock_guard<std::mutex> lock(command.m_mutex);
+		command.m_shared.output = "Failed to pass arguments to shell.\n";
+		command.m_shared.state = STOPPED;
+		command.m_shared.success = false;
 		return;
 	}
 
@@ -129,11 +129,11 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 
 	WrenchPipeHandle* pipe = pipe_open(command_string.c_str(), WRENCH_PIPE_MODE_READ);
 	if (!pipe) {
-		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.output += PIPEIO_ERROR_CONTEXT_STRING;
-		command.shared.output += "\n";
-		command.shared.state = STOPPED;
-		command.shared.success = false;
+		std::lock_guard<std::mutex> lock(command.m_mutex);
+		command.m_shared.output += PIPEIO_ERROR_CONTEXT_STRING;
+		command.m_shared.output += "\n";
+		command.m_shared.state = STOPPED;
+		command.m_shared.success = false;
 		return;
 	}
 
@@ -142,9 +142,9 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	// has requested that we stop.
 	char buffer[1024];
 	while(pipe_gets(buffer, sizeof(buffer), pipe) != NULL) {
-		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.output += buffer;
-		if(command.shared.state == STOPPING) {
+		std::lock_guard<std::mutex> lock(command.m_mutex);
+		command.m_shared.output += buffer;
+		if(command.m_shared.state == STOPPING) {
 			break;
 		}
 	}
@@ -152,43 +152,43 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	// Notify the main thread that we're done before we call pclose.
 	ThreadState state;
 	{
-		std::lock_guard<std::mutex> lock(command.mutex);
-		state = command.shared.state;
+		std::lock_guard<std::mutex> lock(command.m_mutex);
+		state = command.m_shared.state;
 		if(state == RUNNING) {
-			command.shared.state = STOPPING;
+			command.m_shared.state = STOPPING;
 		}
 	}
 
 	int exit_code = pipe_close(pipe);
 	{
-		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.state = STOPPED;
+		std::lock_guard<std::mutex> lock(command.m_mutex);
+		command.m_shared.state = STOPPED;
 		if(strlen(PIPEIO_ERROR_CONTEXT_STRING) == 0) {
 			if(exit_code == 0) {
-				command.shared.output += "\nProcess exited normally.\n";
-				command.shared.success = true;
+				command.m_shared.output += "\nProcess exited normally.\n";
+				command.m_shared.success = true;
 			} else {
-				command.shared.output += stringf("\nProcess exited with error code %d.\n", exit_code);
-				command.shared.success = false;
+				command.m_shared.output += stringf("\nProcess exited with error code %d.\n", exit_code);
+				command.m_shared.success = false;
 			}
 		} else {
-			command.shared.output += stringf("\nFailed to close pipe (%s).\n", PIPEIO_ERROR_CONTEXT_STRING);
-			command.shared.success = false;
+			command.m_shared.output += stringf("\nFailed to close pipe (%s).\n", PIPEIO_ERROR_CONTEXT_STRING);
+			command.m_shared.success = false;
 		}
 	}
 }
 
 void CommandThread::update_last_output_lines() {
-	std::lock_guard<std::mutex> lock(mutex);
+	std::lock_guard<std::mutex> lock(m_mutex);
 
-	buffer.resize(0);
+	m_buffer.resize(0);
 
 	// Find the start of the last 15 lines.
 	s64 i = 0;
 	s32 new_line_count = 0;
-	if(shared.output.size() > 0) {
-		for(i = (s64)shared.output.size() - 1; i > 0; i--) {
-			if(shared.output[i] == '\n') {
+	if(m_shared.output.size() > 0) {
+		for(i = (s64)m_shared.output.size() - 1; i > 0; i--) {
+			if(m_shared.output[i] == '\n') {
 				new_line_count++;
 				if(new_line_count >= 15) {
 					i++;
@@ -200,16 +200,16 @@ void CommandThread::update_last_output_lines() {
 
 	// Go through the last 15 lines of the output and strip out colour
 	// codes, taking care to handle incomplete buffers.
-	for(; i < (s64)shared.output.size(); i++) {
+	for(; i < (s64)m_shared.output.size(); i++) {
 		// \033[%sm%02x\033[0m
-		if(i + 1 < shared.output.size() && memcmp(shared.output.data() + i, "\033[", 2) == 0) {
-			if(i + 3 < shared.output.size() && shared.output[i + 3] == 'm') {
+		if(i + 1 < m_shared.output.size() && memcmp(m_shared.output.data() + i, "\033[", 2) == 0) {
+			if(i + 3 < m_shared.output.size() && m_shared.output[i + 3] == 'm') {
 				i += 3;
 			} else {
 				i += 4;
 			}
 		} else {
-			buffer += shared.output[i];
+			m_buffer += m_shared.output[i];
 		}
 	}
 }

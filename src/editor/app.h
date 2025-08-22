@@ -72,7 +72,7 @@ public:
 	void load_level(LevelAsset& asset);
 	
 private:
-	std::optional<Level> _lvl;
+	std::optional<Level> m_lvl;
 
 public:
 

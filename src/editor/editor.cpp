@@ -21,14 +21,14 @@
 #include <utility>
 
 void BaseEditor::undo() {
-	verify(_command_past_last >= 1, "Nothing to undo.");
-	UndoRedoCommand& cmd = _commands[--_command_past_last];
+	verify(m_command_past_last >= 1, "Nothing to undo.");
+	UndoRedoCommand& cmd = m_commands[--m_command_past_last];
 	cmd.undo(*this, cmd.user_data);
 }
 
 void BaseEditor::redo() {
-	verify(_command_past_last < _commands.size(), "Nothing to redo.");
-	UndoRedoCommand& cmd = _commands[_command_past_last++];
+	verify(m_command_past_last < m_commands.size(), "Nothing to redo.");
+	UndoRedoCommand& cmd = m_commands[m_command_past_last++];
 	cmd.apply(*this, cmd.user_data);
 }
 

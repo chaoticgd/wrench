@@ -74,7 +74,7 @@ public:
 	bool operator==(const Texture& rhs) const;
 	
 private:
-	std::vector<u32> _palette;
+	std::vector<u32> m_palette;
 };
 
 #endif

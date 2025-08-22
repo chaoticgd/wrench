@@ -44,9 +44,9 @@ public:
 	float half_framerate();
 	
 private:
-	Game _game;
-	Region _region;
-	bool _is_testing;
+	Game m_game;
+	Region m_region;
+	bool m_is_testing;
 };
 
 Game game_from_string(const std::string& game);

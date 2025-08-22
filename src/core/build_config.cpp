@@ -19,21 +19,21 @@
 #include "build_config.h"
 
 BuildConfig::BuildConfig(Game game, Region region, bool is_testing)
-	: _game(game), _region(region), _is_testing(is_testing) {}
+	: m_game(game), m_region(region), m_is_testing(is_testing) {}
 
 BuildConfig::BuildConfig(const std::string& game, const std::string& region, bool is_testing)
 	: BuildConfig(game_from_string(game), region_from_string(region), is_testing) {}
 
 Game BuildConfig::game() const {
-	return _game;
+	return m_game;
 }
 
 Region BuildConfig::region() const {
-	return _region;
+	return m_region;
 }
 
 bool BuildConfig::is_testing() const {
-	return _is_testing;
+	return m_is_testing;
 }
 
 bool BuildConfig::is_ntsc() const {

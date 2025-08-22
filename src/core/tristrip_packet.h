@@ -68,16 +68,6 @@ GeometryPackets generate_tristrip_packets(const GeometryPrimitives& input, const
 // Gets fed tristrips (as well as triangle lists) and incrementally splits them
 // up into packets based on the constraints passed to it at construction time.
 class TriStripPacketGenerator {
-	const TriStripConfig& _config;
-	
-	TriStripRunningTotals _totals;
-	GeometryPacket* _packet = nullptr;
-	s32 _current_effective_material = -1;
-	s32 _current_packet = -1;
-	std::vector<s32> _last_packet_with_vertex;
-	
-	GeometryPackets _output;
-	
 public:
 	TriStripPacketGenerator(const TriStripConfig& config);
 	void add_primitive(const s32* indices, s32 index_count, GeometryType type, s32 effective_material);
@@ -90,6 +80,16 @@ private:
 	bool try_add_unique_vertex();
 	bool try_add_repeated_vertex();
 	bool try_add_material();
+	
+	const TriStripConfig& m_config;
+	
+	TriStripRunningTotals m_totals;
+	GeometryPacket* m_packet = nullptr;
+	s32 m_current_effective_material = -1;
+	s32 m_current_packet = -1;
+	std::vector<s32> m_last_packet_with_vertex;
+	
+	GeometryPackets m_output;
 };
 
 #endif

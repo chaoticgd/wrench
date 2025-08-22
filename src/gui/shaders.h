@@ -39,11 +39,11 @@ private:
 	GLuint link(GLuint vertex, GLuint fragment);
 	GLuint compile(const GLchar* src, GLuint type);
 
-	GLuint _id;
-	const GLchar* _vertex_src;
-	const GLchar* _fragment_src;
-	ShaderCallback _before;
-	ShaderCallback _after;
+	GLuint m_id;
+	const GLchar* m_vertex_src;
+	const GLchar* m_fragment_src;
+	ShaderCallback m_before;
+	ShaderCallback m_after;
 };
 
 struct Shaders {

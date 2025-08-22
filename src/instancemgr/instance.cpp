@@ -26,23 +26,23 @@
 #include <instancemgr/instances.h>
 
 const glm::mat4& TransformComponent::matrix() const {
-	return _matrix;
+	return m_matrix;
 }
 
 const glm::mat4& TransformComponent::inverse_matrix() const {
-	return _inverse_matrix;
+	return m_inverse_matrix;
 }
 
 const glm::vec3& TransformComponent::pos() const {
-	return *(glm::vec3*) &_matrix[3][0];
+	return *(glm::vec3*) &m_matrix[3][0];
 }
 
 const glm::vec3& TransformComponent::rot() const {
-	return _rot;
+	return m_rot;
 }
 
 const f32& TransformComponent::scale() const {
-	return _scale;
+	return m_scale;
 }
 
 static void decompose_matrix(glm::mat4& matrix, glm::vec3& pos, glm::vec3& rot, glm::vec3& scale) {
@@ -71,7 +71,7 @@ void TransformComponent::set_from_matrix(const glm::mat4* new_matrix, const glm:
 	} else {
 		temp_matrix = glm::inverse(*new_inverse_matrix);
 	}
-	switch(_mode) {
+	switch(m_mode) {
 		case TransformMode::NONE: {
 			break;
 		}
@@ -79,20 +79,20 @@ void TransformComponent::set_from_matrix(const glm::mat4* new_matrix, const glm:
 		case TransformMode::MATRIX_INVERSE:
 		case TransformMode::MATRIX_AND_INVERSE:
 		case TransformMode::MATRIX_INVERSE_ROTATION: {
-			_matrix = temp_matrix;
+			m_matrix = temp_matrix;
 			if(new_inverse_matrix) {
-				_inverse_matrix = *new_inverse_matrix;
+				m_inverse_matrix = *new_inverse_matrix;
 			} else {
-				_inverse_matrix = glm::inverse(*new_matrix);
+				m_inverse_matrix = glm::inverse(*new_matrix);
 			}
 			glm::vec3 p, r, s;
 			decompose_matrix(temp_matrix, p, r, s);
 			if(new_rot) {
-				_rot = *new_rot;
+				m_rot = *new_rot;
 			} else {
-				_rot = r;
+				m_rot = r;
 			}
-			_scale = (s[0] + s[1] + s[2]) / 3.f;
+			m_scale = (s[0] + s[1] + s[2]) / 3.f;
 			break;
 		}
 		case TransformMode::POSITION: {
@@ -129,19 +129,19 @@ void TransformComponent::set_from_pos_rot_scale(const glm::vec3& pos, const glm:
 		rot_wrapped[i] = constrain_angle(rot[i]);
 	}
 	
-	_matrix = glm::mat4(1.f);
-	_matrix = glm::translate(_matrix, pos);
-	_matrix = glm::scale(_matrix, glm::vec3(scale));
-	_matrix = glm::rotate(_matrix, rot_wrapped.z, glm::vec3(0.f, 0.f, 1.f));
-	_matrix = glm::rotate(_matrix, rot_wrapped.y, glm::vec3(0.f, 1.f, 0.f));
-	_matrix = glm::rotate(_matrix, rot_wrapped.x, glm::vec3(1.f, 0.f, 0.f));
-	_inverse_matrix = glm::inverse(_matrix);
-	_rot = rot_wrapped;
-	_scale = scale;
+	m_matrix = glm::mat4(1.f);
+	m_matrix = glm::translate(m_matrix, pos);
+	m_matrix = glm::scale(m_matrix, glm::vec3(scale));
+	m_matrix = glm::rotate(m_matrix, rot_wrapped.z, glm::vec3(0.f, 0.f, 1.f));
+	m_matrix = glm::rotate(m_matrix, rot_wrapped.y, glm::vec3(0.f, 1.f, 0.f));
+	m_matrix = glm::rotate(m_matrix, rot_wrapped.x, glm::vec3(1.f, 0.f, 0.f));
+	m_inverse_matrix = glm::inverse(m_matrix);
+	m_rot = rot_wrapped;
+	m_scale = scale;
 }
 
 void TransformComponent::read(const WtfNode* src) {
-	switch(_mode) {
+	switch(m_mode) {
 		case TransformMode::NONE: {
 			break;
 		}
@@ -206,7 +206,7 @@ void TransformComponent::read(const WtfNode* src) {
 }
 
 void TransformComponent::write(WtfWriter* dest) const {
-	switch(_mode) {
+	switch(m_mode) {
 		case TransformMode::NONE: {
 			break;
 		}
@@ -320,73 +320,73 @@ void PvarComponent::write(WtfWriter* dest) const {
 }
 
 const TransformComponent& Instance::transform() const {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	return _transform;
+	verify_fatal(m_components_mask & COM_TRANSFORM);
+	return m_transform;
 }
 
 TransformComponent& Instance::transform() {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	return _transform;
+	verify_fatal(m_components_mask & COM_TRANSFORM);
+	return m_transform;
 }
 
 s32 Instance::o_class() const {
-	verify_fatal(_components_mask & COM_CLASS);
-	return _o_class;
+	verify_fatal(m_components_mask & COM_CLASS);
+	return m_o_class;
 }
 
 s32& Instance::o_class() {
-	verify_fatal(_components_mask & COM_CLASS);
-	return _o_class;
+	verify_fatal(m_components_mask & COM_CLASS);
+	return m_o_class;
 }
 
 const PvarComponent& Instance::pvars() const {
-	verify_fatal(_components_mask & COM_PVARS);
-	return _pvars;
+	verify_fatal(m_components_mask & COM_PVARS);
+	return m_pvars;
 }
 
 PvarComponent& Instance::pvars() {
-	verify_fatal(_components_mask & COM_PVARS);
-	return _pvars;
+	verify_fatal(m_components_mask & COM_PVARS);
+	return m_pvars;
 }
 
 const glm::vec3& Instance::colour() const {
-	verify_fatal(_components_mask & COM_COLOUR);
-	return _colour;
+	verify_fatal(m_components_mask & COM_COLOUR);
+	return m_colour;
 }
 
 glm::vec3& Instance::colour() {
-	verify_fatal(_components_mask & COM_COLOUR);
-	return _colour;
+	verify_fatal(m_components_mask & COM_COLOUR);
+	return m_colour;
 }
 
 f32 Instance::draw_distance() const {
-	verify_fatal(_components_mask & COM_DRAW_DISTANCE);
-	return _draw_distance;
+	verify_fatal(m_components_mask & COM_DRAW_DISTANCE);
+	return m_draw_distance;
 }
 
 f32& Instance::draw_distance() {
-	verify_fatal(_components_mask & COM_DRAW_DISTANCE);
-	return _draw_distance;
+	verify_fatal(m_components_mask & COM_DRAW_DISTANCE);
+	return m_draw_distance;
 }
 
 const std::vector<glm::vec4>& Instance::spline() const {
-	verify_fatal(_components_mask & COM_SPLINE);
-	return _spline;
+	verify_fatal(m_components_mask & COM_SPLINE);
+	return m_spline;
 }
 
 std::vector<glm::vec4>& Instance::spline() {
-	verify_fatal(_components_mask & COM_SPLINE);
-	return _spline;
+	verify_fatal(m_components_mask & COM_SPLINE);
+	return m_spline;
 }
 
 const CameraCollisionParams& Instance::camera_collision() const {
-	verify_fatal(_components_mask & COM_CAMERA_COLLISION);
-	return _camera_collision;
+	verify_fatal(m_components_mask & COM_CAMERA_COLLISION);
+	return m_camera_collision;
 }
 
 CameraCollisionParams& Instance::camera_collision() {
-	verify_fatal(_components_mask & COM_CAMERA_COLLISION);
-	return _camera_collision;
+	verify_fatal(m_components_mask & COM_CAMERA_COLLISION);
+	return m_camera_collision;
 }
 
 void Instance::read_common(const WtfNode* src) {

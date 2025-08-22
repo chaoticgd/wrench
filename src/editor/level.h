@@ -65,9 +65,9 @@ public:
 	std::map<s32, EditorClass> sound_classes;
 	
 private:
-	LevelAsset* _asset = nullptr;
-	InstancesAsset* _instances_asset = nullptr;
-	Instances _instances;
+	LevelAsset* m_asset = nullptr;
+	InstancesAsset* m_instances_asset = nullptr;
+	Instances m_instances;
 };
 
 Opt<EditorClass> load_moby_editor_class(const MobyClassAsset& moby);

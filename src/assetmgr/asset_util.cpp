@@ -28,13 +28,13 @@ AssetLink::AssetLink(const char* src) {
 
 AssetLinkPointers AssetLink::get() const {
 	AssetLinkPointers pointers;
-	const char* ptr = &data[0];
-	if(prefix) {
+	const char* ptr = &m_data[0];
+	if(m_prefix) {
 		pointers.prefix = ptr;
 		ptr += strlen(ptr) + 1;
 	}
-	pointers.tags.reserve(tags);
-	for(s16 i = 0; i < tags; i++) {
+	pointers.tags.reserve(m_tags);
+	for(s16 i = 0; i < m_tags; i++) {
 		pointers.tags.push_back(ptr);
 		ptr += strlen(ptr) + 1;
 	}
@@ -42,58 +42,58 @@ AssetLinkPointers AssetLink::get() const {
 }
 
 void AssetLink::set(const char* src) {
-	prefix = false;
-	tags = 0;
+	m_prefix = false;
+	m_tags = 0;
 	size_t size = strlen(src);
-	data.resize(size + 1);
+	m_data.resize(size + 1);
 	for(size_t i = 0; i < strlen(src); i++) {
 		if(src[i] == '.' || src[i] == ':') {
 			if(src[i] == ':') {
-				verify(!prefix && tags == 0, "Syntax error while parsing asset link.");
-				prefix = true;
+				verify(!m_prefix && m_tags == 0, "Syntax error while parsing asset link.");
+				m_prefix = true;
 			} else {
-				tags++;
+				m_tags++;
 			}
-			data[i] = '\0';
+			m_data[i] = '\0';
 		} else {
-			data[i] = src[i];
+			m_data[i] = src[i];
 		}
 	}
-	tags++;
-	data[size] = '\0';
+	m_tags++;
+	m_data[size] = '\0';
 }
 
 void AssetLink::add_prefix(const char* str) {
-	verify_fatal(!prefix && tags == 0);
+	verify_fatal(!m_prefix && m_tags == 0);
 	size_t size = strlen(str);
-	data.resize(size + 1);
-	memcpy(data.data(), str, size);
-	data[size] = '\0';
-	prefix = true;
+	m_data.resize(size + 1);
+	memcpy(m_data.data(), str, size);
+	m_data[size] = '\0';
+	m_prefix = true;
 }
 
 void AssetLink::add_tag(const char* tag) {
-	size_t old_size = data.size();
+	size_t old_size = m_data.size();
 	size_t tag_size = strlen(tag);
-	data.resize(old_size + tag_size + 1);
+	m_data.resize(old_size + tag_size + 1);
 	for(size_t i = 0; i < tag_size; i++) {
-		data[old_size + i] = tag[i];
+		m_data[old_size + i] = tag[i];
 	}
-	data[old_size + tag_size] = '\0';
-	tags++;
+	m_data[old_size + tag_size] = '\0';
+	m_tags++;
 }
 
 std::string AssetLink::to_string() const {
 	std::string str;
-	const char* ptr = &data[0];
-	if(prefix) {
+	const char* ptr = &m_data[0];
+	if(m_prefix) {
 		str += ptr;
 		str += ':';
 		ptr += strlen(ptr) + 1;
 	}
-	for(s16 i = 0; i < tags; i++) {
+	for(s16 i = 0; i < m_tags; i++) {
 		str += ptr;
-		if(i != tags - 1) {
+		if(i != m_tags - 1) {
 			str += '.';
 		}
 		ptr += strlen(ptr) + 1;

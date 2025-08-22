@@ -21,22 +21,22 @@
 #include <vector>
 
 Shader::Shader(const GLchar* vertex_src, const GLchar* fragment_src, ShaderCallback before, ShaderCallback after)
-	: _id(0), _vertex_src(vertex_src), _fragment_src(fragment_src), _before(before), _after(after) {}
+	: m_id(0), m_vertex_src(vertex_src), m_fragment_src(fragment_src), m_before(before), m_after(after) {}
 	
 Shader::~Shader() {
-	if(_id) {
-		glDeleteProgram(_id);
+	if(m_id) {
+		glDeleteProgram(m_id);
 	}
 }
 
 void Shader::init() {
-	_id = link(
-		compile(_vertex_src,   GL_VERTEX_SHADER),
-		compile(_fragment_src, GL_FRAGMENT_SHADER));
+	m_id = link(
+		compile(m_vertex_src,   GL_VERTEX_SHADER),
+		compile(m_fragment_src, GL_FRAGMENT_SHADER));
 }
 
 GLuint Shader::id() const {
-	return _id;
+	return m_id;
 }
 
 GLuint Shader::link(GLuint vertex, GLuint fragment) {
@@ -44,9 +44,9 @@ GLuint Shader::link(GLuint vertex, GLuint fragment) {
 	glAttachShader(id, vertex);
 	glAttachShader(id, fragment);
 	
-	_before(id);
+	m_before(id);
 	glLinkProgram(id);
-	_after(id);
+	m_after(id);
 
 	GLint result;
 	int log_length;

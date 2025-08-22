@@ -55,10 +55,10 @@ private:
 		bool success = false;
 	};
 	
-	std::string buffer;
-	std::thread thread;
-	std::mutex mutex;
-	SharedData shared;
+	std::string m_buffer;
+	std::thread m_thread;
+	std::mutex m_mutex;
+	SharedData m_shared;
 };
 
 s32 execute_command(s32 argc, const char** argv, bool blocking = true);

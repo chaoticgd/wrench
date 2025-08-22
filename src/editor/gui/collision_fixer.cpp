@@ -59,15 +59,15 @@ private:
 		STOPPED,       // worker sees STOPPING or is finished        the worker has stopped, main thread needs to acknowledge
 	};
 
-	std::mutex mutex;
-	std::thread thread;
-	ThreadState state = NOT_RUNNING;
+	std::mutex m_mutex;
+	std::thread m_thread;
+	ThreadState m_state = NOT_RUNNING;
 	
-	bool loaded = false;
-	AssetForest forest;
-	AssetBank* bank = nullptr;
-	std::vector<ColLevel> levels;
-	ColMappings mappings;
+	bool m_loaded = false;
+	AssetForest m_forest;
+	AssetBank* m_bank = nullptr;
+	std::vector<ColLevel> m_levels;
+	ColMappings m_mappings;
 };
 
 static CollisionFixerThread fixer_thread;
@@ -199,17 +199,17 @@ void shutdown_collision_fixer() {
 }
 
 void CollisionFixerThread::start(Game game, std::string game_bank_path, s32 type, s32 o_class, const ColParams& params) {
-	state = STARTING;
+	m_state = STARTING;
 	CollisionFixerThread* command = this;
-	thread = std::thread([command, game, game_bank_path, type, o_class, params]() {
+	m_thread = std::thread([command, game, game_bank_path, type, o_class, params]() {
 		command->game = game;
 		command->game_bank_path = game_bank_path;
 		command->type = type;
 		command->o_class = o_class;
 		command->params = params;
 		{
-			std::lock_guard<std::mutex> lock(command->mutex);
-			command->state = LOADING_DATA;
+			std::lock_guard<std::mutex> lock(command->m_mutex);
+			command->m_state = LOADING_DATA;
 		}
 		command->run();
 	});
@@ -219,39 +219,39 @@ void CollisionFixerThread::run() {
 	success = false;
 	
 	auto check_is_still_running = [&]() {
-		std::lock_guard<std::mutex> g(mutex);
-		return state == LOADING_DATA || state == RECOVERING;
+		std::lock_guard<std::mutex> g(m_mutex);
+		return m_state == LOADING_DATA || m_state == RECOVERING;
 	};
 	
-	if(!loaded) {
-		bank = &forest.mount<LooseAssetBank>(game_bank_path, false);
-		BuildAsset& build = bank->root()->get_child(game_to_string(game).c_str()).as<BuildAsset>();
-		levels = load_instance_collision_data(build, check_is_still_running);
+	if(!m_loaded) {
+		m_bank = &m_forest.mount<LooseAssetBank>(game_bank_path, false);
+		BuildAsset& build = m_bank->root()->get_child(game_to_string(game).c_str()).as<BuildAsset>();
+		m_levels = load_instance_collision_data(build, check_is_still_running);
 		if(!check_is_still_running()) {
-			std::lock_guard<std::mutex> g(mutex);
-			state = STOPPED;
+			std::lock_guard<std::mutex> g(m_mutex);
+			m_state = STOPPED;
 			success = false;
 			return;
 		}
-		mappings = generate_instance_collision_mappings(levels);
-		loaded = true;
+		m_mappings = generate_instance_collision_mappings(m_levels);
+		m_loaded = true;
 	}
 	
 	if(!check_is_still_running()) {
-		std::lock_guard<std::mutex> g(mutex);
-		state = STOPPED;
+		std::lock_guard<std::mutex> g(m_mutex);
+		m_state = STOPPED;
 		success = false;
 		return;
 	}
 	
 	{
-		std::lock_guard<std::mutex> g(mutex);
-		state = RECOVERING;
+		std::lock_guard<std::mutex> g(m_mutex);
+		m_state = RECOVERING;
 	}
 	
 	Opt<ColladaScene> s;
 	if(type > -1 && o_class > -1) {
-		s = build_instanced_collision(type, o_class, params, mappings, levels, check_is_still_running);
+		s = build_instanced_collision(type, o_class, params, m_mappings, m_levels, check_is_still_running);
 	}
 	
 	bool result;
@@ -264,27 +264,27 @@ void CollisionFixerThread::run() {
 	}
 	
 	{
-		std::lock_guard<std::mutex> g(mutex);
-		state = STOPPED;
+		std::lock_guard<std::mutex> g(m_mutex);
+		m_state = STOPPED;
 		success = result;
 	}
 }
 
 void CollisionFixerThread::reset() {
-	if(thread.joinable()) {
-		thread.join();
+	if(m_thread.joinable()) {
+		m_thread.join();
 	}
 	game_bank_path.clear();
 	success = false;
 	scene = {};
-	loaded = false;
-	levels.clear();
-	mappings.classes[COL_TIE].clear();
-	mappings.classes[COL_SHRUB].clear();
+	m_loaded = false;
+	m_levels.clear();
+	m_mappings.classes[COL_TIE].clear();
+	m_mappings.classes[COL_SHRUB].clear();
 }
 
 Opt<ColladaScene> CollisionFixerThread::get_output() {
-	std::lock_guard<std::mutex> g(mutex);
+	std::lock_guard<std::mutex> g(m_mutex);
 	if(success) {
 		success = false;
 		return std::move(scene);
@@ -295,22 +295,22 @@ Opt<ColladaScene> CollisionFixerThread::get_output() {
 
 bool CollisionFixerThread::interrupt() {
 	{
-		std::lock_guard<std::mutex> lock(mutex);
-		if(state == NOT_RUNNING) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if(m_state == NOT_RUNNING) {
 			return true;
-		} else if(state == LOADING_DATA) {
+		} else if(m_state == LOADING_DATA) {
 			return false;
-		} else if(state != STOPPED) {
-			state = STOPPING;
+		} else if(m_state != STOPPED) {
+			m_state = STOPPING;
 		}
 	}
 
 	// Wait for the thread to stop processing data.
 	for(;;) {
 		{
-			std::lock_guard<std::mutex> lock(mutex);
-			if(state == STOPPED) {
-				state = NOT_RUNNING;
+			std::lock_guard<std::mutex> lock(m_mutex);
+			if(m_state == STOPPED) {
+				m_state = NOT_RUNNING;
 				break;
 			}
 		}
@@ -318,21 +318,21 @@ bool CollisionFixerThread::interrupt() {
 	}
 
 	// Wait for the thread to terminate.
-	if(thread.joinable()) {
-		thread.join();
+	if(m_thread.joinable()) {
+		m_thread.join();
 	}
 	
 	return true;
 }
 
 bool CollisionFixerThread::is_running() {
-	std::lock_guard<std::mutex> lock(mutex);
-	return state == STARTING || state == LOADING_DATA || state == RECOVERING;
+	std::lock_guard<std::mutex> lock(m_mutex);
+	return m_state == STARTING || m_state == LOADING_DATA || m_state == RECOVERING;
 }
 
 const char* CollisionFixerThread::state_string() {
-	std::lock_guard<std::mutex> lock(mutex);
-	switch(state) {
+	std::lock_guard<std::mutex> lock(m_mutex);
+	switch(m_state) {
 		case NOT_RUNNING: return "Not Running";
 		case STARTING: return "Starting";
 		case LOADING_DATA: return "Loading Level Data";

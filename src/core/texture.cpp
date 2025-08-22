@@ -93,12 +93,12 @@ s32 Texture::bits_per_pixel() const {
 
 std::vector<u32>& Texture::palette() {
 	verify_fatal(format == PixelFormat::PALETTED_4 || format == PixelFormat::PALETTED_8)
-	return _palette;
+	return m_palette;
 }
 
 const std::vector<u32>& Texture::palette() const {
 	verify_fatal(format == PixelFormat::PALETTED_4 || format == PixelFormat::PALETTED_8)
-	return _palette;
+	return m_palette;
 }
 
 void Texture::to_rgba() {
@@ -400,7 +400,7 @@ TextureMipmaps Texture::generate_mipmaps(s32 max_mip_levels) {
 	}
 	
 	// For now we use the same palette as the original texture.
-	output.palette = _palette;
+	output.palette = m_palette;
 	
 	return output;
 }
@@ -421,7 +421,7 @@ void Texture::destroy() {
 	width = 0;
 	height = 0;
 	data.clear();
-	_palette.clear();
+	m_palette.clear();
 }
 
 bool Texture::operator<(const Texture& rhs) const {
@@ -429,7 +429,7 @@ bool Texture::operator<(const Texture& rhs) const {
 	if(height != rhs.height) return height < rhs.height;
 	if(format != rhs.format) return format < rhs.format;
 	if(data != rhs.data) return data < rhs.data;
-	return _palette < rhs._palette;
+	return m_palette < rhs.m_palette;
 }
 
 bool Texture::operator==(const Texture& rhs) const {
@@ -437,7 +437,7 @@ bool Texture::operator==(const Texture& rhs) const {
 		&& height == rhs.height
 		&& format == rhs.format
 		&& data == rhs.data
-		&& _palette == rhs._palette;
+		&& m_palette == rhs.m_palette;
 }
 
 static s32 map_pixel_index_rac4(s32 i, s32 width) {

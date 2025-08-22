@@ -160,13 +160,13 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 	
 	// We use a bitfield to store whether each attribute exists instead of
 	// something like std::optional to save memory. If you need this to be
-	// higher turn the _attrib_exists in the Asset class into a u64.
+	// higher turn the m_attrib_exists in the Asset class into a u64.
 	assert(attribute_count <= 32);
 	
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
 		std::string cpp_type = node_to_cpp_type(node);
 		if(!cpp_type.empty()) {
-			out("\t%s _attribute_%s;\n", cpp_type.c_str(), node->tag);
+			out("\t%s m_attribute_%s;\n", cpp_type.c_str(), node->tag);
 			attribute_count++;
 		}
 	}
@@ -338,12 +338,12 @@ static void generate_read_function(const WtfNode* asset_type) {
 			} else {
 				first = false;
 			}
-			std::string result = std::string("_attribute_") + node->tag;
+			std::string result = std::string("m_attribute_") + node->tag;
 			std::string attrib = std::string("attribute_") + node->tag;
 			out("\tconst WtfAttribute* %s = wtf_attribute(node, \"%s\");\n", attrib.c_str(), node->tag);
 			out("\tif(%s) {\n", attrib.c_str());
 			generate_read_attribute_code(node, result.c_str(), attrib.c_str(), 0);
-			out("\t\t_attrib_exists |= ATTRIB_%s;\n", node->tag);
+			out("\t\tm_attrib_exists |= ATTRIB_%s;\n", node->tag);
 			out("\t}\n");
 		}
 	}
@@ -436,9 +436,9 @@ static void generate_write_function(const WtfNode* asset_type) {
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
 		std::string cpp_type = node_to_cpp_type(node);
 		if(!cpp_type.empty()) {
-			out("\tif(_attrib_exists & ATTRIB_%s) {\n", node->tag);
+			out("\tif(m_attrib_exists & ATTRIB_%s) {\n", node->tag);
 			out("\t\twtf_begin_attribute(ctx, \"%s\");\n", node->tag);
-			std::string expr = std::string("_attribute_") + node->tag;
+			std::string expr = std::string("m_attribute_") + node->tag;
 			generate_asset_write_code(node, expr.c_str(), 0);
 			out("\t\twtf_end_attribute(ctx);\n");
 			out("\t}\n");
@@ -509,7 +509,7 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 			
 			out("bool %sAsset::has_%s() const {\n", asset_type->tag, getter_name.c_str());
 			out("\tfor(const Asset* asset = this; asset != nullptr; asset = asset->lower_precedence()) {\n");
-			out("\t\tif(asset->physical_type() == physical_type() && (static_cast<const %sAsset*>(asset)->_attrib_exists & ATTRIB_%s)) {\n", asset_type->tag, node->tag);
+			out("\t\tif(asset->physical_type() == physical_type() && (static_cast<const %sAsset*>(asset)->m_attrib_exists & ATTRIB_%s)) {\n", asset_type->tag, node->tag);
 			out("\t\t\treturn true;\n");
 			out("\t\t}\n");
 			out("\t}\n");
@@ -527,8 +527,8 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 				out("\t\tif(asset->physical_type() == ASSET_TYPE) {\n");
 				out("\t\t\t%s dest_0;\n", cpp_type.c_str());
 				out("\t\t\tconst auto& sub = static_cast<const %sAsset&>(*asset);\n", asset_type->tag);
-				out("\t\t\tif(sub._attrib_exists & ATTRIB_%s) {\n", node->tag);
-				out("\t\t\t\tconst %s& src_0 = sub._attribute_%s;\n", cpp_type.c_str(), node->tag);
+				out("\t\t\tif(sub.m_attrib_exists & ATTRIB_%s) {\n", node->tag);
+				out("\t\t\t\tconst %s& src_0 = sub.m_attribute_%s;\n", cpp_type.c_str(), node->tag);
 				generate_attribute_getter_code(node, 0);
 				out("\t\t\t\treturn dest_0;\n");
 				out("\t\t\t}\n");
@@ -548,8 +548,8 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 			out("\tassert(bank().is_writeable());\n");
 			out("\t%s dest_0;\n", cpp_type.c_str());
 			generate_attribute_setter_code(node, 0);
-			out("\t_attribute_%s = std::move(dest_0);\n", node->tag);
-			out("\t_attrib_exists |= ATTRIB_%s;\n", node->tag);
+			out("\tm_attribute_%s = std::move(dest_0);\n", node->tag);
+			out("\tm_attrib_exists |= ATTRIB_%s;\n", node->tag);
 			out("}\n");
 			out("\n");
 		}
@@ -668,10 +668,10 @@ static void generate_child_functions(const WtfNode* asset_type) {
 			for(int is_const = 0; is_const < 2; is_const++) {
 				const char* qualifier = is_const ? "const " : "";
 				if(allowed_types->first_array_element->next) {
-					out("%s Asset& %sAsset::get_%s() %s{\n", qualifier, asset_type->tag, node->tag, qualifier);
+					out("%sAsset& %sAsset::get_%s() %s{\n", qualifier, asset_type->tag, node->tag, qualifier);
 					out("\treturn get_child(\"%s\");\n", node->tag);
 				} else {
-					out("%s %sAsset& %sAsset::get_%s() %s{\n", qualifier, child_type, asset_type->tag, node->tag, qualifier);
+					out("%s%sAsset& %sAsset::get_%s() %s{\n", qualifier, child_type, asset_type->tag, node->tag, qualifier);
 					out("\treturn get_child(\"%s\").as<%sAsset>();\n", node->tag, child_type);
 				}
 				out("}\n");

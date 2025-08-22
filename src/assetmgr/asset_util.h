@@ -61,9 +61,9 @@ public:
 	void add_tag(const char* tag);
 	std::string to_string() const;
 private:
-	bool prefix = false;
-	s16 tags = 0;
-	std::vector<char> data; // = [prefix \0] fragment(0) \0 ... \0 fragment(fragments-1)
+	bool m_prefix = false;
+	s16 m_tags = 0;
+	std::vector<char> m_data; // = [prefix \0] fragment(0) \0 ... \0 fragment(fragments-1)
 };
 
 class AssetForest;
