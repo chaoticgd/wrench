@@ -18,14 +18,15 @@
 
 #include "material.h"
 
-std::vector<EffectiveMaterial> effective_materials(const std::vector<Material>& materials, u32 attributes) {
-	std::vector<EffectiveMaterial> effectives;
-	std::vector<bool> done(materials.size(), false);
+EffectiveMaterialsOutput effective_materials(const std::vector<Material>& materials, u32 attributes) {
+	EffectiveMaterialsOutput output;
+	output.material_to_effective.resize(materials.size(), -1);
 	for(size_t i = 0; i < materials.size(); i++) {
-		if(!done[i]) {
-			EffectiveMaterial& effective = effectives.emplace_back();
+		if(output.material_to_effective[i] == -1) {
+			s32 effective_index = (s32) output.effectives.size();
+			EffectiveMaterial& effective = output.effectives.emplace_back();
 			for(size_t j = 0; j < materials.size(); j++) {
-				if(!done[j]) {
+				if(output.material_to_effective[j] == -1) {
 					bool equal = true;
 					if(attributes & MATERIAL_ATTRIB_SURFACE) {
 						equal &= materials[i].surface == materials[j].surface;
@@ -39,11 +40,11 @@ std::vector<EffectiveMaterial> effective_materials(const std::vector<Material>& 
 					}
 					if(equal) {
 						effective.materials.emplace_back((s32) j);
-						done[j] = true;
+						output.material_to_effective[j] = effective_index;
 					}
 				}
 			}
 		}
 	}
-	return effectives;
+	return output;
 }

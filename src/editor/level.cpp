@@ -86,41 +86,24 @@ void Level::read(LevelAsset& asset, Game g) {
 	}
 	
 	level_wad().get_moby_classes().for_each_logical_child_of_type<MobyClassAsset>([&](MobyClassAsset& moby) {
-		EditorClass& ec = moby_classes[moby.id()];
-		if(moby.has_editor_mesh()) {
-			MeshAsset& asset = moby.get_editor_mesh();
-			std::string xml = asset.src().read_text_file();
-			ColladaScene scene = read_collada((char*) xml.data());
-			Mesh* mesh = scene.find_mesh(asset.name());
-			if(mesh) {
-				std::vector<Texture> textures;
-				moby.get_materials().for_each_logical_child_of_type<TextureAsset>([&](TextureAsset& texture) {
-					auto stream = texture.src().open_binary_file_for_reading();
-					Opt<Texture> tex = read_png(*stream);
-					if(tex) {
-						textures.emplace_back(*tex);
-					}
-				});
-				
-				ec.mesh = *mesh;
-				ec.render_mesh = upload_mesh(*mesh, true);
-				ec.materials = upload_collada_materials(scene.materials, textures);
+		Opt<EditorClass> ec = load_moby_editor_class(moby);
+		if(ec.has_value()) {
+			if(moby.has_editor_icon()) {
+				TextureAsset& icon_asset = moby.get_editor_icon();
+				std::unique_ptr<InputStream> stream = icon_asset.src().open_binary_file_for_reading();
+				Opt<Texture> icon = read_png(*stream);
+				if(icon.has_value()) {
+					std::vector<Texture> textures = { std::move(*icon) };
+					ColladaMaterial mat;
+					mat.surface = MaterialSurface(0);
+					ec->icon = upload_collada_material(mat, textures);
+				}
 			}
-		}
-		if(moby.has_editor_icon()) {
-			TextureAsset& icon_asset = moby.get_editor_icon();
-			std::unique_ptr<InputStream> stream = icon_asset.src().open_binary_file_for_reading();
-			Opt<Texture> icon = read_png(*stream);
-			if(icon.has_value()) {
-				std::vector<Texture> textures = { std::move(*icon) };
-				ColladaMaterial mat;
-				mat.surface = MaterialSurface(0);
-				ec.icon = upload_collada_material(mat, textures);
+			auto pvar_type = types.find(stringf("update%d", moby.id()));
+			if(pvar_type != types.end()) {
+				ec->pvar_type = &pvar_type->second;
 			}
-		}
-		auto pvar_type = types.find(stringf("update%d", moby.id()));
-		if(pvar_type != types.end()) {
-			ec.pvar_type = &pvar_type->second;
+			moby_classes.emplace(moby.id(), std::move(*ec));
 		}
 	});
 	
@@ -215,6 +198,39 @@ Instances& Level::instances() {
 
 const Instances& Level::instances() const {
 	return _instances;
+}
+
+Opt<EditorClass> load_moby_editor_class(const MobyClassAsset& moby) {
+	if(!moby.has_editor_mesh()) {
+		return std::nullopt;
+	}
+	const MeshAsset& asset = moby.get_editor_mesh();
+	std::unique_ptr<InputStream> stream = asset.src().open_binary_file_for_reading();
+	std::vector<u8> glb = stream->read_multiple<u8>(stream->size());
+	GLTF::ModelFile gltf = GLTF::read_glb(glb);
+	GLTF::Node* node = GLTF::lookup_node(gltf, asset.name().c_str());
+	if(node == nullptr || !node->mesh.has_value() || *node->mesh < 0 || *node->mesh >= gltf.meshes.size()) {
+		if(node==nullptr)
+		return std::nullopt;
+	}
+	GLTF::Mesh& mesh = gltf.meshes[*node->mesh];
+	
+	MaterialSet material_set = read_material_assets(moby.get_materials());
+	GLTF::map_gltf_materials_to_wrench_materials(gltf, material_set.materials);
+	
+	std::vector<Texture> textures;
+	for(FileReference ref : material_set.textures) {
+		auto stream = ref.open_binary_file_for_reading();
+		verify(stream.get(), "Failed to open shrub texture file.");
+		Opt<Texture> texture = read_png(*stream.get());
+		verify(texture.has_value(), "Failed to read shrub texture.");
+		textures.emplace_back(*texture);
+	}
+	
+	EditorClass editor_moby;
+	editor_moby.render_mesh = upload_gltf_mesh(mesh, true);
+	editor_moby.materials = upload_materials(material_set.materials, textures);
+	return editor_moby;
 }
 
 Opt<EditorClass> load_tie_editor_class(const TieClassAsset& tie) {

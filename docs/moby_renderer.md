@@ -13,47 +13,47 @@
 - Transforms
 - Joints
 - Sound definitions
-- High LOD submeshes
-- Low LOD submeshes
-- Metal submeshes
-- Bangle submeshes
+- High LOD packets
+- Low LOD packets
+- Metal packets
+- Bangle packets
 - Team palettes (UYA and DL only)
 - GIF usage table
 
 ## Class Header
 
-| Offset | Name                 | Type  | Description                                                                                       |
-| ------ | -------------------- | ----- | ------------------------------------------------------------------------------------------------- |
-| 0x00   | submesh_table_offset | s32   | Pointer to a table of submesh headers.                                                            |
-| 0x04   | high_lod_count       | u8    | The number of high LOD submeshes.                                                                 |
-| 0x5    | low_lod_count        | u8    | The number of low LOD submeshes, which come right after the high LOD submeshes.                   |
-| 0x6    | metal_count          | u8    | The number of metal submeshes. These are used to give models a shiny metallic effect.             |
-| 0x7    | metal_begin          | u8    | The index of the first metal submesh.                                                             |
-| 0x8    | sequence_count       | u8    | The number of animations.                                                                         |
-| 0xd    | sound_count          | u8    | The number of sound definitions.                                                                  |
-| 0xe    | lod_trans            | u8    |                                                                                                   |
-| 0xf    | shadow               | u8    | Number of shadow entries.                                                                         |
-| 0x10   | collision            | s32   | Pointer to collision information.                                                                 |
-| 0x14   | skeleton             | s32   | Pointer to skeleton matrices.                                                                     |
-| 0x18   | common_trans         | s32   |                                                                                                   |
-| 0x1c   | joints               | s32   |                                                                                                   |
-| 0x20   | gif_usage            | s32   | Pointer to table of AD GIF primitives stored in the GIF command lists.                            |
-| 0x24   | scale                | f32   | Scale multiplier for the moby class. Used to counteract the quantization of the vertex positions. |
-| 0x28   | sound_defs           | s32   | Pointer to sound definitions.                                                                     |
-| 0x2c   | bangles              | u8    | Quadword offset of bangles.                                                                       |
-| 0x2d   | mip_dist             | u8    | Mipmap distance.                                                                                  |
-| 0x2e   | corncob              | s16   | Pointer to data for the corn system.                                                              |
-| 0x30   | bounding_sphere      | vec4f | Position (x, y, z) and radius (w) of sphere enclosing the moby.                                   |
-| 0x40   | glow_rgba            | s32   |                                                                                                   |
-| 0x44   | mode_bits            | s16   | Bit flags.                                                                                        |
-| 0x46   | type                 | u8    |                                                                                                   |
-| 0x47   | mode_bits2           | u8    | More bit flags.                                                                                   |
+| Offset | Name                | Type  | Description                                                                                       |
+| ------ | ------------------- | ----- | ------------------------------------------------------------------------------------------------- |
+| 0x00   | packet_table_offset | s32   | Pointer to a table of packet headers.                                                             |
+| 0x04   | high_lod_count      | u8    | The number of high LOD packets.                                                                   |
+| 0x5    | low_lod_count       | u8    | The number of low LOD packets, which come right after the high LOD packets.                       |
+| 0x6    | metal_count         | u8    | The number of metal packets. These are used to give models a shiny metallic effect.               |
+| 0x7    | metal_begin         | u8    | The index of the first metal packet.                                                              |
+| 0x8    | sequence_count      | u8    | The number of animations.                                                                         |
+| 0xd    | sound_count         | u8    | The number of sound definitions.                                                                  |
+| 0xe    | lod_trans           | u8    |                                                                                                   |
+| 0xf    | shadow              | u8    | Number of shadow entries.                                                                         |
+| 0x10   | collision           | s32   | Pointer to collision information.                                                                 |
+| 0x14   | skeleton            | s32   | Pointer to skeleton matrices.                                                                     |
+| 0x18   | common_trans        | s32   |                                                                                                   |
+| 0x1c   | joints              | s32   |                                                                                                   |
+| 0x20   | gif_usage           | s32   | Pointer to table of AD GIF primitives stored in the GIF command lists.                            |
+| 0x24   | scale               | f32   | Scale multiplier for the moby class. Used to counteract the quantization of the vertex positions. |
+| 0x28   | sound_defs          | s32   | Pointer to sound definitions.                                                                     |
+| 0x2c   | bangles             | u8    | Quadword offset of bangles.                                                                       |
+| 0x2d   | mip_dist            | u8    | Mipmap distance.                                                                                  |
+| 0x2e   | corncob             | s16   | Pointer to data for the corn system.                                                              |
+| 0x30   | bounding_sphere     | vec4f | Position (x, y, z) and radius (w) of sphere enclosing the moby.                                   |
+| 0x40   | glow_rgba           | s32   |                                                                                                   |
+| 0x44   | mode_bits           | s16   | Bit flags.                                                                                        |
+| 0x46   | type                | u8    |                                                                                                   |
+| 0x47   | mode_bits2          | u8    | More bit flags.                                                                                   |
 
 ## Submeshes
 
 ### Submesh Header
 
-As VU1 only has 16k of data memory, meshes must be split into submeshes that can fit in the limited space available. Each submesh consists of a VIF command list and a vertex table, and its entry in the submesh table is structured like so:
+As VU1 only has 16k of data memory, meshes must be split into packets that can fit in the limited space available. Each packet consists of a VIF command list and a vertex table, and its entry in the packet table is structured like so:
 
 | Offset | Name                           | Type | Description                                   |
 | ------ | ------------------------------ | ---- | --------------------------------------------- |
@@ -84,7 +84,7 @@ The vertex table is processed on the EE core. It starts with a header is structu
 
 | Offset | Name                         | Type | Description                                                                                    |
 | ------ | ---------------------------- | ---- | ---------------------------------------------------------------------------------------------- |
-| 0x0    | matrix_transfer_count        | u16  | Number of matrices transferred to VU0 memory before the submesh is processed.                  |
+| 0x0    | matrix_transfer_count        | u16  | Number of matrices transferred to VU0 memory before the packet is processed.                   |
 | 0x2    | two_way_blend_vertex_count   | u16  | Number of vertices that do a two-way blend operation. These come first in the vertex table.    |
 | 0x4    | three_way_blend_vertex_count | u16  | Number of vertices that do a three-way blend operation. These come second in the vertex table. |
 | 0x6    | main_vertex_count            | u16  | Number of vertices that don't do a blend operation. These come third in the vertex table.      |
@@ -170,7 +170,7 @@ Note that the above table shows the fields in little endian order. In a hex edit
 | `ID`                | ID number (explained below).                                                                            |
 | `U`                 | Unused byte.                                                                                            |
 
-The first 9 bits of each vertex v[i] is an ID which determines at which index vertex v[i-7] will be written into an intermediate buffer if at all. There are padding vertices off the end of the buffer which are used to store the last few trailing ID values. If these padding vertices are used up, the remaining IDs will be stored in the second half of the last padding vertex.
+The first 9 bits of each vertex v[i] is an ID which determines at which index vertex v[i-7] will be written into an intermediate buffer if at all. There are epilogue vertices off the end of the buffer which are used to store the last few ID values. If these vertices are used up, the remaining IDs will be stored in the second half of the last epilogue vertex.
 
 ### Blending
 
@@ -180,20 +180,20 @@ The games support skeletal animation with 3 joints per vertex. Psuedocode for ho
 mtx4 VU0mem[64];
 mtx4 SPR[256];
 ...
-for(submesh in submeshes) {
-	for(transfer in submesh.matrix_transfers) {
+for(packet in packets) {
+	for(transfer in packet.matrix_transfers) {
 		VU0mem[transfer.address/4] = SPR[transfer.joint_index];
 	}
-	for(v in vertices_that_do_two_way_blends) {
+	for(v in packet.vertices_that_do_two_way_blends) {
 		VU0mem[v.ST/4] = SPR[v.JI];
 		v.matrix = VU0mem[v.L1/4]*(v.W1/255.f)+VU0mem[v.L2/4]*(v.W2/255.f);
 		VU0mem[v.SB/4] = v.matrix;
 	}
-	for(v in vertices_that_do_three_way_blends) {
+	for(v in packet.vertices_that_do_three_way_blends) {
 		v.matrix = VU0mem[v.L1/4]*(v.W1/255.f)+VU0mem[v.L2/4]*(v.W2/255.f)+VU0mem[v.L3/4]*(v.W3/255.f);
 		VU0mem[v.SB/4] = v.matrix;
 	}
-	for(v in vertices_that_dont_do_blends) {
+	for(v in packet.vertices_that_dont_do_blends) {
 		VU0mem[v.ST/4] = SPR[v.JI];
 		v.matrix = VU0mem[v.L1/4];
 	}
@@ -202,4 +202,4 @@ for(submesh in submeshes) {
 
 where `VU0mem` refers to Vector Unit 0's data memory, `SPR` refers to the EE core's scratchpad memory and `v.matrix` refers to the blended matrix to be applied to a given vertex. In the actual game the implementation of the above logic is split across a routine on the EE core and a VU0 microprogram. These two parts communicate via shared registers.
 
-Note that the state of VU0 memory is preserved between submeshes, and Insomniac's moby exporter took advantage of this. Also note that just because a vertex does no blends, that does not mean that it isn't animated using a previously blended matrix.
+Note that the state of VU0 memory is preserved between packets, and Insomniac's moby exporter took advantage of this. Also note that just because a vertex does no blends, that does not mean that it isn't animated using a previously blended matrix.

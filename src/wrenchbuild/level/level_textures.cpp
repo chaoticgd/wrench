@@ -30,38 +30,6 @@ extern const char* GC_FX_TEXTURE_NAMES[63];
 extern const char* UYA_FX_TEXTURE_NAMES[100];
 extern const char* DL_FX_TEXTURE_NAMES[98];
 
-void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr) {
-	for(s32 i = 0; i < 16; i++) {
-		if(indices[i] != 0xff) {
-			const TextureEntry& texture = textures.at(indices[i]);
-			unpack_level_texture(dest.child<TextureAsset>(i), texture, data, gs_ram, game, i, moby_stash_addr);
-		} else {
-			break;
-		}
-	}
-}
-
-void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i, s32 moby_stash_addr) {
-	std::vector<u8> pixels;
-	if(moby_stash_addr > -1) {
-		pixels = gs_ram.read_multiple<u8>(moby_stash_addr + entry.data_offset, entry.width * entry.height);
-	} else {
-		pixels = data.read_multiple<u8>(entry.data_offset, entry.width * entry.height);
-	}
-	std::vector<u32> palette = gs_ram.read_multiple<u32>(entry.palette * 0x100, 256);
-	Texture texture = Texture::create_8bit_paletted(entry.width, entry.height, pixels, palette);
-	
-	texture.multiply_alphas();
-	texture.swizzle_palette();
-	if(game == Game::DL && (entry.type & 3) != 0) {
-		texture.swizzle();
-	}
-	
-	auto [stream, ref] = dest.file().open_binary_file_for_writing(stringf("%d.png", i));
-	write_png(*stream, texture);
-	dest.set_src(ref);
-}
-
 void unpack_level_materials(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr) {
 	for(s32 i = 0; i < 16; i++) {
 		if(indices[i] != 0xff) {
@@ -135,16 +103,19 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_materials, 
 	shared.moby_range.table = MOBY_TEXTURE_TABLE;
 	shared.moby_range.begin = shared.textures.size();
 	mobies.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& cls) {
-		const CollectionAsset& textures = cls.get_materials();
-		for(s32 i = 0; i < 16; i++) {
-			if(textures.has_child(i)) {
-				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
-				auto stream = asset.src().open_binary_file_for_reading();
-				bool stashed = cls.stash_textures(false);
-				shared.textures.emplace_back(LevelTexture{read_png(*stream), stashed});
-			} else {
-				shared.textures.emplace_back();
-			}
+		const CollectionAsset& materials = cls.get_materials();
+		MaterialSet material_set = read_material_assets(materials);
+		verify(material_set.textures.size() <= 15,
+			"Too many textures on moby class '%s'!",
+			cls.tag().c_str());
+		s32 i = 0;
+		for(; i < (s32) material_set.textures.size(); i++) {
+			FileReference& texture = material_set.textures[i];
+			auto stream = texture.open_binary_file_for_reading();
+			shared.textures.emplace_back(LevelTexture{read_png(*stream)});
+		}
+		for(; i < 16; i++) {
+			shared.textures.emplace_back();
 		}
 	});
 	shared.moby_range.end = shared.textures.size();

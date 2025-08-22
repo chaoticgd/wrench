@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 27
+format_version: 28
 
 // *****************************************************************************
 
@@ -46,6 +46,12 @@ AssetType Collection {
 		syntax: "texlist,<texture hint>"
 		example: "texlist,pif,8,unswizzled"
 		desc: "A list of textures, where <texture hint> is the hint used by each Texture asset in the list."
+	}
+	
+	Hint matlist {
+		syntax: "matlist,<texture hint>"
+		example: "matlist,pif,8,unswizzled"
+		desc: "A list of materials, where <texture hint> is the hint used by each Texture asset."
 	}
 	
 	Hint subtitles {
@@ -1457,7 +1463,7 @@ AssetType MobyClass {
 		required: true
 		games: [1 2 3 4]
 		Child child {
-			allowed_types: ["Material" "Texture"]
+			allowed_types: ["Material"]
 		}
 	}
 	
@@ -1482,39 +1488,25 @@ AssetType MobyClass {
 		games: [1 2 3 4]
 	}
 	
-	Hint level {
-		syntax: "level"
-		example: "level"
-		desc: "A moby class to be packed in with the level data."
+	Hint phat {
+		syntax: "phat"
+		example: "phat"
+		desc: "A full moby class. This is the default if no hint is specified."
 	}
 	
-	Hint gadget {
-		syntax: "gadget"
-		example: "gadget"
-		desc: "A moby class to be packed in with the gadget data."
-	}
-	
-	Hint mission {
-		syntax: "mission"
-		example: "mission"
-		desc: "A moby class to be packed into a mission."
-	}
-	
-	Hint sparmor {
-		syntax: "sparmor"
-		example: "sparmor"
-		desc: "A moby class to be packed as a singleplayer armor."
-	}
-	
-	Hint mparmor {
-		syntax: "mparmor"
-		example: "mparmor"
-		desc: "A moby class to be packed as a multiplayer armor."
+	Hint meshonly {
+		syntax: "meshonly,<scale>,<animated>"
+		example: "meshonly,0.5,true"
+		desc: "A stripped down moby class that only includes the high LOD, low LOD and multipass metal meshes. Only use this for singleplayer armors for GC and UYA. The <scale> and <animated> parameters are only used by the unpacker, so can be omitted or set to junk values for packing."
 	}
 }
 
 AssetType MobyClassCore {
 	bin_leaf: true
+	
+	FloatAttribute scale {
+		desc: "The scale multiplier used to account for the quantization of the components of the vertex positions are signed 16 bit integers. This cannot be automatically computed since animation is done in this space which can be affected by manipulators/tweakers at runtime."
+	}
 	
 	Child mesh { allowed_types: ["Mesh"] }
 	Child low_lod_mesh { allowed_types: ["Mesh"] }
@@ -1856,7 +1848,6 @@ AssetType SkyShell {
 
 AssetType Occlusion {
 	desc: "Occlusion information needed by the game at runtime to determine which objects are visible.\n\nThe playable space of a level is divided into 4x4x4 cubes called octants that dictate which objects are visible at a given time."
-	bin_leaf: true
 	
 	IntegerAttribute memory_budget {
 		desc: "The maximum size of the computed collision database in bytes, including both the octant lookup tree and the visibility masks."

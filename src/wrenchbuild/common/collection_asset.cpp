@@ -25,6 +25,8 @@ static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Bui
 static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
 static void unpack_texture_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
+static void unpack_material_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_material_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
 static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, BuildConfig config);
 static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src, BuildConfig config);
 
@@ -44,6 +46,8 @@ static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Bui
 	const char* type = next_hint(&hint);
 	if(strcmp(type, "texlist") == 0) {
 		unpack_texture_list(dest, src, config, hint);
+	} else if(strcmp(type, "matlist") == 0) {
+		unpack_material_list(dest, src, config, hint);
 	} else if(strcmp(type, "subtitles") == 0) {
 		unpack_subtitles(dest, src, config);
 	} else if(strcmp(type, "missionclasses") == 0) {
@@ -57,6 +61,8 @@ static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src
 	const char* type = next_hint(&hint);
 	if(strcmp(type, "texlist") == 0) {
 		pack_texture_list(dest, src, config, hint);
+	} else if(strcmp(type, "matlist") == 0) {
+		pack_material_list(dest, src, config, hint);
 	} else if(strcmp(type, "subtitles") == 0) {
 		pack_subtitles(dest, src, config);
 	} else if(strcmp(type, "missionclasses") == 0) {
@@ -98,6 +104,47 @@ static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, Bu
 	for(s32 i = 0; i < 256; i++) {
 		if(src.has_child(i)) {
 			offsets[i] = pack_asset<ByteRange>(dest, src.get_child(i), config, 0x10, hint).offset;
+		} else {
+			break;
+		}
+	}
+	
+	dest.seek(4);
+	dest.write_v(offsets);
+}
+
+static void unpack_material_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+	s32 count = src.read<s32>(0);
+	verify(count < 0x1000, "texlist has too many elements and is probably corrupted.");
+	src.seek(4);
+	std::vector<s32> offsets = src.read_multiple<s32>(count);
+	for(s32 i = 0; i < count; i++) {
+		s32 offset = offsets[i];
+		s32 size;
+		if(i + 1 < count) {
+			size = offsets[i + 1] - offsets[i];
+		} else {
+			size = src.size() - offsets[i];
+		}
+		unpack_asset(dest.child<MaterialAsset>(i).diffuse(), src, ByteRange{offset, size}, config, hint);
+	}
+}
+
+static void pack_material_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint) {
+	s32 count;
+	for(count = 0; count < 256; count++) {
+		if(!src.has_child(count)) {
+			break;
+		}
+	}
+	dest.write<s32>(count);
+	
+	std::vector<s32> offsets(count);
+	dest.write_v(offsets);
+	
+	for(s32 i = 0; i < 256; i++) {
+		if(src.has_child(i)) {
+			offsets[i] = pack_asset<ByteRange>(dest, src.get_child(i).as<MaterialAsset>().get_diffuse(), config, 0x10, hint).offset;
 		} else {
 			break;
 		}
@@ -157,7 +204,7 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 			}
 			
 			ByteRange class_range{entry.class_offset, end - entry.class_offset};
-			unpack_asset(moby, src, class_range, config, FMT_MOBY_CLASS_MISSION);
+			unpack_asset(moby, src, class_range, config, FMT_MOBY_CLASS_PHAT);
 		}
 	}
 }
@@ -181,7 +228,7 @@ static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src,
 			entry.o_class = moby.id();
 			
 			if(moby.has_core()) {
-				entry.class_offset = pack_asset<ByteRange>(dest, moby, config, 0x10, FMT_MOBY_CLASS_MISSION).offset;
+				entry.class_offset = pack_asset<ByteRange>(dest, moby, config, 0x10, FMT_MOBY_CLASS_PHAT).offset;
 			}
 			
 			if(moby.has_materials()) {

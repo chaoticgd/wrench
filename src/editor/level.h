@@ -70,6 +70,7 @@ private:
 	Instances _instances;
 };
 
+Opt<EditorClass> load_moby_editor_class(const MobyClassAsset& moby);
 Opt<EditorClass> load_tie_editor_class(const TieClassAsset& tie);
 Opt<EditorClass> load_shrub_editor_class(const ShrubClassAsset& shrub);
 

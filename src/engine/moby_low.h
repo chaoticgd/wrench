@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,25 +16,28 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ENGINE_MOBY_H
-#define ENGINE_MOBY_H
+#ifndef ENGINE_MOBY_LOW_H
+#define ENGINE_MOBY_LOW_H
 
 #include <core/vif.h>
 #include <core/buffer.h>
 #include <core/collada.h>
 #include <core/build_config.h>
 #include <engine/basic_types.h>
-#include <engine/moby_mesh.h>
 #include <engine/moby_animation.h>
+#include <engine/moby_high.h>
+#include <engine/moby_packet.h>
+
+namespace MOBY {
 
 struct MobyMeshSection {
-	std::vector<MobySubMesh> high_lod;
+	std::vector<MobyPacket> high_lod;
 	u8 high_lod_count = 0;
-	std::vector<MobySubMesh> low_lod;
+	std::vector<MobyPacket> low_lod;
 	u8 low_lod_count = 0;
-	std::vector<MobyMetalSubMesh> metal;
+	std::vector<MobyMetalPacket> metal;
 	u8 metal_count = 0;
-	bool has_submesh_table = true;
+	bool has_packet_table = true;
 };
 
 packed_struct(MobyTrans,
@@ -101,7 +104,7 @@ struct MobyClassData {
 	std::vector<MobySoundDef> sound_defs;
 	u8 unknown_9 = 0;
 	u8 lod_trans = 0;
-	f32 scale = 0.f;
+	f32 scale = 1.f;
 	u8 mip_dist = 0;
 	glm::vec4 bounding_sphere = {0.f, 0.f, 0.f, 0.f};
 	s32 glow_rgba = 0;
@@ -109,7 +112,7 @@ struct MobyClassData {
 	u8 type = 0;
 	u8 mode_bits2 = 0;
 	s32 header_end_offset = 0;
-	s32 submesh_table_offset = 0;
+	s32 packet_table_offset = 0;
 	u8 rac1_byte_a = 0;
 	u8 rac1_byte_b = 0;
 	u16 rac1_short_2e = 0;
@@ -126,15 +129,15 @@ packed_struct(MobyMeshInfo,
 )
 
 packed_struct(MobyClassHeader,
-	/* 0x00 */ s32 submesh_table_offset;
+	/* 0x00 */ s32 packet_table_offset;
 	/* 0x04 */ MobyMeshInfo mesh_info;
 	/* 0x08 */ u8 joint_count;
 	/* 0x09 */ u8 unknown_9;
 	/* 0x0a */ u8 rac1_byte_a;
-	union {
+	packed_nested_anon_union(
 		/* 0x0b */ u8 rac12_byte_b; // 0x00 => R&C2 format.
 		/* 0x0b */ u8 rac3dl_team_textures;
-	};
+	)
 	/* 0x0c */ u8 sequence_count;
 	/* 0x0d */ u8 sound_count;
 	/* 0x0e */ u8 lod_trans;
@@ -171,20 +174,23 @@ packed_struct(MobyCornCobHeader,
 
 packed_struct(MobyArmorHeader,
 	/* 0x00 */ MobyMeshInfo info;
-	/* 0x04 */ s32 submesh_table_offset;
+	/* 0x04 */ s32 packet_table_offset;
 	/* 0x08 */ s32 gif_usage;
 	/* 0x0c */ s32 pad;
 )
 
-MobyClassData read_moby_class(Buffer src, Game game);
-void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
-MobyClassData read_armor_moby_class(Buffer src, Game game);
-void write_armor_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
-MobyMeshSection read_moby_mesh_section(Buffer src, s64 table_ofs, MobyMeshInfo info, f32 scale, MobyFormat format, bool animated);
-s64 allocate_submesh_table(OutBuffer& dest, const MobyMeshSection& mesh);
+MobyClassData read_class(Buffer src, Game game);
+void write_class(OutBuffer dest, const MobyClassData& moby, Game game);
+MobyMeshSection read_mesh_only_class(Buffer src, Game game);
+void write_mesh_only_class(OutBuffer dest, const MobyMeshSection& moby, f32 scale, Game game);
+
+MobyMeshSection read_moby_mesh_section(Buffer src, s64 table_ofs, MobyMeshInfo info, MobyFormat format);
+s64 allocate_packet_table(OutBuffer& dest, const MobyMeshSection& mesh, size_t bangle_count);
 MobyMeshInfo write_moby_mesh_section(OutBuffer& dest, std::vector<MobyGifUsage>& gif_usage, s64 table_ofs, const MobyMeshSection& mesh, f32 scale, MobyFormat format);
 
 ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count);
 MobyClassData build_moby_class(const ColladaScene& scene);
+
+}
 
 #endif

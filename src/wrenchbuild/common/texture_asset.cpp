@@ -77,7 +77,17 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConf
 		verify_not_reached("Tried to unpack a texture with an invalid hint.");
 	}
 	
-	auto [file, ref] = dest.file().open_binary_file_for_writing(dest.tag() + ".png");
+	// If we're unpacking a list of material assets, we use the tag of the
+	// material e.g. "0", "1", "2" etc instead of the tag of the texture itself
+	// e.g. "diffuse".
+	std::string name;
+	if(dest.parent() && dest.parent()->logical_type() == MaterialAsset::ASSET_TYPE) {
+		name = dest.parent()->tag();
+	} else {
+		name = dest.tag();
+	}
+	
+	auto [file, ref] = dest.file().open_binary_file_for_writing(name + ".png");
 	write_png(*file, texture);
 	dest.set_src(ref);
 }

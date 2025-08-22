@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from asset_schema.wtf and is for version 27 of the asset format.
+This file was generated from asset_schema.wtf and is for version 28 of the asset format.
 
 ## Index
 
@@ -95,6 +95,7 @@ No children.
 | Syntax | Example | Description |
 | - | - | - |
 | `texlist,<texture hint>` | `texlist,pif,8,unswizzled` | A list of textures, where \<texture hint\> is the hint used by each Texture asset in the list. |
+| `matlist,<texture hint>` | `matlist,pif,8,unswizzled` | A list of materials, where \<texture hint\> is the hint used by each Texture asset. |
 | `subtitles` | `subtitles` | A collection of subtitles. |
 | `missionclasses` | `missionclasses` | A set of moby classes to be packed in the files for a mission in Deadlocked. |
 
@@ -960,7 +961,7 @@ No attributes.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | MobyClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
-| materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RAC/GC/UYA/DL |
+| materials | The materials used by this class. | Material\[\] | Yes | RAC/GC/UYA/DL |
 | static_collision | The collision to be be built into the main static level collision. | Collision | No | RAC/GC/UYA/DL |
 | editor_mesh | The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies. | Mesh | No | RAC/GC/UYA/DL |
 | editor_icon | The icon shown in the 3D view in the editor if a mesh is not available. | Texture | No | RAC/GC/UYA/DL |
@@ -970,17 +971,16 @@ No attributes.
 
 | Syntax | Example | Description |
 | - | - | - |
-| `level` | `level` | A moby class to be packed in with the level data. |
-| `gadget` | `gadget` | A moby class to be packed in with the gadget data. |
-| `mission` | `mission` | A moby class to be packed into a mission. |
-| `sparmor` | `sparmor` | A moby class to be packed as a singleplayer armor. |
-| `mparmor` | `mparmor` | A moby class to be packed as a multiplayer armor. |
+| `phat` | `phat` | A full moby class. This is the default if no hint is specified. |
+| `meshonly,<scale>,<animated>` | `meshonly,0.5,true` | A stripped down moby class that only includes the high LOD, low LOD and multipass metal meshes. Only use this for singleplayer armors for GC and UYA. The \<scale\> and \<animated\> parameters are only used by the unpacker, so can be omitted or set to junk values for packing. |
 
 ### MobyClassCore
 
 *Attributes*
 
-No attributes.
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| scale | The scale multiplier used to account for the quantization of the components of the vertex positions are signed 16 bit integers. This cannot be automatically computed since animation is done in this space which can be affected by manipulators/tweakers at runtime. | Float | *Not yet documented.* | *Not yet documented.*  |
 
 *Children*
 

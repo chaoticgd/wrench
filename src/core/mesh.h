@@ -49,27 +49,11 @@ struct Face {
 };
 
 struct SkinAttributes {
-	u8 count = 1;
-	s8 joints[3] = {-1, 0, 0};
-	u8 weights[3] = {255, 0, 0};
-	bool operator==(const SkinAttributes& rhs) const {
-		return count == rhs.count
-			&& joints[0] == rhs.joints[0]
-			&& joints[1] == rhs.joints[1]
-			&& joints[2] == rhs.joints[2]
-			&& weights[0] == rhs.weights[0]
-			&& weights[1] == rhs.weights[1]
-			&& weights[2] == rhs.weights[2];
-	}
-	bool operator<(const SkinAttributes& rhs) const {
-		if(count != rhs.count) return count < rhs.count;
-		if(joints[0] != rhs.joints[0]) return joints[0] < rhs.joints[0];
-		if(joints[1] != rhs.joints[1]) return joints[1] < rhs.joints[1];
-		if(joints[2] != rhs.joints[2]) return joints[2] < rhs.joints[2];
-		if(weights[0] != rhs.weights[0]) return weights[0] < rhs.weights[0];
-		if(weights[1] != rhs.weights[1]) return weights[1] < rhs.weights[1];
-		return weights[2] < rhs.weights[2];
-	}
+	u8 count = 0;
+	s8 joints[3] = {0, 0, 0};
+	u8 weights[3] = {0, 0, 0};
+	
+	friend auto operator<=>(const SkinAttributes&, const SkinAttributes&) = default;
 };
 
 struct ColourAttribute {
@@ -77,18 +61,8 @@ struct ColourAttribute {
 	u8 g = 0;
 	u8 b = 0;
 	u8 a = 0;
-	bool operator==(const ColourAttribute& rhs) const {
-		return r == rhs.r
-			&& g == rhs.g
-			&& b == rhs.b
-			&& a == rhs.a;
-	}
-	bool operator<(const ColourAttribute& rhs) const {
-		if(a != rhs.a) return a < rhs.a;
-		if(b != rhs.b) return b < rhs.b;
-		if(g != rhs.g) return g < rhs.g;
-		return r < rhs.r;
-	}
+	
+	friend auto operator<=>(const ColourAttribute&, const ColourAttribute&) = default;
 };
 
 struct Vertex {

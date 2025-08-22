@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6
+
+- Use glTF (.glb) to store moby models instead of COLLADA.
+
 ## v0.5
 
 - Rewrote the save editor so that it now works for all the games.

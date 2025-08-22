@@ -5,10 +5,12 @@ endif()
 add_library(wrenchengine STATIC
 	collision.cpp
 	compression.cpp
-	moby.cpp
-	moby_mesh_exporter.cpp
-	moby_mesh_importer.cpp
 	moby_animation.cpp
+	moby_high.cpp
+	moby_low.cpp
+	moby_packet.cpp
+	moby_skinning.cpp
+	moby_vertex.cpp
 	occlusion.cpp
 	shrub.cpp
 	sky.cpp

@@ -101,6 +101,35 @@ GeometryPrimitives weave_tristrips(const GLTF::Mesh& mesh, const std::vector<Eff
 	return tri_strips;
 }
 
+std::vector<s32> zero_area_tris_to_restart_bit_strip(const std::vector<s32>& indices) {
+	std::vector<s32> output;
+	bool set_next_restart_bit = false;
+	for(size_t i = 0; i < indices.size(); i++) {
+		if(i <= 0 || indices[i - 1] != indices[i]) {
+			if(set_next_restart_bit) {
+				output.emplace_back(indices[i] | (1 << 31));
+				set_next_restart_bit = false;
+			} else {
+				output.emplace_back(indices[i]);
+			}
+		} else {
+			set_next_restart_bit = true;
+		}
+	}
+	return output;
+}
+
+std::vector<s32> restart_bit_strip_to_zero_area_tris(const std::vector<s32>& indices) {
+	std::vector<s32> output;
+	for(size_t i = 0; i < indices.size(); i++) {
+		if(i > 0 && indices[i] < 0) {
+			output.emplace_back(output.back());
+		}
+		output.emplace_back(indices[i] & ~(1 << 31));
+	}
+	return output;
+}
+
 static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective) {
 	// Weave multiple candidate strips.
 	FaceStrips temp;

@@ -23,7 +23,7 @@
 #include <core/tristrip_packet.h>
 #include <core/vif.h>
 
-static TriStripConstraints setup_shrub_constraints();
+static std::vector<TriStripConstraint> setup_shrub_constraints();
 static f32 compute_optimal_scale(const GLTF::Mesh& mesh);
 static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(const std::vector<Vertex>& vertices);
 static s32 compute_lod_k(f32 distance);
@@ -332,7 +332,7 @@ GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
 					dest_primitive->material = texture_index;
 				}
 				
-				u32 base_index = (u32) mesh.vertices.size();
+				s32 base_index = (s32) mesh.vertices.size();
 				for(const ShrubVertex& vertex : prim->vertices) {
 					Vertex& dest_vertex = mesh.vertices.emplace_back();
 					f32 x = vertex.x * shrub.scale * (1.f / 1024.f);
@@ -348,11 +348,11 @@ GLTF::Mesh recover_shrub_class(const ShrubClass& shrub) {
 				}
 				
 				if(prim->type == GeometryType::TRIANGLE_LIST) {
-					for(u32 i = base_index; i < mesh.vertices.size(); i++) {
+					for(s32 i = base_index; i < (s32) mesh.vertices.size(); i++) {
 						dest_primitive->indices.emplace_back(i);
 					}
 				} else {
-					for(u32 i = base_index; i < mesh.vertices.size() - 2; i++) {
+					for(s32 i = base_index; i < (s32) mesh.vertices.size() - 2; i++) {
 						dest_primitive->indices.emplace_back(i + 0);
 						dest_primitive->indices.emplace_back(i + 1);
 						dest_primitive->indices.emplace_back(i + 2);
@@ -386,13 +386,15 @@ ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>
 	TriStripConfig config;
 	// Make sure the packets that get written out aren't too big to fit in VU1 memory.
 	config.constraints = setup_shrub_constraints();
+	// The shrub renderer doesn't use an index buffer.
+	config.support_index_buffer = false;
 	// Make sure AD GIFs are added at the beginning of each packet.
 	config.support_instancing = true;
 	
 	// Generate the strips.
-	std::vector<EffectiveMaterial> effectives = effective_materials(materials, MATERIAL_ATTRIB_SURFACE | MATERIAL_ATTRIB_WRAP_MODE);
+	auto [effectives, material_to_effective] = effective_materials(materials, MATERIAL_ATTRIB_SURFACE | MATERIAL_ATTRIB_WRAP_MODE);
 	GeometryPrimitives primitives = weave_tristrips(mesh, effectives);
-	GeometryPackets output = generate_tristrip_packets(primitives, materials, effectives, config);
+	GeometryPackets output = generate_tristrip_packets(primitives, config);
 	
 	// Build the shrub packets.
 	for(const GeometryPacket& src_packet : output.packets) {
@@ -469,31 +471,29 @@ ShrubClass build_shrub_class(const GLTF::Mesh& mesh, const std::vector<Material>
 	return shrub;
 }
 
-static TriStripConstraints setup_shrub_constraints() {
-	TriStripConstraints c;
-		
-	// Unpacked data size
-	c.num_constraints++;
-	c.constant_cost[0] = 1; // header
-	c.strip_cost[0] = 1; // gif tag
-	c.vertex_cost[0] = 0; // non-indexed
-	c.index_cost[0] = 2; // second and third unpacks
-	c.material_cost[0] = 4; // ad data
-	c.max_cost[0] = 118; // buffer size
+static std::vector<TriStripConstraint> setup_shrub_constraints() {
+	std::vector<TriStripConstraint> constraints;
 	
-	// GS packet size
-	c.num_constraints++;
-	c.constant_cost[1] = 0;
-	c.strip_cost[1] = 1; // gif tag
-	c.vertex_cost[1] = 0; // non-indexed
-	c.index_cost[1] = 3; // st rgbaq xyzf2
-	c.material_cost[1] = 5; // gif tag + ad data
-	c.max_cost[1] = 168; // max GS packet size in original files
+	TriStripConstraint& unpacked_data_size = constraints.emplace_back();
+	unpacked_data_size.constant_cost = 1; // header
+	unpacked_data_size.strip_cost = 1; // gif tag
+	unpacked_data_size.vertex_cost = 0; // non-indexed
+	unpacked_data_size.index_cost = 2; // second and third unpacks
+	unpacked_data_size.material_cost = 4; // ad data
+	unpacked_data_size.max_cost = 118; // buffer size
+	
+	TriStripConstraint& gs_packet_size = constraints.emplace_back();
+	gs_packet_size.constant_cost = 0;
+	gs_packet_size.strip_cost = 1; // gif tag
+	gs_packet_size.vertex_cost = 0; // non-indexed
+	gs_packet_size.index_cost = 3; // st rgbaq xyzf2
+	gs_packet_size.material_cost = 5; // gif tag + ad data
+	gs_packet_size.max_cost = 168; // max GS packet size in original files
 	
 	// The VIF packet size is bounded by the unpacked data size, so no
 	// additional checks need to be made for it.
 	
-	return c;
+	return constraints;
 }
 
 static f32 compute_optimal_scale(const GLTF::Mesh& mesh) {
