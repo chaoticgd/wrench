@@ -16,11 +16,11 @@ Features currently include:
 	- Pack/unpack entire ISO files.
 	- Pack/unpack gameplay instances as `.instances` files.
 	- Unpack tfrag meshes as COLLADA files.
-	- Unpack moby meshes as COLLADA files.
+	- Unpack moby meshes as glTF files\*.
 	- Unpack tie meshes as COLLADA files.
 	- Pack/unpack collision meshes as COLLADA files.
-	- **Updated in v0.5!** Pack/unpack shrub models as binary glTF files\*.
-	- **Updated in v0.5!** Pack/unpack sky models as binary glTF files\*.
+	- **Updated in v0.5!** Pack/unpack shrub models as binary glTF files\*\*.
+	- **Updated in v0.5!** Pack/unpack sky models as binary glTF files\*\*.
 	- Pack/unpack textures as PNG files.
 	- Pack/unpack packed executables and level overlays as ELF files.
 	- Pack/unpack everything else as binary files.
@@ -41,7 +41,9 @@ Features currently include:
 	- Rebuild occlusion data for levels on demand.
 	- Implemented as an OpenGL renderer.
 
-\* In version 0.4 or lower COLLADA was used instead.
+\* In version 0.5 or lower COLLADA was used instead.
+
+\*\* In version 0.4 or lower COLLADA was used instead.
 
 ## Screenshots
 

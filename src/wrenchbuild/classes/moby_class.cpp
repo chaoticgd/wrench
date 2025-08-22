@@ -96,7 +96,7 @@ static void pack_moby_class(OutputStream& dest, const MobyClassAsset& src, Build
 		return;
 	}
 	
-	verify_not_reached("MobyClassCore asset packing not yet implemented for fat classes");
+	verify_not_reached("MobyClassCore asset packing not yet implemented");
 }
 
 static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfig config) {
@@ -142,6 +142,8 @@ static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 }
 
 static void unpack_mesh_only_class(MobyClassAsset& dest, InputStream& src, f32 scale, bool animated, BuildConfig config) {
+	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
+	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
 	MOBY::MobyMeshSection meshes = MOBY::read_mesh_only_class(buffer, config.game());
 	
@@ -171,17 +173,17 @@ static void unpack_mesh_only_class(MobyClassAsset& dest, InputStream& src, f32 s
 	auto [stream, ref] = dest.file().open_binary_file_for_writing("mesh.glb");
 	stream->write_v(glb);
 	
-	MobyClassCoreAsset& core = dest.core<MobyClassCoreAsset>();
-	
-	MeshAsset& moby_mesh = core.mesh();
-	moby_mesh.set_name("moby");
-	moby_mesh.set_src(ref);
-	
-	MeshAsset& moby_low_lod_mesh = core.low_lod_mesh();
-	moby_low_lod_mesh.set_name("moby_low_lod");
-	moby_low_lod_mesh.set_src(ref);
-	
-	core.set_scale(scale);
+	//MobyClassCoreAsset& core = dest.core<MobyClassCoreAsset>();
+	//
+	//MeshAsset& moby_mesh = core.mesh();
+	//moby_mesh.set_name("moby");
+	//moby_mesh.set_src(ref);
+	//
+	//MeshAsset& moby_low_lod_mesh = core.low_lod_mesh();
+	//moby_low_lod_mesh.set_name("moby_low_lod");
+	//moby_low_lod_mesh.set_src(ref);
+	//
+	//core.set_scale(scale);
 }
 
 static void pack_mesh_only_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config) {
