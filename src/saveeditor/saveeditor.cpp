@@ -194,7 +194,7 @@ static void files()
 				s_file_paths.emplace_back(entry.path());
 			}
 			listing_error.clear();
-		} catch(std::filesystem::filesystem_error& error) {
+		} catch (std::filesystem::filesystem_error& error) {
 			listing_error = error.code().message();
 		}
 		std::sort(BEGIN_END(s_file_paths));
@@ -465,7 +465,7 @@ static void do_load()
 					}
 				}
 			}
-		} catch(RuntimeError& error) {
+		} catch (RuntimeError& error) {
 			s_error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
 		}
 	}
@@ -478,7 +478,7 @@ static void do_save()
 			std::vector<u8> buffer;
 			memcard::write(buffer, *s_file);
 			write_file(s_file->path, buffer);
-		} catch(RuntimeError& error) {
+		} catch (RuntimeError& error) {
 			s_error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
 		}
 		s_should_reload_file_list = true;

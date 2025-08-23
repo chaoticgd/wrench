@@ -46,39 +46,10 @@ INDEX_WRAPPER_TYPE(MaterialIndex)
 
 class MeshGraph
 {
-	struct VertexInfo
-	{
-		std::vector<EdgeIndex> edges;
-		s32 ref_count = 0;
-	};
-	std::vector<VertexInfo> _vertices;
-	struct EdgeInfo
-	{
-		VertexIndex v[2];
-		FaceIndex faces[2] = {NULL_FACE_INDEX, NULL_FACE_INDEX};
-	};
-	std::vector<EdgeInfo> _edges;
-	struct FaceInfo
-	{
-		VertexIndex v[3];
-		MaterialIndex material;
-		s32 strip_index = -1;
-		bool in_temp_strip = false; // Is it in the strip that's currently being constructed?
-		bool is_evil = false; // Does this face have an edge connecting three or more faces?
-	};
-	std::vector<FaceInfo> _faces;
-	
-	VertexInfo& vertex_at(VertexIndex vertex) { return _vertices[vertex.index]; }
-	const VertexInfo& vertex_at(VertexIndex vertex) const { return _vertices[vertex.index]; }
-	EdgeInfo& edge_at(EdgeIndex edge) { return _edges[edge.index]; }
-	const EdgeInfo& edge_at(EdgeIndex edge) const { return _edges[edge.index]; }
-	FaceInfo& face_at(FaceIndex face) { return _faces[face.index]; }
-	const FaceInfo& face_at(FaceIndex face) const { return _faces[face.index]; }
-	
 public:
 	MeshGraph(const GLTF::Mesh& mesh);
 	
-	s32 face_count() const { return _faces.size(); }
+	s32 face_count() const { return m_faces.size(); }
 	VertexIndex face_vertex(FaceIndex face, s32 position) const { return face_at(face).v[position]; }
 	MaterialIndex face_material(FaceIndex face) const { return face_at(face).material; }
 	bool face_is_evil(FaceIndex face) const { return face_at(face).is_evil; }
@@ -123,7 +94,7 @@ public:
 	bool is_in_strip(FaceIndex face) const { return face_at(face).strip_index > -1 || face_at(face).in_temp_strip; }
 	void put_in_strip(FaceIndex face, s32 strip_index) { face_at(face).strip_index = strip_index; }
 	void put_in_temp_strip(FaceIndex face) { face_at(face).in_temp_strip = true; }
-	void discard_temp_strip() { for(FaceInfo& face : _faces) { face.in_temp_strip = false; } }
+	void discard_temp_strip() { for(FaceInfo& face : m_faces) { face.in_temp_strip = false; } }
 	
 	bool can_be_added_to_strip(FaceIndex face, const EffectiveMaterial& effective) const {
 		return is_correct_material(face, effective) && !is_in_strip(face);
@@ -158,6 +129,36 @@ public:
 		}
 		return faces;
 	}
+	
+private:
+	struct VertexInfo
+	{
+		std::vector<EdgeIndex> edges;
+		s32 ref_count = 0;
+	};
+	std::vector<VertexInfo> m_vertices;
+	struct EdgeInfo
+	{
+		VertexIndex v[2];
+		FaceIndex faces[2] = {NULL_FACE_INDEX, NULL_FACE_INDEX};
+	};
+	std::vector<EdgeInfo> m_edges;
+	struct FaceInfo
+	{
+		VertexIndex v[3];
+		MaterialIndex material;
+		s32 strip_index = -1;
+		bool in_temp_strip = false; // Is it in the strip that's currently being constructed?
+		bool is_evil = false; // Does this face have an edge connecting three or more faces?
+	};
+	std::vector<FaceInfo> m_faces;
+	
+	VertexInfo& vertex_at(VertexIndex vertex) { return m_vertices[vertex.index]; }
+	const VertexInfo& vertex_at(VertexIndex vertex) const { return m_vertices[vertex.index]; }
+	EdgeInfo& edge_at(EdgeIndex edge) { return m_edges[edge.index]; }
+	const EdgeInfo& edge_at(EdgeIndex edge) const { return m_edges[edge.index]; }
+	FaceInfo& face_at(FaceIndex face) { return m_faces[face.index]; }
+	const FaceInfo& face_at(FaceIndex face) const { return m_faces[face.index]; }
 };
 
 #endif

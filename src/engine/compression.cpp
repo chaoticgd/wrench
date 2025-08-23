@@ -54,7 +54,7 @@ bool decompress_wad(std::vector<uint8_t>& dest, WadBuffer src)
 		while (src.ptr < src.end) {
 			decompress_packet(dest, src.ptr, begin, src.end);
 		}
-	} catch(std::domain_error& error) {
+	} catch (std::domain_error& error) {
 		printf("Failed to decompress WAD: %s\n", error.what());
 		return false;
 	}

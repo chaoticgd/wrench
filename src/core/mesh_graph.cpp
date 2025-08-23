@@ -20,12 +20,12 @@
 
 MeshGraph::MeshGraph(const GLTF::Mesh& mesh)
 {
-	_vertices.resize(mesh.vertices.size());
+	m_vertices.resize(mesh.vertices.size());
 	
 	// Collect faces.
 	for (const GLTF::MeshPrimitive& primitive : mesh.primitives) {
 		for (size_t i = 0; i < primitive.indices.size() / 3; i++) {
-			FaceInfo& info = _faces.emplace_back();
+			FaceInfo& info = m_faces.emplace_back();
 			info.v[0] = primitive.indices[i * 3 + 0];
 			info.v[1] = primitive.indices[i * 3 + 1];
 			info.v[2] = primitive.indices[i * 3 + 2];
@@ -51,8 +51,8 @@ MeshGraph::MeshGraph(const GLTF::Mesh& mesh)
 			// Create an edge info record if it doesn't already exist, or
 			// fill in the second face index if it does.
 			if (index == NULL_EDGE_INDEX) {
-				index = EdgeIndex((s32) _edges.size());
-				EdgeInfo& info = _edges.emplace_back();
+				index = EdgeIndex((s32) m_edges.size());
+				EdgeInfo& info = m_edges.emplace_back();
 				info.v[0] = v0;
 				info.v[1] = v1;
 				vertex_at(v0).edges.emplace_back(index);
@@ -97,8 +97,8 @@ MeshGraph::MeshGraph(const GLTF::Mesh& mesh)
 					
 					EdgeIndex index = edge(v2, v3);
 					if (index == NULL_EDGE_INDEX) {
-						index = EdgeIndex((s32) _edges.size());
-						EdgeInfo& info = _edges.emplace_back();
+						index = EdgeIndex((s32) m_edges.size());
+						EdgeInfo& info = m_edges.emplace_back();
 						info.v[0] = v2;
 						info.v[1] = v3;
 						vertex_at(v2).edges.emplace_back(index);

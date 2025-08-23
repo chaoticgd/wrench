@@ -738,7 +738,7 @@ Asset& AssetForest::lookup_asset(const AssetLink& link, Asset* context)
 		for (const char* tag : tags) {
 			asset = &asset->get_child(tag);
 		}
-	} catch(RuntimeError& e) {
+	} catch (RuntimeError& e) {
 		verify_not_reached("%s while looking up asset \"%s\"%s.",
 			e.message.substr(0, e.message.size() - 1).c_str(),
 			link.to_string().c_str(),

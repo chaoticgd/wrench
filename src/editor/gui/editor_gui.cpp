@@ -102,7 +102,7 @@ static void menu_bar()
 					try {
 						success_message = editor->save();
 						open_success_poopup = true;
-					} catch(RuntimeError& e) {
+					} catch (RuntimeError& e) {
 						error_message = e.message;
 						open_error_popup = true;
 					}
@@ -119,7 +119,7 @@ static void menu_bar()
 				if (BaseEditor* editor = g_app->get_editor()) {
 					try {
 						editor->undo();
-					} catch(RuntimeError& e) {
+					} catch (RuntimeError& e) {
 						error_message = e.message;
 						open_error_popup = true;
 					}
@@ -132,7 +132,7 @@ static void menu_bar()
 				if (BaseEditor* editor = g_app->get_editor()) {
 					try {
 						editor->redo();
-					} catch(RuntimeError& e) {
+					} catch (RuntimeError& e) {
 						error_message = e.message;
 						open_error_popup = true;
 					}

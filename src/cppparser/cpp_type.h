@@ -93,17 +93,20 @@ enum CppBuiltIn
 	CPP_BUILT_IN_COUNT
 };
 
-inline bool cpp_is_built_in_integer(CppBuiltIn x) {
+inline bool cpp_is_built_in_integer(CppBuiltIn x)
+{
 	return x >= CPP_CHAR
 		&& x <= CPP_U128;
 }
 
-inline bool cpp_is_built_in_float(CppBuiltIn x) {
+inline bool cpp_is_built_in_float(CppBuiltIn x)
+{
 	return x == CPP_FLOAT
 		|| x == CPP_DOUBLE;
 }
 
-inline bool cpp_is_built_in_signed(CppBuiltIn x) {
+inline bool cpp_is_built_in_signed(CppBuiltIn x)
+{
 	return x == CPP_CHAR
 		|| x == CPP_SCHAR
 		|| x == CPP_SHORT
