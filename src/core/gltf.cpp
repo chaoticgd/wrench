@@ -193,20 +193,30 @@ template <typename T> static void get_req(T& dest, const Json& src, const char* 
 template <typename T> static void set_req(Json& dest, const char* property, const T& value);
 template <typename T> static void get_opt(Opt<T>& dest, const Json& src, const char* property);
 template <typename T> static void set_opt(Json& dest, const char* property, const Opt<T>& value);
-template <typename T> static void get_array(std::vector<T>& dest, const Json& src, const char* property);
-template <typename T> static void set_array(Json& dest, const char* property, const std::vector<T>& value);
-template <typename T> static void get_vec(Opt<T>& dest, const Json& src, const char* property);
-template <typename T> static void set_vec(Json& dest, const char* property, const Opt<T>& value);
-template <typename T> static void get_mat(Opt<T>& dest, const Json& src, const char* property);
-template <typename T> static void set_mat(Json& dest, const char* property, const Opt<T>& value);
+template <typename T> static void get_array_req(std::vector<T>& dest, const Json& src, const char* property);
+template <typename T> static void set_array_req(Json& dest, const char* property, const std::vector<T>& value);
+template <typename T> static void get_array_opt(std::vector<T>& dest, const Json& src, const char* property);
+template <typename T> static void set_array_opt(Json& dest, const char* property, const std::vector<T>& value);
+template <typename T> static void get_vec_opt(Opt<T>& dest, const Json& src, const char* property);
+template <typename T> static void set_vec_opt(Json& dest, const char* property, const Opt<T>& value);
+template <typename T> static void get_mat_opt(Opt<T>& dest, const Json& src, const char* property);
+template <typename T> static void set_mat_opt(Json& dest, const char* property, const Opt<T>& value);
 template <typename Object, typename ReadFunc>
 static void read_object(Object& dest, const Json& src, const char* property, ReadFunc read_func);
 template <typename Object, typename WriteFunc, typename... Args>
 static void write_object(Json& dest, const char* property, const Object& src, WriteFunc write_func);
 template <typename Element, typename ReadFunc, typename... Args>
-static void read_array(std::vector<Element>& dest, const Json& src, const char* property, ReadFunc read_func, Args&... args);
+static void read_array_req(
+	std::vector<Element>& dest, const Json& src, const char* property, ReadFunc read_func, Args&... args);
 template <typename Element, typename WriteFunc, typename... Args>
-static void write_array(Json& dest, const char* property, const std::vector<Element>& src, WriteFunc write_func, Args&... args);
+static void write_array_req(
+	Json& dest, const char* property, const std::vector<Element>& src, WriteFunc write_func, Args&... args);
+template <typename Element, typename ReadFunc, typename... Args>
+static void read_array_opt(
+	std::vector<Element>& dest, const Json& src, const char* property, ReadFunc read_func, Args&... args);
+template <typename Element, typename WriteFunc, typename... Args>
+static void write_array_opt(
+	Json& dest, const char* property, const std::vector<Element>& src, WriteFunc write_func, Args&... args);
 static Opt<MeshPrimitiveAttribute> mesh_primitive_attribute_from_string(const char* string);
 static const char* accessor_type_to_string(AccessorType type);
 static Opt<AccessorType> accessor_type_from_string(const char* string);
@@ -246,7 +256,7 @@ ModelFile read_glb(Buffer src)
 	try {
 		auto json = Json::parse(src.lo + json_offset, src.lo + json_offset + json_size);
 		gltf = read_gltf(json, src.subbuf(bin_offset, bin_size));
-	} catch(Json::exception& e) {
+	} catch (Json::exception& e) {
 		verify_not_reached("%s", e.what());
 	}
 	
@@ -527,29 +537,29 @@ void verify_mesh_primitives_equal(MeshPrimitive& lhs, MeshPrimitive& rhs, bool c
 static ModelFile read_gltf(const Json& src, Buffer bin_chunk)
 {
 	std::vector<GLTFBufferView> buffer_views;
-	read_array(buffer_views, src, "bufferViews", read_buffer_view);
+	read_array_opt(buffer_views, src, "bufferViews", read_buffer_view);
 	
 	std::vector<GLTFBuffer> buffers;
-	read_array(buffers, src, "buffers", read_buffer);
+	read_array_opt(buffers, src, "buffers", read_buffer);
 	verify(buffers.size() <= 1, "GLB file has more than one buffer.");
 	
 	std::vector<Accessor> accessors;
-	read_array(accessors, src, "accessors", read_accessor, buffer_views, bin_chunk);
+	read_array_opt(accessors, src, "accessors", read_accessor, buffer_views, bin_chunk);
 	
 	ModelFile dest;
 	read_object(dest.asset, src, "asset", read_asset);
-	get_array(dest.extensions_used, src, "extensionsUsed");
-	get_array(dest.extensions_required, src, "extensionsRequired");
+	get_array_opt(dest.extensions_used, src, "extensionsUsed");
+	get_array_opt(dest.extensions_required, src, "extensionsRequired");
 	get_opt(dest.scene, src, "scene");
-	read_array(dest.scenes, src, "scenes", read_scene);
-	read_array(dest.nodes, src, "nodes", read_node);
-	read_array(dest.meshes, src, "meshes", read_mesh, accessors);
-	read_array(dest.materials, src, "materials", read_material);
-	read_array(dest.textures, src, "textures", read_texture);
-	read_array(dest.images, src, "images", read_image);
-	read_array(dest.samplers, src, "samplers", read_sampler);
-	read_array(dest.skins, src, "skins", read_skin, accessors);
-	read_array(dest.animations, src, "animations", read_animation, accessors);
+	read_array_opt(dest.scenes, src, "scenes", read_scene);
+	read_array_opt(dest.nodes, src, "nodes", read_node);
+	read_array_opt(dest.meshes, src, "meshes", read_mesh, accessors);
+	read_array_opt(dest.materials, src, "materials", read_material);
+	read_array_opt(dest.textures, src, "textures", read_texture);
+	read_array_opt(dest.images, src, "images", read_image);
+	read_array_opt(dest.samplers, src, "samplers", read_sampler);
+	read_array_opt(dest.skins, src, "skins", read_skin, accessors);
+	read_array_opt(dest.animations, src, "animations", read_animation, accessors);
 	return dest;
 }
 
@@ -561,21 +571,21 @@ static Json write_gltf(const ModelFile& src, OutBuffer bin_chunk)
 	Json dest = Json::object();
 	write_object(dest, "asset", src.asset, write_asset);
 	set_opt(dest, "scene", src.scene);
-	write_array(dest, "scenes", src.scenes, write_scene);
-	write_array(dest, "nodes", src.nodes, write_node);
-	write_array(dest, "meshes", src.meshes, write_mesh, accessors);
-	write_array(dest, "materials", src.materials, write_material);
-	write_array(dest, "textures", src.textures, write_texture);
-	write_array(dest, "images", src.images, write_image);
-	write_array(dest, "samplers", src.samplers, write_sampler);
-	write_array(dest, "skins", src.skins, write_skin, accessors);
-	write_array(dest, "animations", src.animations, write_animation, accessors);
-	write_array(dest, "accessors", accessors, write_accessor, buffer_views, bin_chunk);
-	write_array(dest, "bufferViews", buffer_views, write_buffer_view);
+	write_array_opt(dest, "scenes", src.scenes, write_scene);
+	write_array_opt(dest, "nodes", src.nodes, write_node);
+	write_array_opt(dest, "meshes", src.meshes, write_mesh, accessors);
+	write_array_opt(dest, "materials", src.materials, write_material);
+	write_array_opt(dest, "textures", src.textures, write_texture);
+	write_array_opt(dest, "images", src.images, write_image);
+	write_array_opt(dest, "samplers", src.samplers, write_sampler);
+	write_array_opt(dest, "skins", src.skins, write_skin, accessors);
+	write_array_opt(dest, "animations", src.animations, write_animation, accessors);
+	write_array_opt(dest, "accessors", accessors, write_accessor, buffer_views, bin_chunk);
+	write_array_opt(dest, "bufferViews", buffer_views, write_buffer_view);
 	std::vector<GLTFBuffer> gltf_buffers {{std::nullopt, (s32) bin_chunk.tell(), std::nullopt}};
-	write_array(dest, "buffers", gltf_buffers, write_buffer);
-	set_array(dest, "extensionsUsed", src.extensions_used);
-	set_array(dest, "extensionsRequired", src.extensions_required);
+	write_array_opt(dest, "buffers", gltf_buffers, write_buffer);
+	set_array_opt(dest, "extensionsUsed", src.extensions_used);
+	set_array_opt(dest, "extensionsRequired", src.extensions_required);
 	
 	return dest;
 }
@@ -604,7 +614,7 @@ static Scene read_scene(const Json& src)
 {
 	Scene dest;
 	get_opt(dest.name, src, "name");
-	get_array(dest.nodes, src, "nodes");
+	get_array_opt(dest.nodes, src, "nodes");
 	return dest;
 }
 
@@ -612,35 +622,35 @@ static Json write_scene(const Scene& src)
 {
 	Json dest = Json::object();
 	set_opt(dest, "name", src.name);
-	set_array(dest, "nodes", src.nodes);
+	set_array_opt(dest, "nodes", src.nodes);
 	return dest;
 }
 
 static Node read_node(const Json& src)
 {
 	Node dest;
-	get_array(dest.children, src, "children");
-	get_mat(dest.matrix, src, "matrix");
+	get_array_opt(dest.children, src, "children");
+	get_mat_opt(dest.matrix, src, "matrix");
 	get_opt(dest.mesh, src, "mesh");
 	get_opt(dest.name, src, "name");
-	get_vec(dest.rotation, src, "rotation");
-	get_vec(dest.scale, src, "scale");
+	get_vec_opt(dest.rotation, src, "rotation");
+	get_vec_opt(dest.scale, src, "scale");
 	get_opt(dest.skin, src, "skin");
-	get_vec(dest.translation, src, "translation");
+	get_vec_opt(dest.translation, src, "translation");
 	return dest;
 }
 
 static Json write_node(const Node& src)
 {
 	Json dest = Json::object();
-	set_array(dest, "children", src.children);
-	set_mat(dest, "matrix", src.matrix);
+	set_array_opt(dest, "children", src.children);
+	set_mat_opt(dest, "matrix", src.matrix);
 	set_opt(dest, "mesh", src.mesh);
 	set_opt(dest, "name", src.name);
-	set_vec(dest, "rotation", src.rotation);
-	set_vec(dest, "scale", src.scale);
+	set_vec_opt(dest, "rotation", src.rotation);
+	set_vec_opt(dest, "scale", src.scale);
 	set_opt(dest, "skin", src.skin);
-	set_vec(dest, "translation", src.translation);
+	set_vec_opt(dest, "translation", src.translation);
 	return dest;
 }
 
@@ -664,7 +674,7 @@ static Mesh read_mesh(const Json& src, const std::vector<Accessor>& accessors)
 {
 	Mesh dest;
 	get_opt(dest.name, src, "name");
-	read_array(dest.primitives, src, "primitives", read_mesh_primitive, dest.vertices, accessors);
+	read_array_req(dest.primitives, src, "primitives", read_mesh_primitive, dest.vertices, accessors);
 	GLTF::deduplicate_vertices(dest);
 	return dest;
 }
@@ -673,7 +683,7 @@ static Json write_mesh(const Mesh& src, std::vector<Accessor>& accessors)
 {
 	Json dest = Json::object();
 	set_opt(dest, "name", src.name);
-	write_array(dest, "primitives", src.primitives, write_mesh_primitive, src.vertices, accessors);
+	write_array_req(dest, "primitives", src.primitives, write_mesh_primitive, src.vertices, accessors);
 	return dest;
 }
 
@@ -1194,7 +1204,7 @@ static Json write_material(const Material& src)
 static MaterialPbrMetallicRoughness read_material_pbr_metallic_roughness(const Json& src)
 {
 	MaterialPbrMetallicRoughness dest;
-	get_vec(dest.base_color_factor, src, "baseColorFactor");
+	get_vec_opt(dest.base_color_factor, src, "baseColorFactor");
 	if (src.contains("baseColorTexture")) {
 		dest.base_color_texture.emplace();
 		read_object(*dest.base_color_texture, src, "baseColorTexture", read_texture_info);
@@ -1205,7 +1215,7 @@ static MaterialPbrMetallicRoughness read_material_pbr_metallic_roughness(const J
 static Json write_material_pbr_metallic_roughness(const MaterialPbrMetallicRoughness& src)
 {
 	Json dest = Json::object();
-	set_vec(dest, "baseColorFactor", src.base_color_factor);
+	set_vec_opt(dest, "baseColorFactor", src.base_color_factor);
 	if (src.base_color_texture.has_value()) {
 		write_object(dest, "baseColorTexture", *src.base_color_texture, write_texture_info);
 	}
@@ -1305,7 +1315,7 @@ static Skin read_skin(const Json& src, const std::vector<Accessor>& accessors)
 		verify(accessor.bytes.size() >= accessor.count * sizeof(glm::mat4), "Invalid accessor for inverse bind matrices.");
 		memcpy(dest.inverse_bind_matrices.data(), accessor.bytes.data(), accessor.count * sizeof(glm::mat4));
 	}
-	get_array(dest.joints, src, "joints");
+	get_array_req(dest.joints, src, "joints");
 	get_opt(dest.name, src, "name");
 	get_opt(dest.skeleton, src, "skeleton");
 	return dest;
@@ -1325,7 +1335,7 @@ static Json write_skin(const Skin& src, std::vector<Accessor>& accessors)
 		accessor.type = MAT4;
 	}
 	
-	set_array(dest, "joints", src.joints);
+	set_array_req(dest, "joints", src.joints);
 	set_opt(dest, "name", src.name);
 	set_opt(dest, "skeleton", src.skeleton);
 	return dest;
@@ -1334,7 +1344,7 @@ static Json write_skin(const Skin& src, std::vector<Accessor>& accessors)
 static Animation read_animation(const Json& src, const std::vector<Accessor>& accessors)
 {
 	std::vector<AnimationSampler> samplers;
-	read_array(samplers, src, "samplers", read_animation_sampler);
+	read_array_req(samplers, src, "samplers", read_animation_sampler);
 	s32 input_accessor_index = samplers.at(0).input;
 	for (AnimationSampler& sampler : samplers) {
 		verify(sampler.input == input_accessor_index,
@@ -1348,7 +1358,7 @@ static Animation read_animation(const Json& src, const std::vector<Accessor>& ac
 		"Animation sampler has an input accessor of the wrong type.");
 	
 	std::vector<AnimationChannel> channels;
-	read_array(channels, src, "channels", read_animation_channel);
+	read_array_req(channels, src, "channels", read_animation_channel);
 	
 	std::unordered_map<s32, s32> group_lookup;
 	
@@ -1415,8 +1425,8 @@ static Json write_animation(const Animation& src, std::vector<Accessor>& accesso
 	
 	Json dest = Json::object();
 	set_opt(dest, "name", src.name);
-	write_array(dest, "channels", channels, write_animation_channel);
-	write_array(dest, "samplers", samplers, write_animation_sampler);
+	write_array_req(dest, "channels", channels, write_animation_channel);
+	write_array_req(dest, "samplers", samplers, write_animation_sampler);
 	return dest;
 }
 
@@ -1605,8 +1615,8 @@ static Accessor read_accessor(const Json& src, const std::vector<GLTFBufferView>
 	Accessor dest;
 	get_req(dest.component_type, src, "componentType");
 	get_req(dest.count, src, "count");
-	get_array(dest.max, src, "max");
-	get_array(dest.min, src, "min");
+	get_array_opt(dest.max, src, "max");
+	get_array_opt(dest.min, src, "min");
 	get_opt(dest.name, src, "name");
 	get_opt(dest.normalized, src, "normalized");
 	std::string type_string;
@@ -1641,8 +1651,8 @@ static Json write_accessor(const Accessor& src, std::vector<GLTFBufferView>& buf
 	// byteOffset
 	set_req(dest, "componentType", src.component_type);
 	set_req(dest, "count", src.count);
-	set_array(dest, "max", src.max);
-	set_array(dest, "min", src.min);
+	set_array_opt(dest, "max", src.max);
+	set_array_opt(dest, "min", src.min);
 	set_opt(dest, "name", src.name);
 	set_opt(dest, "normalized", src.normalized);
 	set_req(dest, "type", accessor_type_to_string(src.type));
@@ -1731,7 +1741,7 @@ static void get_req(T& dest, const Json& src, const char* property)
 	verify(iter != src.end(), "Missing property '%s'.", property);
 	try {
 		dest = iter->get<T>();
-	} catch(Json::type_error& e) {
+	} catch (Json::type_error& e) {
 		verify_not_reached("Required property '%s' is of the incorrect type (%s).", property, e.what());
 	}
 }
@@ -1749,7 +1759,7 @@ static void get_opt(Opt<T>& dest, const Json& src, const char* property)
 	if (iter != src.end()) {
 		try {
 			dest = iter->get<T>();
-		} catch(Json::type_error& e) {
+		} catch (Json::type_error& e) {
 			verify_not_reached("Optional property '%s' is of the incorrect type (%s).", property, e.what());
 		}
 	}
@@ -1764,7 +1774,19 @@ static void set_opt(Json& dest, const char* property, const Opt<T>& value)
 }
 
 template <typename T>
-static void get_array(std::vector<T>& dest, const Json& src, const char* property)
+static void get_array_req(std::vector<T>& dest, const Json& src, const char* property)
+{
+	get_req(dest, src, property);
+}
+
+template <typename T>
+static void set_array_req(Json& dest, const char* property, const std::vector<T>& value)
+{
+	set_req(dest, property, value);
+}
+
+template <typename T>
+static void get_array_opt(std::vector<T>& dest, const Json& src, const char* property)
 {
 	auto iter = src.find(property);
 	if (iter != src.end()) {
@@ -1773,7 +1795,7 @@ static void get_array(std::vector<T>& dest, const Json& src, const char* propert
 }
 
 template <typename T>
-static void set_array(Json& dest, const char* property, const std::vector<T>& value)
+static void set_array_opt(Json& dest, const char* property, const std::vector<T>& value)
 {
 	if (!value.empty()) {
 		dest.emplace(property, value);
@@ -1781,7 +1803,7 @@ static void set_array(Json& dest, const char* property, const std::vector<T>& va
 }
 
 template <typename T>
-static void get_vec(Opt<T>& dest, const Json& src, const char* property)
+static void get_vec_opt(Opt<T>& dest, const Json& src, const char* property)
 {
 	auto iter = src.find(property);
 	if (iter != src.end()) {
@@ -1793,7 +1815,7 @@ static void get_vec(Opt<T>& dest, const Json& src, const char* property)
 }
 
 template <typename T>
-static void set_vec(Json& dest, const char* property, const Opt<T>& value)
+static void set_vec_opt(Json& dest, const char* property, const Opt<T>& value)
 {
 	if (value.has_value()) {
 		Json& array = dest[property];
@@ -1805,7 +1827,7 @@ static void set_vec(Json& dest, const char* property, const Opt<T>& value)
 }
 
 template <typename T>
-static void get_mat(Opt<T>& dest, const Json& src, const char* property)
+static void get_mat_opt(Opt<T>& dest, const Json& src, const char* property)
 {
 	auto iter = src.find(property);
 	if (iter != src.end()) {
@@ -1819,7 +1841,7 @@ static void get_mat(Opt<T>& dest, const Json& src, const char* property)
 }
 
 template <typename T>
-static void set_mat(Json& dest, const char* property, const Opt<T>& value)
+static void set_mat_opt(Json& dest, const char* property, const Opt<T>& value)
 {
 	if (value.has_value()) {
 		Json& array = dest["property"];
@@ -1847,8 +1869,43 @@ static void write_object(Json& dest, const char* property, const Object& src, Wr
 }
 
 template <typename Element, typename ReadFunc, typename... Args>
-static void read_array(
-	std::vector<Element>& dest, const Json& src, const char* property, ReadFunc read_func, Args&... args) {
+static void read_array_req(
+	std::vector<Element>& dest,
+	const Json& src,
+	const char* property,
+	ReadFunc read_func,
+	Args&... args)
+{
+	auto iter = src.find(property);
+	verify(iter != src.end(), "Missing property '%s'.", property);
+	for (const Json& element : *iter) {
+		dest.emplace_back(read_func(element, args...));
+	}
+}
+
+template <typename Element, typename WriteFunc, typename... Args>
+static void write_array_req(
+	Json& dest,
+	const char* property,
+	const std::vector<Element>& src,
+	WriteFunc write_func,
+	Args&... args)
+{
+	Json& array = dest[property];
+	array = Json::array();
+	for (const Element& element : src) {
+		array.emplace_back(write_func(element, args...));
+	}
+}
+
+template <typename Element, typename ReadFunc, typename... Args>
+static void read_array_opt(
+	std::vector<Element>& dest,
+	const Json& src,
+	const char* property,
+	ReadFunc read_func,
+	Args&... args)
+{
 	auto iter = src.find(property);
 	if (iter != src.end()) {
 		for (const Json& element : *iter) {
@@ -1858,7 +1915,7 @@ static void read_array(
 }
 
 template <typename Element, typename WriteFunc, typename... Args>
-static void write_array(
+static void write_array_opt(
 	Json& dest,
 	const char* property,
 	const std::vector<Element>& src,
