@@ -118,7 +118,7 @@ These command lists are stored in the model files and are used for transferring 
 | UNPACK V4_8 UNSIGNED     | No             | Unpack parent indices into VU1 memory.                                                      |
 | UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 2 into VU1 memory.                                                   |
 | STROW                    | No             | Convert position indices below into addresses by adding the address of the positions table. |
-| UNPACK                   | No             | Unpack vertex info into VU1 memory (part 2).                                                |
+| UNPACK V4_16 SIGNED      | No             | Unpack vertex info into VU1 memory (part 2).                                                |
 | STROW                    | Yes            | Add tfrag origin position to positions below.                                               |
 | STCYCL num=100 wl=1 cl=2 | Yes            | Scatter the vertex positions below so that there is space for the colours.                  |
 | UNPACK V3_16 SIGNED      | No             | Unpack positions into VU1 memory (part 2).                                                  |
@@ -139,14 +139,14 @@ Note that the VIF is still in the state setup by the STCYCL and STROW commands f
 | UNPACK V4_8 UNSIGNED     | No             | Unpack parent indices into VU1 memory.                                                      |
 | UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 2 into VU1 memory.                                                   |
 | STROW                    | No             | Convert position indices below into addresses by adding the address of the positions table. |
-| UNPACK                   | No             | Unpack vertex info into VU1 memory (part 3).                                                |
+| UNPACK V4_16 SIGNED      | No             | Unpack vertex info into VU1 memory (part 3).                                                |
 | STMOD mode=0             | Yes            | Disable offset mode (see STROW)                                                             |
 
 ## Tfrag Microprogram
 
 ### Memory Layout
 
-The table below represents the contents of VU1 data memory while the tfrag microprogram is running. The data shown, with the exception of the matrix, would all be unpacked into VU1 memory from the command lists described above. Double buffering would be used, however only one buffer is shown. In addition, the output buffers for the GS packets are not shown.
+The table below represents the contents of VU1 data memory while the tfrag microprogram is running. The data shown, with the exception of the matrix and colours, would all be unpacked into VU1 memory from the command lists described above. Double buffering would be used, however only one buffer is shown. In addition, the output buffers for the GS packets are not shown.
 
 | X                          | Y                     | Z                         | W                       |
 | -------------------------- | --------------------- | ------------------------- | ----------------------- |
