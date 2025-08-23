@@ -142,7 +142,7 @@ bool MemoryOutputStream::write_n(const u8* src, s64 size)
 	if (m_ofs + size > m_backing.size()) {
 		m_backing.resize(m_ofs + size);
 	}
-	memcpy(&m_backing[m_ofs], src, size);
+	memcpy(m_backing.data() + m_ofs, src, size);
 	m_ofs += size;
 	last_error.clear();
 	return true;
