@@ -88,21 +88,41 @@ RenderMesh upload_gltf_mesh(const GLTF::Mesh& mesh, bool generate_normals)
 		render_submesh.material = primitive.material.has_value() ? *primitive.material : -1;
 		
 		std::vector<Vertex> vertices;
-		for (size_t i = 0; i < primitive.indices.size() / 3; i++) {
-			Vertex v0 = mesh.vertices[primitive.indices[i * 3 + 0]];
-			Vertex v1 = mesh.vertices[primitive.indices[i * 3 + 1]];
-			Vertex v2 = mesh.vertices[primitive.indices[i * 3 + 2]];
-			
-			if (generate_normals) {
+		switch (primitive.mode.has_value() ? *primitive.mode : GLTF::TRIANGLES) {
+			case GLTF::TRIANGLES: {
+				for (size_t i = 0; i < primitive.indices.size() / 3; i++) {
+					vertices.push_back(mesh.vertices.at(primitive.indices.at(i * 3 + 0)));
+					vertices.push_back(mesh.vertices.at(primitive.indices.at(i * 3 + 1)));
+					vertices.push_back(mesh.vertices.at(primitive.indices.at(i * 3 + 2)));
+				}
+				break;
+			}
+			case GLTF::TRIANGLE_STRIP: {
+				if (primitive.indices.size() < 3) {
+					break;
+				}
+				for (size_t i = 0; i < primitive.indices.size() - 2; i++) {
+					vertices.push_back(mesh.vertices.at(primitive.indices.at(i + 0)));
+					vertices.push_back(mesh.vertices.at(primitive.indices.at(i + 1)));
+					vertices.push_back(mesh.vertices.at(primitive.indices.at(i + 2)));
+				}
+				break;
+			}
+			default: {
+			}
+		}
+		
+		if (generate_normals) {
+			for (size_t i = 0; i < vertices.size() / 3; i++) {
+				Vertex& v0 = vertices[i * 3 + 0];
+				Vertex& v1 = vertices[i * 3 + 1];
+				Vertex& v2 = vertices[i * 3 + 2];
+				
 				glm::vec3 normal = glm::normalize(glm::cross(v2.pos - v0.pos, v1.pos - v0.pos));
 				v0.normal = normal;
 				v1.normal = normal;
 				v2.normal = normal;
 			}
-			
-			vertices.push_back(v0);
-			vertices.push_back(v1);
-			vertices.push_back(v2);
 		}
 		
 		glGenBuffers(1, &render_submesh.vertex_buffer.id);
