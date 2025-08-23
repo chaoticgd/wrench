@@ -93,11 +93,11 @@ int main(int argc, char** argv)
 	try {
 		generate_occlusion_data(level_wad.get_occlusion(), level);
 		stop_stdout_flusher_thread();
-	} catch(RuntimeError& e) {
+	} catch (RuntimeError& e) {
 		e.print();
 		stop_stdout_flusher_thread();
 		return 1;
-	} catch(...) {
+	} catch (...) {
 		stop_stdout_flusher_thread();
 		throw;
 	}

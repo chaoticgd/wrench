@@ -747,7 +747,7 @@ static Opt<glm::vec4> strings_to_vec4(
 				vec[lane] = -1.f; // Don't care.
 			}
 		}
-	} catch(std::logic_error&) {
+	} catch (std::logic_error&) {
 		return {};
 	}
 	return vec;
@@ -762,7 +762,7 @@ static Opt<Scalar> string_to_scalar(std::string& string)
 		} else {
 			return std::stoi(string);
 		}
-	} catch(std::logic_error&) {
+	} catch (std::logic_error&) {
 		return {};
 	}
 }

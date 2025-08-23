@@ -92,7 +92,7 @@ ColladaScene read_collada(char* src)
 	XmlDocument doc;
 	try {
 		doc.parse<0>(src);
-	} catch(rapidxml::parse_error& err) {
+	} catch (rapidxml::parse_error& err) {
 		verify_not_reached("%s", err.what());
 	}
 	

@@ -126,7 +126,7 @@ void parse_pcsx2_cdvd_log(std::string iso_path)
 			size_t lba;
 			try {
 				lba = std::stoi(line);
-			} catch(std::logic_error& e) {
+			} catch (std::logic_error& e) {
 				continue;
 			}
 			IsoFileRecord* file = file_from_lba(lba);

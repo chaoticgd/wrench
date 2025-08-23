@@ -87,7 +87,7 @@ static void run_round_trip_asset_packing_tests(
 		std::string asset_type;
 		try {
 			asset_type = binary.asset_type();
-		} catch(RuntimeError&) {
+		} catch (RuntimeError&) {
 			continue;
 		}
 		AssetType type = asset_string_to_type(asset_type.c_str());

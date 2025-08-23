@@ -107,11 +107,11 @@ int main(int argc, char** argv)
 		int exit_code = wrenchbuild(argc, argv);
 		stop_stdout_flusher_thread();
 		return exit_code;
-	} catch(RuntimeError& e) {
+	} catch (RuntimeError& e) {
 		e.print();
 		stop_stdout_flusher_thread();
 		return 1;
-	} catch(...) {
+	} catch (...) {
 		stop_stdout_flusher_thread();
 		throw;
 	}
