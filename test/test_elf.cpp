@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2023 chaoticgd
+	Copyright (C) 2019-2025 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,9 +20,10 @@
 #include <core/elf.h>
 #include <core/filesystem.h>
 
-TEST_CASE("ELF file preserved") {
+TEST_CASE("ELF file preserved", "[elf]")
+{
 	const char* path = "test/data/test.elf";
-	if(!fs::exists(path)) {
+	if (!fs::exists(path)) {
 		return;
 	}
 	std::vector<u8> input = read_file(path);

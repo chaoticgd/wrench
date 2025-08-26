@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2023 chaoticgd
+	Copyright (C) 2019-2025 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,7 +20,8 @@
 #include <engine/occlusion.h>
 #include <core/filesystem.h>
 
-TEST_CASE("Occlusion grid empty", "[engine]") {
+TEST_CASE("Occlusion grid empty", "[engine]")
+{
 	std::vector<OcclusionOctant> input;
 	std::vector<u8> buffer;
 	write_occlusion_grid(buffer, input);
@@ -28,7 +29,8 @@ TEST_CASE("Occlusion grid empty", "[engine]") {
 	REQUIRE(input.empty());
 }
 
-TEST_CASE("Occlusion grid round trip", "[engine]") {
+TEST_CASE("Occlusion grid round trip", "[engine]")
+{
 	std::vector<OcclusionOctant> input = {
 		{1, 2, 3, {1, 2, 3}},
 		{2, 3, 4, {1, 2, 3}},
@@ -40,7 +42,8 @@ TEST_CASE("Occlusion grid round trip", "[engine]") {
 	REQUIRE(input == output);
 }
 
-TEST_CASE("Occlusion octants round trip", "[engine]") {
+TEST_CASE("Occlusion octants round trip", "[engine]")
+{
 	std::vector<OcclusionVector> input = {
 		{1, 2, 3},
 		{4, 5, 6}

@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2023 chaoticgd
+	Copyright (C) 2019-2025 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,7 +28,8 @@ static bool test_parser(const char* src, CppType&& expected);
 static bool test_layout(const char* src, CppType&& expected);
 static bool compare_cpp_types(const CppType& lhs, const CppType& rhs);
 
-TEST_CASE("c++ lexer" "[cpp]") {
+TEST_CASE("c++ lexer", "[cpp]")
+{
 	CHECK(CPP_TEST_PASSED == test_lexer(
 		"int dec_lit = 123;",
 		{CPP_KEYWORD, CPP_IDENTIFIER, CPP_OPERATOR, CPP_INTEGER_LITERAL, CPP_OPERATOR}));
@@ -66,22 +67,24 @@ TEST_CASE("c++ lexer" "[cpp]") {
 		{CPP_KEYWORD, CPP_IDENTIFIER, CPP_OPERATOR, CPP_IDENTIFIER, CPP_OPERATOR, CPP_INTEGER_LITERAL, CPP_OPERATOR}));
 }
 
-static s32 test_lexer(const char* src, std::vector<CppTokenType>&& expected) {
+static s32 test_lexer(const char* src, std::vector<CppTokenType>&& expected)
+{
 	std::string str(src);
 	std::vector<CppToken> tokens = eat_cpp_file(&str[0]);
-	for(size_t i = 0; i < std::max(tokens.size(), expected.size()); i++) {
+	for (size_t i = 0; i < std::max(tokens.size(), expected.size()); i++) {
 		print_token(tokens[i]);
-		if(i >= tokens.size()) return -3;
-		if(i >= expected.size()) return -4;
-		if(tokens[i].type != expected[i]) {
+		if (i >= tokens.size()) return -3;
+		if (i >= expected.size()) return -4;
+		if (tokens[i].type != expected[i]) {
 			return (s32) i;
 		}
 	}
 	return CPP_TEST_PASSED;
 }
 
-static void print_token(const CppToken& token) {
-	switch(token.type) {
+static void print_token(const CppToken& token)
+{
+	switch (token.type) {
 		case CPP_IDENTIFIER: {
 			std::string str(token.str_begin, token.str_end);
 			UNSCOPED_INFO(stringf("identifier %s\n", str.c_str()));
@@ -136,7 +139,8 @@ static void print_token(const CppToken& token) {
 	}
 }
 
-TEST_CASE("c++ parser" "[cpp]") {
+TEST_CASE("c++ parser", "[cpp]")
+{
 	CHECK(test_parser(
 		"struct SomeVars { int array_of_ints[5]; };",
 		[]() {
@@ -254,21 +258,23 @@ TEST_CASE("c++ parser" "[cpp]") {
 	));
 }
 
-static bool test_parser(const char* src, CppType&& expected) {
+static bool test_parser(const char* src, CppType&& expected)
+{
 	std::string str;
 	str += "#pragma wrench parser on\n";
 	str += src;
 	std::vector<CppToken> tokens = eat_cpp_file(&str[0]);
 	std::map<std::string, CppType> types;
 	parse_cpp_types(types, tokens);
-	if(types.size() != 1) {
+	if (types.size() != 1) {
 		UNSCOPED_INFO("types.size() != 1");
 		return false;
 	}
 	return compare_cpp_types(types.begin()->second, expected);
 }
 
-TEST_CASE("c++ layout" "[cpp]") {
+TEST_CASE("c++ layout", "[cpp]")
+{
 	CHECK(test_layout(
 		"struct S { int a; int b; int c; };",
 		[]() {
@@ -402,13 +408,15 @@ TEST_CASE("c++ layout" "[cpp]") {
 	));
 }
 
-TEST_CASE("c++ bitfield operations" "[cpp]") {
+TEST_CASE("c++ bitfield operations", "[cpp]")
+{
 	CHECK(cpp_unpack_unsigned_bitfield(0xff00, 8, 4) == 0xf);
 	CHECK(cpp_pack_unsigned_bitfield(0xf, 8, 8) == 0xf00);
 	CHECK(cpp_zero_bitfield(0xffff, 4, 4) == 0xff0f);
 }
 
-static bool test_layout(const char* src, CppType&& expected) {
+static bool test_layout(const char* src, CppType&& expected)
+{
 	std::string str;
 	str += "#pragma wrench parser on\n";
 	str += src;
@@ -423,19 +431,20 @@ static bool test_layout(const char* src, CppType&& expected) {
 	return compare_cpp_types(types.begin()->second, expected);
 }
 
-static bool compare_cpp_types(const CppType& lhs, const CppType& rhs) {
-	if(lhs.name != rhs.name) { UNSCOPED_INFO("name"); return false; }
-	if(lhs.offset != rhs.offset) { UNSCOPED_INFO("offset"); return false; }
-	if(lhs.size != rhs.size) { UNSCOPED_INFO("size"); return false; }
-	if(lhs.alignment != rhs.alignment) { UNSCOPED_INFO("alignment"); return false; }
-	if(lhs.preprocessor_directives != rhs.preprocessor_directives) { UNSCOPED_INFO("preprocessor_directives"); return false; }
-	if(lhs.descriptor != rhs.descriptor) { UNSCOPED_INFO("descriptor"); return false; }
-	switch(lhs.descriptor) {
+static bool compare_cpp_types(const CppType& lhs, const CppType& rhs)
+{
+	if (lhs.name != rhs.name) { UNSCOPED_INFO("name"); return false; }
+	if (lhs.offset != rhs.offset) { UNSCOPED_INFO("offset"); return false; }
+	if (lhs.size != rhs.size) { UNSCOPED_INFO("size"); return false; }
+	if (lhs.alignment != rhs.alignment) { UNSCOPED_INFO("alignment"); return false; }
+	if (lhs.preprocessor_directives != rhs.preprocessor_directives) { UNSCOPED_INFO("preprocessor_directives"); return false; }
+	if (lhs.descriptor != rhs.descriptor) { UNSCOPED_INFO("descriptor"); return false; }
+	switch (lhs.descriptor) {
 		case CPP_ARRAY: {
-			if(lhs.array.element_count != rhs.array.element_count) { UNSCOPED_INFO("array.element_count"); return false; }
+			if (lhs.array.element_count != rhs.array.element_count) { UNSCOPED_INFO("array.element_count"); return false; }
 			REQUIRE((lhs.array.element_type.get() && rhs.array.element_type.get()));
 			bool comp_result = compare_cpp_types(*lhs.array.element_type.get(), *rhs.array.element_type.get());
-			if(!comp_result) { UNSCOPED_INFO("array.element_type"); return false; }
+			if (!comp_result) { UNSCOPED_INFO("array.element_type"); return false; }
 			break;
 		}
 		case CPP_BITFIELD: {
@@ -446,17 +455,17 @@ static bool compare_cpp_types(const CppType& lhs, const CppType& rhs) {
 			break;
 		}
 		case CPP_BUILT_IN: {
-			if(lhs.built_in != rhs.built_in) { UNSCOPED_INFO("built_in"); return false; }
+			if (lhs.built_in != rhs.built_in) { UNSCOPED_INFO("built_in"); return false; }
 			break;
 		}
 		case CPP_ENUM: {
-			if(lhs.enumeration.constants != rhs.enumeration.constants) { UNSCOPED_INFO("enum"); return false; }
+			if (lhs.enumeration.constants != rhs.enumeration.constants) { UNSCOPED_INFO("enum"); return false; }
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
-			if(lhs.struct_or_union.is_union != rhs.struct_or_union.is_union) { UNSCOPED_INFO("struct_or_union.is_union"); return false; }
-			if(lhs.struct_or_union.fields.size() != rhs.struct_or_union.fields.size()) { UNSCOPED_INFO("struct_or_union.fields.size()"); return false; }
-			for(s32 i = 0; i < (s32) lhs.struct_or_union.fields.size(); i++) {
+			if (lhs.struct_or_union.is_union != rhs.struct_or_union.is_union) { UNSCOPED_INFO("struct_or_union.is_union"); return false; }
+			if (lhs.struct_or_union.fields.size() != rhs.struct_or_union.fields.size()) { UNSCOPED_INFO("struct_or_union.fields.size()"); return false; }
+			for (s32 i = 0; i < (s32) lhs.struct_or_union.fields.size(); i++) {
 				bool comp_result = compare_cpp_types(lhs.struct_or_union.fields[i], rhs.struct_or_union.fields[i]);
 				if(!comp_result) { UNSCOPED_INFO(stringf("struct_or_union.fields[%d]", i)); return false; }
 			}
@@ -467,10 +476,10 @@ static bool compare_cpp_types(const CppType& lhs, const CppType& rhs) {
 			return false;
 		}
 		case CPP_POINTER_OR_REFERENCE: {
-			if(lhs.pointer_or_reference.is_reference != rhs.pointer_or_reference.is_reference) { UNSCOPED_INFO("pointer_or_reference.is_reference"); return false; }
+			if (lhs.pointer_or_reference.is_reference != rhs.pointer_or_reference.is_reference) { UNSCOPED_INFO("pointer_or_reference.is_reference"); return false; }
 			REQUIRE((lhs.pointer_or_reference.value_type.get() && rhs.pointer_or_reference.value_type.get()));
 			bool comp_result = compare_cpp_types(*lhs.pointer_or_reference.value_type.get(), *rhs.pointer_or_reference.value_type.get());
-			if(!comp_result) { UNSCOPED_INFO("pointer_or_reference.value_type"); return false; }
+			if (!comp_result) { UNSCOPED_INFO("pointer_or_reference.value_type"); return false; }
 			break;
 		}
 	}
