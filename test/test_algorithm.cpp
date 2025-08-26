@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2023 chaoticgd
+	Copyright (C) 2019-2025 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@
 #include <catch2/catch_amalgamated.hpp>
 #include <core/algorithm.h>
 
-TEST_CASE("mark_duplicates empty list", "[algorithm]") {
+TEST_CASE("mark_duplicates empty list", "[algorithm]")
+{
 	std::vector<s32> empty;
 	bool marked = false;
 	mark_duplicates(empty,
@@ -28,7 +29,8 @@ TEST_CASE("mark_duplicates empty list", "[algorithm]") {
 	REQUIRE(!marked);
 }
 	
-TEST_CASE("mark_duplicates integer list", "[algorithm]") {
+TEST_CASE("mark_duplicates integer list", "[algorithm]")
+{
 	std::vector<s32> list = {1, 2, 3, 2, 4, 4};
 	std::vector<s32> mark(list.size());
 	mark_duplicates(list,

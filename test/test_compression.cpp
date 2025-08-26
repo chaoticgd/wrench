@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2023 chaoticgd
+	Copyright (C) 2019-2025 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,7 +21,8 @@
 #include <core/util.h>
 #include <engine/compression.h>
 
-TEST_CASE("Compression and decompression yields same result", "[compression]") {
+TEST_CASE("Compression and decompression yields same result", "[compression]")
+{
 	srand(time(NULL));
 	
 	s32 data_size = GENERATE(10, 100, 1000, 10000, 100000);

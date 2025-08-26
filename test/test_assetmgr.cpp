@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2023 chaoticgd
+	Copyright (C) 2019-2025 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@
 #include <catch2/catch_amalgamated.hpp>
 #include <assetmgr/asset_types.h>
 
-TEST_CASE("Asset System", "[assetmgr]") {
+TEST_CASE("Asset System", "[assetmgr]")
+{
 	// Setup an asset forest.
 	AssetForest forest;
 	AssetBank& bank_a = forest.mount<MemoryAssetBank>();
@@ -42,22 +43,26 @@ TEST_CASE("Asset System", "[assetmgr]") {
 	file_b.root().child<PlaceholderAsset>("reference");
 	
 	// Test link resolution.
-	SECTION("Absolute link lookup.") {
+	SECTION("Absolute link lookup.")
+	{
 		Asset& asset = forest.lookup_asset("collection.binary_a", nullptr);
 		REQUIRE(asset.absolute_link().to_string() == binary_a.absolute_link().to_string());
 	}
 	
-	SECTION("Relative link lookup.") {
+	SECTION("Relative link lookup.")
+	{
 		Asset& asset = forest.lookup_asset("Collection:binary_a", &collection);
 		REQUIRE(asset.absolute_link().to_string() == binary_a.absolute_link().to_string());
 	}
 	
-	SECTION("Double reference works.") {
+	SECTION("Double reference works.")
+	{
 		Asset& asset = forest.lookup_asset("double_reference_1", nullptr);
 		REQUIRE(asset.absolute_link().to_string() == binary_a.absolute_link().to_string());
 	}
 	
-	SECTION("Reference shadowed by placeholder still works.") {
+	SECTION("Reference shadowed by placeholder still works.")
+	{
 		Asset& asset = forest.lookup_asset("reference", nullptr);
 		REQUIRE(asset.absolute_link().to_string() == binary_a.absolute_link().to_string());
 	}
