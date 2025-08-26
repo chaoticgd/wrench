@@ -24,7 +24,31 @@
 
 packed_struct(CollisionHeader,
 	s32 mesh;
-	s32 second_part;
+	s32 hero_groups;
+)
+
+packed_struct(PackedHeroCollisionGroup,
+	u16 bsphere_x;
+	u16 bsphere_y;
+	u16 bsphere_z;
+	u16 bsphere_radius;
+	u16 triangle_count;
+	u16 vertex_count;
+	u32 data_offset;
+)
+
+packed_struct(PackedHeroCollisionVertex,
+	u16 x;
+	u16 y;
+	u16 z;
+	u16 pad;
+)
+
+packed_struct(HeroCollisionTriangle,
+	u8 v0;
+	u8 v1;
+	u8 v2;
+	u8 pad;
 )
 
 template <typename T>
@@ -59,15 +83,25 @@ struct CollisionOctant
 	glm::vec3 displacement = {0, 0, 0};
 };
 
+struct HeroCollisionGroup
+{
+	glm::vec4 bsphere;
+	std::vector<glm::vec3> vertices;
+	std::vector<HeroCollisionTriangle> triangles;
+};
+
 // The octants are arranged into a tree such that a octant at position (x,y,z)
 // in the grid can be accessed by taking the (z-coord)th child of the root, the
 // (y-coord)th child of that node, and then the (x-coord)th child of that node.
 using CollisionOctants = CollisionList<CollisionList<CollisionList<CollisionOctant>>>;
 
-static CollisionOctants parse_collision_mesh(Buffer mesh);
+static CollisionOctants read_collision_mesh(Buffer mesh);
 static void write_collision_mesh(OutBuffer dest, CollisionOctants& octants);
-static ColladaScene collision_octants_to_scene(const CollisionOctants& octants);
+static std::vector<HeroCollisionGroup> read_hero_collision_groups(Buffer buffer);
+static void write_hero_collision_groups(OutBuffer dest, const std::vector<HeroCollisionGroup>& groups);
+static CollisionOutput collision_to_scene(const CollisionOctants& octants, const std::vector<HeroCollisionGroup>& groups);
 static CollisionOctants build_collision_octants(const ColladaScene& scene, const std::string& name);
+static std::vector<HeroCollisionGroup> build_hero_collision_groups(const ColladaScene& scene, const std::string& name);
 static bool test_tri_octant_intersection(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2);
 static CollisionOctant& lookup_octant(CollisionOctants& octants, s32 x, s32 y, s32 z);
 static void optimise_collision(CollisionOctants& octants);
@@ -75,37 +109,52 @@ static void reduce_quads_to_tris(CollisionOctant& octant);
 static void remove_killed_faces(CollisionOctant& octant);
 static void remove_unreferenced_vertices(CollisionOctant& octant);
 
-ColladaScene read_collision(Buffer src)
+CollisionOutput read_collision(Buffer src)
 {
 	ERROR_CONTEXT("collision");
 	
 	CollisionHeader header = src.read<CollisionHeader>(0, "collision header");
-	Buffer mesh_buffer;
-	if (header.second_part != 0) {
-		mesh_buffer = src.subbuf(header.mesh, header.second_part - header.mesh);
+	
+	CollisionOctants octants;
+	std::vector<HeroCollisionGroup> hero_groups;
+	if (header.hero_groups != 0) {
+		octants = read_collision_mesh(src.subbuf(header.mesh, header.hero_groups - header.mesh));
+		hero_groups = read_hero_collision_groups(src.subbuf(header.hero_groups));
 	} else {
-		mesh_buffer = src.subbuf(header.mesh);
+		octants = read_collision_mesh(src.subbuf(header.mesh));
 	}
-	CollisionOctants octants = parse_collision_mesh(mesh_buffer);
-	return collision_octants_to_scene(octants);
+	
+	return collision_to_scene(octants, hero_groups);
 }
 
-void write_collision(OutBuffer dest, const ColladaScene& scene, const std::string& name)
+void write_collision(OutBuffer dest, const CollisionInput& input)
 {
 	ERROR_CONTEXT("collision");
 	
-	CollisionOctants octants = build_collision_octants(scene, name);
+	CollisionOctants octants = build_collision_octants(*input.main_scene, input.main_mesh);
+	std::vector<HeroCollisionGroup> hero_groups = {};//build_hero_collision_groups(input.main_scene, input.name);
 	optimise_collision(octants);
-	CollisionHeader header;
-	header.mesh = 0x40;
-	header.second_part = 0;
-	verify_fatal(dest.tell() % 0x40 == 0);
-	dest.write(header);
+	
+	s64 header_ofs = dest.alloc<CollisionHeader>();
+	
 	dest.pad(0x40);
+	s64 mesh_ofs = dest.tell();
 	write_collision_mesh(dest, octants);
+	
+	s64 hero_groups_ofs = 0;
+	if (!hero_groups.empty()) {
+		dest.pad(0x40);
+		hero_groups_ofs = dest.tell();
+		write_hero_collision_groups(dest, hero_groups);
+	}
+	
+	CollisionHeader header;
+	header.mesh = (s32) mesh_ofs;
+	header.hero_groups = (s32) hero_groups_ofs;
+	dest.write(header_ofs, header);
 }
 
-static CollisionOctants parse_collision_mesh(Buffer mesh)
+static CollisionOctants read_collision_mesh(Buffer mesh)
 {
 	CollisionOctants octants;
 	s32 z_coord = mesh.read<s16>(0, "z coord");
@@ -321,16 +370,56 @@ static void write_collision_mesh(OutBuffer dest, CollisionOctants& octants)
 	}
 }
 
-static ColladaScene collision_octants_to_scene(const CollisionOctants& octants)
+static std::vector<HeroCollisionGroup> read_hero_collision_groups(Buffer buffer)
 {
-	ColladaScene scene;
+	s32 count = buffer.read<s32>(0);
+	auto packed_groups = buffer.read_multiple<PackedHeroCollisionGroup>(0x10, count, "hero collision groups");
+	
+	std::vector<HeroCollisionGroup> groups;
+	for (const PackedHeroCollisionGroup& packed_group : packed_groups) {
+		HeroCollisionGroup& group = groups.emplace_back();
+		group.bsphere.x = packed_group.bsphere_x * (1.f / 64.f);
+		group.bsphere.y = packed_group.bsphere_y * (1.f / 64.f);
+		group.bsphere.z = packed_group.bsphere_z * (1.f / 64.f);
+		group.bsphere.w = packed_group.bsphere_radius * (1.f / 64.f);
+		
+		s64 ofs = packed_group.data_offset;
+		
+		for (s32 i = 0; i < packed_group.vertex_count; i++) {
+			const PackedHeroCollisionVertex& packed_vertex = buffer.read<PackedHeroCollisionVertex>(ofs);
+			verify(packed_vertex.pad == 0, "Unknown type of hero collision vertex.");
+			ofs += 8;
+			
+			glm::vec3& vertex = group.vertices.emplace_back();
+			vertex.x = packed_vertex.x * (1.f / 64.f);
+			vertex.y = packed_vertex.y * (1.f / 64.f);
+			vertex.z = packed_vertex.z * (1.f / 64.f);
+		}
+		
+		group.triangles = buffer.read_multiple<HeroCollisionTriangle>(ofs, packed_group.triangle_count, "hero collision triangles").copy();
+		for (const HeroCollisionTriangle& triangle : group.triangles) {
+			verify(triangle.pad == 0, "Unknown type of hero collision triangle.");
+		}
+	}
+	
+	return groups;
+}
 
-	Mesh& mesh = scene.meshes.emplace_back();
+static void write_hero_collision_groups(OutBuffer dest, const std::vector<HeroCollisionGroup>& groups)
+{
+	dest.write<s32>(0); // TODO
+}
+
+static CollisionOutput collision_to_scene(const CollisionOctants& octants, const std::vector<HeroCollisionGroup>& groups)
+{
+	CollisionOutput output;
+
+	Mesh& mesh = output.scene.meshes.emplace_back();
 	mesh.name = "collision";
 	mesh.flags = MESH_HAS_QUADS;
 	Opt<size_t> submeshes[256];
 	
-	scene.materials = create_collision_materials();
+	output.scene.materials = create_collision_materials();
 	
 	for (const auto& y_partitions : octants.list) {
 		for (const auto& x_partitions : y_partitions.list) {
@@ -357,16 +446,37 @@ static ColladaScene collision_octants_to_scene(const CollisionOctants& octants)
 	
 	// The vertices and faces stored in the games files are duplicated such that
 	// only one octant must be accessed to do collision detection.
-	scene.meshes[0] = deduplicate_vertices(std::move(scene.meshes[0]));
-	scene.meshes[0] = deduplicate_faces(std::move(scene.meshes[0]));
+	output.scene.meshes[0] = deduplicate_vertices(std::move(output.scene.meshes[0]));
+	output.scene.meshes[0] = deduplicate_faces(std::move(output.scene.meshes[0]));
 	
-	return scene;
+	s32 group_index = 0;
+	for (const HeroCollisionGroup& group : groups) {
+		Mesh& group_mesh = output.scene.meshes.emplace_back();
+		group_mesh.name = stringf("hero_collision_group_%d", group_index++);
+		for(const glm::vec3& vertex : group.vertices) {
+			group_mesh.vertices.emplace_back(vertex);
+		}
+		
+		SubMesh& submesh = group_mesh.submeshes.emplace_back();
+		submesh.material = 256; // hero_group_collision
+		for (const HeroCollisionTriangle& triangle : group.triangles) {
+			Face& face = submesh.faces.emplace_back();
+			face.v0 = triangle.v0;
+			face.v1 = triangle.v1;
+			face.v2 = triangle.v2;
+			
+			verify(face.v0 < group.vertices.size() && face.v1 < group.vertices.size() && face.v2 < group.vertices.size(),
+				"Hero collision triangle references out of bounds vertex.");
+		}
+	}
+	
+	return output;
 }
 
 std::vector<ColladaMaterial> create_collision_materials()
 {
 	std::vector<ColladaMaterial> materials;
-	materials.reserve(256);
+	
 	for (s32 i = 0; i < 256; i++) {
 		ColladaMaterial& material = materials.emplace_back();
 		material.name = stringf("col_%x", i);
@@ -379,6 +489,15 @@ std::vector<ColladaMaterial> create_collision_materials()
 		material.surface.colour.a = 1.f;
 		material.collision_id = i;
 	}
+	
+	ColladaMaterial& hero_group_collision = materials.emplace_back();
+	hero_group_collision.name = "hero_group_collision";
+	hero_group_collision.surface.type = MaterialSurfaceType::COLOUR;
+	hero_group_collision.surface.colour.r = 0.f;
+	hero_group_collision.surface.colour.g = 0.f;
+	hero_group_collision.surface.colour.b = 1.f;
+	hero_group_collision.surface.colour.a = 1.f;
+	
 	return materials;
 }
 
@@ -488,6 +607,11 @@ static CollisionOctants build_collision_octants(const ColladaScene& scene, const
 	
 	stop_timer();
 	return octants;
+}
+
+static std::vector<HeroCollisionGroup> build_hero_collision_groups(const ColladaScene& scene, const std::string& name)
+{
+	return {};
 }
 
 // https://gdbooks.gitbooks.io/3dcollisions/content/Chapter4/aabb-triangle.html

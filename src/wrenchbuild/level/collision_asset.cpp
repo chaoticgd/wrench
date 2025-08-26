@@ -37,17 +37,25 @@ on_load(Collision, []() {
 static void unpack_collision_asset(CollisionAsset& dest, InputStream& src, BuildConfig config)
 {
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
-	ColladaScene scene = read_collision(bytes);
-	std::vector<u8> collada = write_collada(scene);
+	CollisionOutput output = read_collision(bytes);
+	std::vector<u8> collada = write_collada(output.scene);
 	collada.push_back(0);
 	
 	MeshAsset& mesh = dest.mesh<MeshAsset>();
 	auto ref = mesh.file().write_text_file("collision.dae", (const char*) collada.data());
 	mesh.set_src(ref);
-	mesh.set_name(scene.meshes.at(0).name);
+	mesh.set_name(output.scene.meshes.at(0).name);
+	
+	CollectionAsset& hero_groups = dest.hero_groups();
+	s32 i = 0;
+	for (const std::string& mesh : output.hero_group_meshes) {
+		MeshAsset& group_mesh = hero_groups.child<MeshAsset>(stringf("%d", i).c_str());
+		group_mesh.set_src(ref);
+		group_mesh.set_name(mesh);
+	}
 	
 	CollectionAsset& materials = dest.materials();
-	for (ColladaMaterial& material : scene.materials) {
+	for (ColladaMaterial& material : output.scene.materials) {
 		CollisionMaterialAsset& asset = materials.child<CollisionMaterialAsset>(material.name.c_str());
 		asset.set_name(material.name);
 		asset.set_id(material.collision_id);
@@ -114,8 +122,12 @@ void pack_level_collision(
 		}
 	}
 	
+	CollisionInput input;
+	input.main_scene = &scene;
+	input.main_mesh = mesh.name;
+	
 	std::vector<u8> bytes;
-	write_collision(OutBuffer(bytes), scene, "combined");
+	write_collision(OutBuffer(bytes), input);
 	dest.write_v(bytes);
 }
 
