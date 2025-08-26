@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2025 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -60,33 +60,6 @@ u16 byte_swap_16(u16 val);
 u32 byte_swap_32(u32 val);
 
 std::size_t parse_number(std::string x);
-
-// Kludge since C++ still doesn't have proper reflection.
-#define DEF_FIELD(member) \
-	{ \
-		auto temp = std::move(member); \
-		t.field(#member, temp); \
-		member = std::move(temp); \
-	}
-#define DEF_PACKED_FIELD(member) \
-	{ \
-		auto temp = member; \
-		t.field(#member, temp); \
-		member = temp; \
-	}
-#define DEF_HEXDUMP(member) \
-	{ \
-		auto temp = std::move(member); \
-		t.hexdump(#member, temp); \
-		member = std::move(temp); \
-	}
-
-template <typename> struct MemberTraits;
-template <typename Return, typename Object>
-struct MemberTraits<Return (Object::*)>
-{
-	typedef Object instance_type;
-};
 
 template <typename T>
 using Opt = std::optional<T>;
