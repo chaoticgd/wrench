@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2021 chaoticgd
+	Copyright (C) 2019-2025 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WAD_BASIC_TYPES_H
-#define WAD_BASIC_TYPES_H
+#ifndef ENGINE_BASIC_TYPES_H
+#define ENGINE_BASIC_TYPES_H
 
 #include <glm/glm.hpp>
 
@@ -27,14 +27,6 @@ packed_struct(Vec3f,
 	f32 x;
 	f32 y;
 	f32 z;
-	
-	template <typename T>
-	void enumerate_fields(T& t)
-	{
-		DEF_PACKED_FIELD(x);
-		DEF_PACKED_FIELD(y);
-		DEF_PACKED_FIELD(z);
-	}
 	
 	glm::vec3 unpack() const
 	{
@@ -56,15 +48,6 @@ packed_struct(Vec4f,
 	f32 y;
 	f32 z;
 	f32 w;
-	
-	template <typename T>
-	void enumerate_fields(T& t)
-	{
-		DEF_PACKED_FIELD(x);
-		DEF_PACKED_FIELD(y);
-		DEF_PACKED_FIELD(z);
-		DEF_PACKED_FIELD(w);
-	}
 	
 	glm::vec4 unpack() const
 	{
@@ -95,24 +78,6 @@ packed_struct(Mat3,
 	Vec4f m_1;
 	Vec4f m_2;
 	
-	template <typename T>
-	void enumerate_fields(T& t)
-	{
-		Vec4f temp;
-		
-		temp = m_0;
-		t.field("0", temp);
-		m_0 = temp;
-		
-		temp = m_1;
-		t.field("1", temp);
-		m_1 = temp;
-		
-		temp = m_2;
-		t.field("2", temp);
-		m_2 = temp;
-	}
-	
 	glm::mat3x4 unpack() const
 	{
 		glm::mat3x4 result;
@@ -137,28 +102,6 @@ packed_struct(Mat4,
 	Vec4f m_1;
 	Vec4f m_2;
 	Vec4f m_3;
-	
-	template <typename T>
-	void enumerate_fields(T& t)
-	{
-		Vec4f temp;
-		
-		temp = m_0;
-		t.field("0", temp);
-		m_0 = temp;
-		
-		temp = m_1;
-		t.field("1", temp);
-		m_1 = temp;
-		
-		temp = m_2;
-		t.field("2", temp);
-		m_2 = temp;
-		
-		temp = m_3;
-		t.field("3", temp);
-		m_3 = temp;
-	}
 	
 	glm::mat4 unpack() const
 	{
