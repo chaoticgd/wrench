@@ -12,6 +12,7 @@
 
 ## The Games
 
+- [Collision](collision.md)
 - [File Loading](file_loading.md)
 - [Gameplay](gameplay.md)
 - [Level Core](level_core.md)
