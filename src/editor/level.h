@@ -38,7 +38,8 @@ struct EditorClass
 
 struct EditorChunk
 {
-	std::vector<RenderMesh> collision;
+	RenderMesh collision;
+	std::vector<RenderMesh> hero_collision;
 	std::vector<RenderMaterial> collision_materials;
 	RenderMesh tfrags;
 };
