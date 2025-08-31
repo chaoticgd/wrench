@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 28
+format_version: 29
 
 // *****************************************************************************
 
@@ -1736,10 +1736,20 @@ AssetType Collision {
 	bin_leaf: true
 	
 	Child mesh {
-		desc: "The collision mesh itself."
+		desc: "The main collision mesh."
 		allowed_types: ["Mesh"]
 		required: true
 		games: [1 2 3 4]
+	}
+	
+	Child hero_groups {
+		desc: "Collision meshes that will only effect Ratchet. Keep all vertices in a given group close together to optimise runtime performance."
+		allowed_types: ["Collection"]
+		required: false
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Mesh"]
+		}
 	}
 	
 	Child materials {

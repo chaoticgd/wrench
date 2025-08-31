@@ -200,6 +200,7 @@ static void menu_bar()
 				ImGui::Checkbox("Grind Paths", &a.render_settings.draw_grind_paths);
 				ImGui::Checkbox("Areas", &a.render_settings.draw_areas);
 				ImGui::Checkbox("Collision", &a.render_settings.draw_collision);
+				ImGui::Checkbox("Hero Collision", &a.render_settings.draw_hero_collision);
 				ImGui::Separator();
 				ImGui::Checkbox("Selected Instance Normals", &a.render_settings.draw_selected_instance_normals);
 				ImGui::EndMenu();

@@ -22,8 +22,23 @@
 #include <core/buffer.h>
 #include <core/collada.h>
 
-ColladaScene read_collision(Buffer src);
-void write_collision(OutBuffer dest, const ColladaScene& scene, const std::string& name);
+struct CollisionOutput
+{
+	ColladaScene scene;
+	std::string main_mesh;
+	std::vector<std::string> hero_group_meshes;
+};
+
+CollisionOutput read_collision(Buffer src);
+
+struct CollisionInput
+{
+	const ColladaScene* main_scene;
+	std::string main_mesh;
+	std::vector<const Mesh*> hero_groups;
+};
+
+void write_collision(OutBuffer dest, const CollisionInput& input);
 std::vector<ColladaMaterial> create_collision_materials();
 
 #endif

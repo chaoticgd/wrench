@@ -144,6 +144,7 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
+| 29   |       | Added hero_groups attributes to Collision assets. |
 | 28   |       | Use glTF (.glb) for the moby models instead of COLLADA. |
 | 27   | v0.5  | Use glTF (.glb) for the shrub and sky models instead of COLLADA. The mesh attribute of the SkyShell asset is now of type Mesh instead of Collection. The starting_rotation and angular_velocity attributes now only will only apply for UYA and DL (which is more correct). |
 | 26   |       | Added static_collision children to MobyClass, TieClass and ShrubClass assets. The corresponding instance types now have has_static_collision flags. |

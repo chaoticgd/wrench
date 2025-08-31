@@ -63,6 +63,7 @@ static RenderMaterial green;
 static RenderMaterial white;
 static RenderMaterial orange;
 static RenderMaterial cyan;
+static RenderMaterial blue;
 static RenderMaterial instance_icons[ARRAY_SIZE(wadinfo.editor.instance_3d_view_icons)];
 static GLuint moby_inst_buffer = 0;
 static GLuint moby_group_inst_buffer = 0;
@@ -96,6 +97,7 @@ void init_renderer()
 	white = upload_material(Material{"", glm::vec4(1.f, 1.f, 1.f, 1.f)}, {create_white_texture()});
 	orange = upload_material(Material{"", glm::vec4(1.f, 0.5f, 0.f, 1.f)}, {create_white_texture()});
 	cyan = upload_material(Material{"", glm::vec4(0.f, 0.5f, 1.f, 1.f)}, {create_white_texture()});
+	blue = upload_material(Material{"", glm::vec4(0.f, 0.0f, 1.f, 1.f)}, {create_white_texture()});
 	
 	for (s32 i = 0; i < ARRAY_SIZE(wadinfo.editor.instance_3d_view_icons); i++) {
 		if (!wadinfo.editor.instance_3d_view_icons[i].offset.empty()) {
@@ -125,6 +127,7 @@ void shutdown_renderer()
 	white.texture.destroy();
 	orange.texture.destroy();
 	cyan.texture.destroy();
+	blue.texture.destroy();
 	
 	for (s32 i = 0; i < ARRAY_SIZE(wadinfo.editor.instance_3d_view_icons); i++) {
 		instance_icons[i].texture.destroy();
@@ -222,10 +225,16 @@ void draw_level(
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			draw_mesh(chunk.tfrags, lvl.tfrag_materials.data(), lvl.tfrag_materials.size(), glm::mat4(1.f));
 		}
+		
 		if (settings.draw_collision) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			for (const RenderMesh& mesh : chunk.collision) {
-				draw_mesh(mesh, chunk.collision_materials.data(), chunk.collision_materials.size(), glm::mat4(1.f));
+			draw_mesh(chunk.collision, chunk.collision_materials.data(), chunk.collision_materials.size(), glm::mat4(1.f));
+		}
+		
+		if (settings.draw_hero_collision) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			for (const RenderMesh& mesh : chunk.hero_collision) {
+				draw_mesh(mesh, &blue, 1, glm::mat4(1.f));
 			}
 		}
 	}

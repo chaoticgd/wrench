@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from asset_schema.wtf and is for version 28 of the asset format.
+This file was generated from asset_schema.wtf and is for version 29 of the asset format.
 
 ## Index
 
@@ -1133,7 +1133,8 @@ No attributes.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| mesh | The collision mesh itself. | Mesh | Yes | RAC/GC/UYA/DL |
+| mesh | The main collision mesh. | Mesh | Yes | RAC/GC/UYA/DL |
+| hero_groups | Collision meshes that will only effect Ratchet. Keep all vertices in a given group close together to optimise runtime performance. | Mesh\[\] | No | RAC/GC/UYA/DL |
 | materials | A mapping of the materials used by the mesh to collision ID numbers. | *Not yet documented.* | Yes | RAC/GC/UYA/DL |
 
 

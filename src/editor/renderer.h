@@ -65,6 +65,7 @@ struct RenderSettings
 	bool draw_grind_paths = true;
 	bool draw_areas = true;
 	bool draw_collision = false;
+	bool draw_hero_collision = false;
 	
 	bool draw_selected_instance_normals = false;
 	

@@ -30,6 +30,8 @@ Level::Level() {}
 
 void Level::read(LevelAsset& asset, Game g)
 {
+	// TODO: Refactor this mess.
+	
 	game = g;
 	m_asset = &asset;
 	m_instances_asset = &level_wad().get_gameplay().as<InstancesAsset>();
@@ -47,13 +49,37 @@ void Level::read(LevelAsset& asset, Game g)
 		const ChunkAsset& chunk_asset = chunk_collection.get_child(i).as<ChunkAsset>();
 		EditorChunk& chunk = chunks.emplace_back();
 		
-		const MeshAsset& collision_asset = chunk_asset.get_collision().as<CollisionAsset>().get_mesh();
-		std::string collision_xml = collision_asset.src().read_text_file();
+		const CollisionAsset& collision_asset = chunk_asset.get_collision().as<CollisionAsset>();
+		
+		const MeshAsset& collision_mesh_asset = chunk_asset.get_collision().as<CollisionAsset>().get_mesh();
+		std::string collision_xml = collision_mesh_asset.src().read_text_file();
 		ColladaScene collision_scene = read_collada((char*) collision_xml.data());
-		for (const Mesh& mesh : collision_scene.meshes) {
-			chunk.collision.emplace_back(upload_mesh(mesh, true));
+		const Mesh* collision_mesh = collision_scene.find_mesh(collision_mesh_asset.name());
+		if (collision_mesh) {
+			chunk.collision = upload_mesh(*collision_mesh, true);
 		}
 		chunk.collision_materials = upload_collada_materials(collision_scene.materials, {});
+		
+		std::vector<FileReference> hero_group_refs;
+		std::vector<std::string> hero_group_names;
+		collision_asset.get_hero_groups().for_each_logical_child_of_type<MeshAsset>([&](const MeshAsset& mesh) {
+			hero_group_refs.emplace_back(mesh.src());
+			hero_group_names.emplace_back(mesh.name());
+		});
+		
+		std::vector<std::unique_ptr<ColladaScene>> hero_group_owners;
+		std::vector<ColladaScene*> hero_group_scenes = read_collada_files(hero_group_owners, hero_group_refs);
+		for (size_t i = 0; i < hero_group_scenes.size(); i++) {
+			Mesh* mesh = hero_group_scenes[i]->find_mesh(hero_group_names[i]);
+			if (mesh) {
+				// Hero collision doesn't have a type, so make it all the same
+				// colour.
+				for (SubMesh& submesh : mesh->submeshes) {
+					submesh.material = 0;
+				}
+				chunk.hero_collision.emplace_back(upload_mesh(*mesh, true));
+			}
+		}
 		
 		const TfragsAsset& tfrags_asset = chunk_asset.get_tfrags();
 		

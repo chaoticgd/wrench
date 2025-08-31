@@ -37,17 +37,25 @@ on_load(Collision, []() {
 static void unpack_collision_asset(CollisionAsset& dest, InputStream& src, BuildConfig config)
 {
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
-	ColladaScene scene = read_collision(bytes);
-	std::vector<u8> collada = write_collada(scene);
+	CollisionOutput output = read_collision(bytes);
+	std::vector<u8> collada = write_collada(output.scene);
 	collada.push_back(0);
 	
 	MeshAsset& mesh = dest.mesh<MeshAsset>();
 	auto ref = mesh.file().write_text_file("collision.dae", (const char*) collada.data());
 	mesh.set_src(ref);
-	mesh.set_name(scene.meshes.at(0).name);
+	mesh.set_name(output.scene.meshes.at(0).name);
+	
+	CollectionAsset& hero_groups = dest.hero_groups();
+	s32 i = 0;
+	for (const std::string& mesh : output.hero_group_meshes) {
+		MeshAsset& group_mesh = hero_groups.child<MeshAsset>(stringf("%d", i++).c_str());
+		group_mesh.set_src(ref);
+		group_mesh.set_name(mesh);
+	}
 	
 	CollectionAsset& materials = dest.materials();
-	for (ColladaMaterial& material : scene.materials) {
+	for (ColladaMaterial& material : output.scene.materials) {
 		CollisionMaterialAsset& asset = materials.child<CollisionMaterialAsset>(material.name.c_str());
 		asset.set_name(material.name);
 		asset.set_id(material.collision_id);
@@ -114,8 +122,27 @@ void pack_level_collision(
 		}
 	}
 	
+	CollisionInput input;
+	input.main_scene = &scene;
+	input.main_mesh = mesh.name;
+	
+	std::vector<FileReference> hero_group_refs;
+	std::vector<std::string> hero_group_names;
+	src.get_hero_groups().for_each_logical_child_of_type<MeshAsset>([&](const MeshAsset& mesh) {
+		hero_group_refs.emplace_back(mesh.src());
+		hero_group_names.emplace_back(mesh.name());
+	});
+	
+	std::vector<std::unique_ptr<ColladaScene>> hero_group_owners;
+	std::vector<ColladaScene*> hero_group_scenes = read_collada_files(hero_group_owners, hero_group_refs);
+	for (size_t i = 0; i < hero_group_scenes.size(); i++) {
+		Mesh* mesh = hero_group_scenes[i]->find_mesh(hero_group_names[i]);
+		verify(mesh, "No mesh '%s' for hero collision group.", hero_group_names[i].c_str());
+		input.hero_groups.emplace_back(mesh);
+	}
+	
 	std::vector<u8> bytes;
-	write_collision(OutBuffer(bytes), scene, "combined");
+	write_collision(OutBuffer(bytes), input);
 	dest.write_v(bytes);
 }
 
