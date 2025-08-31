@@ -112,7 +112,8 @@ std::unique_ptr<InputStream> FileReference::open_binary_file_for_reading(fs::fil
 	return owner->open_binary_file_for_reading(*this, modified_time_dest);
 }
 
-std::string FileReference::read_text_file() const {
+std::string FileReference::read_text_file() const
+{
 	return owner->read_text_file(path);
 }
 

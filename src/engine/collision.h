@@ -31,17 +31,11 @@ struct CollisionOutput
 
 CollisionOutput read_collision(Buffer src);
 
-struct HeroCollisionGroupInfo
-{
-	ColladaScene* scene = nullptr;
-	std::string mesh;
-};
-
 struct CollisionInput
 {
 	const ColladaScene* main_scene;
 	std::string main_mesh;
-	std::vector<HeroCollisionGroupInfo> groups;
+	std::vector<const Mesh*> hero_groups;
 };
 
 void write_collision(OutBuffer dest, const CollisionInput& input);
