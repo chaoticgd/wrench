@@ -494,9 +494,9 @@ static CollisionOutput collision_to_scene(const CollisionOctants& octants, const
 		submesh.material = 256; // hero_group_collision
 		for (const HeroCollisionTriangle& triangle : group.triangles) {
 			Face& face = submesh.faces.emplace_back();
-			face.v0 = triangle.v0;
+			face.v0 = triangle.v2;
 			face.v1 = triangle.v1;
-			face.v2 = triangle.v2;
+			face.v2 = triangle.v0;
 			
 			verify(face.v0 < group.vertices.size() && face.v1 < group.vertices.size() && face.v2 < group.vertices.size(),
 				"Hero collision triangle references out of bounds vertex.");
@@ -660,14 +660,14 @@ static std::vector<HeroCollisionGroup> build_hero_collision_groups(const std::ve
 		for (const SubMesh& submesh : mesh->submeshes) {
 			for (const Face& face : submesh.faces) {
 				HeroCollisionTriangle& triangle = group.triangles.emplace_back();
-				triangle.v0 = face.v0;
+				triangle.v0 = face.v2;
 				triangle.v1 = face.v1;
-				triangle.v2 = face.v2;
+				triangle.v2 = face.v0;
 				if (face.is_quad()) {
 					HeroCollisionTriangle& triangle = group.triangles.emplace_back();
-					triangle.v0 = face.v2;
+					triangle.v0 = face.v0;
 					triangle.v1 = face.v3;
-					triangle.v2 = face.v0;
+					triangle.v2 = face.v2;
 				}
 			}
 		}
