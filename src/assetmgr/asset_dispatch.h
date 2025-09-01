@@ -45,6 +45,7 @@ class Asset;
 #define FMT_COLLECTION_PIF8 "texlist,pif,8,1,unswizzled"
 #define FMT_COLLECTION_PIF8_4MIPS "texlist,pif,8,4,unswizzled"
 #define FMT_COLLECTION_MATLIST_PIF8 "matlist,pif,8,1,unswizzled"
+#define FMT_COLLECTION_MATLIST_PIF8_4MIPS "matlist,pif,8,4,unswizzled"
 #define FMT_COLLECTION_SUBTITLES "subtitles"
 #define FMT_COLLECTION_MISSION_CLASSES "missionclasses"
 #define FMT_GLOBALWAD_NOMPEGS "nompegs"

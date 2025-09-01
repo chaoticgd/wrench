@@ -83,7 +83,7 @@ static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src
 static void unpack_texture_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint)
 {
 	s32 count = src.read<s32>(0);
-	verify(count < 0x1000, "texlist has too many elements and is probably corrupted.");
+	verify(count < 0x1000, "matlist has too many elements and is probably corrupted.");
 	src.seek(4);
 	std::vector<s32> offsets = src.read_multiple<s32>(count);
 	for (s32 i = 0; i < count; i++) {
@@ -204,7 +204,7 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 			}
 			
 			ByteRange textures_range{entry.texture_list_offset, end - entry.texture_list_offset};
-			unpack_asset(materials, src, textures_range, config, FMT_COLLECTION_PIF8_4MIPS);
+			unpack_asset(materials, src, textures_range, config, FMT_COLLECTION_MATLIST_PIF8_4MIPS);
 		}
 		
 		if (entry.class_offset != 0) {
@@ -253,7 +253,7 @@ static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src,
 				});
 				
 				if (material_count > 0) {
-					entry.texture_list_offset = pack_asset<ByteRange>(dest, moby.get_materials(), config, 0x10, FMT_COLLECTION_PIF8_4MIPS).offset;
+					entry.texture_list_offset = pack_asset<ByteRange>(dest, moby.get_materials(), config, 0x10, FMT_COLLECTION_MATLIST_PIF8_4MIPS).offset;
 				}
 			}
 			
