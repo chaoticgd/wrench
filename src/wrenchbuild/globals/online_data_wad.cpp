@@ -50,7 +50,7 @@ static void unpack_online_data_wad(OnlineDataWadAsset& dest, InputStream& src, B
 	CollectionAsset& moby_classes = dest.moby_classes(SWITCH_FILES);
 	for (s32 i = 0; i < ARRAY_SIZE(header.moby_classes); i++) {
 		MobyClassAsset& moby = moby_classes.foreign_child<MobyClassAsset>(i);
-		unpack_compressed_asset(moby.materials(), src, header.moby_classes[i].textures, config, FMT_COLLECTION_PIF8);
+		unpack_compressed_asset(moby.materials(), src, header.moby_classes[i].textures, config, FMT_COLLECTION_MATLIST_PIF8);
 		unpack_compressed_asset(moby, src, header.moby_classes[i].core, config, FMT_MOBY_CLASS_PHAT);
 	}
 }
@@ -68,7 +68,7 @@ static void pack_online_data_wad(OutputStream& dest, const OnlineDataWadAsset& s
 			const MobyClassAsset& moby = moby_classes.get_child(i).as<MobyClassAsset>();
 			header.moby_classes[i].core = pack_compressed_asset<ByteRange>(dest, moby.get_core(), config, 0x10, "moby_core", FMT_MOBY_CLASS_PHAT);
 			if (moby.has_materials()) {
-				header.moby_classes[i].textures = pack_compressed_asset<ByteRange>(dest, moby.get_materials(), config, 0x10, "textures", FMT_COLLECTION_PIF8);
+				header.moby_classes[i].textures = pack_compressed_asset<ByteRange>(dest, moby.get_materials(), config, 0x10, "textures", FMT_COLLECTION_MATLIST_PIF8);
 			}
 		}
 	}
