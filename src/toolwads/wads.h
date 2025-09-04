@@ -38,7 +38,8 @@ enum License
 	LICENSE_ZLIB = 12,
 	LICENSE_LIBZIP = 13,
 	LICENSE_IMGUI_CLUB = 14,
-	MAX_LICENSE = 15
+	LICENSE_PINE = 15,
+	MAX_LICENSE = 16
 };
 
 packed_struct(BuildWadHeader,
