@@ -51,53 +51,40 @@ static const Release RELEASES[] = {
 	{"scus_974.87", Game::DL, Region::US, "Ratchet: Deadlocked"} // us public beta
 };
 
-static std::pair<Game, const char*> GAME_SEARCH_PATTERNS[] = {
-	{Game::DL, "Deadlocked"},
-	{Game::UYA, "Up Your Arsenal"},
-	{Game::GC, "Going Commando"},
-	{Game::RAC, "Ratchet & Clank"}
-};
-
-Release identify_release(const IsoDirectory& root, InputStream& iso)
+Release identify_release(const std::string& elf_name)
 {
 	Release result;
-	// First check all of the known releases.
-	for (const IsoFileRecord& file : root.files) {
-		for (const Release& release : RELEASES) {
-			if (release.elf_name == file.name) {
-				result = release;
-				break;
-			}
+	for (const Release& release : RELEASES) {
+		if (release.elf_name == elf_name) {
+			result = release;
+			break;
 		}
 	}
-	if (result.game == Game::UNKNOWN) {
-		// Unknown build, try to identify it in a dirtier slower way.
-		for (const IsoFileRecord& record : root.files) {
-			if (record.size > 4) {
-				// Look for the boot ELF.
-				u8 magic[4] = {};
-				iso.seek(record.lba.bytes());
-				iso.read_n(magic, 4);
-				if (memcmp(magic, "\x7f\x45\x4c\x46", 4) == 0) {
-					iso.seek(record.lba.bytes());
-					std::vector<u8> elf = iso.read_multiple<u8>(record.size);
-					// Look for the names of the respective games in the boot ELF.
-					for (auto [game, pattern] : GAME_SEARCH_PATTERNS) {
-						for (s32 i = 0; i < (s32) elf.size() - strlen(pattern); i++) {
-							if (memcmp(&elf[i], pattern, strlen(pattern)) == 0) {
-								printf("Unknown build identified as %s.\n", game_to_string(game).c_str());
-								result.elf_name = record.name;
-								result.game = game;
-								result.name = "unknown";
-								break;
-							}
-						}
-						if (result.game != Game::UNKNOWN) {
-							break;
-						}
-					}
-				}
-			}
+	return result;
+}
+
+static std::string normalise_game_id(const std::string& game_id)
+{
+	std::string result;
+	for (char c : game_id) {
+		if (c >= 'A' && c <= 'Z') {
+			result.push_back(c + ('a' - 'A'));
+		} else if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+			result.push_back(c);
+		}
+	}
+	return result;
+}
+
+Release identify_release_fuzzy(const std::string& game_id)
+{
+	std::string normal_game_id = normalise_game_id(game_id);
+	
+	Release result;
+	for (const Release& release : RELEASES) {
+		if (normalise_game_id(release.elf_name) == normal_game_id) {
+			result = release;
+			break;
 		}
 	}
 	return result;

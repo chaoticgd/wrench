@@ -20,6 +20,7 @@
 
 #include <core/util.h>
 #include <core/timer.h>
+#include <core/release.h>
 #include <core/stream.h>
 #include <core/stdout_thread.h>
 #include <assetmgr/asset.h>
@@ -40,7 +41,6 @@
 #include <wrenchbuild/tests.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
-#include <wrenchbuild/release.h>
 
 enum ArgFlags : u32
 {
@@ -88,6 +88,8 @@ static void pack(
 	BuildConfig config,
 	const std::string& hint,
 	const char* underlay_path);
+static const IsoFileRecord* find_boot_elf(const IsoDirectory& root, InputStream& iso);
+static Release identify_release_fallback(const IsoFileRecord& elf, InputStream& iso);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_tfrags(const fs::path& input_path, const fs::path& output_path, Game game);
@@ -358,7 +360,15 @@ static void unpack(
 		
 		if (memcmp(identifier.data(), "CD001", 5) == 0) {
 			IsoFilesystem fs = read_iso_filesystem(stream);
-			Release release = identify_release(fs.root, stream);
+			
+			const IsoFileRecord* boot_elf = find_boot_elf(fs.root, stream);
+			verify(boot_elf, "Not boot ELF found.");
+			
+			Release release = identify_release(boot_elf->name);
+			if (release.game == Game::UNKNOWN) {
+				// Unknown build, try to identify it in a dirtier slower way.
+				release = identify_release_fallback(*boot_elf, stream);
+			}
 			
 			std::string game_str = game_to_string(release.game);
 			std::string region_str = region_to_string(release.region);
@@ -535,6 +545,53 @@ static void pack(
 	pack_asset_impl(iso, nullptr, nullptr, wad, config, hint.c_str());
 	
 	printf("[100%%] Done!\n");
+}
+
+static const IsoFileRecord* find_boot_elf(const IsoDirectory& root, InputStream& iso)
+{
+	for (const IsoFileRecord& record : root.files) {
+		if (record.size > 4) {
+			u8 magic[4] = {};
+			iso.seek(record.lba.bytes());
+			iso.read_n(magic, 4);
+			if (memcmp(magic, "\x7f\x45\x4c\x46", 4) == 0) {
+				return &record;
+			}
+		}
+	}
+	
+	return nullptr;
+}
+
+static Release identify_release_fallback(const IsoFileRecord& elf, InputStream& iso)
+{
+	static std::pair<Game, const char*> GAME_SEARCH_PATTERNS[] = {
+		{Game::DL, "Deadlocked"},
+		{Game::UYA, "Up Your Arsenal"},
+		{Game::GC, "Going Commando"},
+		{Game::RAC, "Ratchet & Clank"}
+	};
+	
+	std::vector<u8> elf_bytes = iso.read_multiple<u8>(elf.lba.bytes(), elf.size);
+	
+	// Look for the names of the respective games in the boot ELF.
+	Release result;
+	for (auto [game, pattern] : GAME_SEARCH_PATTERNS) {
+		for (s32 i = 0; i < (s32) elf_bytes.size() - strlen(pattern); i++) {
+			if (memcmp(&elf_bytes[i], pattern, strlen(pattern)) == 0) {
+				printf("Unknown build identified as %s.\n", game_to_string(game).c_str());
+				result.elf_name = elf.name;
+				result.game = game;
+				result.name = "unknown";
+				break;
+			}
+		}
+		if (result.game != Game::UNKNOWN) {
+			break;
+		}
+	}
+	
+	return result;
 }
 
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset)
