@@ -19,6 +19,7 @@
 #ifndef TRAINER_TRAINER_H
 #define TRAINER_TRAINER_H
 
+#include <core/build_config.h>
 #include <trainer/remote.h>
 
 class Trainer
@@ -29,6 +30,8 @@ public:
 	bool update(f32 delta_time);
 	
 private:
+	std::string m_game_id;
+	Game m_game;
 	remote::Object m_level;
 	s32 m_level_backup = -1;
 };

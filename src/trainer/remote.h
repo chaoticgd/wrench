@@ -30,6 +30,8 @@ void connect();
 void update();
 void disconnect();
 
+const char* game_id();
+
 class Object
 {
 public:

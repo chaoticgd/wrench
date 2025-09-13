@@ -113,6 +113,15 @@ void disconnect()
 	s_ipc.reset(nullptr);
 }
 
+const char* game_id()
+{
+	static const char* game_id = nullptr;
+	if (game_id != nullptr)
+		delete[] game_id;
+	game_id = s_ipc->GetGameID();
+	return game_id;
+}
+
 static const char* ipc_status_to_string(PINE::PCSX2::IPCStatus status)
 {
 	switch (status)

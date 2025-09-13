@@ -18,10 +18,13 @@
 
 #include "trainer.h"
 
+#include <core/release.h>
 #include <gui/gui.h>
 
 Trainer::Trainer()
-	: m_level(0x0015ed84, 4)
+	: m_game_id(remote::game_id())
+	, m_game(identify_release_fuzzy(m_game_id).game)
+	, m_level(0x0015ed84, 4)
 {
 	m_level.sync();
 	m_level.read(0, (u8*) &m_level_backup, 4);
@@ -33,12 +36,17 @@ bool Trainer::update(f32 delta_time)
 	m_level.sync();
 	m_level.read(0, (u8*) &level, 4);
 	
-	if (level != m_level_backup) {
-		// We need to reset on level change.
-		//return false;
+	const char* game_id = remote::game_id();
+	if (game_id != m_game_id || level != m_level_backup) {
+		// We need to reset.
+		return false;
 	}
 	
 	if (ImGui::BeginMainMenuBar()) {
+		ImGui::Text("SERIAL: %s", game_id);
+		ImGui::SameLine();
+		ImGui::Text("GAME: %s", game_to_string(m_game).c_str());
+		ImGui::SameLine();
 		ImGui::Text("LEVEL: %d", m_level_backup);
 		ImGui::EndMainMenuBar();
 	}
