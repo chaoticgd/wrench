@@ -83,6 +83,12 @@ packed_struct(MemcardWadHeader,
 	/* 0xc */ SectorRange types[4];
 )
 
+packed_struct(TrainerWadHeader,
+	/* 0x0 */ s32 header_size;
+	/* 0x4 */ Sector32 sector;
+	/* 0x8 */ SectorRange types[4];
+)
+
 packed_struct(ToolWadInfo,
 	BuildWadHeader build;
 	GuiWadHeader gui;
@@ -107,6 +113,7 @@ struct WadPaths
 	std::string underlay;
 	std::string overlay;
 	std::string memcard;
+	std::string trainer;
 };
 
 WadPaths find_wads(const char* bin_path);

@@ -89,9 +89,9 @@ class Shared {
      * Socket handler. @n
      * On windows it uses the type SOCKET, on linux int.
      */
-    SOCKET sock;
+    SOCKET sock = INVALID_SOCKET;
 #else
-    int sock;
+    int sock = -1;
 #endif
 
     /**
@@ -1117,11 +1117,35 @@ class Shared {
         // We clean up winsock.
 #ifdef _WIN32
         WSACleanup();
+#else
+        if (sock > -1) {
+            close_portable(sock);
+        }
 #endif
         delete[] ret_buffer;
         delete[] ipc_buffer;
         delete[] batch_arg_place;
     }
+
+    /**
+     * Disable the copy constructor.
+     */
+    Shared(const Shared& rhs) = delete;
+
+    /**
+     * Disable the move constructor.
+     */
+    Shared(Shared&& rhs) = delete;
+
+    /**
+     * Disable the copy assignment operator.
+     */
+    Shared& operator=(const Shared& rhs) = delete;
+
+    /**
+     * Disable the move assignment operator.
+     */
+    Shared& operator=(Shared&& rhs) = delete;
 };
 
 class PCSX2 : public Shared {

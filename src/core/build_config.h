@@ -26,6 +26,11 @@ enum class Game : u8
 	UNKNOWN = 0, RAC = 1, GC = 2, UYA = 3, DL = 4
 };
 
+enum
+{
+	MAX_GAME = 5
+};
+
 enum class Region : u8
 {
 	UNKNOWN = 0, US = 1, EU = 2, JAPAN = 3

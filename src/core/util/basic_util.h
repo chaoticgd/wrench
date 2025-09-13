@@ -138,6 +138,8 @@ s32 bit_range(u64 val, s32 lo, s32 hi);
 
 std::string to_snake_case(const char* src);
 
+#define ALIGN(value, alignment) ((value) + (-(value) & ((alignment) - 1)))
+
 s32 align32(s32 value, s32 alignment);
 s64 align64(s64 value, s64 alignment);
 

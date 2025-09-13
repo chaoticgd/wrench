@@ -59,11 +59,13 @@ set(RELEASE_FILES
 	$<TARGET_FILE:wrencheditor>
 	$<TARGET_FILE:wrenchlauncher>
 	$<TARGET_FILE:wrenchsaveeditor>
+	$<TARGET_FILE:wrenchtrainer>
 	$<TARGET_FILE:wrenchvis>
 	"${CMAKE_BINARY_DIR}/editor.wad"
 	"${CMAKE_BINARY_DIR}/gui.wad"
 	"${CMAKE_BINARY_DIR}/launcher.wad"
 	"${CMAKE_BINARY_DIR}/memcard.wad"
+	"${CMAKE_BINARY_DIR}/trainer.wad"
 )
 set(RELEASE_DOCS_DIRECTORY "${CMAKE_SOURCE_DIR}/docs")
 set(RELEASE_LICENSES_DIRECTORY "${CMAKE_SOURCE_DIR}/data/licenses")

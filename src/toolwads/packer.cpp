@@ -28,6 +28,7 @@ static void pack_launcher_wad();
 static SectorRange pack_oobe_wad(OutputStream& dest);
 static void pack_editor_wad();
 static void pack_memcard_wad();
+static void pack_trainer_wad();
 static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path);
 static SectorRange pack_file(OutputStream& dest, const char* src_path);
 static SectorRange pack_compressed_image(OutputStream& dest, const char* src_path);
@@ -65,6 +66,10 @@ int main(int argc, char** argv)
 	printf("Packing memcard wad...\n");
 	fflush(stdout);
 	pack_memcard_wad();
+	
+	printf("Packing trainer wad...\n");
+	fflush(stdout);
+	pack_trainer_wad();
 	
 	return 0;
 }
@@ -290,6 +295,24 @@ static void pack_memcard_wad()
 	
 	wad.pad(SECTOR_SIZE, 0);
 	wad.write<MemcardWadHeader>(0, header);
+}
+
+static void pack_trainer_wad()
+{
+	FileOutputStream wad;
+	verify_fatal(wad.open(build_dir + "/trainer.wad"));
+	
+	TrainerWadHeader header = {};
+	header.header_size = sizeof(header);
+	wad.alloc<TrainerWadHeader>();
+	
+	header.types[0] = pack_file(wad, "data/trainer/trainer_types_rac.h");
+	header.types[1] = pack_file(wad, "data/trainer/trainer_types_gc.h");
+	header.types[2] = pack_file(wad, "data/trainer/trainer_types_uya.h");
+	header.types[3] = pack_file(wad, "data/trainer/trainer_types_dl.h");
+	
+	wad.pad(SECTOR_SIZE, 0);
+	wad.write<TrainerWadHeader>(0, header);
 }
 
 // *****************************************************************************

@@ -27,6 +27,7 @@ add_custom_command(
 		"${CMAKE_BINARY_DIR}/launcher.wad"
 		"${CMAKE_BINARY_DIR}/editor.wad"
 		"${CMAKE_BINARY_DIR}/memcard.wad"
+		"${CMAKE_BINARY_DIR}/trainer.wad"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	COMMENT "Generating tool wads"
 )
@@ -47,12 +48,14 @@ add_custom_command(
 		"${CMAKE_BINARY_DIR}/launcher.wad"
 		"${CMAKE_BINARY_DIR}/editor.wad"
 		"${CMAKE_BINARY_DIR}/memcard.wad"
+		"${CMAKE_BINARY_DIR}/trainer.wad"
 	DEPENDS header2cpp
 		"${CMAKE_BINARY_DIR}/build.wad"
 		"${CMAKE_BINARY_DIR}/gui.wad"
 		"${CMAKE_BINARY_DIR}/launcher.wad"
 		"${CMAKE_BINARY_DIR}/editor.wad"
 		"${CMAKE_BINARY_DIR}/memcard.wad"
+		"${CMAKE_BINARY_DIR}/trainer.wad"
 	OUTPUT ${CMAKE_BINARY_DIR}/_generated_wadinfo.cpp
 	COMMENT "Generating _generated_wadinfo.cpp"
 )
