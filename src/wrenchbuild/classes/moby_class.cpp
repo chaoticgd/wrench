@@ -31,6 +31,13 @@ static void pack_moby_class(
 static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfig config);
 static void unpack_mesh_only_class(
 	MobyClassAsset& dest, InputStream& src, f32 scale, bool animated, BuildConfig config);
+static void unpack_moby_mesh(
+	GLTF::ModelFile& gltf,
+	GLTF::Scene& scene,
+	const std::vector<MOBY::MobyPacket>& packets,
+	f32 scale,
+	bool animated,
+	const std::string name);
 static void pack_mesh_only_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config);
 static s32 count_materials(const CollectionAsset& materials);
 static void unpack_materials(CollectionAsset& materials, GLTF::ModelFile& gltf);
@@ -121,21 +128,15 @@ static void unpack_phat_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	
 	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
 	
-	scene->nodes.emplace_back((s32) gltf.nodes.size());
-	GLTF::Node& high_lod_nodes = gltf.nodes.emplace_back();
-	high_lod_nodes.name = "moby";
-	high_lod_nodes.mesh = (s32) gltf.meshes.size();
+	bool animated = data.animation.joints.size() > 0;
 	
-	std::vector<GLTF::Mesh> high_lod_packets = MOBY::recover_packets(data.mesh.high_lod, -1, data.scale, data.animation.joints.size() > 0);
-	gltf.meshes.emplace_back(MOBY::merge_packets(high_lod_packets, "high_lod_mesh"));
+	unpack_moby_mesh(gltf, *scene, data.mesh.high_lod, data.scale, animated, "moby");
+	unpack_moby_mesh(gltf, *scene, data.mesh.low_lod, data.scale, animated, "moby_low_lod");
 	
-	scene->nodes.emplace_back((s32) gltf.nodes.size());
-	GLTF::Node& low_lod_nodes = gltf.nodes.emplace_back();
-	low_lod_nodes.name = "moby_low_lod";
-	low_lod_nodes.mesh = (s32) gltf.meshes.size();
-	
-	std::vector<GLTF::Mesh> low_lod_packets = MOBY::recover_packets(data.mesh.low_lod, -1, data.scale, data.animation.joints.size() > 0);
-	gltf.meshes.emplace_back(MOBY::merge_packets(low_lod_packets, "low_lod_mesh"));
+	for (size_t i = 0; i < data.bangles.size(); i++) {
+		unpack_moby_mesh(gltf, *scene, data.bangles[i].high_lod, data.scale, animated, stringf("bangle_%zu", i));
+		unpack_moby_mesh(gltf, *scene, data.bangles[i].low_lod, data.scale, animated, stringf("bangle_%zu_low_lod", i));
+	}
 	
 	if (!g_asset_unpacker.dump_binaries && dest.has_materials()) {
 		unpack_materials(dest.get_materials(), gltf);
@@ -160,21 +161,8 @@ static void unpack_mesh_only_class(
 	
 	auto [gltf, scene] = GLTF::create_default_scene(get_versioned_application_name("Wrench Build Tool"));
 	
-	scene->nodes.emplace_back((s32) gltf.nodes.size());
-	GLTF::Node& moby_node = gltf.nodes.emplace_back();
-	moby_node.name = "moby";
-	moby_node.mesh = (s32) gltf.meshes.size();
-	
-	std::vector<GLTF::Mesh> moby_packets = MOBY::recover_packets(meshes.high_lod, -1, scale, animated);
-	gltf.meshes.emplace_back(MOBY::merge_packets(moby_packets, "moby_mesh"));
-	
-	scene->nodes.emplace_back((s32) gltf.nodes.size());
-	GLTF::Node& moby_low_lod_node = gltf.nodes.emplace_back();
-	moby_low_lod_node.name = "moby_low_lod";
-	moby_low_lod_node.mesh = (s32) gltf.meshes.size();
-	
-	std::vector<GLTF::Mesh> moby_low_lod_packets = MOBY::recover_packets(meshes.low_lod, -1, scale, animated);
-	gltf.meshes.emplace_back(MOBY::merge_packets(moby_low_lod_packets, "moby_low_lod_mesh"));
+	unpack_moby_mesh(gltf, *scene, meshes.high_lod, scale, animated, "moby");
+	unpack_moby_mesh(gltf, *scene, meshes.low_lod, scale, animated, "moby_low_lod");
 	
 	if (!g_asset_unpacker.dump_binaries && dest.has_materials()) {
 		unpack_materials(dest.get_materials(), gltf);
@@ -195,6 +183,23 @@ static void unpack_mesh_only_class(
 	//moby_low_lod_mesh.set_src(ref);
 	//
 	//core.set_scale(scale);
+}
+
+static void unpack_moby_mesh(
+	GLTF::ModelFile& gltf,
+	GLTF::Scene& scene,
+	const std::vector<MOBY::MobyPacket>& packets,
+	f32 scale,
+	bool animated,
+	const std::string name)
+{
+	scene.nodes.emplace_back((s32) gltf.nodes.size());
+	GLTF::Node& high_lod_node = gltf.nodes.emplace_back();
+	high_lod_node.name = name;
+	high_lod_node.mesh = (s32) gltf.meshes.size();
+	
+	std::vector<GLTF::Mesh> high_lod_packets = MOBY::recover_packets(packets, -1, scale, animated);
+	gltf.meshes.emplace_back(MOBY::merge_packets(high_lod_packets, stringf("%s_mesh", name.c_str())));
 }
 
 static void pack_mesh_only_class(OutputStream& dest, const MobyClassAsset& src, BuildConfig config)
