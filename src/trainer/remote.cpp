@@ -19,6 +19,8 @@
 #include "remote.h"
 
 #include <map>
+
+#define NOMINMAX
 #include <pine.h>
 
 namespace remote {

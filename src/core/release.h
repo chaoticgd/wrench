@@ -19,8 +19,8 @@
 #ifndef CORE_RELEASE_H
 #define CORE_RELEASE_H
 
+#include <core/build_config.h>
 #include <core/util.h>
-#include <iso/iso_filesystem.h>
 
 struct Release
 {
