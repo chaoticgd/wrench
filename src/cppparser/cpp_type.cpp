@@ -250,7 +250,7 @@ void layout_cpp_type(CppType& type, std::map<std::string, CppType>& types, const
 					offset = field.offset + field.size;
 				}
 			}
-			type.size = align32(offset, type.alignment);
+			type.size = std::max(align32(offset, type.alignment), 1);
 			break;
 		}
 		case CPP_TYPE_NAME: {

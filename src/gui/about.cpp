@@ -72,6 +72,7 @@ static const gui::Page LICENSE_PAGES[] = {
 	{"libzip", gen_license_page<LICENSE_LIBZIP>()},
 	{"nativefiledialog", gen_license_page<LICENSE_NATIVEFILEDIALOG>()},
 	{"nlohmanjson", gen_license_page<LICENSE_NLOHMANJSON>()},
+	{"PINE", gen_license_page<LICENSE_PINE>()},
 	{"RapidXML", gen_license_page<LICENSE_RAPIDXML>()},
 	{"zlib", gen_license_page<LICENSE_ZLIB>()}
 };

@@ -38,7 +38,8 @@ enum License
 	LICENSE_ZLIB = 12,
 	LICENSE_LIBZIP = 13,
 	LICENSE_IMGUI_CLUB = 14,
-	MAX_LICENSE = 15
+	LICENSE_PINE = 15,
+	MAX_LICENSE = 16
 };
 
 packed_struct(BuildWadHeader,
@@ -82,6 +83,12 @@ packed_struct(MemcardWadHeader,
 	/* 0xc */ SectorRange types[4];
 )
 
+packed_struct(TrainerWadHeader,
+	/* 0x0 */ s32 header_size;
+	/* 0x4 */ Sector32 sector;
+	/* 0x8 */ SectorRange types[4];
+)
+
 packed_struct(ToolWadInfo,
 	BuildWadHeader build;
 	GuiWadHeader gui;
@@ -106,6 +113,7 @@ struct WadPaths
 	std::string underlay;
 	std::string overlay;
 	std::string memcard;
+	std::string trainer;
 };
 
 WadPaths find_wads(const char* bin_path);

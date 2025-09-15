@@ -105,3 +105,6 @@ add_subdirectory(catch2 EXCLUDE_FROM_ALL)
 add_library(imguizmo STATIC
 	imguizmo/ImGuizmo.cpp
 )
+
+# PINE
+add_subdirectory(pine EXLCUDE_FROM_ALL)

@@ -16,11 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCHBUILD_RELEASE_H
-#define WRENCHBUILD_RELEASE_H
+#ifndef CORE_RELEASE_H
+#define CORE_RELEASE_H
 
+#include <core/build_config.h>
 #include <core/util.h>
-#include <iso/iso_filesystem.h>
 
 struct Release
 {
@@ -30,6 +30,7 @@ struct Release
 	const char* name;
 };
 
-Release identify_release(const IsoDirectory& root, InputStream& iso);
+Release identify_release(const std::string& elf_name);
+Release identify_release_fuzzy(const std::string& game_id);
 
 #endif

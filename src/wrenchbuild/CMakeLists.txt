@@ -7,7 +7,6 @@ add_executable(wrenchbuild
 	tests.cpp
 	asset_unpacker.cpp
 	asset_packer.cpp
-	release.cpp
 	classes/moby_class.cpp
 	classes/shrub_class.cpp
 	classes/tie_class.cpp

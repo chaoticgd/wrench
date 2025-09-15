@@ -1,0 +1,5 @@
+add_library(pine INTERFACE)
+target_include_directories(pine INTERFACE src)
+if(WIN32)
+	target_link_libraries(pine INTERFACE ws2_32)
+endif()
