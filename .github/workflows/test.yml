@@ -17,6 +17,7 @@ jobs:
         sys: 
           - { os: windows-latest, shell: pwsh }
           - { os: ubuntu-latest,  shell: bash }
+          - { os: macos-latest,   shell: bash }
 
     steps:
     - name: Checkout
@@ -24,12 +25,25 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Install Dependencies
+    - name: Install Ubuntu Dependencies
       if: ${{ matrix.sys.os == 'ubuntu-latest' }}
       run: sudo apt update && sudo apt install extra-cmake-modules libwayland-dev libxkbcommon-dev wayland-protocols xorg-dev zenity
 
-    - name: Configure CMake
+    - name: Install MacOS Dependencies
+      if: ${{ matrix.sys.os == 'macos-latest' }}
+      run: brew update && brew install cmake libpng zlib pkg-config
+
+    - name: Configure Ubuntu CMake
+      if: ${{ matrix.sys.os == 'ubuntu-latest' }}
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Configure Windows CMake
+      if: ${{ matrix.sys.os == 'windows-latest' }}
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Configure MacOS CMake
+      if: ${{ matrix.sys.os == 'macos-latest' }}
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DPNG_ARM_NEON=off
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel 2
