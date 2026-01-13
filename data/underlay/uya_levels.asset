@@ -32,6 +32,7 @@ Level uya.levels.33 { category: "Singleplayer"    name: "Vid-Comic 2" }
 Level uya.levels.34 { category: "Singleplayer"    name: "Vid-Comic 3" }
 Level uya.levels.35 { category: "Singleplayer"    name: "Vid-Comic 5" }
 Level uya.levels.36 { category: "Singleplayer"    name: "Vid-Comic 1 Special Edition" }
+Level uya.levels.38 { category: "Multiplayer"     name: "Multiplayer Menu Audio" }
 Level uya.levels.39 { category: "Multiplayer"     name: "Multiplayer Menu" }
 Level uya.levels.40 { category: "Multiplayer"     name: "Bakisi Isles" }
 Level uya.levels.41 { category: "Multiplayer"     name: "Hoven Gorge" }
