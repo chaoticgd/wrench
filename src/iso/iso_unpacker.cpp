@@ -38,7 +38,12 @@ static void unpack_ps2_logo(BuildAsset& build, InputStream& src, BuildConfig con
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd);
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game);
 static std::string parse_system_cnf(BuildAsset& build, const std::string& src, const IsoDirectory& root);
-static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset& levels, const table_of_contents& toc, InputStream& src);
+static void enumerate_level_wads(
+	std::vector<UnpackInfo>& dest,
+	CollectionAsset& levels,
+	const table_of_contents& toc,
+	InputStream& src,
+	Game game);
 static void enumerate_extra_files(std::vector<UnpackInfo>& dest, CollectionAsset& files, fs::path out, const IsoDirectory& dir, InputStream& src, const std::string& boot_elf);
 static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc);
 
@@ -86,7 +91,7 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 	verify(boot_elf_found, "Failed to find boot ELF '%s'.", boot_elf.c_str());
 	
 	enumerate_global_wads(files, dest, toc, src, config.game());
-	enumerate_level_wads(files, dest.levels(SWITCH_FILES), toc, src);
+	enumerate_level_wads(files, dest.levels(SWITCH_FILES), toc, src, config.game());
 	enumerate_extra_files(files, dest.files(SWITCH_FILES), "", filesystem.root, src, boot_elf);
 	
 	// The reported completion percentage is based on how far through the file
@@ -264,14 +269,22 @@ static void enumerate_level_wads(
 	std::vector<UnpackInfo>& dest,
 	CollectionAsset& levels,
 	const table_of_contents& toc,
-	InputStream& src)
+	InputStream& src,
+	Game game)
 {
 	for (s32 i = 0; i < (s32) toc.levels.size(); i++) {
 		const LevelInfo& level = toc.levels[i];
 		
-		if (level.level.has_value()) {
-			verify_fatal(level.level->header.size() >= 0xc);
-			s32 id = *(s32*) &level.level->header[8];
+		if (level.level.has_value() || level.audio.has_value() || level.scene.has_value()) {
+			s32 id;
+			if (level.level.has_value()) {
+				verify_fatal(level.level->header.size() >= 0xc);
+				id = *(s32*) &level.level->header[8];
+			} else {
+				verify(game == Game::UYA && i == 38,
+					"Level %d doesn't have a level WAD.");
+				id = 38;
+			}
 			
 			std::string path = generate_level_asset_path(id, levels);
 			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(path, true, id);
