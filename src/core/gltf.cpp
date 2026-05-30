@@ -1844,7 +1844,7 @@ template <typename T>
 static void set_mat_opt(Json& dest, const char* property, const Opt<T>& value)
 {
 	if (value.has_value()) {
-		Json& array = dest["property"];
+		Json& array = dest[property];
 		array = Json::array();
 		for (s32 i = 0; i < T::length(); i++) {
 			for (s32 j = 0; j < T::col_type::length(); j++) {
