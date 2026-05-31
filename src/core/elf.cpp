@@ -313,6 +313,22 @@ bool fill_in_elf_headers(ElfFile& elf, const ElfFile& donor)
 		section.header.flags = donor_section.header.flags;
 		section.header.addralign = donor_section.header.addralign;
 		section.header.entsize = donor_section.header.entsize;
+
+		// The "patch.data" section in the Deadlocked boot ELF and the level
+		// overlays has a section type of MIPS_REGINFO. Unfortunately, this
+		// causes modern versions of GNU BFD (as is used by objdump, etc) to
+		// refuse to properly parse the file because it only accepts sections
+		// of that type if they're called ".reginfo". In particular, objdump
+		// would report the architecture of the file as "UNKNOWN!" and some
+		// some other tools would refuse to work with it. To get around this we
+		// just change the type of the section to PROGBITS.
+		//
+		// See:
+		//   https://sourceware.org/git/?p=binutils-gdb.git;a=blob;f=bfd/elfcode.h;h=9c65852e103fdff23ba8ea60f0d976099115f4e1;hb=7adf9fa6b1ccb3c70f86cb630368b9d3dffcf3aa#l880
+		//   https://sourceware.org/git/?p=binutils-gdb.git;a=blob;f=bfd/elf.c;h=bde7414ee216a4b553619271a6af3c68bb83c624;hb=7adf9fa6b1ccb3c70f86cb630368b9d3dffcf3aa#l2980
+		//   https://sourceware.org/git/?p=binutils-gdb.git;a=blob;f=bfd/elfxx-mips.c;h=a171af59bf8b941b68e02b4ae03653c72ef8b4cc;hb=7adf9fa6b1ccb3c70f86cb630368b9d3dffcf3aa#l7564
+		if (section.header.type == SHT_MIPS_REGINFO && section.name != ".reginfo")
+			section.header.type = SHT_PROGBITS;
 	}
 	
 	elf.segments = donor.segments;
