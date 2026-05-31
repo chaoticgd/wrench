@@ -376,7 +376,7 @@ extern const ElfFile DONOR_DL_BOOT_ELF_HEADERS = {
 		{".text"      ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  64, 0}},
 		{"patch.data" ,  0, {0, SHT_MIPS_REGINFO,  AX, 0, 0, 0, 0, 0,   4, 1}},
 		{"net.text"   ,  1, {0, SHT_PROGBITS    , WAX, 0, 0, 0, 0, 0,  16, 0}},
-		{"net.nostomp",  1, {0, SHT_PROGBITS    , WAX, 0, 0, 0, 0, 0,   8, 0}}
+		{"net.nostomp",  1, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,   8, 0}}
 	},
 	{
 		// Type   Of VA PA FS MS Flags               Align
