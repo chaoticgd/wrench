@@ -42,7 +42,8 @@ void connect()
 		s_ipc = std::make_unique<PINE::PCSX2>();
 		
 		// Throw if we're not connected.
-		s_ipc->Status<false>();
+		PINE::PCSX2::EmuStatus status = s_ipc->Status<false>();
+		verify(status != PINE::PCSX2::Shutdown, "Failed to connect (game not running).");
 	} catch (PINE::PCSX2::IPCStatus status) {
 		verify_not_reached("Failed to connect (%s).", ipc_status_to_string(status));
 	}
@@ -120,7 +121,11 @@ const char* game_id()
 	static const char* game_id = nullptr;
 	if (game_id != nullptr)
 		delete[] game_id;
-	game_id = s_ipc->GetGameID();
+	try {
+		game_id = s_ipc->GetGameID();
+	} catch(PINE::PCSX2::IPCStatus status) {
+		verify_not_reached("Failed to check game ID (%s).", ipc_status_to_string(status));
+	}
 	return game_id;
 }
 
