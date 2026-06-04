@@ -43,41 +43,44 @@ int main(int argc, char** argv)
 	
 	while (!glfwWindowShouldClose(window)) {
 		// Connect to the emulator.
+		bool connected = false;
 		try {
 			remote::connect();
+			connected = true;
 		} catch (const RuntimeError& error) {
 			s_last_error = error.message;
 			wait_one_second(window);
-			continue;
 		}
-		
-		// We can start creating remote objects now.
-		try {
-			s_trainer = std::make_unique<Trainer>();
-		} catch (const RuntimeError& error) {
-			fprintf(stderr, "error: %s\n", error.message.c_str());
-			s_last_error = error.message;
-			wait_one_second(window);
-			s_should_disconnect = true;
-		}
-		
-		// Main loop.
-		while (!s_should_disconnect && !glfwWindowShouldClose(window)) {
+
+		if (connected) {
+			// We can start creating remote objects now.
 			try {
-				remote::update();
+				s_trainer = std::make_unique<Trainer>();
 			} catch (const RuntimeError& error) {
 				fprintf(stderr, "error: %s\n", error.message.c_str());
 				s_last_error = error.message;
-				break;
+				wait_one_second(window);
+				s_should_disconnect = true;
 			}
-			gui::run_frame(window, [](f32 delta_time) {
-				s_should_disconnect = s_trainer->update(delta_time);
-			});
+
+			// Main loop.
+			while (!s_should_disconnect && !glfwWindowShouldClose(window)) {
+				try {
+					remote::update();
+				} catch (const RuntimeError& error) {
+					fprintf(stderr, "error: %s\n", error.message.c_str());
+					s_last_error = error.message;
+					break;
+				}
+				gui::run_frame(window, [](f32 delta_time) {
+					s_should_disconnect = !s_trainer->update(delta_time);
+				});
+			}
+
+			// We must destroy all remote objects before disconnecting.
+			s_trainer.reset(nullptr);
+			s_should_disconnect = false;
 		}
-	
-		// We must destroy all remote objects before disconnecting.
-		s_trainer.reset(nullptr);
-		s_should_disconnect = false;
 		
 		// Disconnect from the emulator.
 		try {

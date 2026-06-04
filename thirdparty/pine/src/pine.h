@@ -290,7 +290,8 @@ class Shared {
 
         sock = socket(AF_UNIX, SOCK_STREAM, 0);
         server.sun_family = AF_UNIX;
-        strcpy(server.sun_path, SOCKET_NAME.c_str());
+        strncpy(server.sun_path, SOCKET_NAME.c_str(), sizeof(server.sun_path));
+        server.sun_path[sizeof(server.sun_path) - 1] = '\0';
 
         if (connect(sock, (struct sockaddr *)&server,
                     sizeof(struct sockaddr_un)) < 0) {
