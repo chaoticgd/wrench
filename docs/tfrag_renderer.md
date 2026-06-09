@@ -2,7 +2,7 @@
 
 The tfrag renderer is used to draw most of the large non-instanced geometry in the games. It was created at Naughty Dog for the Jak & Daxter games before being ported for use in Ratchet & Clank. Each level contains a single world space tfrag model in addition to tfrag models for each of the loaded chunks.
 
-Tfrag models are constructed from patches of faces called tfaces (tesselating faces), which can be reduced in quality in a predetermined way to produce lower LOD versions of a model. For example, a 4x4 patch of quads may be reduced to a 2x2 patch of quads and then to just a single quad. The different LOD levels are converted to triangle strips and stored such that data is not unnecessarily duplicated between LOD levels. This system also facilitates smooth interpolation between the different LOD levels and prevents holes in geometry from forming at LOD boundaries.
+Tfrag models are constructed from patches of faces called tfaces, which can be reduced in quality in a predetermined way to produce lower LOD versions of a model. For example, a 4x4 patch of quads may be reduced to a 2x2 patch of quads and then to just a single quad. The different LOD levels are converted to triangle strips and stored such that data is not unnecessarily duplicated between LOD levels. This system also facilitates smooth interpolation between the different LOD levels and prevents holes in geometry from forming at LOD boundaries.
 
 Each tfrag model is broken up into individual tfrags based on VU1 memory constraints, stripping constraints, and vertex positions. Each tfrag has 3 different LOD levels. LOD 0 is the highest quality, and LOD 2 is the lowest quality.
 
