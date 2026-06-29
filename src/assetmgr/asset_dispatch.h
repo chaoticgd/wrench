@@ -89,6 +89,26 @@ AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func, bool error_fatal = 
 	});
 }
 
+// Try to unpack the WAD with one of two functions depending on the header.
+template <typename ThisAsset, typename WadHeader1, typename WadHeader2, typename UnpackerFunc1, typename UnpackerFunc2>
+AssetUnpackerFunc* wrap_wad_unpacker_func_2(UnpackerFunc1 func_1, UnpackerFunc2 func_2)
+{
+	return new AssetUnpackerFunc([func_1, func_2](Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
+		verify(header_src, "No header passed to wad unpacker.");
+
+		Buffer header_src_buffer(*header_src);
+		s32 header_size = header_src_buffer.read<s32>(0, "wad header");
+
+		if (header_size == sizeof(WadHeader1)) {
+			WadHeader1 header = header_src_buffer.read<WadHeader1>(0, "wad header");
+			func_1(static_cast<ThisAsset&>(dest), header, src, config);
+		} else if (header_size == sizeof(WadHeader2)) {
+			WadHeader2 header = header_src_buffer.read<WadHeader2>(0, "wad header");
+			func_2(static_cast<ThisAsset&>(dest), header, src, config);
+		}
+	});
+}
+
 template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_iso_unpacker_func(UnpackerFunc func, AssetUnpackerFunc unpack)
 {
@@ -135,6 +155,37 @@ AssetPackerFunc* wrap_wad_packer_func(PackerFunc func)
 		dest.write(0, header);
 		if(header_dest) {
 			OutBuffer(*header_dest).write(0, header);
+		}
+		if(time_dest) {
+			*time_dest = fs::file_time_type::clock::now();
+		}
+	});
+}
+
+// Try to pack the WAD with one function, and if it fails try another.
+template <typename ThisAsset, typename WadHeader1, typename WadHeader2, typename PackerFunc1, typename PackerFunc2>
+AssetPackerFunc* wrap_wad_packer_func_2(PackerFunc1 func_1, PackerFunc2 func_2)
+{
+	return new AssetPackerFunc([func_1, func_2](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint) {
+		WadHeader1 header_1 = {};
+		header_1.header_size = sizeof(WadHeader1);
+		dest.write(header_1);
+		dest.pad(SECTOR_SIZE, 0);
+		if (func_1(dest, header_1, static_cast<const ThisAsset&>(src), config)) {
+			dest.write(0, header_1);
+			if(header_dest) {
+				OutBuffer(*header_dest).write(0, header_1);
+			}
+		} else {
+			WadHeader2 header_2 = {};
+			header_2.header_size = sizeof(WadHeader2);
+			dest.write(header_2);
+			dest.pad(SECTOR_SIZE, 0);
+			func_2(dest, header_2, static_cast<const ThisAsset&>(src), config);
+			dest.write(0, header_2);
+			if(header_dest) {
+				OutBuffer(*header_dest).write(0, header_2);
+			}
 		}
 		if(time_dest) {
 			*time_dest = fs::file_time_type::clock::now();

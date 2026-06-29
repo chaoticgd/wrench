@@ -55,6 +55,7 @@ static WadFileDescription WAD_FILE_TYPES[] = {
 	{"mpeg"  , Game::UNKNOWN, WadType::MPEG       , 0x0648},
 	{"misc"  , Game::UYA    , WadType::MISC       , 0x0048},
 	{"bonus" , Game::UYA    , WadType::BONUS      , 0x0bf0},
+	{"bonus" , Game::UYA    , WadType::BONUS      , 0x0c00}, // japan
 	{"space" , Game::UYA    , WadType::SPACE      , 0x0c30},
 	{"armor" , Game::UYA    , WadType::ARMOR      , 0x0398},
 	{"audio" , Game::UYA    , WadType::AUDIO      , 0x2340},
