@@ -472,7 +472,7 @@ static ErrorStr parse_string(WtfReader* ctx, char** dest)
 	
 	char next;
 	int escape = 0;
-	while(next = peek_char(ctx), ((escape || next != '"') && next != '\0')) {
+	while(next = *ctx->input, ((escape || next != '"') && next != '\0')) {
 		if(!escape) {
 			if(next == '\\') {
 				escape = 1;
@@ -480,7 +480,7 @@ static ErrorStr parse_string(WtfReader* ctx, char** dest)
 		} else {
 			escape = 0;
 		}
-		advance(ctx);
+		ctx->input++;
 	}
 	
 	if(next == '\0') {
