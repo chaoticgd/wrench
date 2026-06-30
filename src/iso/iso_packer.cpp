@@ -23,10 +23,10 @@
 
 static void pack_ps2_logo(
 	OutputStream& iso, const BuildAsset& build, BuildConfig config, AssetPackerFunc pack);
-static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game);
+static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game, Region region);
 static std::vector<LevelInfo> enumerate_levels(
-	const BuildAsset& build, Game game, const LevelAsset* single_level);
-static LevelInfo enumerate_level(const LevelAsset& level, Game game);
+	const BuildAsset& build, Game game, Region region, const LevelAsset* single_level);
+static LevelInfo enumerate_level(const LevelAsset& level, Game game, Region region);
 static IsoDirectory enumerate_files(const Asset& files);
 static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir);
 static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build, Game game);
@@ -89,8 +89,8 @@ void pack_iso(
 	pack_ps2_logo(iso, src, config, pack);
 	
 	table_of_contents toc;
-	toc.globals = enumerate_globals(src, config.game());
-	toc.levels = enumerate_levels(src, config.game(), single_level);
+	toc.globals = enumerate_globals(src, config.game(), config.region());
+	toc.levels = enumerate_levels(src, config.game(), config.region(), single_level);
 	
 	Sector32 toc_size = calculate_table_of_contents_size(toc, config.game());
 	
@@ -210,7 +210,7 @@ static void pack_ps2_logo(
 	iso.write_v(texture->data);
 }
 
-static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game)
+static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game, Region region)
 {
 	std::vector<WadType> order;
 	switch (game) {
@@ -280,7 +280,7 @@ static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Gam
 			case WadType::SPACE:  global.asset = &build.get_space();  global.name = "space.wad";  break;
 			default: verify_fatal(0);
 		}
-		global.header.resize(header_size_of_wad(game, type));
+		global.header.resize(header_size_of_wad(game, region, type));
 		verify(global.asset, "Failed to build ISO, missing global WAD asset.");
 		globals.emplace_back(std::move(global));
 	}
@@ -288,12 +288,12 @@ static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Gam
 }
 
 static std::vector<LevelInfo> enumerate_levels(
-	const BuildAsset& build, Game game, const LevelAsset* single_level)
+	const BuildAsset& build, Game game, Region region, const LevelAsset* single_level)
 {
 	std::vector<LevelInfo> levels;
 	
 	if (single_level) {
-		LevelInfo info = enumerate_level(*single_level, game);
+		LevelInfo info = enumerate_level(*single_level, game, region);
 		
 		// Construct a list of all the levels that exist so they can be filled in later.
 		build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](const LevelAsset& level) {
@@ -311,7 +311,7 @@ static std::vector<LevelInfo> enumerate_levels(
 			if (((s32) levels.size()) <= level_table_index) {
 				levels.resize(level_table_index + 1);
 			}
-			levels[level_table_index] = enumerate_level(level, game);
+			levels[level_table_index] = enumerate_level(level, game, region);
 		});
 		
 		verify(levels.size() >= 1, "No levels with a valid index.");
@@ -320,24 +320,24 @@ static std::vector<LevelInfo> enumerate_levels(
 	return levels;
 }
 
-static LevelInfo enumerate_level(const LevelAsset& level, Game game)
+static LevelInfo enumerate_level(const LevelAsset& level, Game game, Region region)
 {
 	LevelInfo info;
 	info.level_table_index = level.index();
 	
 	if (level.has_level()) {
 		LevelWadInfo& wad = info.level.emplace();
-		wad.header.resize(header_size_of_wad(game, WadType::LEVEL));
+		wad.header.resize(header_size_of_wad(game, region, WadType::LEVEL));
 		wad.asset = &level.get_level();
 	}
 	if (level.has_audio()) {
 		LevelWadInfo& wad = info.audio.emplace();
-		wad.header.resize(header_size_of_wad(game, WadType::LEVEL_AUDIO));
+		wad.header.resize(header_size_of_wad(game, region, WadType::LEVEL_AUDIO));
 		wad.asset = &level.get_audio();
 	}
 	if (level.has_scene()) {
 		LevelWadInfo& wad = info.scene.emplace();
-		wad.header.resize(header_size_of_wad(game, WadType::LEVEL_SCENE));
+		wad.header.resize(header_size_of_wad(game, region, WadType::LEVEL_SCENE));
 		wad.asset = &level.get_scene();
 	}
 	
@@ -542,7 +542,7 @@ static std::array<IsoDirectory, 3> pack_levels(
 	IsoDirectory scenes_dir {"scenes"};
 	if (single_level) {
 		// Only write out a single level, and point every level at it.
-		LevelInfo level = enumerate_level(*single_level, config.game());
+		LevelInfo level = enumerate_level(*single_level, config.game(), config.region());
 		if (level.level) pack_level_wad_outer(iso, levels_dir, *level.level, "level", config, 0, pack);
 		if (level.audio) pack_level_wad_outer(iso, audio_dir, *level.audio, "audio", config, 0, pack);
 		if (level.scene) pack_level_wad_outer(iso, scenes_dir, *level.scene, "scene", config, 0, pack);

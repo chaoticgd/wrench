@@ -142,12 +142,14 @@ static void pack_demo_images(
 on_load(Bonus, []() {
 	BonusWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<BonusWadAsset, RacBonusWadHeader>(unpack_rac_gc_bonus_wad<RacBonusWadHeader>);
 	BonusWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<BonusWadAsset, GcBonusWadHeader>(unpack_rac_gc_bonus_wad<GcBonusWadHeader>);
-	BonusWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func_2<BonusWadAsset, UyaBonusWadHeader, UyaJapanBonusWadHeader>(unpack_uya_dl_bonus_wad<UyaBonusWadHeader>, unpack_uya_dl_bonus_wad<UyaJapanBonusWadHeader>);
+	BonusWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func_2<BonusWadAsset, UyaBonusWadHeader, UyaJapanBonusWadHeader>(
+		unpack_uya_dl_bonus_wad<UyaBonusWadHeader>, unpack_uya_dl_bonus_wad<UyaJapanBonusWadHeader>);
 	BonusWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BonusWadAsset, DlBonusWadHeader>(unpack_uya_dl_bonus_wad<DlBonusWadHeader>);
 	
 	BonusWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<BonusWadAsset, RacBonusWadHeader>(pack_rac_gc_bonus_wad<RacBonusWadHeader>);
 	BonusWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<BonusWadAsset, GcBonusWadHeader>(pack_rac_gc_bonus_wad<GcBonusWadHeader>);
-	BonusWadAsset::funcs.pack_rac3 = wrap_wad_packer_func_2<BonusWadAsset, UyaBonusWadHeader, UyaJapanBonusWadHeader>(pack_uya_dl_bonus_wad<UyaBonusWadHeader>, pack_uya_dl_bonus_wad<UyaJapanBonusWadHeader>);
+	BonusWadAsset::funcs.pack_rac3 = wrap_wad_packer_func_2<BonusWadAsset, UyaBonusWadHeader, UyaJapanBonusWadHeader>(
+		pack_uya_dl_bonus_wad<UyaBonusWadHeader>, pack_uya_dl_bonus_wad<UyaJapanBonusWadHeader>);
 	BonusWadAsset::funcs.pack_dl = wrap_wad_packer_func<BonusWadAsset, DlBonusWadHeader>(pack_uya_dl_bonus_wad<DlBonusWadHeader>);
 })
 
@@ -283,7 +285,7 @@ bool pack_uya_dl_bonus_wad(
 	// The Japanese version of UYA has a different header. First the packer will
 	// try to call the version of this function with the normal header, so bail
 	// out so it will try the version with the Japan header.
-	if (config.game() == Game::UYA && config.region() == Region::JAPAN && std::is_same_v<UyaBonusWadHeader, UyaJapanBonusWadHeader>) {
+	if (config.game() == Game::UYA && config.region() == Region::JAPAN && std::is_same_v<Header, UyaBonusWadHeader>) {
 		return false;
 	}
 
