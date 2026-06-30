@@ -286,29 +286,39 @@ static void unpack_missions(
 		if (!header.instances.empty() || !header.classes.empty() || !ranges.sound_banks[i].empty()) {
 			std::string path = stringf("missions/%d/mission%d.asset", i, i);
 			MissionAsset& mission = collection.foreign_child<MissionAsset>(path, false, i);
-			
-			// Horrible hack: There are some mission instance files that look
-			// more like a gameplay core with empty help message sections, for
-			// example level 4 (sarathos), mission 44. I'm not sure what these
-			// files are exactly.
-			file.seek(header.instances.bytes().offset);
-			std::vector<u8> compressed_instances = file.read_multiple<u8>(header.instances.bytes().size);
-			std::vector<u8> instances;
-			decompress_wad(instances, compressed_instances);
-			verify(instances.size() >= 4, "Bad mission instances file.");
-			if (*(s32*) instances.data() != 0x90) {
-				MemoryInputStream compressed_instances_stream(compressed_instances);
-				InstancesAsset& instances_asset = mission.instances<InstancesAsset>();
-				std::string hint = stringf("mission,%d", core_moby_count);
-				unpack_asset_impl(instances_asset, compressed_instances_stream, nullptr, config, hint.c_str());
-				ReferenceAsset& reference = instances_asset.child<ReferenceAsset>("core");
-				reference.set_asset(dest.get_gameplay().link_relative_to(dest));
-			} else {
-				MemoryInputStream instances_stream(instances);
-				unpack_asset_impl(mission.instances<BinaryAsset>(), instances_stream, nullptr, config, FMT_INSTANCES_MISSION);
+
+			if (!header.instances.empty()) {
+				// Horrible hack: There are some mission instance files that look
+				// more like a gameplay core with empty help message sections, for
+				// example level 4 (sarathos), mission 44. These appear to be
+				// leftovers from development.
+				file.seek(header.instances.bytes().offset);
+				std::vector<u8> compressed_instances = file.read_multiple<u8>(header.instances.bytes().size);
+				std::vector<u8> instances;
+				verify(decompress_wad(instances, compressed_instances), "Corrupted mission instances file.");
+				verify(instances.size() >= 4, "Empty mission instances file.");
+				if (*(s32*) instances.data() != 0x90) {
+					MemoryInputStream compressed_instances_stream(compressed_instances);
+					InstancesAsset& instances_asset = mission.instances<InstancesAsset>();
+					std::string hint = stringf("mission,%d", core_moby_count);
+					unpack_asset_impl(instances_asset, compressed_instances_stream, nullptr, config, hint.c_str());
+					ReferenceAsset& reference = instances_asset.child<ReferenceAsset>("core");
+					reference.set_asset(dest.get_gameplay().link_relative_to(dest));
+				} else {
+					MemoryInputStream instances_stream(instances);
+					unpack_asset_impl(mission.instances<BinaryAsset>(), instances_stream, nullptr, config, FMT_INSTANCES_MISSION);
+				}
 			}
-			unpack_compressed_asset(mission.classes<CollectionAsset>(), file, header.classes, config, FMT_COLLECTION_MISSION_CLASSES);
-			unpack_asset(mission.sound_bank(), file, ranges.sound_banks[i], config);
+
+			// Level 26, mission 8 from the Japanese version of Deadlocked has
+			// an empty compressed file (LZ header only) here.
+			if (header.classes.size > 0x10) {
+				unpack_compressed_asset(mission.classes<CollectionAsset>(), file, header.classes, config, FMT_COLLECTION_MISSION_CLASSES);
+			}
+
+			if (!ranges.sound_banks[i].empty()) {
+				unpack_asset(mission.sound_bank(), file, ranges.sound_banks[i], config);
+			}
 		}
 	}
 }
