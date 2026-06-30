@@ -50,6 +50,15 @@ packed_struct(DlArmorWadHeader,
 	/* 0x1e8 */ SectorRange dropship_textures[8];
 )
 
+packed_struct(DlJapanArmorWadHeader,
+	/* 0x000 */ s32 header_size;
+	/* 0x004 */ Sector32 sector;
+	/* 0x008 */ ArmorHeader armors[22];
+	/* 0x148 */ SectorRange bot_textures[12];
+	/* 0x1a8 */ SectorRange landstalker_textures[8];
+	/* 0x1e8 */ SectorRange dropship_textures[8];
+)
+
 static void unpack_gc_armor_wad(
 	ArmorWadAsset& dest, const GcArmorWadHeader& header, InputStream& src, BuildConfig config);
 static void pack_gc_armor_wad(
@@ -58,10 +67,12 @@ static void unpack_uya_armor_wad(
 	ArmorWadAsset& dest, const UyaArmorWadHeader& header, InputStream& src, BuildConfig config);
 static void pack_uya_armor_wad(
 	OutputStream& dest, UyaArmorWadHeader& header, const ArmorWadAsset& src, BuildConfig config);
+template <typename Header>
 static void unpack_dl_armor_wad(
-	ArmorWadAsset& dest, const DlArmorWadHeader& header, InputStream& src, BuildConfig config);
-static void pack_dl_armor_wad(
-	OutputStream& dest, DlArmorWadHeader& header, const ArmorWadAsset& src, BuildConfig config);
+	ArmorWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
+template <typename Header>
+static bool pack_dl_armor_wad(
+	OutputStream& dest, Header& header, const ArmorWadAsset& src, BuildConfig config);
 static void unpack_armors(
 	CollectionAsset& dest,
 	InputStream& src,
@@ -80,11 +91,13 @@ static void pack_armors(
 on_load(Armor, []() {
 	ArmorWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<ArmorWadAsset, GcArmorWadHeader>(unpack_gc_armor_wad);
 	ArmorWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<ArmorWadAsset, UyaArmorWadHeader>(unpack_uya_armor_wad);
-	ArmorWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<ArmorWadAsset, DlArmorWadHeader>(unpack_dl_armor_wad);
+	ArmorWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func_2<ArmorWadAsset, DlArmorWadHeader, DlJapanArmorWadHeader>(
+		unpack_dl_armor_wad<DlArmorWadHeader>, unpack_dl_armor_wad<DlJapanArmorWadHeader>);
 	
 	ArmorWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<ArmorWadAsset, GcArmorWadHeader>(pack_gc_armor_wad);
 	ArmorWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<ArmorWadAsset, UyaArmorWadHeader>(pack_uya_armor_wad);
-	ArmorWadAsset::funcs.pack_dl = wrap_wad_packer_func<ArmorWadAsset, DlArmorWadHeader>(pack_dl_armor_wad);
+	ArmorWadAsset::funcs.pack_dl = wrap_wad_packer_func_2<ArmorWadAsset, DlArmorWadHeader, DlJapanArmorWadHeader>(
+		pack_dl_armor_wad<DlArmorWadHeader>, pack_dl_armor_wad<DlJapanArmorWadHeader>);
 })
 
 static void unpack_gc_armor_wad(
@@ -119,8 +132,9 @@ static void pack_uya_armor_wad(
 	pack_assets_sa(dest, ARRAY_PAIR(header.clank_textures), src.get_clank_textures(), config, FMT_TEXTURE_PIF8);
 }
 
+template <typename Header>
 static void unpack_dl_armor_wad(
-	ArmorWadAsset& dest, const DlArmorWadHeader& header, InputStream& src, BuildConfig config)
+	ArmorWadAsset& dest, const Header& header, InputStream& src, BuildConfig config)
 {
 	unpack_armors(dest.armors(SWITCH_FILES), src, ARRAY_PAIR(header.armors), config, FMT_MOBY_CLASS_PHAT);
 	unpack_assets<CollectionAsset>(dest.bot_textures(SWITCH_FILES), src, ARRAY_PAIR(header.bot_textures), config, FMT_COLLECTION_PIF8, true);
@@ -128,13 +142,21 @@ static void unpack_dl_armor_wad(
 	unpack_assets<CollectionAsset>(dest.dropship_textures(SWITCH_FILES), src, ARRAY_PAIR(header.dropship_textures), config, FMT_COLLECTION_PIF8, true);
 }
 
-static void pack_dl_armor_wad(
-	OutputStream& dest, DlArmorWadHeader& header, const ArmorWadAsset& src, BuildConfig config)
+template <typename Header>
+static bool pack_dl_armor_wad(
+	OutputStream& dest, Header& header, const ArmorWadAsset& src, BuildConfig config)
 {
+	// The Japanese version of Deadlocked has a different header.
+	if (config.game() == Game::DL && config.region() == Region::JAPAN && std::is_same_v<Header, DlArmorWadHeader>) {
+		return false;
+	}
+
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), config, FMT_MOBY_CLASS_PHAT);
 	pack_assets_sa(dest, ARRAY_PAIR(header.bot_textures), src.get_bot_textures(), config, FMT_COLLECTION_PIF8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.landstalker_textures), src.get_landstalker_textures(), config, FMT_COLLECTION_PIF8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.dropship_textures), src.get_dropship_textures(), config, FMT_COLLECTION_PIF8);
+
+	return true;
 }
 
 packed_struct(ArmorMeshHeader,

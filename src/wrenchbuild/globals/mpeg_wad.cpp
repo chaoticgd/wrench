@@ -116,8 +116,15 @@ static void unpack_gc_uya_dl_mpeg_wad(
 			} else {
 				unpack_asset(mpeg.video_pal(), src, header.mpegs[i].video, config, FMT_BINARY_PSS);
 			}
-			CollectionAsset& subtitles = mpeg.child<CollectionAsset>("subtitles");
-			unpack_asset(subtitles, src, header.mpegs[i].subtitles, config, FMT_COLLECTION_SUBTITLES);
+			if (config.region() == Region::JAPAN) {
+				// The Japanese subtitles are in a different format, so just
+				// unpack them as binaries.
+				BinaryAsset& subtitles = mpeg.child<BinaryAsset>("subtitles");
+				unpack_asset(subtitles, src, header.mpegs[i].subtitles, config, FMT_NO_HINT);
+			} else {
+				CollectionAsset& subtitles = mpeg.child<CollectionAsset>("subtitles");
+				unpack_asset(subtitles, src, header.mpegs[i].subtitles, config, FMT_COLLECTION_SUBTITLES);
+			}
 		}
 	}
 }

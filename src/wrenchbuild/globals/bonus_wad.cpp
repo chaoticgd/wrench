@@ -80,6 +80,20 @@ packed_struct(UyaBonusWadHeader,
 	/* 0xbe8 */ SectorRange trophy_image;
 )
 
+packed_struct(UyaJapanBonusWadHeader,
+	/* 0x000 */ s32 header_size;
+	/* 0x004 */ Sector32 sector;
+	/* 0x008 */ u64 unused_8[183];
+	/* 0x5c0 */ SectorRange credits_text[8];
+	/* 0x600 */ SectorRange credits_images[13];
+	/* 0x668 */ u64 unused_658[115];
+	/* 0xa00 */ SectorRange demo_menu[6];
+	/* 0xa30 */ SectorRange demo_exit[6];
+	/* 0xa60 */ SectorRange cheat_images[20];
+	/* 0xb00 */ SectorRange skill_images[31];
+	/* 0xbf8 */ SectorRange trophy_image;
+)
+
 packed_struct(DlBonusWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
@@ -107,7 +121,7 @@ template <typename Header>
 static void unpack_uya_dl_bonus_wad(
 	BonusWadAsset& dest, const Header& header, InputStream& src, BuildConfig config);
 template <typename Header>
-static void pack_uya_dl_bonus_wad(
+static bool pack_uya_dl_bonus_wad(
 	OutputStream& dest, Header& header, const BonusWadAsset& src, BuildConfig config);
 static void unpack_demo_images(
 	CollectionAsset& dest,
@@ -128,12 +142,14 @@ static void pack_demo_images(
 on_load(Bonus, []() {
 	BonusWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<BonusWadAsset, RacBonusWadHeader>(unpack_rac_gc_bonus_wad<RacBonusWadHeader>);
 	BonusWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<BonusWadAsset, GcBonusWadHeader>(unpack_rac_gc_bonus_wad<GcBonusWadHeader>);
-	BonusWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<BonusWadAsset, UyaBonusWadHeader>(unpack_uya_dl_bonus_wad<UyaBonusWadHeader>);
+	BonusWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func_2<BonusWadAsset, UyaBonusWadHeader, UyaJapanBonusWadHeader>(
+		unpack_uya_dl_bonus_wad<UyaBonusWadHeader>, unpack_uya_dl_bonus_wad<UyaJapanBonusWadHeader>);
 	BonusWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BonusWadAsset, DlBonusWadHeader>(unpack_uya_dl_bonus_wad<DlBonusWadHeader>);
 	
 	BonusWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<BonusWadAsset, RacBonusWadHeader>(pack_rac_gc_bonus_wad<RacBonusWadHeader>);
 	BonusWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<BonusWadAsset, GcBonusWadHeader>(pack_rac_gc_bonus_wad<GcBonusWadHeader>);
-	BonusWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<BonusWadAsset, UyaBonusWadHeader>(pack_uya_dl_bonus_wad<UyaBonusWadHeader>);
+	BonusWadAsset::funcs.pack_rac3 = wrap_wad_packer_func_2<BonusWadAsset, UyaBonusWadHeader, UyaJapanBonusWadHeader>(
+		pack_uya_dl_bonus_wad<UyaBonusWadHeader>, pack_uya_dl_bonus_wad<UyaJapanBonusWadHeader>);
 	BonusWadAsset::funcs.pack_dl = wrap_wad_packer_func<BonusWadAsset, DlBonusWadHeader>(pack_uya_dl_bonus_wad<DlBonusWadHeader>);
 })
 
@@ -263,9 +279,16 @@ static void unpack_uya_dl_bonus_wad(
 }
 
 template <typename Header>
-void pack_uya_dl_bonus_wad(
+bool pack_uya_dl_bonus_wad(
 	OutputStream& dest, Header& header, const BonusWadAsset& src, BuildConfig config)
 {
+	// The Japanese version of UYA has a different header. First the packer will
+	// try to call the version of this function with the normal header, so bail
+	// out so it will try the version with the Japan header.
+	if (config.game() == Game::UYA && config.region() == Region::JAPAN && std::is_same_v<Header, UyaBonusWadHeader>) {
+		return false;
+	}
+
 	pack_assets_sa(dest, ARRAY_PAIR(header.credits_text), src.get_credits_text(), config);
 	pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), config, FMT_TEXTURE_RGBA);
 	pack_demo_images(dest, ARRAY_PAIR(header.demo_menu), 30, src.get_demo_menu(), config, "demo_menu");
@@ -276,6 +299,8 @@ void pack_uya_dl_bonus_wad(
 	if constexpr(std::is_same_v<Header, DlBonusWadHeader>) {
 		header.dige = pack_asset_sa<SectorRange>(dest, src.get_dige(), config);
 	}
+
+	return true;
 }
 
 static void unpack_demo_images(

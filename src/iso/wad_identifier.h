@@ -26,6 +26,6 @@
 #include <core/build_config.h>
 
 std::tuple<Game, WadType, const char*> identify_wad(Buffer header);
-s32 header_size_of_wad(Game game, WadType type);
+s32 header_size_of_wad(Game game, Region region, WadType type);
 
 #endif
