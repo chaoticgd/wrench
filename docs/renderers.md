@@ -21,7 +21,7 @@ For most games, the high-level flow of data when the PS2 is drawing graphics loo
 
 Model data is stored in RAM in the form of a VIF DMA packet. Static data can be left in memory between frames, however dynamic data will usually be written out as a new command list every frame. This command list is then sent through DMA channel 1 to Vector unit InterFace 1 (VIF1). This unit will interpret the command list, decompressing data and code into VU1's data memory and program memory respectively. It will also control microprogram execution on the VU.
 
-The actual VU1 microprogram will usually apply a matrix transformation to all the vertices and then write them out to a GS packet which is sent to the Graphics InterFace (GIF). This unit will read the GS packet and use it to control the GS during rendering. The Graphics Synthesizer is a fixed-function unit that draws triangles. It also has 2MB of on-board memory which is used to store textures and framebuffers.
+The actual VU1 microprogram will usually apply a matrix transformation to all the vertices and then write them out to a GS packet which is sent to the Graphics InterFace (GIF). This unit will read the GS packet and use it to control the GS during rendering. The Graphics Synthesizer is a fixed-function unit that draws triangles. It also has 4MB of on-board memory which is used to store textures and framebuffers.
 
 This is known as PATH1 rendering. PATH2 rendering bypasses VU1 using a `DIRECT` VIF code. PATH3 rendering bypasses VIF1 entirely.
 
