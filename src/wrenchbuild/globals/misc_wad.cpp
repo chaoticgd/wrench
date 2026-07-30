@@ -97,9 +97,9 @@ static void pack_gc_misc_wad(
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), config, FMT_TEXTURE_PIF8);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), config, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), config);
-	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), config);
+	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	header.frontbin_net = pack_compressed_asset_sa<SectorRange>(dest, src.get_frontbin_net(), config, "frontbin_net");
-	header.frontend = pack_asset_sa<SectorRange>(dest, src.get_frontend(), config, FMT_ELFFILE_RATCHET_EXECUTABLE);
+	header.frontend = pack_asset_sa<SectorRange>(dest, src.get_frontend(), config);
 	header.exit = pack_asset_sa<SectorRange>(dest, src.get_exit(), config);
 }
 

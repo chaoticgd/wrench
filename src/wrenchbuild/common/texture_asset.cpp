@@ -137,7 +137,13 @@ static void pack_texture_asset(
 		} else {
 			verify_not_reached("Tried to pack a texture with an invalid palette size specified in the hint.");
 		}
-		s32 mip_levels = atoi(next_hint(&hint));
+		s32 mip_levels = 1;
+		const char* mip_levels_str = next_hint(&hint);
+		if (mip_levels_str && strlen(mip_levels_str) > 0) {
+			mip_levels = atoi(mip_levels_str);
+			verify(mip_levels > 0, "Invalid mipmap level count '%s' passed in hint for asset '%s'.",
+				mip_levels_str, src.absolute_link().to_string().c_str());
+		}
 		const char* swizzled = next_hint(&hint);
 		// TODO: Once we've figure out swizzling for where palette_size == 4
 		// make sure to enable that here.
