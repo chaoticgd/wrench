@@ -58,11 +58,11 @@ This allows for the structure of the unpacked files to change arbitrarily withou
 
 It should be possible to build a mod designed for the US release of a given game on the EU or Japanese release, for example. To facilitate this, the asset format should remain the same between releases.
 
-An exception to this is where the format of the assets themselves differ between releases. For example, the MPEG cutscenes have a different framerate depending on whether it's an NTSC or PAL release, and these files cannot be swapped. In this case, the asset system should be able to represent both the NTSC and PAL assets seperately. For example the Mpeg asset has a child named video_nstc and a seperate child named video_pal.
+An exception to this is where the format of the assets themselves differ between releases. For example, the MPEG cutscenes have a different framerate depending on whether it's an NTSC or PAL release, and these files cannot be swapped. In this case, the asset system should be able to represent both the NTSC and PAL assets separately. For example the Mpeg asset has a child named video_nstc and a separate child named video_pal.
 
 ## Asset Links
 
-Asset links are strings that can be used to reference an asset. These links are composed of an optional prefix ending with a colon, and a set of asset tags seperated by dots. The syntax is as follows:
+Asset links are strings that can be used to reference an asset. These links are composed of an optional prefix ending with a colon, and a set of asset tags separated by dots. The syntax is as follows:
 
 	[<prefix>:]<tag 1>.<tag 2>.(...).<tag N>
 
@@ -134,7 +134,7 @@ The `AssetBank` class represents an asset bank and owns a set of `AssetFile` ins
 
 The `AssetFile` class represents a single .asset file and owns a tree of `Asset` instances.
 
-The `Asset` class represents an asset definition inside a .asset file. A seperate physical tree of asset instances exist for each asset file, and precedence pointers are maintained for each asset that link them to assets in equivalent positions from different trees.
+The `Asset` class represents an asset definition inside a .asset file. A separate physical tree of asset instances exist for each asset file, and precedence pointers are maintained for each asset that link them to assets in equivalent positions from different trees.
 
 ### Code Generator
 

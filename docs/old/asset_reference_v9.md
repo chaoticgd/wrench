@@ -180,7 +180,7 @@ A build of the game.
 | Syntax | Example | Description |
 | - | - | - |
 | `release` | `release` | A full build of the game. |
-| `testlf,<level>,<flags>` | `testlf,4,nompegs` | Only the level with asset tag \<level\> is included (or leave it empty for normal level packing), and various \<flags\> are set. Flags are seperated by a pipe (\|) character. Available flags: "nompegs" |
+| `testlf,<level>,<flags>` | `testlf,4,nompegs` | Only the level with asset tag \<level\> is included (or leave it empty for normal level packing), and various \<flags\> are set. Flags are separated by a pipe (\|) character. Available flags: "nompegs" |
 
 ### PrimaryVolumeDescriptor
 
