@@ -212,7 +212,7 @@ static void pack_rac_gc_bonus_wad(
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.item_images), src.get_item_images(), config, "item_images", FMT_TEXTURE_PIF8);
 	if constexpr(std::is_same_v<Header, GcBonusWadHeader>) {
 		header.credits_text = pack_rac_gc_credits_text(dest, src.get_credits_text(), config);
-		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), config, "credits_images", FMT_TEXTURE_RGBA);
+		pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), config, FMT_TEXTURE_RGBA);
 		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.random_stuff), src.get_random_stuff(), config, "random_stuff", FMT_TEXTURE_PIF8);
 		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.movie_images), src.get_movie_images(), config, "movie_images", FMT_TEXTURE_PIF8);
 		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.cinematic_images), src.get_cinematic_images(), config, "cinematic_images", FMT_TEXTURE_PIF8);
