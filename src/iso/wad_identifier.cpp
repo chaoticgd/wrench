@@ -55,7 +55,7 @@ static WadFileDescription WAD_FILE_TYPES[] = {
 	{"mpeg"  , Game::UNKNOWN, WadType::MPEG       , 0x0648},
 	{"misc"  , Game::UYA    , WadType::MISC       , 0x0048},
 	{"bonus" , Game::UYA    , WadType::BONUS      , 0x0bf0},
-	{"bonus" , Game::UYA    , WadType::BONUS      , 0x0c00}, // japan
+	{"bonus" , Game::UYA    , WadType::BONUS      , 0x0c00}, // japan and korea
 	{"space" , Game::UYA    , WadType::SPACE      , 0x0c30},
 	{"armor" , Game::UYA    , WadType::ARMOR      , 0x0398},
 	{"audio" , Game::UYA    , WadType::AUDIO      , 0x2340},
@@ -68,7 +68,7 @@ static WadFileDescription WAD_FILE_TYPES[] = {
 	{"online", Game::DL     , WadType::ONLINE     , 0x0068, 0xc, 0x75e, 0x1000, 0x14, 0x1}, // secondary: 0xc6a
 	{"level" , Game::UNKNOWN, WadType::LEVEL      , 0x0068},
 	{"armor" , Game::DL     , WadType::ARMOR      , 0x0228},
-	{"armor" , Game::DL     , WadType::ARMOR      , 0x0248}, // japan
+	{"armor" , Game::DL     , WadType::ARMOR      , 0x0248}, // japan and korea
 	{"audio" , Game::DL     , WadType::AUDIO      , 0xa870},
 	{"hud"   , Game::DL     , WadType::HUD        , 0x0f88},
 	{"level" , Game::DL     , WadType::LEVEL      , 0x0c68},
@@ -105,8 +105,8 @@ std::tuple<Game, WadType, const char*> identify_wad(Buffer header)
 
 s32 header_size_of_wad(Game game, Region region, WadType type)
 {
-	// Some of the header sizes are different for the japanese versions.
-	if (region == Region::JAPAN) {
+	// Some of the header sizes are different for the japanese and korean versions.
+	if (region == Region::JAPAN || region == Region::KOREA) {
 		if (game == Game::UYA && type == WadType::BONUS) {
 			return 0x0c00;
 		} else if (game == Game::DL && type == WadType::ARMOR) {

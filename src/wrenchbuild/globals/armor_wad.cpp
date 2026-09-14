@@ -50,7 +50,7 @@ packed_struct(DlArmorWadHeader,
 	/* 0x1e8 */ SectorRange dropship_textures[8];
 )
 
-packed_struct(DlJapanArmorWadHeader,
+packed_struct(DlJapanKoreaArmorWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
 	/* 0x008 */ ArmorHeader armors[22];
@@ -91,13 +91,13 @@ static void pack_armors(
 on_load(Armor, []() {
 	ArmorWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<ArmorWadAsset, GcArmorWadHeader>(unpack_gc_armor_wad);
 	ArmorWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<ArmorWadAsset, UyaArmorWadHeader>(unpack_uya_armor_wad);
-	ArmorWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func_2<ArmorWadAsset, DlArmorWadHeader, DlJapanArmorWadHeader>(
-		unpack_dl_armor_wad<DlArmorWadHeader>, unpack_dl_armor_wad<DlJapanArmorWadHeader>);
+	ArmorWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func_2<ArmorWadAsset, DlArmorWadHeader, DlJapanKoreaArmorWadHeader>(
+		unpack_dl_armor_wad<DlArmorWadHeader>, unpack_dl_armor_wad<DlJapanKoreaArmorWadHeader>);
 	
 	ArmorWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<ArmorWadAsset, GcArmorWadHeader>(pack_gc_armor_wad);
 	ArmorWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<ArmorWadAsset, UyaArmorWadHeader>(pack_uya_armor_wad);
-	ArmorWadAsset::funcs.pack_dl = wrap_wad_packer_func_2<ArmorWadAsset, DlArmorWadHeader, DlJapanArmorWadHeader>(
-		pack_dl_armor_wad<DlArmorWadHeader>, pack_dl_armor_wad<DlJapanArmorWadHeader>);
+	ArmorWadAsset::funcs.pack_dl = wrap_wad_packer_func_2<ArmorWadAsset, DlArmorWadHeader, DlJapanKoreaArmorWadHeader>(
+		pack_dl_armor_wad<DlArmorWadHeader>, pack_dl_armor_wad<DlJapanKoreaArmorWadHeader>);
 })
 
 static void unpack_gc_armor_wad(
@@ -146,8 +146,8 @@ template <typename Header>
 static bool pack_dl_armor_wad(
 	OutputStream& dest, Header& header, const ArmorWadAsset& src, BuildConfig config)
 {
-	// The Japanese version of Deadlocked has a different header.
-	if (config.game() == Game::DL && config.region() == Region::JAPAN && std::is_same_v<Header, DlArmorWadHeader>) {
+	// The Japanese/Korean version of Deadlocked has a different header.
+	if (config.game() == Game::DL && (config.region() == Region::JAPAN || config.region() == Region::KOREA) && std::is_same_v<Header, DlArmorWadHeader>) {
 		return false;
 	}
 
