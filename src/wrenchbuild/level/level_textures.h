@@ -147,7 +147,8 @@ void unpack_fx_textures(
 	LevelWadAsset& core,
 	const std::vector<FxTextureEntry>& entries,
 	InputStream& fx_bank,
-	Game game);
+	Game game,
+	Region region);
 std::tuple<ArrayRange, s32> pack_fx_textures(
 	OutputStream& index, OutputStream& data, const CollectionAsset& collection, Game game);
 

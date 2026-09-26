@@ -110,7 +110,7 @@ AssetType Build {
 		games: [1 2 3 4]
 	}
 	StringAttribute region {
-		desc: "The region. Possible values: \"us\", \"eu\", \"japan\, \"korea\"."
+		desc: "The region. Possible values: \"us\", \"eu\", \"japan\", \"korea\"."
 		required: true
 		games: [1 2 3 4]
 	}

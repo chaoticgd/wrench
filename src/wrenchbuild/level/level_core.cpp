@@ -88,7 +88,7 @@ void unpack_level_core(
 	
 	SubInputStream fx_bank(data, header.fx_bank_offset, data.size() - header.fx_bank_offset);
 	auto fx_textures = index.read_multiple<FxTextureEntry>(header.fx_textures);
-	unpack_fx_textures(dest, fx_textures, fx_bank, config.game());
+	unpack_fx_textures(dest, fx_textures, fx_bank, config.game(), config.region());
 	
 	//if (wad.game != Game::DL) {
 	//	wad.unknown_a0 = assets.read_bytes(header.unknown_a0, 0x40, "unknown a0");
