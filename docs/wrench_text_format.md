@@ -40,7 +40,7 @@ Additionally, \\x followed by two hex characters can be used to represent an arb
 
 ## Whitespace
 
-Outside of strings, whitespace should be ignored, except where it is required to seperate tokens (for example, between type names and tags).
+Outside of strings, whitespace should be ignored, except where it is required to separate tokens (for example, between type names and tags).
 
 ## Grammar
 

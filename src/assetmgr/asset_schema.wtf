@@ -236,7 +236,7 @@ AssetType Build {
 	Hint testlf {
 		syntax: "testlf,<level>,<flags>"
 		example: "testlf,4,nompegs"
-		desc: "Only the level with asset tag <level> is included (or leave it empty for normal level packing), and various <flags> are set. Flags are seperated by a pipe (\\|) character. Available flags: \"nompegs\""
+		desc: "Only the level with asset tag <level> is included (or leave it empty for normal level packing), and various <flags> are set. Flags are separated by a pipe (\\|) character. Available flags: \"nompegs\""
 	}
 }
 

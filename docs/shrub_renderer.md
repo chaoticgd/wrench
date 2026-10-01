@@ -4,7 +4,7 @@
 
 ### Operation
 
-The following operations are performed in seperate loops:
+The following operations are performed in separate loops:
 
 1. Copy GIF tags to GS packet.
 2. Copy GS AD texture data to GS packet.
