@@ -5,7 +5,7 @@ In no particular order:
 - Build System/CI
 	- ~~Integrate automated testing~~
 - Moby Model Packing
-	- Seperate out matrix allocation/scheduling from read/write functions to improve testability
+	- Separate out matrix allocation/scheduling from read/write functions to improve testability
 	- Use the existing tristrip algorithm to build new submeshes
 - Tfrag Model Packing
 	- ~~Recover original tfaces~~
