@@ -1,12 +1,12 @@
 # Wrench Editor
 
-A set of modding tools for the Ratchet & Clank PS2 games. Compatible with R&C1, R&C2, R&C3 and Deadlocked. Work in progress.
+A set of modding tools for the Ratchet & Clank PS2 games. Compatible with R&C1, R&C2, R&C3 and Deadlocked.
 
 - [Releases](https://github.com/chaoticgd/wrench/releases)
 - [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable)
 - [Documentation](docs/README.md)
 
-Most members of the modding community for these games use Discord. Alternatively, feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
+Feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
 
 Features currently include:
 - Launcher
