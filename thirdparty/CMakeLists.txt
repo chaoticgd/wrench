@@ -52,6 +52,7 @@ include_directories(nativefiledialog/src/include)
 
 # zlib
 set(SKIP_INSTALL_ALL ON)
+set(ZLIB_BUILD_TESTING OFF)
 add_subdirectory(zlib EXCLUDE_FROM_ALL)
 include_directories(zlib)
 include_directories(${CMAKE_BINARY_DIR}/thirdparty/zlib)
@@ -71,7 +72,6 @@ if(WIN32)
 endif()
 
 # libpng
-option(PNG_BUILD_ZLIB "" ON)
 option(PNG_SHARED "" OFF)
 option(PNG_STATIC "" ON)
 option(PNG_EXECUTABLES "" OFF)
