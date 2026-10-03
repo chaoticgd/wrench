@@ -16,21 +16,21 @@ Features currently include:
 	- Pack/unpack entire ISO files.
 	- Pack/unpack gameplay instances as `.instances` files.
 	- Unpack tfrag meshes as COLLADA files.
-	- Unpack moby meshes as glTF files\*.
+	- **Updated in v0.6!** Unpack moby meshes as glTF files\*.
 	- Unpack tie meshes as COLLADA files.
 	- Pack/unpack collision meshes as COLLADA files.
-	- **Updated in v0.5!** Pack/unpack shrub models as binary glTF files\*\*.
-	- **Updated in v0.5!** Pack/unpack sky models as binary glTF files\*\*.
+	- Pack/unpack shrub models as binary glTF files\*\*.
+	- Pack/unpack sky models as binary glTF files\*\*.
 	- Pack/unpack textures as PNG files.
 	- Pack/unpack packed executables and level overlays as ELF files.
 	- Pack/unpack everything else as binary files.
 - Level Editor
 	- View unpacked levels.
 	- Inspect objects and modify their attributes (including pvars).
-	- **New in v0.5!** Recover instanced collision for ties and shrubs.
-	- **New in v0.5!** Translate, rotate and scale objects using 3D transformation gizmos.
+	- Recover instanced collision for ties and shrubs.
+	- Translate, rotate and scale objects using 3D transformation gizmos.
 - Save Editor
-	- **New in v0.5!** Works for all the games, rather than just Deadlocked.
+	- Works with folder memory cards from PCSX2.
 - Asset System
 	- A system to create, distribute and load mods.
 	- Multiple mods can be loaded at a time.
