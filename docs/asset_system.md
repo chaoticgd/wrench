@@ -144,7 +144,7 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
-| 30   |       | Added effect_mode attribute to Material assets, removed chrome and glass attributes, and made diffuse children optional. |
+| 30   | v0.6  | Added effect_mode attribute to Material assets, removed chrome and glass attributes, and made diffuse children optional. |
 | 29   |       | Added hero_groups attributes to Collision assets. |
 | 28   |       | Use glTF (.glb) for the moby models instead of COLLADA. |
 | 27   | v0.5  | Use glTF (.glb) for the shrub and sky models instead of COLLADA. The mesh attribute of the SkyShell asset is now of type Mesh instead of Collection. The starting_rotation and angular_velocity attributes now only will only apply for UYA and DL (which is more correct). |

@@ -3,6 +3,10 @@
 ## v0.6
 
 - Use glTF (.glb) to store moby models instead of COLLADA.
+- Added support for hero collision.
+- Added support for some Japanese builds.
+- Added support for some Korean builds.
+- Fix various packing and unpacking issues.
 
 ## v0.5
 
