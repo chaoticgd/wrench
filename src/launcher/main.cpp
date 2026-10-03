@@ -106,7 +106,7 @@ int main(int argc, char** argv)
 
 void update_gui(f32 delta_time)
 {
-	f32 button_height = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.f;
+	f32 button_height = GImGui->FontBaked->Size + GImGui->Style.FramePadding.y * 2.f;
 	f32 buttons_window_height = button_height + GImGui->Style.WindowPadding.y * 2.f;
 	
 	begin_main_window(buttons_window_height);
