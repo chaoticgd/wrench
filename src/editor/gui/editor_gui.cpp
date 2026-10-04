@@ -387,7 +387,7 @@ static void tool_bar()
 		if (!active) {
 			ImGui::PopStyleColor();
 		}
-		if (clicked) {
+		if (clicked && g_app->get_level()) {
 			g_tools[g_active_tool]->funcs.deactivate();
 			g_active_tool = i;
 			g_tools[g_active_tool]->funcs.activate();
