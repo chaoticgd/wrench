@@ -1,0 +1,1 @@
+Contributions containing AI-generated code will not be accepted. If a contributor hasn't written the code by hand, then I cannot trust that they know how to write code. If they don't know how to write code, then they cannot properly review and take responsibility for AI-generated code.
