@@ -7,7 +7,7 @@
 - Bangles
 - Corncob
 - Animation sequences
-- Submesh table
+- Packet table
 - Collision
 - Skeleton
 - Transforms
@@ -49,9 +49,9 @@
 | 0x46   | type                | u8    |                                                                                                   |
 | 0x47   | mode_bits2          | u8    | More bit flags.                                                                                   |
 
-## Submeshes
+## Packets
 
-### Submesh Header
+### Packet Header
 
 As VU1 only has 16k of data memory, meshes must be split into packets that can fit in the limited space available. Each packet consists of a VIF command list and a vertex table, and its entry in the packet table is structured like so:
 
@@ -180,20 +180,20 @@ The games support skeletal animation with 3 joints per vertex. Psuedocode for ho
 mtx4 VU0mem[64];
 mtx4 SPR[256];
 ...
-for(packet in packets) {
-	for(transfer in packet.matrix_transfers) {
+for (packet in packets) {
+	for (transfer in packet.matrix_transfers) {
 		VU0mem[transfer.address/4] = SPR[transfer.joint_index];
 	}
-	for(v in packet.vertices_that_do_two_way_blends) {
+	for (v in packet.vertices_that_do_two_way_blends) {
 		VU0mem[v.ST/4] = SPR[v.JI];
 		v.matrix = VU0mem[v.L1/4]*(v.W1/255.f)+VU0mem[v.L2/4]*(v.W2/255.f);
 		VU0mem[v.SB/4] = v.matrix;
 	}
-	for(v in packet.vertices_that_do_three_way_blends) {
+	for (v in packet.vertices_that_do_three_way_blends) {
 		v.matrix = VU0mem[v.L1/4]*(v.W1/255.f)+VU0mem[v.L2/4]*(v.W2/255.f)+VU0mem[v.L3/4]*(v.W3/255.f);
 		VU0mem[v.SB/4] = v.matrix;
 	}
-	for(v in packet.vertices_that_dont_do_blends) {
+	for (v in packet.vertices_that_dont_do_blends) {
 		VU0mem[v.ST/4] = SPR[v.JI];
 		v.matrix = VU0mem[v.L1/4];
 	}
