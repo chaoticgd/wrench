@@ -1,6 +1,8 @@
 # Tfrag Renderer
 
-The tfrag renderer is used to draw most of the large non-instanced geometry in the games. It was created at Naughty Dog for the Jak & Daxter games before being ported for use in Ratchet & Clank. Each level contains a single world space tfrag model in addition to tfrag models for each of the loaded chunks.
+The tfrag renderer is used to draw most of the large non-instanced geometry in the games. It was created at Naughty Dog for the Jak & Daxter games before being ported for use in Ratchet & Clank.
+
+Each level chunk has a single world space tfrag model associated with it. Each level also contains a duplicate of the tfrag model of its first chunk, so that it can be loaded along with the rest of the level. R&C1 doesn't support chunks, so only has a single tfrag model for each level.
 
 Tfrag models are constructed from patches of faces called tfaces, which can be reduced in quality in a predetermined way to produce lower LOD versions of a model. For example, a 4x4 patch of quads may be reduced to a 2x2 patch of quads and then to just a single quad. The different LOD levels are converted to triangle strips and stored such that data is not unnecessarily duplicated between LOD levels. This system also facilitates smooth interpolation between the different LOD levels and prevents holes in geometry from forming at LOD boundaries.
 
@@ -196,13 +198,13 @@ Note that for the last section, the strips do not have to come in the order show
 The strips form a command list that the microprogram uses to build a GS packet. The list is interpreted like so:
 
 ```
-for(strip in strips) {
+for (strip in strips) {
 	s32 vertex_count;
-	if(strip[x] <= 0) {
-		if(strip[x] == 0) {
+	if (strip[x] <= 0) {
+		if (strip[x] == 0) {
 			xgkick();
 			break;
-		} else if(strip[y] <= 0) {
+		} else if (strip[y] <= 0) {
 			xgkick();
 		} else {
 			ad_gif_source_offset = strip[z];
